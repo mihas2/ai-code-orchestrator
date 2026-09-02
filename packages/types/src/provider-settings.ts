@@ -173,6 +173,21 @@ export type ProviderSettingsEntry = z.infer<typeof providerSettingsEntrySchema>
  */
 
 const baseProviderSettingsSchema = z.object({
+	// Optional so existing provider profiles remain valid and inherit defaults.
+	profileRoleModelSettings: z
+		.object({
+			schemaVersion: z.literal(1).default(1),
+			roleModels: z
+				.record(
+					z.string(),
+					z.object({
+						modelId: z.string().min(1).optional(),
+						inheritPrimary: z.boolean().default(true),
+					}),
+				)
+				.default({}),
+		})
+		.optional(),
 	includeMaxTokens: z.boolean().optional(),
 	todoListEnabled: z.boolean().optional(),
 	modelTemperature: z.number().nullish(),

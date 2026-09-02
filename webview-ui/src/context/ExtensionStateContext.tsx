@@ -28,7 +28,31 @@ import { experimentDefault } from "@roo/experiments"
 import { vscode } from "@src/utils/vscode"
 import { convertTextMateToHljs } from "@src/utils/textMateToHljs"
 
+export interface OrchestrationEventState {
+	eventId: string
+	runId: string
+	sequence: number
+	type: string
+	payload: Record<string, unknown>
+}
+
+export interface OrchestrationSnapshotState {
+	run: { runId: string; goal: string; status: string }
+	nodes: Array<{
+		nodeId: string
+		title: string
+		status: string
+		dependsOn: string[]
+		outputContract?: { summary: string }
+	}>
+	events: OrchestrationEventState[]
+	pendingApproval?: "plan" | "integration"
+	findings?: Array<{ id: string; severity: string; message: string }>
+}
+
 export interface ExtensionStateContextType extends ExtensionState {
+	orchestrationSnapshot?: OrchestrationSnapshotState
+	orchestrationEvents: OrchestrationEventState[]
 	historyPreviewCollapsed?: boolean // Add the new state property
 	didHydrateState: boolean
 	showWelcome: boolean
@@ -252,6 +276,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	const [currentCheckpoint, setCurrentCheckpoint] = useState<string>()
 	const [extensionRouterModels, setExtensionRouterModels] = useState<RouterModels | undefined>(undefined)
 	const [alwaysAllowFollowupQuestions, setAlwaysAllowFollowupQuestions] = useState(false) // Add state for follow-up questions auto-approve
+	const [orchestrationSnapshot, setOrchestrationSnapshot] = useState<OrchestrationSnapshotState>()
+	const [orchestrationEvents, setOrchestrationEvents] = useState<OrchestrationEventState[]>([])
 	const [followupAutoApproveTimeoutMs, setFollowupAutoApproveTimeoutMs] = useState<number | undefined>(undefined) // Will be set from global settings
 	const [skills, setSkills] = useState<SkillMetadata[]>([])
 	const [includeTaskHistoryInEnhance, setIncludeTaskHistoryInEnhance] = useState(true)
@@ -413,6 +439,21 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					})
 					break
 				}
+				case "orchestrationSnapshot": {
+					if (message.payload?.run?.runId) {
+						setOrchestrationSnapshot(message.payload)
+						setOrchestrationEvents(message.payload.events ?? [])
+					}
+					break
+				}
+				case "orchestrationEvent": {
+					const event = message.payload
+					if (event?.runId)
+						setOrchestrationEvents((previous) =>
+							previous.some((item) => item.eventId === event.eventId) ? previous : [...previous, event],
+						)
+					break
+				}
 			}
 		},
 		[setListApiConfigMeta],
@@ -542,6 +583,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		includeCurrentCost,
 		setIncludeCurrentCost,
 		skills,
+		orchestrationSnapshot,
+		orchestrationEvents,
 		showWorktreesInHomeScreen: state.showWorktreesInHomeScreen ?? true,
 		setShowWorktreesInHomeScreen: (value) =>
 			setState((prevState) => ({ ...prevState, showWorktreesInHomeScreen: value })),

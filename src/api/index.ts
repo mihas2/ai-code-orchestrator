@@ -89,6 +89,9 @@ export interface ApiHandlerCreateMessageMetadata {
 }
 
 export interface ApiHandler {
+	/** Non-agentic completion used by bounded, machine-readable control-plane calls. */
+	completePrompt?(prompt: string): Promise<string>
+
 	createMessage(
 		systemPrompt: string,
 		messages: Anthropic.Messages.MessageParam[],

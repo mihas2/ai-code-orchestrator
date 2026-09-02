@@ -525,6 +525,53 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 	}
 
 	switch (message.type) {
+		case "updateOrchestrationSettings": {
+			if (!message.orchestrationSettings) throw new Error("Orchestration settings are required")
+			const { orchestrationSettingsSchema } = await import("@roo-code/types")
+			const parsed = orchestrationSettingsSchema.safeParse(message.orchestrationSettings)
+			if (!parsed.success) throw new Error("Invalid orchestration settings")
+			await updateGlobalState("orchestrationSettings", parsed.data)
+			await provider.postStateToWebview()
+			break
+		}
+		case "orchestrationSnapshot":
+		case "orchestrationPause":
+		case "orchestrationResume":
+		case "orchestrationCancel":
+		case "orchestrationRetry":
+		case "orchestrationApprovePlan":
+		case "orchestrationApproveIntegration": {
+			const runId = message.orchestrationRunId
+			if (!runId) throw new Error("Orchestration run id is required")
+			const service = await provider.getOrchestrationService()
+			switch (message.type) {
+				case "orchestrationSnapshot":
+					break
+				case "orchestrationPause":
+					await service.pause(runId)
+					break
+				case "orchestrationResume":
+					await service.resume(runId)
+					break
+				case "orchestrationCancel":
+					await service.cancel(runId, message.text)
+					break
+				case "orchestrationRetry":
+					if (!message.orchestrationNodeId) throw new Error("Orchestration node id is required")
+					await service.retryNode(runId, message.orchestrationNodeId)
+					break
+				case "orchestrationApprovePlan":
+					await service.approvePlan(runId)
+					break
+				case "orchestrationApproveIntegration":
+					await service.approveIntegration(runId)
+			}
+			await provider.postMessageToWebview({
+				type: "orchestrationSnapshot",
+				payload: await service.getSnapshot(runId),
+			})
+			break
+		}
 		case "webviewDidLaunch":
 			// Load custom modes first
 			const customModes = await provider.customModesManager.getCustomModes()
@@ -599,6 +646,30 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			provider.isViewLaunched = true
 			break
 		case "newTask":
+			{
+				const orchestrationSettings = await getGlobalState("orchestrationSettings")
+				const currentMode = await getCurrentMode()
+				if (orchestrationSettings?.enabled && currentMode === orchestrationSettings.orchestratorModeSlug) {
+					const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
+					const root = await provider.createTask(resolved.text, resolved.images, undefined, {
+						taskId: message.taskId,
+						startTask: false,
+						initialStatus: "active",
+					})
+					try {
+						const run = await provider.planOrchestration(resolved.text, `run:${root.taskId}`, root.taskId)
+						await provider.postMessageToWebview({ type: "invoke", invoke: "newChat" })
+						if (!run.settingsSnapshot.requirePlanApproval)
+							await (await provider.getOrchestrationService()).dispatch(run.runId)
+					} catch (error) {
+						await provider.postMessageToWebview({ type: "invoke", invoke: "newChat" })
+						vscode.window.showErrorMessage(
+							`Failed to plan orchestration: ${error instanceof Error ? error.message : String(error)}`,
+						)
+					}
+					break
+				}
+			}
 			// Initializing new instance of Cline will make sure that any
 			// agentically running promises in old instance don't affect our new
 			// task. This essentially creates a fresh slate for the new task.

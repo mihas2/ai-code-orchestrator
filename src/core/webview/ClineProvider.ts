@@ -82,6 +82,13 @@ import { CustomModesManager } from "../config/CustomModesManager"
 import { Task } from "../task/Task"
 
 import { webviewMessageHandler } from "./webviewMessageHandler"
+import { OrchestrationService } from "../orchestration/service"
+import { GitIntegrationAdapter } from "../orchestration/integrationAdapter"
+import { GlobalStateOrchestrationPersistence } from "../orchestration/persistence"
+import { GitWorkerWorkspaceRegistry } from "../orchestration/workerIsolation"
+import type { OrchestrationExecutor } from "../orchestration/types"
+import { parseAndValidatePlan, redactPlannerContext } from "../orchestration/planner"
+import { extractResultContract, RESULT_CONTRACT_INSTRUCTION } from "../orchestration/resultContract"
 import type { ClineMessage, TodoItem } from "@roo-code/types"
 import { readApiMessages, saveApiMessages, saveTaskMessages, TaskHistoryStore } from "../task-persistence"
 import { readTaskMessages } from "../task-persistence/taskMessages"
@@ -152,6 +159,7 @@ export class ClineProvider
 	public readonly latestAnnouncementId = "may-2026-final-roo-code-release" // Final Roo Code release announcement.
 	public readonly providerSettingsManager: ProviderSettingsManager
 	public readonly customModesManager: CustomModesManager
+	private orchestrationService?: OrchestrationService
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -1040,6 +1048,176 @@ export class ClineProvider
 		}
 
 		return task
+	}
+
+	public async planOrchestration(
+		goal: string,
+		runId: string,
+		rootTaskId: string,
+	): Promise<import("../orchestration/types").OrchestrationRun> {
+		const task = this.getCurrentTask()
+		if (!task?.api.completePrompt) throw new Error("Selected provider does not support planner completion")
+		const settings = await this.contextProxy.getValue("orchestrationSettings")
+		if (!settings?.enabled || (await this.getMode()) !== settings.orchestratorModeSlug)
+			throw new Error("Orchestration is disabled")
+		const state = await this.getState()
+		const context = redactPlannerContext(`${goal}\nWorkspace: ${this.cwd}`)
+		const raw = await task.api.completePrompt(
+			`Return ONLY JSON plan: {\"version\":1,\"nodes\":[{\"id\":\"n1\",\"role\":\"worker\",\"mode\":\"code\",\"objective\":\"...\",\"acceptanceCriteria\":[],\"constraints\":[],\"fileScopes\":{\"include\":[],\"exclude\":[]},\"dependencies\":[],\"tokenBudget\":1}]}\nGoal: ${context}`,
+		)
+		const nodes = parseAndValidatePlan(raw, {
+			modes: DEFAULT_MODES.map((m) => m.slug),
+			allowedScopes: [".", this.cwd],
+			maxChildTokens: settings.maxChildTokens,
+			maxRunTokens: settings.maxRunTokens,
+		})
+		for (const node of nodes) {
+			node.inputContract.runId = runId
+			node.inputContract.goal = goal
+			node.inputContract.parentContextDigest = "planner"
+		}
+		return await (
+			await this.getOrchestrationService()
+		).start({
+			runId,
+			rootTaskId,
+			goal,
+			settings,
+			nodes,
+			estimatedTokens: nodes.reduce((s, n) => s + n.inputContract.tokenBudget, 0),
+		})
+	}
+
+	public async getOrchestrationService(): Promise<OrchestrationService> {
+		const settings = await this.contextProxy.getValue("orchestrationSettings")
+		if (!settings?.enabled || (await this.getMode()) !== settings.orchestratorModeSlug) {
+			throw new Error("Orchestration is disabled unless enabled in orchestrator mode")
+		}
+		if (!this.orchestrationService) {
+			const workerRegistry = new GitWorkerWorkspaceRegistry(this.cwd)
+			// Orchestration workers use dedicated git worktrees; regular delegation remains unchanged.
+			// than constructing a Task directly, so parent lineage and history are persisted.
+			const executor: OrchestrationExecutor = {
+				maxParallel: settings.maxParallelWorkers,
+				start: async ({ run, node, idempotencyKey }) => {
+					// Delegation is serialized: the currently active task is the parent
+					// (after the first node this is the previous child, not the root).
+					let parent
+					try {
+						parent = this.getCurrentTask()
+					} catch {
+						throw new Error("Orchestration has no safe Task adapter in the current provider lifecycle")
+					}
+					if (!parent) throw new Error("Orchestration has no safe Task adapter: parent task is not active")
+					const workspace = await workerRegistry.allocate(run.runId, node.nodeId, node.attempt)
+					const child = await this.delegateParentAndOpenChild({
+						parentTaskId: parent.taskId,
+						message: [
+							node.title,
+							node.objective,
+							`Acceptance criteria: ${node.inputContract.acceptanceCriteria.join("; ")}`,
+							`Declared file scopes: ${JSON.stringify(node.inputContract.fileScopes)}`,
+							RESULT_CONTRACT_INSTRUCTION,
+						].join("\n\n"),
+						initialTodos: [],
+						mode: node.mode,
+						workspacePath: workspace.path,
+					})
+					node.taskId = child.taskId
+					const complete = async (_taskId: string, usage: TokenUsage) => {
+						child.off(RooCodeEventName.TaskCompleted, complete)
+						child.off(RooCodeEventName.TaskAborted, aborted)
+						try {
+							const extracted = extractResultContract({
+								completionMessages: child.clineMessages,
+								apiHistory: child.apiConversationHistory,
+								fileScopes: node.inputContract.fileScopes,
+								// Validate worker reports against the isolated workspace, not the parent cwd.
+								cwd: workspace.path,
+								persistTranscript: !!settings.persistTranscripts,
+								usage: {
+									inputTokens: usage.totalTokensIn ?? 0,
+									outputTokens: usage.totalTokensOut ?? 0,
+									cost: usage.totalCost,
+								},
+								route: node.route
+									? {
+											profileId: node.route.profileId,
+											provider: node.route.provider,
+											modelId: node.route.modelId,
+											role: node.route.role,
+										}
+									: undefined,
+							})
+							await this.orchestrationService?.handleChildEvent({
+								runId: run.runId,
+								nodeId: node.nodeId,
+								idempotencyKey: `${idempotencyKey}:completed`,
+								status: "integrated",
+								result: extracted.result,
+								usage: extracted.usage,
+							})
+						} catch (error) {
+							await this.orchestrationService?.handleChildEvent({
+								runId: run.runId,
+								nodeId: node.nodeId,
+								idempotencyKey: `${idempotencyKey}:contract-invalid`,
+								status: "failed",
+								usage: {
+									inputTokens: usage.totalTokensIn ?? 0,
+									outputTokens: usage.totalTokensOut ?? 0,
+									cost: usage.totalCost,
+								},
+								error: {
+									code:
+										error instanceof Error && error.message.startsWith("result_contract_missing")
+											? "result_contract_unavailable"
+											: "result_contract_invalid",
+									message: error instanceof Error ? error.message : String(error),
+									recoverable: true,
+								},
+							})
+						}
+					}
+					const aborted = async () => {
+						child.off(RooCodeEventName.TaskCompleted, complete)
+						child.off(RooCodeEventName.TaskAborted, aborted)
+						await this.orchestrationService?.handleChildEvent({
+							runId: run.runId,
+							nodeId: node.nodeId,
+							idempotencyKey: `${idempotencyKey}:canceled`,
+							status: "canceled",
+							error: { code: "child_canceled", message: "Child task canceled", recoverable: true },
+						})
+					}
+					child.on(RooCodeEventName.TaskCompleted, complete)
+					child.on(RooCodeEventName.TaskAborted, aborted)
+					return {
+						taskId: child.taskId,
+						workspacePath: workspace.path,
+						cancel: async (reason?: string) => {
+							child.abortReason = reason as any
+							await child.abortTask()
+						},
+						dispose: async () => {
+							await workerRegistry.release(workspace.workerId, true)
+						},
+					}
+				},
+			}
+			this.orchestrationService = new OrchestrationService(
+				new GlobalStateOrchestrationPersistence(this.context.globalState),
+				executor,
+				async (event) => {
+					await this.postMessageToWebview({ type: "orchestrationEvent", payload: event })
+					const snapshot = await this.orchestrationService?.getSnapshot(event.runId)
+					if (snapshot) await this.postMessageToWebview({ type: "orchestrationSnapshot", payload: snapshot })
+				},
+				{ integration: new GitIntegrationAdapter(this.cwd) },
+			)
+			await this.orchestrationService.recover()
+		}
+		return this.orchestrationService
 	}
 
 	public async postMessageToWebview(message: ExtensionMessage) {
@@ -2092,6 +2270,7 @@ export class ClineProvider
 				codebaseIndexOpenRouterSpecificProvider: codebaseIndexConfig?.codebaseIndexOpenRouterSpecificProvider,
 			},
 			profileThresholds: profileThresholds ?? {},
+			orchestrationSettings: (await this.contextProxy.getValue("orchestrationSettings")) ?? undefined,
 			hasOpenedModeSelector: this.getGlobalState("hasOpenedModeSelector") ?? false,
 			lockApiConfigAcrossModes: lockApiConfigAcrossModes ?? false,
 			alwaysAllowFollowupQuestions: alwaysAllowFollowupQuestions ?? false,
@@ -2785,8 +2964,9 @@ export class ClineProvider
 		message: string
 		initialTodos: TodoItem[]
 		mode: string
+		workspacePath?: string
 	}): Promise<Task> {
-		const { parentTaskId, message, initialTodos, mode } = params
+		const { parentTaskId, message, initialTodos, mode, workspacePath } = params
 
 		// Metadata-driven delegation is always enabled
 
@@ -2877,6 +3057,7 @@ export class ClineProvider
 			initialTodos,
 			initialStatus: "active",
 			startTask: false,
+			workspacePath,
 		})
 
 		// 5) Persist parent delegation metadata BEFORE the child starts writing.

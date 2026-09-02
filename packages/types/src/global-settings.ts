@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { orchestrationSettingsSchema } from "./orchestration.js"
+
 import { type Keys } from "./type-fu.js"
 import {
 	type ProviderSettings,
@@ -188,6 +190,7 @@ export const globalSettingsSchema = z.object({
 	language: languagesSchema.optional(),
 
 	mcpEnabled: z.boolean().optional(),
+	orchestrationSettings: orchestrationSettingsSchema.optional(),
 
 	mode: z.string().optional(),
 	modeApiConfigs: z.record(z.string(), z.string()).optional(),

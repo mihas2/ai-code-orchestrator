@@ -29,6 +29,7 @@ import {
 	ArrowLeft,
 	GitCommitVertical,
 	GraduationCap,
+	GitPullRequest,
 } from "lucide-react"
 
 import {
@@ -81,6 +82,7 @@ import ModesView from "../modes/ModesView"
 import McpView from "../mcp/McpView"
 import { WorktreesView } from "../worktrees/WorktreesView"
 import { SettingsSearch } from "./SettingsSearch"
+import { OrchestrationSettings } from "./OrchestrationSettings"
 import { useSearchIndexRegistry, SearchIndexProvider } from "./useSettingsSearch"
 
 export const settingsTabsContainer = "flex flex-1 overflow-hidden [&.narrow_.tab-label]:hidden"
@@ -96,6 +98,7 @@ export interface SettingsViewRef {
 
 export const sectionNames = [
 	"providers",
+	"orchestration",
 	"autoApprove",
 	"slashCommands",
 	"skills",
@@ -495,6 +498,9 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	const sections: { id: SectionName; icon: LucideIcon }[] = useMemo(
 		() => [
 			{ id: "providers", icon: Plug },
+			...(extensionState.orchestrationSettings
+				? [{ id: "orchestration" as SectionName, icon: GitPullRequest }]
+				: []),
 			{ id: "modes", icon: Users2 },
 			{ id: "skills", icon: GraduationCap },
 			{ id: "slashCommands", icon: SquareSlash },
@@ -511,7 +517,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			{ id: "language", icon: Globe },
 			{ id: "about", icon: Info },
 		],
-		[], // No dependencies needed now
+		[extensionState.orchestrationSettings],
 	)
 
 	// Update target section logic to set active tab
@@ -720,6 +726,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					data-testid="settings-content">
 					<SearchIndexProvider value={searchContextValue}>
 						{/* Providers Section */}
+						{renderTab === "orchestration" && <OrchestrationSettings />}
+
 						{renderTab === "providers" && (
 							<div>
 								<SectionHeader>{t("settings:sections.providers")}</SectionHeader>

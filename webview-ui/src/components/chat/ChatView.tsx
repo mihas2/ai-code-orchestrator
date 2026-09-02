@@ -42,6 +42,7 @@ import { QueuedMessages } from "./QueuedMessages"
 import { WorktreeSelector } from "./WorktreeSelector"
 import FileChangesPanel from "./FileChangesPanel"
 import { useScrollLifecycle } from "@src/hooks/useScrollLifecycle"
+import { OrchestrationPanel } from "@src/components/orchestration/OrchestrationPanel"
 
 export interface ChatViewProps {
 	isHidden: boolean
@@ -83,6 +84,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		soundVolume,
 		messageQueue = [],
 		showWorktreesInHomeScreen,
+		orchestrationSnapshot,
 	} = useExtensionState()
 
 	// Show a WarningRow when the user sends a message with a retired provider.
@@ -1562,6 +1564,9 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						}
 					}}
 				/>
+			)}
+			{orchestrationSnapshot?.run.runId && mode === "orchestrator" && (
+				<OrchestrationPanel runId={orchestrationSnapshot.run.runId} />
 			)}
 			{task ? (
 				<>

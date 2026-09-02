@@ -92,6 +92,8 @@ export interface ExtensionMessage {
 		| "folderSelected"
 		| "skills"
 		| "fileContent"
+		| "orchestrationSnapshot"
+		| "orchestrationEvent"
 	text?: string
 	/** For fileContent: { path, content, error? } */
 	fileContent?: { path: string; content: string | null; error?: string }
@@ -285,6 +287,7 @@ export type ExtensionState = Pick<
 	| "requestDelaySeconds"
 	| "showWorktreesInHomeScreen"
 	| "disabledTools"
+	| "orchestrationSettings"
 > & {
 	lockApiConfigAcrossModes?: boolean
 	version: string
@@ -521,7 +524,19 @@ export interface WebviewMessage {
 		| "moveSkill"
 		| "updateSkillModes"
 		| "openSkillFile"
+		| "orchestrationSnapshot"
+		| "orchestrationPause"
+		| "orchestrationResume"
+		| "orchestrationCancel"
+		| "orchestrationRetry"
+		| "orchestrationApprovePlan"
+		| "orchestrationApproveIntegration"
+		| "updateOrchestrationSettings"
 	text?: string
+	/** Orchestration run identifier, with nodeId required for retry. */
+	orchestrationSettings?: import("./orchestration.js").OrchestrationSettings
+	orchestrationRunId?: string
+	orchestrationNodeId?: string
 	taskId?: string
 	editedMessageContent?: string
 	tab?: "settings" | "history" | "mcp" | "modes" | "chat"
