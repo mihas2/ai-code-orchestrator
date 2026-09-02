@@ -408,6 +408,9 @@ export class CustomModesManager {
 
 	public async updateCustomMode(slug: string, config: ModeConfig): Promise<void> {
 		try {
+			if (slug === "orchestrator" || config.slug === "orchestrator") {
+				throw new Error("The orchestrator role is system-managed and cannot be edited")
+			}
 			// Validate the mode configuration before saving
 			const validationResult = modeConfigSchema.safeParse(config)
 			if (!validationResult.success) {
@@ -515,6 +518,9 @@ export class CustomModesManager {
 
 	public async deleteCustomMode(slug: string): Promise<void> {
 		try {
+			if (slug === "orchestrator") {
+				throw new Error("The orchestrator role cannot be deleted")
+			}
 			const settingsPath = await this.getCustomModesFilePath()
 			const agentModesPath = await this.getWorkspaceAgentModes()
 

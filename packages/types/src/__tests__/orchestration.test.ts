@@ -8,8 +8,9 @@ import {
 } from "../orchestration.js"
 
 describe("orchestration settings", () => {
-	it("uses orchestration-first defaults", () => {
+	it("uses orchestration-first defaults and keeps orchestration active", () => {
 		expect(DEFAULT_ORCHESTRATION_SETTINGS.enabled).toBe(true)
+		expect(orchestrationSettingsSchema.parse({ enabled: false }).enabled).toBe(false)
 		expect(DEFAULT_ORCHESTRATION_SETTINGS.maxParallelWorkers).toBe(4)
 		expect(orchestrationSettingsSchema.parse({}).contextPolicy).toBe("balanced")
 	})

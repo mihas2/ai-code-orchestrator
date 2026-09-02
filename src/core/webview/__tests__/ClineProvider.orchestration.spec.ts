@@ -87,11 +87,15 @@ const input: StartOrchestrationInput = {
 }
 
 describe("ClineProvider orchestration boundary", () => {
-	it.each([
-		[false, "orchestrator"],
-		[true, "code"],
-	])("rejects access when enabled=%s and mode=%s", async (enabled, mode) => {
-		await expect(providerBoundary(enabled, mode).getOrchestrationService()).rejects.toThrow("disabled")
+	it("does not allow the legacy enabled flag to disable orchestration", async () => {
+		const provider = providerBoundary(false, "orchestrator")
+		await expect(provider.getOrchestrationService()).resolves.toBeDefined()
+	})
+
+	it("only exposes orchestration from the orchestrator role", async () => {
+		await expect(providerBoundary(true, "code").getOrchestrationService()).rejects.toThrow(
+			"only available in orchestrator mode",
+		)
 	})
 
 	it("owns one lazy service and reports unsupported execution explicitly", async () => {

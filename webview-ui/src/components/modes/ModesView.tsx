@@ -829,7 +829,9 @@ const ModesView = () => {
 										size="icon"
 										onClick={handleStartRenameMode}
 										data-testid="rename-mode-button"
-										disabled={!findModeBySlug(visualMode, customModes)}>
+										disabled={
+											visualMode === "orchestrator" || !findModeBySlug(visualMode, customModes)
+										}>
 										<span className="codicon codicon-edit" />
 									</Button>
 								</StandardTooltip>
@@ -855,7 +857,9 @@ const ModesView = () => {
 											}
 										}}
 										data-testid="delete-mode-button"
-										disabled={!findModeBySlug(visualMode, customModes)}>
+										disabled={
+											visualMode === "orchestrator" || !findModeBySlug(visualMode, customModes)
+										}>
 										<span className="codicon codicon-trash" />
 									</Button>
 								</StandardTooltip>

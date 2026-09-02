@@ -649,7 +649,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			{
 				const orchestrationSettings = await getGlobalState("orchestrationSettings")
 				const currentMode = await getCurrentMode()
-				if (orchestrationSettings?.enabled && currentMode === orchestrationSettings.orchestratorModeSlug) {
+				if (currentMode === (orchestrationSettings?.orchestratorModeSlug ?? "orchestrator")) {
 					const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
 					const root = await provider.createTask(resolved.text, resolved.images, undefined, {
 						taskId: message.taskId,
@@ -1935,6 +1935,9 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "updateCustomMode":
 			if (message.modeConfig) {
 				try {
+					if (message.modeConfig.slug === "orchestrator") {
+						throw new Error("The orchestrator role is system-managed and cannot be edited")
+					}
 					// Check if this is a new mode or an update to an existing mode
 					const existingModes = await provider.customModesManager.getCustomModes()
 					const isNewMode = !existingModes.some((mode) => mode.slug === message.modeConfig?.slug)
@@ -1953,6 +1956,10 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 		case "deleteCustomMode":
 			if (message.slug) {
+				if (message.slug === "orchestrator") {
+					vscode.window.showErrorMessage("The orchestrator role cannot be deleted")
+					break
+				}
 				// Get the mode details to determine source and rules folder path
 				const customModes = await provider.customModesManager.getCustomModes()
 				const modeToDelete = customModes.find((mode) => mode.slug === message.slug)

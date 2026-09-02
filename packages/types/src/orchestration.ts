@@ -20,6 +20,7 @@ export const orchestrationReviewPolicySchema = z.enum(["off", "completion", "bat
 
 export const orchestrationSettingsSchema = z.object({
 	schemaVersion: z.literal(orchestrationSchemaVersion).default(orchestrationSchemaVersion),
+	// Kept for backwards-compatible parsing; orchestration is always active at runtime.
 	enabled: z.boolean().default(true),
 	orchestratorModeSlug: z.string().default("orchestrator"),
 	maxParallelWorkers: z.number().int().min(1).max(32).default(4),

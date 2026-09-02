@@ -27,7 +27,7 @@
 	},
 	"sections": {
 		"providers": "Провайдеры",
-		"modes": "Режимы",
+		"modes": "Роли",
 		"mcp": "Серверы MCP",
 		"worktrees": "Worktrees",
 		"autoApprove": "Автоодобрение",
@@ -42,6 +42,35 @@
 		"language": "Язык",
 		"about": "О AI Code Orchestrator",
 		"skills": "Skills"
+	},
+	"roles": {
+		"title": "Роли проекта",
+		"alwaysOn": "Оркестрация всегда включена",
+		"intro": "Новая задача начинается с роли Оркестратора. Выберите профиль выше, затем назначьте моделям ролей конкретные модели или оставьте наследование основной модели профиля.",
+		"modelAssignments": "Модели ролей",
+		"modelHint": "Модели берутся из активного профиля. Основная: {{model}}",
+		"notConfigured": "не настроена",
+		"inheritPrimary": "Наследовать основную модель",
+		"save": "Сохранить настройки ролей",
+		"integrationApproval": "Для интеграции требуется явное подтверждение.",
+		"fields": {
+			"maxParallelWorkers": "Максимум параллельных исполнителей",
+			"maxDepth": "Максимальная глубина",
+			"maxReworkAttempts": "Максимум доработок",
+			"timeoutMs": "Тайм-аут (мс)",
+			"maxRunTokens": "Максимум токенов запуска",
+			"maxRunCost": "Максимальная стоимость запуска",
+			"maxChildTokens": "Максимум токенов дочерней задачи",
+			"maxChildCost": "Максимальная стоимость дочерней задачи",
+			"contextPolicy": "Контекст",
+			"conflictPolicy": "Обработка конфликтов",
+			"reviewPolicy": "Проверка",
+			"requirePlanApproval": "Требовать подтверждение плана",
+			"requireIntegrationApproval": "Требовать подтверждение интеграции",
+			"allowWorkerCommands": "Разрешить команды исполнителям",
+			"allowWorkerMcp": "Разрешить MCP исполнителям",
+			"persistTranscripts": "Сохранять расшифровки"
+		}
 	},
 	"about": {
 		"bugReport": {

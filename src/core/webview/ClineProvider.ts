@@ -1060,8 +1060,8 @@ export class ClineProvider
 		const settings =
 			(await this.contextProxy.getValue("orchestrationSettings")) ??
 			(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS
-		if (!settings?.enabled || (await this.getMode()) !== settings.orchestratorModeSlug)
-			throw new Error("Orchestration is disabled")
+		if ((await this.getMode()) !== (settings?.orchestratorModeSlug ?? "orchestrator"))
+			throw new Error("Orchestration is only available in orchestrator mode")
 		const state = await this.getState()
 		const context = redactPlannerContext(`${goal}\nWorkspace: ${this.cwd}`)
 		const raw = await task.api.completePrompt(
@@ -1094,8 +1094,8 @@ export class ClineProvider
 		const settings =
 			(await this.contextProxy.getValue("orchestrationSettings")) ??
 			(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS
-		if (!settings?.enabled || (await this.getMode()) !== settings.orchestratorModeSlug) {
-			throw new Error("Orchestration is disabled unless enabled in orchestrator mode")
+		if ((await this.getMode()) !== (settings?.orchestratorModeSlug ?? "orchestrator")) {
+			throw new Error("Orchestration is only available in orchestrator mode")
 		}
 		if (!this.orchestrationService) {
 			const workerRegistry = new GitWorkerWorkspaceRegistry(this.cwd)

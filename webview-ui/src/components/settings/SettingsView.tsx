@@ -29,7 +29,6 @@ import {
 	ArrowLeft,
 	GitCommitVertical,
 	GraduationCap,
-	GitPullRequest,
 } from "lucide-react"
 
 import {
@@ -98,7 +97,6 @@ export interface SettingsViewRef {
 
 export const sectionNames = [
 	"providers",
-	"orchestration",
 	"autoApprove",
 	"slashCommands",
 	"skills",
@@ -498,7 +496,6 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	const sections: { id: SectionName; icon: LucideIcon }[] = useMemo(
 		() => [
 			{ id: "providers", icon: Plug },
-			{ id: "orchestration", icon: GitPullRequest },
 			{ id: "modes", icon: Users2 },
 			{ id: "skills", icon: GraduationCap },
 			{ id: "slashCommands", icon: SquareSlash },
@@ -724,8 +721,6 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					data-testid="settings-content">
 					<SearchIndexProvider value={searchContextValue}>
 						{/* Providers Section */}
-						{renderTab === "orchestration" && <OrchestrationSettings />}
-
 						{renderTab === "providers" && (
 							<div>
 								<SectionHeader>{t("settings:sections.providers")}</SectionHeader>
@@ -858,8 +853,13 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 							/>
 						)}
 
-						{/* Modes Section */}
-						{renderTab === "modes" && <ModesView />}
+						{/* Roles Section */}
+						{renderTab === "modes" && (
+							<div>
+								<OrchestrationSettings />
+								<ModesView />
+							</div>
+						)}
 
 						{/* MCP Section */}
 						{renderTab === "mcp" && <McpView />}
