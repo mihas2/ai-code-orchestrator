@@ -1,8 +1,8 @@
 {
-	"name": "roo-cline",
+	"name": "ai-orchestrator",
 	"displayName": "%extension.displayName%",
 	"description": "%extension.description%",
-	"publisher": "RooVeterinaryInc",
+	"publisher": "AIOrchestrator",
 	"version": "3.53.0",
 	"icon": "assets/icons/icon.png",
 	"galleryBanner": {
@@ -14,7 +14,7 @@
 		"node": "20.19.2"
 	},
 	"author": {
-		"name": "Roo Code"
+		"name": "AI Orchestrator"
 	},
 	"repository": {
 		"type": "git",
