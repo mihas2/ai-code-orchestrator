@@ -1,5 +1,5 @@
 {
-	"name": "ai-orchestrator",
+	"name": "ai-code-orchestrator",
 	"displayName": "%extension.displayName%",
 	"description": "%extension.description%",
 	"publisher": "AIOrchestrator",
