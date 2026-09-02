@@ -498,9 +498,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	const sections: { id: SectionName; icon: LucideIcon }[] = useMemo(
 		() => [
 			{ id: "providers", icon: Plug },
-			...(extensionState.orchestrationSettings
-				? [{ id: "orchestration" as SectionName, icon: GitPullRequest }]
-				: []),
+			{ id: "orchestration", icon: GitPullRequest },
 			{ id: "modes", icon: Users2 },
 			{ id: "skills", icon: GraduationCap },
 			{ id: "slashCommands", icon: SquareSlash },
@@ -517,7 +515,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			{ id: "language", icon: Globe },
 			{ id: "about", icon: Info },
 		],
-		[extensionState.orchestrationSettings],
+		[],
 	)
 
 	// Update target section logic to set active tab

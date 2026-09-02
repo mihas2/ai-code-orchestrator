@@ -24,11 +24,11 @@ export function OrchestrationSettings() {
 			vscode.postMessage({ type: "updateOrchestrationSettings", orchestrationSettings: parsed.data })
 	}
 	const roleNames = [
-		"planner",
-		"worker",
+		"orchestrator",
+		"architect",
+		"code",
+		"debug",
 		"reviewer",
-		"integrator",
-		"synthesizer",
 		...(customModes ?? []).map((mode: { slug: string }) => mode.slug),
 	]
 	const roleModels = apiConfiguration?.profileRoleModelSettings?.roleModels ?? {}
@@ -125,7 +125,10 @@ export function OrchestrationSettings() {
 					))}
 				</div>
 				<div className="space-y-2">
-					<strong>Role models</strong>
+					<strong>Role models in the active profile</strong>
+					<p className="text-sm text-vscode-descriptionForeground">
+						Each role uses the active profile and inherits its primary model until you select a model.
+					</p>
 					{roleNames.map((role) => (
 						<label key={role} className="flex items-center gap-2">
 							<span className="w-28">{role}</span>

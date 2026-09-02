@@ -20,7 +20,7 @@ export const orchestrationReviewPolicySchema = z.enum(["off", "completion", "bat
 
 export const orchestrationSettingsSchema = z.object({
 	schemaVersion: z.literal(orchestrationSchemaVersion).default(orchestrationSchemaVersion),
-	enabled: z.boolean().default(false),
+	enabled: z.boolean().default(true),
 	orchestratorModeSlug: z.string().default("orchestrator"),
 	maxParallelWorkers: z.number().int().min(1).max(32).default(4),
 	maxDepth: z.number().int().min(1).max(8).default(3),
@@ -36,7 +36,7 @@ export const orchestrationSettingsSchema = z.object({
 	maxReworkAttempts: z.number().int().min(0).default(2),
 	contextPolicy: orchestrationContextPolicySchema.default("balanced"),
 	conflictPolicy: orchestrationConflictPolicySchema.default("stop"),
-	reviewPolicy: orchestrationReviewPolicySchema.default("off"),
+	reviewPolicy: orchestrationReviewPolicySchema.default("completion"),
 	requirePlanApproval: z.boolean().default(false),
 	requireIntegrationApproval: z.boolean().default(true),
 	allowWorkerCommands: z.boolean().default(false),

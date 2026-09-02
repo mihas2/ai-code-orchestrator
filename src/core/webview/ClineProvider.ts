@@ -1057,7 +1057,9 @@ export class ClineProvider
 	): Promise<import("../orchestration/types").OrchestrationRun> {
 		const task = this.getCurrentTask()
 		if (!task?.api.completePrompt) throw new Error("Selected provider does not support planner completion")
-		const settings = await this.contextProxy.getValue("orchestrationSettings")
+		const settings =
+			(await this.contextProxy.getValue("orchestrationSettings")) ??
+			(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS
 		if (!settings?.enabled || (await this.getMode()) !== settings.orchestratorModeSlug)
 			throw new Error("Orchestration is disabled")
 		const state = await this.getState()
@@ -1089,7 +1091,9 @@ export class ClineProvider
 	}
 
 	public async getOrchestrationService(): Promise<OrchestrationService> {
-		const settings = await this.contextProxy.getValue("orchestrationSettings")
+		const settings =
+			(await this.contextProxy.getValue("orchestrationSettings")) ??
+			(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS
 		if (!settings?.enabled || (await this.getMode()) !== settings.orchestratorModeSlug) {
 			throw new Error("Orchestration is disabled unless enabled in orchestrator mode")
 		}
@@ -2273,7 +2277,9 @@ export class ClineProvider
 				codebaseIndexOpenRouterSpecificProvider: codebaseIndexConfig?.codebaseIndexOpenRouterSpecificProvider,
 			},
 			profileThresholds: profileThresholds ?? {},
-			orchestrationSettings: (await this.contextProxy.getValue("orchestrationSettings")) ?? undefined,
+			orchestrationSettings:
+				(await this.contextProxy.getValue("orchestrationSettings")) ??
+				(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS,
 			hasOpenedModeSelector: this.getGlobalState("hasOpenedModeSelector") ?? false,
 			lockApiConfigAcrossModes: lockApiConfigAcrossModes ?? false,
 			alwaysAllowFollowupQuestions: alwaysAllowFollowupQuestions ?? false,
