@@ -2,7 +2,7 @@
 
 import * as vscode from "vscode"
 
-import type { ProviderSettings } from "@roo-code/types"
+import type { ProviderSettings } from "@ai-code-orchestrator/types"
 import { Task } from "../Task"
 import { ClineProvider } from "../../webview/ClineProvider"
 
@@ -69,7 +69,7 @@ vi.mock("../../environment/getEnvironmentDetails", () => ({
 	getEnvironmentDetails: vi.fn().mockResolvedValue(""),
 }))
 
-vi.mock("../../ignore/RooIgnoreController")
+vi.mock("../../ignore/AicoIgnoreController")
 
 vi.mock("p-wait-for", () => ({
 	default: vi.fn().mockImplementation(async () => Promise.resolve()),

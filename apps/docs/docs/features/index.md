@@ -1,7 +1,7 @@
 ---
-description: "Explore all Roo Code features including AI-powered coding assistance, multi-file editing, codebase indexing, MCP integration, custom modes, and experimental capabilities."
+description: "Explore all AI Code Orchestrator features including AI-powered coding assistance, multi-file editing, codebase indexing, MCP integration, custom modes, and experimental capabilities."
 keywords:
-    - Roo Code features
+    - AI Code Orchestrator features
     - AI coding assistant
     - code editing
     - developer tools
@@ -12,9 +12,9 @@ keywords:
 sidebar_label: "Features Overview"
 ---
 
-# Roo Code Features
+# AI Code Orchestrator Features
 
-Discover the powerful features that make Roo Code your ultimate AI-powered coding assistant. From intelligent code editing to advanced integrations, Roo Code enhances your development workflow.
+Discover the powerful features that make AI Code Orchestrator your ultimate AI-powered coding assistant. From intelligent code editing to advanced integrations, AI Code Orchestrator enhances your development workflow.
 
 ## Core Features
 
@@ -43,8 +43,8 @@ Discover the powerful features that make Roo Code your ultimate AI-powered codin
 - [**API Configuration Profiles**](/features/api-configuration-profiles) - Manage multiple API configurations
 - [**Custom Instructions**](/features/custom-instructions) - Personalize AI behavior
 - [**Skills**](/features/skills) - Create reusable task-specific instruction packages
-- [**Settings Management**](/features/settings-management) - Fine-tune Roo Code to your preferences
-- [**.rooignore**](/features/rooignore) - Control file access and visibility
+- [**Settings Management**](/features/settings-management) - Fine-tune AI Code Orchestrator to your preferences
+- [**.aicoignore**](/features/aicoignore) - Control file access and visibility
 
 ### Integration Features
 
@@ -62,14 +62,14 @@ Discover the powerful features that make Roo Code your ultimate AI-powered codin
 
 Push the boundaries with cutting-edge capabilities:
 
-- [**Custom Tools**](/features/experimental/custom-tools) - Define TypeScript/JavaScript tools that Roo can call
+- [**Custom Tools**](/features/experimental/custom-tools) - Define TypeScript/JavaScript tools that AI Code Orchestrator can call
 - [**Concurrent File Edits**](/features/experimental/concurrent-file-edits) - Edit multiple files in a single operation
 - [**More Experimental Features**](/features/experimental/experimental-features) - Explore features under development
 
 ## Additional Resources
 
 - [**More Features**](/features/more-features) - Discover additional capabilities
-- [**Tips & Tricks**](/tips-and-tricks) - Get the most out of Roo Code
+- [**Tips & Tricks**](/tips-and-tricks) - Get the most out of AI Code Orchestrator
 - [**FAQ**](/faq) - Common questions answered
 
 ---

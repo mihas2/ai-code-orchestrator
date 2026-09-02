@@ -6,7 +6,7 @@ import * as path from "path"
 import * as vscode from "vscode"
 import { Anthropic } from "@anthropic-ai/sdk"
 
-import type { GlobalState, ProviderSettings, ModelInfo } from "@roo-code/types"
+import type { GlobalState, ProviderSettings, ModelInfo } from "@ai-code-orchestrator/types"
 
 import { Task } from "../Task"
 import { ClineProvider } from "../../webview/ClineProvider"
@@ -153,7 +153,7 @@ vi.mock("../../environment/getEnvironmentDetails", () => ({
 	getEnvironmentDetails: vi.fn().mockResolvedValue(""),
 }))
 
-vi.mock("../../ignore/RooIgnoreController")
+vi.mock("../../ignore/AicoIgnoreController")
 
 vi.mock("../../condense", async (importOriginal) => {
 	const actual = (await importOriginal()) as any

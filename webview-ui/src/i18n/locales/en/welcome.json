@@ -9,13 +9,13 @@
 		}
 	},
 	"landing": {
-		"greeting": "Welcome to Roo Code!",
-		"introduction": "With a range of built-in and extensible Modes, Roo Code lets you plan, architect, code, debug and boost your productivity like never before.",
+		"greeting": "Welcome to AI Code Orchestrator!",
+		"introduction": "With a range of built-in and extensible Modes, AI Code Orchestrator lets you plan, architect, code, debug and boost your productivity like never before.",
 		"getStarted": "Get Started"
 	},
 	"providerSignup": {
 		"heading": "Choose your provider",
-		"chooseProvider": "Roo needs an LLM provider to work. Choose one to get started, you can add more later.",
+		"chooseProvider": "AI Code Orchestrator needs an LLM provider to work. Choose one to get started, you can add more later.",
 		"learnMore": "Learn more",
 		"useAnotherProvider": "3rd-party Provider",
 		"useAnotherProviderDescription": "Enter an API key and get going.",

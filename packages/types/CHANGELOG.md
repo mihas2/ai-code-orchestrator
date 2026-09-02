@@ -1,4 +1,4 @@
-# @roo-code/types
+# @AI Code Orchestrator/types
 
 ## 0.0.1
 

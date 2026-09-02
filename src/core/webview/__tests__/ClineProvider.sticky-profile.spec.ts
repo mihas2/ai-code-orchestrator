@@ -3,7 +3,7 @@
 import * as vscode from "vscode"
 import { ClineProvider } from "../ClineProvider"
 import { ContextProxy } from "../../config/ContextProxy"
-import type { HistoryItem } from "@roo-code/types"
+import type { HistoryItem } from "@ai-code-orchestrator/types"
 
 vi.mock("vscode", () => ({
 	ExtensionContext: vi.fn(),
@@ -173,13 +173,13 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 	let mockOutputChannel: vscode.OutputChannel
 	let mockWebviewView: vscode.WebviewView
 	let mockPostMessage: any
-	let originalRooCliRuntimeEnv: string | undefined
+	let originalAicoCliRuntimeEnv: string | undefined
 
 	beforeEach(async () => {
 		vi.clearAllMocks()
 		taskIdCounter = 0
-		originalRooCliRuntimeEnv = process.env.ROO_CLI_RUNTIME
-		delete process.env.ROO_CLI_RUNTIME
+		originalAicoCliRuntimeEnv = process.env.AICO_CLI_RUNTIME
+		delete process.env.AICO_CLI_RUNTIME
 
 		const globalState: Record<string, string | undefined> = {
 			mode: "code",
@@ -265,10 +265,10 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 	})
 
 	afterEach(() => {
-		if (originalRooCliRuntimeEnv === undefined) {
-			delete process.env.ROO_CLI_RUNTIME
+		if (originalAicoCliRuntimeEnv === undefined) {
+			delete process.env.AICO_CLI_RUNTIME
 		} else {
-			process.env.ROO_CLI_RUNTIME = originalRooCliRuntimeEnv
+			process.env.AICO_CLI_RUNTIME = originalAicoCliRuntimeEnv
 		}
 	})
 
@@ -476,7 +476,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 
 		it("should skip restoring task apiConfigName from history in CLI runtime", async () => {
 			await provider.resolveWebviewView(mockWebviewView)
-			process.env.ROO_CLI_RUNTIME = "1"
+			process.env.AICO_CLI_RUNTIME = "1"
 
 			const historyItem: HistoryItem = {
 				id: "test-task-id",
@@ -510,7 +510,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 
 		it("should skip restoring mode-based provider config from history in CLI runtime", async () => {
 			await provider.resolveWebviewView(mockWebviewView)
-			process.env.ROO_CLI_RUNTIME = "1"
+			process.env.AICO_CLI_RUNTIME = "1"
 
 			const historyItem: HistoryItem = {
 				id: "test-task-id",

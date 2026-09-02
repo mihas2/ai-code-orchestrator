@@ -2,7 +2,7 @@ import React, { useEffect, useImperativeHandle, useRef } from "react"
 import { act, fireEvent, render, waitFor } from "@/utils/test-utils"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import type { ClineMessage } from "@roo-code/types"
+import type { ClineMessage } from "@ai-code-orchestrator/types"
 
 import { ExtensionStateContextProvider } from "@src/context/ExtensionStateContext"
 
@@ -74,8 +74,8 @@ function nullDefaultModule() {
 
 vi.mock("../common/VersionIndicator", nullDefaultModule)
 vi.mock("../history/HistoryPreview", nullDefaultModule)
-vi.mock("@src/components/welcome/RooHero", nullDefaultModule)
-vi.mock("@src/components/welcome/RooTips", nullDefaultModule)
+vi.mock("@src/components/welcome/AicoHero", nullDefaultModule)
+vi.mock("@src/components/welcome/AicoTips", nullDefaultModule)
 vi.mock("../Announcement", nullDefaultModule)
 vi.mock("./TaskHeader", () => ({ default: () => <div data-testid="task-header" /> }))
 vi.mock("./ProfileViolationWarning", nullDefaultModule)

@@ -11,7 +11,7 @@ import {
 	IpcMessageType,
 	TaskCommandName,
 	ipcMessageSchema,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 
 export class IpcClient extends EventEmitter<IpcClientEvents> {
 	private readonly _socketPath: string
@@ -24,7 +24,7 @@ export class IpcClient extends EventEmitter<IpcClientEvents> {
 		super()
 
 		this._socketPath = socketPath
-		this._id = `roo-code-ipc-${crypto.randomBytes(6).toString("hex")}`
+		this._id = `ai-code-orchestrator-ipc-${crypto.randomBytes(6).toString("hex")}`
 		this._log = log
 
 		ipc.config.silent = true

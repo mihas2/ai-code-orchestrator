@@ -1,18 +1,18 @@
 ---
-description: Execute terminal commands in Roo Code for system operations, dependency installation, builds, and development workflows.
+description: Execute terminal commands in AI Code Orchestrator for system operations, dependency installation, builds, and development workflows.
 keywords:
     - execute_command
     - CLI commands
     - terminal
     - system operations
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - command execution
     - shell integration
 ---
 
 # execute_command
 
-The `execute_command` tool runs CLI commands on the user's system. It allows Roo to perform system operations, install dependencies, build projects, start servers, and execute other terminal-based tasks needed to accomplish user objectives.
+The `execute_command` tool runs CLI commands on the user's system. It allows AI Code Orchestrator to perform system operations, install dependencies, build projects, start servers, and execute other terminal-based tasks needed to accomplish user objectives.
 
 ---
 
@@ -57,14 +57,14 @@ This tool executes terminal commands directly on the user's system, enabling a w
 - Shows terminals during execution for transparency
 - Validates commands for security using shell-quote parsing
 - Blocks potentially dangerous subshell execution patterns
-- Integrates with RooIgnore system for file access control
+- Integrates with AicoIgnore system for file access control
 - Handles terminal escape sequences for clean output
 
 ---
 
 ## Limitations
 
-- Command access may be restricted by RooIgnore rules and security validations
+- Command access may be restricted by AicoIgnore rules and security validations
 - Commands with elevated permission requirements may need user configuration
 - Behavior may vary across operating systems for certain commands
 - Very long-running commands may require specific handling
@@ -81,7 +81,7 @@ When the `execute_command` tool is invoked, it follows this process:
 
     - Parses the command using shell-quote to identify components
     - Validates against security restrictions (subshell usage, restricted files)
-    - Checks against RooIgnore rules for file access permissions
+    - Checks against AicoIgnore rules for file access permissions
     - Ensures the command meets system security requirements
 
 2. **Terminal Management**:
@@ -121,7 +121,7 @@ The tool uses a sophisticated terminal management system:
 
     - Commands are parsed using shell-quote for component analysis
     - Dangerous patterns like `$(...)` and backticks are blocked
-    - Commands are checked against RooIgnore rules for file access control
+    - Commands are checked against AicoIgnore rules for file access control
     - A prefix-based allowlist system validates command patterns
 
 3. **Performance Optimizations**
@@ -141,12 +141,12 @@ The tool uses a sophisticated terminal management system:
 
 ## Examples When Used
 
-- When setting up a new project, Roo runs initialization commands like `npm init -y` followed by installing dependencies.
-- When building a web application, Roo executes build commands like `npm run build` to compile assets.
-- When deploying code, Roo runs git commands to commit and push changes to a repository.
-- When troubleshooting, Roo executes diagnostic commands to gather system information.
-- When starting a development server, Roo launches the appropriate server command (e.g., `npm start`).
-- When running tests, Roo executes the test runner command for the project's testing framework.
+- When setting up a new project, AI Code Orchestrator runs initialization commands like `npm init -y` followed by installing dependencies.
+- When building a web application, AI Code Orchestrator executes build commands like `npm run build` to compile assets.
+- When deploying code, AI Code Orchestrator runs git commands to commit and push changes to a repository.
+- When troubleshooting, AI Code Orchestrator executes diagnostic commands to gather system information.
+- When starting a development server, AI Code Orchestrator launches the appropriate server command (e.g., `npm start`).
+- When running tests, AI Code Orchestrator executes the test runner command for the project's testing framework.
 
 ---
 

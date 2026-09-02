@@ -1,5 +1,5 @@
 ---
-description: Learn how to use custom instructions to tailor Roo Code's behavior to your preferences, coding style, and project requirements.
+description: Learn how to use custom instructions to tailor AI Code Orchestrator's behavior to your preferences, coding style, and project requirements.
 keywords:
     - custom instructions
     - personalization
@@ -10,49 +10,49 @@ keywords:
 
 # Custom Instructions
 
-Custom Instructions allow you to personalize how Roo behaves, providing specific guidance that shapes responses, coding style, and decision-making processes.
+Custom Instructions allow you to personalize how AI Code Orchestrator behaves, providing specific guidance that shapes responses, coding style, and decision-making processes.
 
 :::info Instruction File Locations
 You can provide custom instructions using global rules (applied across all projects), workspace rules (project-specific), or through the Prompts tab interface.
 
 **Global Rules Directory:** Apply to all projects automatically.
 
-- **Linux/macOS:** `~/.roo/rules/` and `~/.roo/rules-{modeSlug}/`
-- **Windows:** `%USERPROFILE%\.roo\rules\` and `%USERPROFILE%\.roo\rules-{modeSlug}\`
+- **Linux/macOS:** `~/.ai-code-orchestrator/rules/` and `~/.ai-code-orchestrator/rules-{modeSlug}/`
+- **Windows:** `%USERPROFILE%\.ai-code-orchestrator\rules\` and `%USERPROFILE%\.ai-code-orchestrator\rules-{modeSlug}\`
 
 **Workspace Rules:** Apply only to the current project and take precedence over global rules when they conflict.
 
-- **Preferred Method: Directory (`.roo/rules/`)**
+- **Preferred Method: Directory (`.ai-code-orchestrator/rules/`)**
     ```
     .
-    ├── .roo/
+    ├── .ai-code-orchestrator/
     │   └── rules/          # Workspace-wide rules
     │       ├── 01-general.md
     │       └── 02-coding-style.txt
     └── ... (other project files)
     ```
-- **Fallback Method: Single File (`.roorules`)**
+- **Fallback Method: Single File (`.aicorules`)**
     ```
     .
-    ├── .roorules           # Workspace-wide rules (single file)
+    ├── .aicorules           # Workspace-wide rules (single file)
     └── ... (other project files)
     ```
 
 **Mode-Specific Instructions:** Apply only to a specific mode (e.g., `code`).
 
-- **Preferred Method: Directory (`.roo/rules-{modeSlug}/`)**
+- **Preferred Method: Directory (`.ai-code-orchestrator/rules-{modeSlug}/`)**
     ```
     .
-    ├── .roo/
+    ├── .ai-code-orchestrator/
     │   └── rules-code/     # Rules for "code" mode
     │       ├── 01-js-style.md
     │       └── 02-ts-style.md
     └── ... (other project files)
     ```
-- **Fallback Method: Single File (`.roorules-{modeSlug}`)**
+- **Fallback Method: Single File (`.aicorules-{modeSlug}`)**
     ```
     .
-    ├── .roorules-code      # Rules for "code" mode (single file)
+    ├── .aicorules-code      # Rules for "code" mode (single file)
     └── ... (other project files)
     ```
 
@@ -63,7 +63,7 @@ Rules are loaded in order: Global rules first, then workspace rules. If there's 
 
 ## What Are Custom Instructions?
 
-Custom Instructions define specific behaviors, preferences, and constraints beyond Roo's basic role definition. Examples include coding style, documentation standards, testing requirements, and workflow guidelines.
+Custom Instructions define specific behaviors, preferences, and constraints beyond AI Code Orchestrator's basic role definition. Examples include coding style, documentation standards, testing requirements, and workflow guidelines.
 
 ---
 
@@ -75,8 +75,8 @@ These instructions apply across all workspaces and maintain your preferences reg
 
 **How to set them:**
 
-<img src="/img/custom-instructions/custom-instructions.png" alt="Roo Code Prompts tab showing global custom instructions interface" width="600" />
-1.  **Open Prompts Tab:** Click the <Codicon name="notebook" /> icon in the Roo Code top menu bar
+<img src="/img/custom-instructions/custom-instructions.png" alt="AI Code Orchestrator Prompts tab showing global custom instructions interface" width="600" />
+1.  **Open Prompts Tab:** Click the <Codicon name="notebook" /> icon in the AI Code Orchestrator top menu bar
 2.  **Find Section:** Find the "Custom Instructions for All Modes" section
 3.  **Enter Instructions:** Enter your instructions in the text area
 4.  **Save Changes:** Click "Done" to save your changes
@@ -107,7 +107,7 @@ The global rules directory location is fixed and cannot be customized:
 **Linux/macOS:**
 
 ```
-~/.roo/                           # Your global Roo configuration
+~/.ai-code-orchestrator/                           # Your global AI Code Orchestrator configuration
 ├── rules/                        # General rules applied to all projects
 │   ├── coding-standards.md
 │   ├── formatting-rules.md
@@ -124,7 +124,7 @@ The global rules directory location is fixed and cannot be customized:
 **Windows:**
 
 ```
-%USERPROFILE%\.roo\               # Your global Roo configuration
+%USERPROFILE%\.ai-code-orchestrator\               # Your global AI Code Orchestrator configuration
 ├── rules\                        # General rules applied to all projects
 │   ├── coding-standards.md
 │   ├── formatting-rules.md
@@ -142,13 +142,13 @@ The global rules directory location is fixed and cannot be customized:
 
     ```bash
     # Linux/macOS
-    mkdir -p ~/.roo/rules
+    mkdir -p ~/.ai-code-orchestrator/rules
 
     # Windows
-    mkdir %USERPROFILE%\.roo\rules
+    mkdir %USERPROFILE%\.ai-code-orchestrator\rules
     ```
 
-2. **Add General Rules** (`~/.roo/rules/coding-standards.md`):
+2. **Add General Rules** (`~/.ai-code-orchestrator/rules/coding-standards.md`):
 
     ```markdown
     # Global Coding Standards
@@ -159,7 +159,7 @@ The global rules directory location is fixed and cannot be customized:
     4. Add JSDoc comments for public APIs
     ```
 
-3. **Add Mode-Specific Rules** (`~/.roo/rules-code/typescript-rules.md`):
+3. **Add Mode-Specific Rules** (`~/.ai-code-orchestrator/rules-code/typescript-rules.md`):
 
     ```markdown
     # TypeScript Code Mode Rules
@@ -184,27 +184,27 @@ The global rules directory location is fixed and cannot be customized:
 
 Rules are loaded in this order:
 
-1. **Global Rules** (from `~/.roo/`)
-2. **Project Rules** (from `project/.roo/`) - take precedence over global rules when they conflict
-3. [Generic only] **Legacy Files** (workspace root `.roorules`, `.clinerules`) - used only if no generic rules directory content was loaded
+1. **Global Rules** (from `~/.ai-code-orchestrator/`)
+2. **Project Rules** (from `project/.ai-code-orchestrator/`) - take precedence over global rules when they conflict
+3. [Generic only] **Legacy Files** (workspace root `.aicorules`, `.clinerules`) - used only if no generic rules directory content was loaded
 
 Within each level, mode-specific rules are loaded before general rules.
 
 ### Workspace-Level Instructions
 
-These instructions only apply within your current workspace, allowing you to customize Roo Code's behavior for specific projects.
+These instructions only apply within your current workspace, allowing you to customize AI Code Orchestrator's behavior for specific projects.
 
 #### Workspace-Wide Instructions via Files/Directories
 
 Workspace-wide instructions apply to all modes within the current project and can be defined using files:
 
-- **Preferred Method: Directory-Based (`.roo/rules/`)**
-    - Create a directory named `.roo/rules/` in your workspace root.
-    - Place instruction files (e.g., `.md`, `.txt`) inside. Roo Code reads files recursively (including subdirectories), appending their content to the system prompt in **alphabetical order** based on filename.
+- **Preferred Method: Directory-Based (`.ai-code-orchestrator/rules/`)**
+    - Create a directory named `.ai-code-orchestrator/rules/` in your workspace root.
+    - Place instruction files (e.g., `.md`, `.txt`) inside. AI Code Orchestrator reads files recursively (including subdirectories), appending their content to the system prompt in **alphabetical order** based on filename.
     - When this directory exists and contains files, its contents are loaded along with any global rules directories.
-    - Note: If the `.roo/rules/` directory exists but is empty, Roo Code will fall back to using the `.roorules` file instead.
-- **Fallback Method: File-Based (`.roorules`)**
-    - If `.roo/rules/` doesn't exist or is empty, Roo Code looks for a single `.roorules` file in the workspace root.
+    - Note: If the `.ai-code-orchestrator/rules/` directory exists but is empty, AI Code Orchestrator will fall back to using the `.aicorules` file instead.
+- **Fallback Method: File-Based (`.aicorules`)**
+    - If `.ai-code-orchestrator/rules/` doesn't exist or is empty, AI Code Orchestrator looks for a single `.aicorules` file in the workspace root.
     - If found, its content is loaded.
 
 #### Mode-Specific Instructions
@@ -213,8 +213,8 @@ Mode-specific instructions can be set in two independent ways that can be used s
 
 1.  **Using the Prompts Tab:**
 
-    <img src="/img/custom-instructions/custom-instructions-2.png" alt="Roo Code Prompts tab showing mode-specific custom instructions interface" width="600" />
-    * **Open Tab:** Click the <Codicon name="notebook" /> icon in the Roo Code top menu bar
+    <img src="/img/custom-instructions/custom-instructions-2.png" alt="AI Code Orchestrator Prompts tab showing mode-specific custom instructions interface" width="600" />
+    * **Open Tab:** Click the <Codicon name="notebook" /> icon in the AI Code Orchestrator top menu bar
     * **Select Mode:** Under the Modes heading, click the button for the mode you want to customize
     * **Enter Instructions:** Enter your instructions in the text area under "Mode-specific Custom Instructions (optional)"
     * **Save Changes:** Click "Done" to save your changes
@@ -224,12 +224,12 @@ Mode-specific instructions can be set in two independent ways that can be used s
         :::
 
 2.  **Using Rule Files/Directories:** Provide mode-specific instructions via files:
-    - **Preferred Method: Directory-Based (`.roo/rules-{modeSlug}/`)**
-        - Create a directory named `.roo/rules-{modeSlug}/` (e.g., `.roo/rules-docs-writer/`) in your workspace root.
+    - **Preferred Method: Directory-Based (`.ai-code-orchestrator/rules-{modeSlug}/`)**
+        - Create a directory named `.ai-code-orchestrator/rules-{modeSlug}/` (e.g., `.ai-code-orchestrator/rules-docs-writer/`) in your workspace root.
         - Place instruction files inside (recursive loading, including subdirectories). Files are read and appended to the system prompt in **alphabetical order** by filename.
         - This method takes precedence over the fallback file method for the specific mode if the directory exists and contains files.
-    - **Fallback Method: File-Based (`.roorules-{modeSlug}`)**
-        - If `.roo/rules-{modeSlug}/` doesn't exist or is empty, Roo Code looks for a single `.roorules-{modeSlug}` file (e.g., `.roorules-code`) in the workspace root.
+    - **Fallback Method: File-Based (`.aicorules-{modeSlug}`)**
+        - If `.ai-code-orchestrator/rules-{modeSlug}/` doesn't exist or is empty, AI Code Orchestrator looks for a single `.aicorules-{modeSlug}` file (e.g., `.aicorules-code`) in the workspace root.
         - If found, its content is loaded for that mode.
 
 Instructions from the Prompts tab, global rules, workspace rules, and mode-specific rules are all combined. See the section below for the exact order.
@@ -258,33 +258,33 @@ Mode-specific Instructions:
 Rules:
 
 # Rules from rules-{modeSlug} directories:
-[Contents of ALL files from ~/.roo/rules-{modeSlug}/ AND .roo/rules-{modeSlug}/ if they exist]
+[Contents of ALL files from ~/.ai-code-orchestrator/rules-{modeSlug}/ AND .ai-code-orchestrator/rules-{modeSlug}/ if they exist]
 
-# Rules from .roorules-{modeSlug}:
-[Contents of .roorules-{modeSlug} file if no mode-specific directories have files]
+# Rules from .aicorules-{modeSlug}:
+[Contents of .aicorules-{modeSlug} file if no mode-specific directories have files]
 
-# Rules from .rooignore:
-[.rooignore-related instructions if applicable]
+# Rules from .aicoignore:
+[.aicoignore-related instructions if applicable]
 
 # Agent Rules Standard (AGENTS.md):
 [Contents of AGENTS.md or AGENT.md from workspace root if present and enabled]
 
 # Rules from rules directories:
-[Contents of ALL files from ~/.roo/rules/ AND .roo/rules/ if they exist]
+[Contents of ALL files from ~/.ai-code-orchestrator/rules/ AND .ai-code-orchestrator/rules/ if they exist]
 
-# Rules from .roorules:
-[Contents of .roorules file if no general rules directories have files]
+# Rules from .aicorules:
+[Contents of .aicorules file if no general rules directories have files]
 
 ====
 ```
 
-_Note: The system loads rules from ALL applicable directories (both global `~/.roo/` and workspace `.roo/`), not just the first one with files. Mode-specific rules appear before general rules. Directory-based rules take precedence over file-based fallbacks only when determining which method to use, but all applicable directories are read._
+_Note: The system loads rules from ALL applicable directories (both global `~/.ai-code-orchestrator/` and workspace `.ai-code-orchestrator/`), not just the first one with files. Mode-specific rules appear before general rules. Directory-based rules take precedence over file-based fallbacks only when determining which method to use, but all applicable directories are read._
 
 ---
 
 ## Rules about .rules files
 
-- **File Location:** The preferred method uses directories within `.roo/` (`.roo/rules/` and `.roo/rules-{modeSlug}/`). The fallback method uses single files (`.roorules` and `.roorules-{modeSlug}`) located directly in the workspace root.
+- **File Location:** The preferred method uses directories within `.ai-code-orchestrator/` (`.ai-code-orchestrator/rules/` and `.ai-code-orchestrator/rules-{modeSlug}/`). The fallback method uses single files (`.aicorules` and `.aicorules-{modeSlug}`) located directly in the workspace root.
 - **Recursive Reading:** Rules directories are read recursively, including all files in subdirectories
 - **File Filtering:** System automatically excludes cache and temporary files (`.DS_Store`, `*.bak`, `*.cache`, `*.log`, `*.tmp`, `Thumbs.db`, etc.)
 - **Empty Files:** Empty or missing rule files are silently skipped
@@ -299,14 +299,14 @@ _Note: The system loads rules from ALL applicable directories (both global `~/.r
 
 ## AGENTS.md Support
 
-Roo Code also supports loading rules from an `AGENTS.md` (or `AGENT.md` as fallback) file in your workspace root:
+AI Code Orchestrator also supports loading rules from an `AGENTS.md` (or `AGENT.md` as fallback) file in your workspace root:
 
 - **Purpose:** Provides agent-specific rules and guidelines for AI behavior
 - **Location:** Must be in the workspace root directory
-- **Loading:** Automatically loaded by default. To disable AGENTS.md loading, set `"roo-cline.useAgentRules": false` in your VSCode settings
-- **Setting:** `roo-cline.useAgentRules` (default: true)
+- **Loading:** Automatically loaded by default. To disable AGENTS.md loading, set `"ai-code-orchestrator.useAgentRules": false` in your VSCode settings
+- **Setting:** `ai-code-orchestrator.useAgentRules` (default: true)
 - **Preference:** If both exist, `AGENTS.md` is preferred over `AGENT.md`
-- **Priority:** Loaded after mode-specific rules and `.rooignore`, before generic rules from both `~/.roo/rules` and `.roo/rules`
+- **Priority:** Loaded after mode-specific rules and `.aicoignore`, before generic rules from both `~/.ai-code-orchestrator/rules` and `.ai-code-orchestrator/rules`
 - **Header:** Added to system prompt with header `# Agent Rules Standard (AGENTS.md):` or `(AGENT.md):` accordingly
 - **Empty Files:** Empty or whitespace-only `AGENTS.md` is ignored
 - **Symbolic Links:** Symbolic links to files or directories are resolved before reading
@@ -328,13 +328,13 @@ This feature allows teams to maintain standardized AI agent behavior rules that 
 :::tip Pro Tip: Team Standardization
 For team environments, consider these approaches:
 
-**Project Standards**: Use workspace `.roo/rules/` directories under version control to standardize Roo's behavior for specific projects. This ensures consistent code style and development workflows across team members.
+**Project Standards**: Use workspace `.ai-code-orchestrator/rules/` directories under version control to standardize AI Code Orchestrator's behavior for specific projects. This ensures consistent code style and development workflows across team members.
 
-**Organization Standards**: Use global rules (`~/.roo/rules/`) to establish organization-wide coding standards that apply to all projects. Team members can set up identical global rules for consistency across all work.
+**Organization Standards**: Use global rules (`~/.ai-code-orchestrator/rules/`) to establish organization-wide coding standards that apply to all projects. Team members can set up identical global rules for consistency across all work.
 
 **Hybrid Approach**: Combine global rules for organization standards with project-specific workspace rules for project-specific requirements. When rules conflict, workspace rules take precedence.
 
-The directory-based approach offers better organization than single `.roorules` files and supports both global and project-level customization.
+The directory-based approach offers better organization than single `.aicorules` files and supports both global and project-level customization.
 :::
 
 ---

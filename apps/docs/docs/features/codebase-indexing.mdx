@@ -1,5 +1,5 @@
 ---
-description: Learn how Codebase Indexing helps Roo Code understand large projects using AI embeddings and semantic search. Setup guide for OpenAI and Qdrant integration.
+description: Learn how Codebase Indexing helps AI Code Orchestrator understand large projects using AI embeddings and semantic search. Setup guide for OpenAI and Qdrant integration.
 keywords:
   - codebase indexing
   - semantic search
@@ -14,7 +14,7 @@ import Codicon from '@site/src/components/Codicon';
 
 # Codebase Indexing
 
-Codebase Indexing transforms how Roo Code understands your project by creating a semantic search index using AI embeddings. Instead of searching for exact text matches, it understands the *meaning* of your queries, helping Roo find relevant code even when you don't know specific function names or file locations.
+Codebase Indexing transforms how AI Code Orchestrator understands your project by creating a semantic search index using AI embeddings. Instead of searching for exact text matches, it understands the *meaning* of your queries, helping AI Code Orchestrator find relevant code even when you don't know specific function names or file locations.
 
 ---
 
@@ -25,7 +25,7 @@ When enabled, the indexing system:
 1. **Parses your code** using Tree-sitter to identify semantic blocks (functions, classes, methods)
 2. **Creates embeddings** of each code block using AI models
 3. **Stores vectors** in a Qdrant database for fast similarity search
-4. **Provides the [`codebase_search`](/advanced-usage/available-tools/codebase-search) tool** to Roo for intelligent code discovery
+4. **Provides the [`codebase_search`](/advanced-usage/available-tools/codebase-search) tool** to AI Code Orchestrator for intelligent code discovery
 
 This enables natural language queries like "user authentication logic" or "database connection handling" to find relevant code across your entire project.
 
@@ -86,12 +86,12 @@ volumes:
 #### Google Gemini Setup (Recommended) - **FREE**
 
 1. Get an API key from [Google AI Studio](https://aistudio.google.com/apikey) (currently free)
-2. In Roo Code settings:
+2. In AI Code Orchestrator settings:
    - Provider: **Google Gemini**
    - API Key: Your Google AI Studio key
 
 :::info Other Providers Available
-While this guide focuses on Google Gemini since it's currently free, Roo Code also supports OpenAI, Ollama, OpenAI-compatible, Mistral, Vercel AI Gateway, Bedrock, and OpenRouter providers. You can explore these options in the configuration dropdown.
+While this guide focuses on Google Gemini since it's currently free, AI Code Orchestrator also supports OpenAI, Ollama, OpenAI-compatible, Mistral, Vercel AI Gateway, Bedrock, and OpenRouter providers. You can explore these options in the configuration dropdown.
 :::
 
 ### Step 4: Save
@@ -107,7 +107,7 @@ The status indicator will show:
 
 ## Managing and Configuring the Indexer
 
-You can monitor the status and manage all configuration for the codebase indexer directly from the Roo Code chat interface.
+You can monitor the status and manage all configuration for the codebase indexer directly from the AI Code Orchestrator chat interface.
 
 ### The Status Icon
 
@@ -187,7 +187,7 @@ This guide explains each setting available in the configuration popover.
 ## Key Benefits
 
 - **Semantic Search**: Find code by meaning, not just keywords
-- **Enhanced AI Understanding**: Roo can better comprehend and work with your codebase
+- **Enhanced AI Understanding**: AI Code Orchestrator can better comprehend and work with your codebase
 - **Cross-Project Discovery**: Search across all files, not just what's open
 - **Pattern Recognition**: Locate similar implementations and code patterns
 
@@ -212,7 +212,7 @@ The system uses a sophisticated parsing strategy:
 
 The indexer respects your project's ignore patterns:
 - Files matching `.gitignore` patterns
-- Files matching `.rooignore` patterns
+- Files matching `.aicoignore` patterns
 - Binary files and images
 - Files larger than 1MB
 
@@ -272,7 +272,7 @@ Use natural language descriptions:
 - Fix:
   - Regenerate a fresh API key from your provider dashboard
   - Paste the key again, ensuring no leading/trailing spaces or hidden characters
-  - Roo will display a clear validation message if the key is invalid
+  - AI Code Orchestrator will display a clear validation message if the key is invalid
 
 ### Model Issues
 
@@ -290,13 +290,13 @@ Use natural language descriptions:
 **"Indexing Taking Too Long"**
 - Normal for large codebases (10k+ files)
 - Check `.gitignore` includes large directories
-- Consider adding patterns to `.rooignore`
+- Consider adding patterns to `.aicoignore`
 
 ---
 
 ## Using the Search Feature
 
-Once indexed, Roo can use the [`codebase_search`](/advanced-usage/available-tools/codebase-search) tool:
+Once indexed, AI Code Orchestrator can use the [`codebase_search`](/advanced-usage/available-tools/codebase-search) tool:
 
 **Example Natural Language Queries**:
 - "How is user authentication handled?"

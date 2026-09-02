@@ -2,7 +2,7 @@
 description: Learn how search_files performs powerful regex searches across your codebase, finding patterns with context using Ripgrep for high-performance results.
 keywords:
     - search_files
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - regex search
     - code patterns
     - Ripgrep
@@ -14,7 +14,7 @@ keywords:
 
 # search_files
 
-The `search_files` tool performs regex searches across multiple files within your project's workspace. For security, it cannot search outside the current workspace directory. It helps Roo locate specific code patterns, text, or other content throughout your codebase with contextual results.
+The `search_files` tool performs regex searches across multiple files within your project's workspace. For security, it cannot search outside the current workspace directory. It helps AI Code Orchestrator locate specific code patterns, text, or other content throughout your codebase with contextual results.
 
 ---
 
@@ -37,10 +37,10 @@ This tool searches across files in a specified directory using regular expressio
 
 ## When is it used?
 
-- When Roo needs to find where specific functions or variables are used
-- When Roo helps with refactoring and needs to understand usage patterns
-- When Roo needs to locate all instances of a particular code pattern
-- When Roo searches for text across multiple files with filtering capabilities
+- When AI Code Orchestrator needs to find where specific functions or variables are used
+- When AI Code Orchestrator helps with refactoring and needs to understand usage patterns
+- When AI Code Orchestrator needs to locate all instances of a particular code pattern
+- When AI Code Orchestrator searches for text across multiple files with filtering capabilities
 
 ---
 
@@ -128,10 +128,10 @@ When matches occur close to each other, they're merged into a single block rathe
 
 ## Examples When Used
 
-- When asked to refactor a function, Roo first searches for all places the function is used to ensure comprehensive changes.
-- When investigating bugs, Roo searches for similar patterns to identify related issues across the codebase.
-- When addressing technical debt, Roo locates all TODO comments across the project.
-- When analyzing dependencies, Roo finds all imports of a particular module.
+- When asked to refactor a function, AI Code Orchestrator first searches for all places the function is used to ensure comprehensive changes.
+- When investigating bugs, AI Code Orchestrator searches for similar patterns to identify related issues across the codebase.
+- When addressing technical debt, AI Code Orchestrator locates all TODO comments across the project.
+- When analyzing dependencies, AI Code Orchestrator finds all imports of a particular module.
 
 ---
 

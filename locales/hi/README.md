@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-cline"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/roocode"><img src="https://img.shields.io/badge/roocode-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=AicoVeterinaryInc.ai-code-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
+  <a href="https://x.com/AI Code Orchestrator"><img src="https://img.shields.io/badge/AI Code Orchestrator-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
 </p>
-# Roo Code
+# AI Code Orchestrator
 
 > तुम्हारी AI-संचालित डेवलपमेंट टीम, सीधे तुम्हारे एडिटर में
 
@@ -28,11 +28,11 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-    </details>
+      </details>
 
 ---
 
-## Roo Code आपके लिए क्या कर सकता है?
+## AI Code Orchestrator आपके लिए क्या कर सकता है?
 
 - प्राकृतिक भाषा विवरण से कोड उत्पन्न करें
 - मोड के साथ अनुकूलन: कोड, आर्किटेक्ट, पूछें, डीबग और कस्टम मोड
@@ -52,12 +52,12 @@
 - डीबग मोड: समस्याओं का पता लगाएं, लॉग जोड़ें, मूल कारणों को अलग करें
 - कस्टम मोड: अपनी टीम या वर्कफ़्लो के लिए विशेष मोड बनाएं
 
-और जानो: [मोड्स का इस्तेमाल](https://roocodeinc.github.io/Roo-Code/basic-usage/using-modes) • [कस्टम मोड्स](https://roocodeinc.github.io/Roo-Code/advanced-usage/custom-modes)
+और जानो: [मोड्स का इस्तेमाल](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [कस्टम मोड्स](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)
 
 ## संसाधन
 
-- **[दस्तावेज़ीकरण](https://roocodeinc.github.io/Roo-Code/):** Roo Code को स्थापित करने, कॉन्फ़िगर करने और उसमें महारत हासिल करने के लिए आधिकारिक गाइड।
-- **[गिटहब मुद्दे](https://github.com/RooCodeInc/Roo-Code/issues):** बग की रिपोर्ट करें और विकास को ट्रैक करें।
+- **[दस्तावेज़ीकरण](https://aiorchestrator.github.io/ai-code-orchestrator/):** AI Code Orchestrator को स्थापित करने, कॉन्फ़िगर करने और उसमें महारत हासिल करने के लिए आधिकारिक गाइड।
+- **[गिटहब मुद्दे](https://github.com/AIOrchestrator/ai-code-orchestrator/issues):** बग की रिपोर्ट करें और विकास को ट्रैक करें।
 
 ---
 
@@ -69,4 +69,4 @@
 
 ## लाइसेंस
 
-[Apache 2.0 © 2025 Roo Code, Inc.](../../LICENSE)
+[Apache 2.0 © 2025 AI Code Orchestrator, Inc.](../../LICENSE)

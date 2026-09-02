@@ -3,8 +3,8 @@
 import { render, screen, fireEvent } from "@/utils/test-utils"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { type ModelInfo, type ProviderSettings, openAiModelInfoSaneDefaults } from "@roo-code/types"
-import { openAiCodexDefaultModelId } from "@roo-code/types"
+import { type ModelInfo, type ProviderSettings, openAiModelInfoSaneDefaults } from "@ai-code-orchestrator/types"
+import { openAiCodexDefaultModelId } from "@ai-code-orchestrator/types"
 
 import * as ExtensionStateContext from "@src/context/ExtensionStateContext"
 const { ExtensionStateContextProvider } = ExtensionStateContext
@@ -213,16 +213,9 @@ vi.mock("../providers/LiteLLM", () => ({
 	),
 }))
 
-// Mock Roo provider for tests
-vi.mock("../providers/Roo", () => ({
-	Roo: ({ cloudIsAuthenticated }: any) => (
-		<div data-testid="roo-provider">{cloudIsAuthenticated ? "Authenticated" : "Not Authenticated"}</div>
-	),
-}))
-
-// Mock RooBalanceDisplay for tests
-vi.mock("../providers/RooBalanceDisplay", () => ({
-	RooBalanceDisplay: () => <div data-testid="roo-balance-display">Balance: $10.00</div>,
+// Mock AicoBalanceDisplay for tests
+vi.mock("../providers/AicoBalanceDisplay", () => ({
+	AicoBalanceDisplay: () => <div data-testid="aico-balance-display">Balance: $10.00</div>,
 }))
 
 vi.mock("@src/components/ui/hooks/useSelectedModel", () => ({
@@ -582,15 +575,15 @@ describe("ApiOptions", () => {
 		expect(screen.queryByTestId("litellm-provider")).not.toBeInTheDocument()
 	})
 
-	it("renders Roo-specific retired provider message for Roo Code Router", () => {
+	it("renders AI Code Orchestrator-specific retired provider message for AI Code Orchestrator Router", () => {
 		renderApiOptions({
 			apiConfiguration: {
-				apiProvider: "roo" as any,
+				apiProvider: "aico" as any,
 			},
 		})
 
 		expect(screen.getByTestId("retired-provider-message")).toHaveTextContent(
-			"settings:providers.retiredRooProviderMessage",
+			"settings:providers.retiredAicoProviderMessage",
 		)
 	})
 

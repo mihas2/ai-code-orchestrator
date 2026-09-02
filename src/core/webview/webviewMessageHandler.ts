@@ -2,7 +2,7 @@ import { safeWriteJson } from "../../utils/safeWriteJson"
 import * as path from "path"
 import * as os from "os"
 import * as fs from "fs/promises"
-import { getRooDirectoriesForCwd } from "../../services/roo-config/index.js"
+import { getAicoDirectoriesForCwd } from "../../services/aico-config/index.js"
 import pWaitFor from "p-wait-for"
 import * as vscode from "vscode"
 
@@ -14,12 +14,12 @@ import {
 	type Command as SlashCommand,
 	type WebviewMessage,
 	type EditQueuedMessagePayload,
-	RooCodeSettings,
+	AiCodeOrchestratorSettings,
 	ExperimentId,
 	checkoutDiffPayloadSchema,
 	checkoutRestorePayloadSchema,
-} from "@roo-code/types"
-import { customToolRegistry } from "@roo-code/core"
+} from "@ai-code-orchestrator/types"
+import { customToolRegistry } from "@ai-code-orchestrator/core"
 
 import { type ApiMessage } from "../task-persistence/apiMessages"
 import { saveTaskMessages } from "../task-persistence"
@@ -57,7 +57,7 @@ import { getOpenAiModels } from "../../api/providers/openai"
 import { getVsCodeLmModels } from "../../api/providers/vscode-lm"
 import { openMention } from "../mentions"
 import { resolveImageMentions } from "../mentions/resolveImageMentions"
-import { RooIgnoreController } from "../ignore/RooIgnoreController"
+import { AicoIgnoreController } from "../ignore/AicoIgnoreController"
 import { getWorkspacePath } from "../../utils/path"
 import { isPathOutsideWorkspace } from "../../utils/pathUtils"
 import { Mode, defaultModeSlug } from "../../shared/modes"
@@ -172,7 +172,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			text,
 			images,
 			cwd: getCurrentCwd(),
-			rooIgnoreController: currentTask?.rooIgnoreController,
+			aicoIgnoreController: currentTask?.aicoIgnoreController,
 			maxImageFileSize: state.maxImageFileSize,
 			maxTotalImageSize: state.maxTotalImageSize,
 		})
@@ -527,7 +527,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 	switch (message.type) {
 		case "updateOrchestrationSettings": {
 			if (!message.orchestrationSettings) throw new Error("Orchestration settings are required")
-			const { orchestrationSettingsSchema } = await import("@roo-code/types")
+			const { orchestrationSettingsSchema } = await import("@ai-code-orchestrator/types")
 			const parsed = orchestrationSettingsSchema.safeParse(message.orchestrationSettings)
 			if (!parsed.success) throw new Error("Invalid orchestration settings")
 			await updateGlobalState("orchestrationSettings", parsed.data)
@@ -796,7 +796,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 						}
 					}
 
-					await provider.contextProxy.setValue(key as keyof RooCodeSettings, newValue)
+					await provider.contextProxy.setValue(key as keyof AiCodeOrchestratorSettings, newValue)
 				}
 
 				await provider.postStateToWebview()
@@ -1306,7 +1306,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 		}
 		case "openKeyboardShortcuts": {
-			// Open VSCode keyboard shortcuts settings and optionally filter to show the Roo Code commands
+			// Open VSCode keyboard shortcuts settings and optionally filter to show the AI Code Orchestrator commands
 			const searchQuery = message.text || ""
 			if (searchQuery) {
 				// Open with a search query pre-filled
@@ -1333,11 +1333,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			}
 
 			const workspaceFolder = getCurrentCwd()
-			const rooDir = path.join(workspaceFolder, ".roo")
-			const mcpPath = path.join(rooDir, "mcp.json")
+			const aicoDir = path.join(workspaceFolder, ".ai-code-orchestrator")
+			const mcpPath = path.join(aicoDir, "mcp.json")
 
 			try {
-				await fs.mkdir(rooDir, { recursive: true })
+				await fs.mkdir(aicoDir, { recursive: true })
 				const exists = await fileExistsAtPath(mcpPath)
 
 				if (!exists) {
@@ -1696,26 +1696,26 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					20, // Use default limit, as filtering is now done in the backend
 				)
 
-				// Get the RooIgnoreController from the current task, or create a new one
+				// Get the AicoIgnoreController from the current task, or create a new one
 				const currentTask = provider.getCurrentTask()
-				let rooIgnoreController = currentTask?.rooIgnoreController
-				let tempController: RooIgnoreController | undefined
+				let aicoIgnoreController = currentTask?.aicoIgnoreController
+				let tempController: AicoIgnoreController | undefined
 
 				// If no current task or no controller, create a temporary one
-				if (!rooIgnoreController) {
-					tempController = new RooIgnoreController(workspacePath)
+				if (!aicoIgnoreController) {
+					tempController = new AicoIgnoreController(workspacePath)
 					await tempController.initialize()
-					rooIgnoreController = tempController
+					aicoIgnoreController = tempController
 				}
 
 				try {
-					// Get showRooIgnoredFiles setting from state
-					const { showRooIgnoredFiles = false } = (await provider.getState()) ?? {}
+					// Get showAicoIgnoredFiles setting from state
+					const { showAicoIgnoredFiles = false } = (await provider.getState()) ?? {}
 
-					// Filter results using RooIgnoreController if showRooIgnoredFiles is false
+					// Filter results using AicoIgnoreController if showAicoIgnoredFiles is false
 					let filteredResults = results
-					if (!showRooIgnoredFiles && rooIgnoreController) {
-						const allowedPaths = rooIgnoreController.filterPaths(results.map((r) => r.path))
+					if (!showAicoIgnoredFiles && aicoIgnoreController) {
+						const allowedPaths = aicoIgnoreController.filterPaths(results.map((r) => r.path))
 						filteredResults = results.filter((r) => allowedPaths.includes(r.path))
 					}
 
@@ -1752,7 +1752,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		}
 		case "refreshCustomTools": {
 			try {
-				const toolDirs = getRooDirectoriesForCwd(getCurrentCwd()).map((dir) => path.join(dir, "tools"))
+				const toolDirs = getAicoDirectoriesForCwd(getCurrentCwd()).map((dir) => path.join(dir, "tools"))
 				await customToolRegistry.loadFromDirectories(toolDirs)
 
 				await provider.postMessageToWebview({
@@ -1969,14 +1969,14 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				if (scope === "project") {
 					const workspacePath = getWorkspacePath()
 					if (workspacePath) {
-						rulesFolderPath = path.join(workspacePath, ".roo", `rules-${message.slug}`)
+						rulesFolderPath = path.join(workspacePath, ".ai-code-orchestrator", `rules-${message.slug}`)
 					} else {
-						rulesFolderPath = path.join(".roo", `rules-${message.slug}`)
+						rulesFolderPath = path.join(".ai-code-orchestrator", `rules-${message.slug}`)
 					}
 				} else {
 					// Global scope - use OS home directory
 					const homeDir = os.homedir()
-					rulesFolderPath = path.join(homeDir, ".roo", `rules-${message.slug}`)
+					rulesFolderPath = path.join(homeDir, ".ai-code-orchestrator", `rules-${message.slug}`)
 				}
 
 				// Check if the rules folder exists
@@ -2726,7 +2726,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				// Determine the commands directory based on source
 				let commandsDir: string
 				if (source === "global") {
-					const globalConfigDir = path.join(os.homedir(), ".roo")
+					const globalConfigDir = path.join(os.homedir(), ".ai-code-orchestrator")
 					commandsDir = path.join(globalConfigDir, "commands")
 				} else {
 					if (!vscode.workspace.workspaceFolders?.length) {
@@ -2739,7 +2739,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 						vscode.window.showErrorMessage(t("common:errors.no_workspace_for_project_command"))
 						break
 					}
-					commandsDir = path.join(workspaceRoot, ".roo", "commands")
+					commandsDir = path.join(workspaceRoot, ".ai-code-orchestrator", "commands")
 				}
 
 				// Ensure the commands directory exists
@@ -2906,7 +2906,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				try {
 					const tmpDir = os.tmpdir()
 					const timestamp = Date.now()
-					const tempFileName = `roo-preview-${timestamp}.md`
+					const tempFileName = `aico-preview-${timestamp}.md`
 					const tempFilePath = path.join(tmpDir, tempFileName)
 
 					await fs.writeFile(tempFilePath, message.text, "utf8")
@@ -2994,7 +2994,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				// Create a temporary file
 				const tmpDir = os.tmpdir()
 				const timestamp = Date.now()
-				const tempFileName = `roo-debug-${message.type === "openDebugApiHistory" ? "api" : "ui"}-${currentTask.taskId.slice(0, 8)}-${timestamp}.json`
+				const tempFileName = `aico-debug-${message.type === "openDebugApiHistory" ? "api" : "ui"}-${currentTask.taskId.slice(0, 8)}-${timestamp}.json`
 				const tempFilePath = path.join(tmpDir, tempFileName)
 
 				await fs.writeFile(tempFilePath, prettifiedContent, "utf8")

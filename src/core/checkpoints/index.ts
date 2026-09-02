@@ -1,7 +1,7 @@
 import pWaitFor from "p-wait-for"
 import * as vscode from "vscode"
 
-import type { ClineApiReqInfo } from "@roo-code/types"
+import type { ClineApiReqInfo } from "@ai-code-orchestrator/types"
 
 import { Task } from "../task/Task"
 

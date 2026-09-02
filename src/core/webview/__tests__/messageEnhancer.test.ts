@@ -1,4 +1,4 @@
-import { ProviderSettings, ClineMessage } from "@roo-code/types"
+import { ProviderSettings, ClineMessage } from "@ai-code-orchestrator/types"
 
 import { MessageEnhancer } from "../messageEnhancer"
 import * as singleCompletionHandlerModule from "../../../utils/single-completion-handler"

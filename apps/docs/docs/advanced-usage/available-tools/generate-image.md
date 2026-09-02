@@ -1,18 +1,18 @@
 ---
-description: Generate or edit images using AI models through the generate_image tool in Roo Code.
+description: Generate or edit images using AI models through the generate_image tool in AI Code Orchestrator.
 keywords:
     - generate_image
     - AI images
     - image generation
     - image editing
     - OpenRouter
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - experimental
 ---
 
 # generate_image
 
-The `generate_image` tool creates new images from text prompts or modifies existing images using AI models. It supports two providers: **OpenRouter** and the **Roo provider**. This experimental feature enables visual content generation and transformation within your development workflow.
+The `generate_image` tool creates new images from text prompts or modifies existing images using AI models. It supports two providers: **OpenRouter** and the **AI Code Orchestrator provider**. This experimental feature enables visual content generation and transformation within your development workflow.
 
 ---
 
@@ -48,14 +48,14 @@ This tool generates images from text descriptions or applies transformations to 
 - **Image-to-image transformation**: Edit or transform existing images
 - Supports multiple input formats (PNG, JPG, JPEG, GIF, WEBP)
 - Automatic file extension handling
-- Powered by **OpenRouter** or the **Roo provider** for access to various AI models
+- Powered by **OpenRouter** or the **AI Code Orchestrator provider** for access to various AI models
 - Experimental feature with ongoing improvements
 
 ---
 
 ## Limitations
 
-- Requires OpenRouter or Roo provider API configuration
+- Requires OpenRouter or AI Code Orchestrator provider API configuration
 - Image quality depends on the AI model and prompt quality
 - Generation time varies based on complexity and model
 - Experimental feature: behavior may change in future releases
@@ -72,7 +72,7 @@ When the `generate_image` tool is invoked, it follows this process:
 2. **Mode Selection**:
     - If `image` parameter is provided: operates in **edit mode** (transform existing image)
     - Otherwise: operates in **generation mode** (create new image from prompt)
-3. **API Request**: Sends request to the configured provider (OpenRouter or Roo) with prompt and optional input image.
+3. **API Request**: Sends request to the configured provider (OpenRouter or AI Code Orchestrator) with prompt and optional input image.
 4. **Image Processing**: Receives generated/edited image from the API.
 5. **File Saving**: Saves the image to the specified `path` with appropriate extension.
 6. **Feedback**: Reports success and the location of the generated image.

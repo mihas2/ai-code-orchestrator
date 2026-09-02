@@ -3,12 +3,12 @@ import * as fs from "fs/promises"
 import * as path from "path"
 import * as vscode from "vscode"
 
-import { RooCodeEventName, type ClineMessage } from "@roo-code/types"
+import { AiCodeOrchestratorEventName, type ClineMessage } from "@ai-code-orchestrator/types"
 
 import { waitFor, sleep, waitUntilCompleted } from "../utils"
 import { setDefaultSuiteTimeout } from "../test-utils"
 
-suite.skip("Roo Code execute_command Tool", function () {
+suite.skip("AI Code Orchestrator execute_command Tool", function () {
 	setDefaultSuiteTimeout(this)
 
 	let workspaceDir: string
@@ -145,7 +145,7 @@ suite.skip("Roo Code execute_command Tool", function () {
 				}
 			}
 		}
-		api.on(RooCodeEventName.Message, messageHandler)
+		api.on(AiCodeOrchestratorEventName.Message, messageHandler)
 
 		// Listen for task events
 		const taskStartedHandler = (id: string) => {
@@ -154,7 +154,7 @@ suite.skip("Roo Code execute_command Tool", function () {
 				console.log("Task started:", id)
 			}
 		}
-		api.on(RooCodeEventName.TaskStarted, taskStartedHandler)
+		api.on(AiCodeOrchestratorEventName.TaskStarted, taskStartedHandler)
 
 		const taskCompletedHandler = (id: string) => {
 			if (id === taskId) {
@@ -162,7 +162,7 @@ suite.skip("Roo Code execute_command Tool", function () {
 				console.log("Task completed:", id)
 			}
 		}
-		api.on(RooCodeEventName.TaskCompleted, taskCompletedHandler)
+		api.on(AiCodeOrchestratorEventName.TaskCompleted, taskCompletedHandler)
 
 		let taskId: string
 		try {
@@ -208,9 +208,9 @@ Then use the attempt_completion tool to complete the task. Do not suggest any co
 			console.log("Test passed! Command executed successfully")
 		} finally {
 			// Clean up event listeners
-			api.off(RooCodeEventName.Message, messageHandler)
-			api.off(RooCodeEventName.TaskStarted, taskStartedHandler)
-			api.off(RooCodeEventName.TaskCompleted, taskCompletedHandler)
+			api.off(AiCodeOrchestratorEventName.Message, messageHandler)
+			api.off(AiCodeOrchestratorEventName.TaskStarted, taskStartedHandler)
+			api.off(AiCodeOrchestratorEventName.TaskCompleted, taskCompletedHandler)
 		}
 	})
 
@@ -251,7 +251,7 @@ Then use the attempt_completion tool to complete the task. Do not suggest any co
 				}
 			}
 		}
-		api.on(RooCodeEventName.Message, messageHandler)
+		api.on(AiCodeOrchestratorEventName.Message, messageHandler)
 
 		// Listen for task events
 		const taskStartedHandler = (id: string) => {
@@ -260,7 +260,7 @@ Then use the attempt_completion tool to complete the task. Do not suggest any co
 				console.log("Task started:", id)
 			}
 		}
-		api.on(RooCodeEventName.TaskStarted, taskStartedHandler)
+		api.on(AiCodeOrchestratorEventName.TaskStarted, taskStartedHandler)
 
 		const taskCompletedHandler = (id: string) => {
 			if (id === taskId) {
@@ -268,7 +268,7 @@ Then use the attempt_completion tool to complete the task. Do not suggest any co
 				console.log("Task completed:", id)
 			}
 		}
-		api.on(RooCodeEventName.TaskCompleted, taskCompletedHandler)
+		api.on(AiCodeOrchestratorEventName.TaskCompleted, taskCompletedHandler)
 
 		let taskId: string
 		try {
@@ -320,9 +320,9 @@ Avoid at all costs suggesting a command when using the attempt_completion tool`,
 			console.log("Test passed! Command executed in custom directory")
 		} finally {
 			// Clean up event listeners
-			api.off(RooCodeEventName.Message, messageHandler)
-			api.off(RooCodeEventName.TaskStarted, taskStartedHandler)
-			api.off(RooCodeEventName.TaskCompleted, taskCompletedHandler)
+			api.off(AiCodeOrchestratorEventName.Message, messageHandler)
+			api.off(AiCodeOrchestratorEventName.TaskStarted, taskStartedHandler)
+			api.off(AiCodeOrchestratorEventName.TaskCompleted, taskCompletedHandler)
 
 			// Clean up subdirectory
 			try {
@@ -365,7 +365,7 @@ Avoid at all costs suggesting a command when using the attempt_completion tool`,
 				}
 			}
 		}
-		api.on(RooCodeEventName.Message, messageHandler)
+		api.on(AiCodeOrchestratorEventName.Message, messageHandler)
 
 		// Listen for task events
 		const taskStartedHandler = (id: string) => {
@@ -374,7 +374,7 @@ Avoid at all costs suggesting a command when using the attempt_completion tool`,
 				console.log("Task started:", id)
 			}
 		}
-		api.on(RooCodeEventName.TaskStarted, taskStartedHandler)
+		api.on(AiCodeOrchestratorEventName.TaskStarted, taskStartedHandler)
 
 		const taskCompletedHandler = (id: string) => {
 			if (id === taskId) {
@@ -382,7 +382,7 @@ Avoid at all costs suggesting a command when using the attempt_completion tool`,
 				console.log("Task completed:", id)
 			}
 		}
-		api.on(RooCodeEventName.TaskCompleted, taskCompletedHandler)
+		api.on(AiCodeOrchestratorEventName.TaskCompleted, taskCompletedHandler)
 
 		let taskId: string
 		try {
@@ -440,9 +440,9 @@ After both commands are executed, use the attempt_completion tool to complete th
 			console.log("Test passed! Multiple commands executed successfully")
 		} finally {
 			// Clean up event listeners
-			api.off(RooCodeEventName.Message, messageHandler)
-			api.off(RooCodeEventName.TaskStarted, taskStartedHandler)
-			api.off(RooCodeEventName.TaskCompleted, taskCompletedHandler)
+			api.off(AiCodeOrchestratorEventName.Message, messageHandler)
+			api.off(AiCodeOrchestratorEventName.TaskStarted, taskStartedHandler)
+			api.off(AiCodeOrchestratorEventName.TaskCompleted, taskCompletedHandler)
 		}
 	})
 
@@ -484,7 +484,7 @@ After both commands are executed, use the attempt_completion tool to complete th
 				}
 			}
 		}
-		api.on(RooCodeEventName.Message, messageHandler)
+		api.on(AiCodeOrchestratorEventName.Message, messageHandler)
 
 		// Listen for task events
 		const taskStartedHandler = (id: string) => {
@@ -493,7 +493,7 @@ After both commands are executed, use the attempt_completion tool to complete th
 				console.log("Task started:", id)
 			}
 		}
-		api.on(RooCodeEventName.TaskStarted, taskStartedHandler)
+		api.on(AiCodeOrchestratorEventName.TaskStarted, taskStartedHandler)
 
 		const taskCompletedHandler = (id: string) => {
 			if (id === taskId) {
@@ -501,7 +501,7 @@ After both commands are executed, use the attempt_completion tool to complete th
 				console.log("Task completed:", id)
 			}
 		}
-		api.on(RooCodeEventName.TaskCompleted, taskCompletedHandler)
+		api.on(AiCodeOrchestratorEventName.TaskCompleted, taskCompletedHandler)
 
 		let taskId: string
 		try {
@@ -550,9 +550,9 @@ Avoid at all costs suggesting a command when using the attempt_completion tool`,
 			console.log("Test passed! Long-running command handled successfully")
 		} finally {
 			// Clean up event listeners
-			api.off(RooCodeEventName.Message, messageHandler)
-			api.off(RooCodeEventName.TaskStarted, taskStartedHandler)
-			api.off(RooCodeEventName.TaskCompleted, taskCompletedHandler)
+			api.off(AiCodeOrchestratorEventName.Message, messageHandler)
+			api.off(AiCodeOrchestratorEventName.TaskStarted, taskStartedHandler)
+			api.off(AiCodeOrchestratorEventName.TaskCompleted, taskCompletedHandler)
 		}
 	})
 })

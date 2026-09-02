@@ -2,7 +2,7 @@
 
 import * as vscode from "vscode"
 
-import { getModelId } from "@roo-code/types"
+import { getModelId } from "@ai-code-orchestrator/types"
 
 import { ContextProxy } from "../../config/ContextProxy"
 import { Task, TaskOptions } from "../../task/Task"

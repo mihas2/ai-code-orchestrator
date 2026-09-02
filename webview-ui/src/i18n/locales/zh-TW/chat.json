@@ -1,5 +1,5 @@
 {
-	"greeting": "歡迎使用 Roo Code！",
+	"greeting": "歡迎使用 AI Code Orchestrator！",
 	"task": {
 		"title": "工作",
 		"expand": "展開工作",
@@ -117,17 +117,17 @@
 	},
 	"scrollToBottom": "捲動至對話底部",
 	"scrollToLatestCheckpoint": "捲動至上一個檢查點",
-	"about": "Roo 是編輯器中的完整 AI 開發團隊。",
+	"about": "AI Code Orchestrator 是編輯器中的完整 AI 開發團隊。",
 	"docs": "請參閱 <DocsLink>說明文件</DocsLink> 開始使用。",
 	"onboarding": "想要做什麼呢？",
-	"rooTips": {
+	"AicoTips": {
 		"customizableModes": {
 			"title": "可自訂模式，專注任務不偏離",
 			"description": "專注於任務並交付成果的專業角色。"
 		},
 		"modelAgnostic": {
 			"title": "自備模型，無加價無鎖定",
-			"description": "使用自己的供應商金鑰，甚至可執行本機推論 - Roo 不額外收費"
+			"description": "使用自己的供應商金鑰，甚至可執行本機推論 - AI Code Orchestrator 不額外收費"
 		}
 	},
 	"selectMode": "選擇互動模式",
@@ -138,7 +138,7 @@
 	"modeSelector": {
 		"title": "模式",
 		"settings": "模式設定",
-		"description": "專門量身打造 Roo 行為的角色。",
+		"description": "專門量身打造 AI Code Orchestrator 行為的角色。",
 		"searchPlaceholder": "搜尋模式...",
 		"noResults": "找不到結果"
 	},
@@ -215,49 +215,49 @@
 		}
 	},
 	"skill": {
-		"wantsToLoad": "Roo 想要載入技能",
-		"didLoad": "Roo 載入了技能"
+		"wantsToLoad": "AI Code Orchestrator 想要載入技能",
+		"didLoad": "AI Code Orchestrator 載入了技能"
 	},
 	"instructions": {
-		"wantsToFetch": "Roo 想要取得詳細指示以協助目前工作"
+		"wantsToFetch": "AI Code Orchestrator 想要取得詳細指示以協助目前工作"
 	},
 	"fileOperations": {
-		"wantsToRead": "Roo 想要讀取此檔案",
-		"wantsToReadMultiple": "Roo 想要讀取多個檔案",
-		"wantsToReadAndXMore": "Roo 想要讀取此檔案以及另外 {{count}} 個檔案",
-		"wantsToReadOutsideWorkspace": "Roo 想要讀取此工作區外的檔案",
-		"didRead": "Roo 已讀取此檔案",
-		"wantsToEdit": "Roo 想要編輯此檔案",
-		"wantsToEditOutsideWorkspace": "Roo 想要編輯此工作區外的檔案",
-		"wantsToEditProtected": "Roo 想要編輯受保護的設定檔案",
-		"wantsToApplyBatchChanges": "Roo 想要對多個檔案套用變更",
-		"wantsToGenerateImage": "Roo 想要產生圖片",
-		"wantsToGenerateImageOutsideWorkspace": "Roo 想要在工作區外產生圖片",
-		"wantsToGenerateImageProtected": "Roo 想要在受保護位置產生圖片",
-		"didGenerateImage": "Roo 已產生圖片",
-		"wantsToCreate": "Roo 想要建立新檔案",
-		"wantsToInsert": "Roo 想要在此檔案中插入內容",
-		"wantsToInsertWithLineNumber": "Roo 想要在此檔案第 {{lineNumber}} 行插入內容",
-		"wantsToInsertAtEnd": "Roo 想要在此檔案尾端新增內容"
+		"wantsToRead": "AI Code Orchestrator 想要讀取此檔案",
+		"wantsToReadMultiple": "AI Code Orchestrator 想要讀取多個檔案",
+		"wantsToReadAndXMore": "AI Code Orchestrator 想要讀取此檔案以及另外 {{count}} 個檔案",
+		"wantsToReadOutsideWorkspace": "AI Code Orchestrator 想要讀取此工作區外的檔案",
+		"didRead": "AI Code Orchestrator 已讀取此檔案",
+		"wantsToEdit": "AI Code Orchestrator 想要編輯此檔案",
+		"wantsToEditOutsideWorkspace": "AI Code Orchestrator 想要編輯此工作區外的檔案",
+		"wantsToEditProtected": "AI Code Orchestrator 想要編輯受保護的設定檔案",
+		"wantsToApplyBatchChanges": "AI Code Orchestrator 想要對多個檔案套用變更",
+		"wantsToGenerateImage": "AI Code Orchestrator 想要產生圖片",
+		"wantsToGenerateImageOutsideWorkspace": "AI Code Orchestrator 想要在工作區外產生圖片",
+		"wantsToGenerateImageProtected": "AI Code Orchestrator 想要在受保護位置產生圖片",
+		"didGenerateImage": "AI Code Orchestrator 已產生圖片",
+		"wantsToCreate": "AI Code Orchestrator 想要建立新檔案",
+		"wantsToInsert": "AI Code Orchestrator 想要在此檔案中插入內容",
+		"wantsToInsertWithLineNumber": "AI Code Orchestrator 想要在此檔案第 {{lineNumber}} 行插入內容",
+		"wantsToInsertAtEnd": "AI Code Orchestrator 想要在此檔案尾端新增內容"
 	},
 	"directoryOperations": {
-		"wantsToViewTopLevel": "Roo 想要檢視此目錄中最上層的檔案",
-		"didViewTopLevel": "Roo 已檢視此目錄中最上層的檔案",
-		"wantsToViewTopLevelOutsideWorkspace": "Roo 想要檢視此目錄（工作區外）中最上層的檔案",
-		"didViewTopLevelOutsideWorkspace": "Roo 已檢視此目錄（工作區外）中最上層的檔案",
-		"wantsToViewRecursive": "Roo 想要遞迴檢視此目錄中的所有檔案",
-		"didViewRecursive": "Roo 已遞迴檢視此目錄中的所有檔案",
-		"wantsToViewRecursiveOutsideWorkspace": "Roo 想要遞迴檢視此目錄（工作區外）中的所有檔案",
-		"didViewRecursiveOutsideWorkspace": "Roo 已遞迴檢視此目錄（工作區外）中的所有檔案",
-		"wantsToSearch": "Roo 想要在此目錄中搜尋 <code>{{regex}}</code>",
-		"didSearch": "Roo 已在此目錄中搜尋 <code>{{regex}}</code>",
-		"wantsToSearchOutsideWorkspace": "Roo 想要在此目錄（工作區外）中搜尋 <code>{{regex}}</code>",
-		"didSearchOutsideWorkspace": "Roo 已在此目錄（工作區外）中搜尋 <code>{{regex}}</code>",
-		"wantsToViewMultipleDirectories": "Roo 想要查看多個目錄"
+		"wantsToViewTopLevel": "AI Code Orchestrator 想要檢視此目錄中最上層的檔案",
+		"didViewTopLevel": "AI Code Orchestrator 已檢視此目錄中最上層的檔案",
+		"wantsToViewTopLevelOutsideWorkspace": "AI Code Orchestrator 想要檢視此目錄（工作區外）中最上層的檔案",
+		"didViewTopLevelOutsideWorkspace": "AI Code Orchestrator 已檢視此目錄（工作區外）中最上層的檔案",
+		"wantsToViewRecursive": "AI Code Orchestrator 想要遞迴檢視此目錄中的所有檔案",
+		"didViewRecursive": "AI Code Orchestrator 已遞迴檢視此目錄中的所有檔案",
+		"wantsToViewRecursiveOutsideWorkspace": "AI Code Orchestrator 想要遞迴檢視此目錄（工作區外）中的所有檔案",
+		"didViewRecursiveOutsideWorkspace": "AI Code Orchestrator 已遞迴檢視此目錄（工作區外）中的所有檔案",
+		"wantsToSearch": "AI Code Orchestrator 想要在此目錄中搜尋 <code>{{regex}}</code>",
+		"didSearch": "AI Code Orchestrator 已在此目錄中搜尋 <code>{{regex}}</code>",
+		"wantsToSearchOutsideWorkspace": "AI Code Orchestrator 想要在此目錄（工作區外）中搜尋 <code>{{regex}}</code>",
+		"didSearchOutsideWorkspace": "AI Code Orchestrator 已在此目錄（工作區外）中搜尋 <code>{{regex}}</code>",
+		"wantsToViewMultipleDirectories": "AI Code Orchestrator 想要查看多個目錄"
 	},
 	"codebaseSearch": {
-		"wantsToSearch": "Roo 想要在程式碼庫中搜尋 <code>{{query}}</code>",
-		"wantsToSearchWithPath": "Roo 想要在 <code>{{path}}</code> 中搜尋程式碼庫 <code>{{query}}</code>",
+		"wantsToSearch": "AI Code Orchestrator 想要在程式碼庫中搜尋 <code>{{query}}</code>",
+		"wantsToSearchWithPath": "AI Code Orchestrator 想要在 <code>{{path}}</code> 中搜尋程式碼庫 <code>{{query}}</code>",
 		"didSearch_one": "找到 1 個結果",
 		"didSearch_other": "找到 {{count}} 個結果",
 		"resultTooltip": "相似度評分：{{score}}（點選以開啟檔案）"
@@ -282,24 +282,24 @@
 	"response": "回應",
 	"arguments": "參數",
 	"text": {
-		"rooSaid": "Roo 說"
+		"aicoSaid": "AI Code Orchestrator 說"
 	},
 	"feedback": {
 		"youSaid": "您說"
 	},
 	"mcp": {
-		"wantsToUseTool": "Roo 想要在 {{serverName}} MCP 伺服器上使用工具",
-		"wantsToAccessResource": "Roo 想要存取 {{serverName}} MCP 伺服器上的資源"
+		"wantsToUseTool": "AI Code Orchestrator 想要在 {{serverName}} MCP 伺服器上使用工具",
+		"wantsToAccessResource": "AI Code Orchestrator 想要存取 {{serverName}} MCP 伺服器上的資源"
 	},
 	"modes": {
-		"wantsToSwitch": "Roo 想要切換至 {{mode}} 模式",
-		"wantsToSwitchWithReason": "Roo 想要切換至 {{mode}} 模式，原因：{{reason}}",
-		"didSwitch": "Roo 已切換至 {{mode}} 模式",
-		"didSwitchWithReason": "Roo 已切換至 {{mode}} 模式，原因：{{reason}}"
+		"wantsToSwitch": "AI Code Orchestrator 想要切換至 {{mode}} 模式",
+		"wantsToSwitchWithReason": "AI Code Orchestrator 想要切換至 {{mode}} 模式，原因：{{reason}}",
+		"didSwitch": "AI Code Orchestrator 已切換至 {{mode}} 模式",
+		"didSwitchWithReason": "AI Code Orchestrator 已切換至 {{mode}} 模式，原因：{{reason}}"
 	},
 	"subtasks": {
-		"wantsToCreate": "Roo 想要在 {{mode}} 模式下建立新的子任務",
-		"wantsToFinish": "Roo 想要完成此子任務",
+		"wantsToCreate": "AI Code Orchestrator 想要在 {{mode}} 模式下建立新的子任務",
+		"wantsToFinish": "AI Code Orchestrator 想要完成此子任務",
 		"newTaskContent": "子任務指示",
 		"resultContent": "子任務結果",
 		"defaultResult": "請繼續下一個工作。",
@@ -307,7 +307,7 @@
 		"goToSubtask": "查看工作"
 	},
 	"questions": {
-		"hasQuestion": "Roo 有一個問題"
+		"hasQuestion": "AI Code Orchestrator 有一個問題"
 	},
 	"taskCompleted": "工作完成",
 	"error": "錯誤",
@@ -324,12 +324,12 @@
 		"copyToClipboard": "複製基本錯誤資訊",
 		"copied": "已複製！",
 		"diagnostics": "取得詳細錯誤資訊",
-		"proxyProvider": "似乎正在使用代理型供應商。請檢查記錄，並確保不會重寫 Roo 的請求。"
+		"proxyProvider": "似乎正在使用代理型供應商。請檢查記錄，並確保不會重寫 AI Code Orchestrator 的請求。"
 	},
 	"diffError": {
 		"title": "編輯失敗"
 	},
-	"troubleMessage": "Roo 遇到問題...",
+	"troubleMessage": "AI Code Orchestrator 遇到問題...",
 	"powershell": {
 		"issues": "似乎遇到 Windows PowerShell 問題，請參閱此說明文件"
 	},
@@ -351,18 +351,18 @@
 		"triggerLabelAll": "BRRR"
 	},
 	"announcement": {
-		"title": "Roo Code {{version}} 已發布",
-		"support": "請在 <githubLink>GitHub</githubLink> 上給 Roo Code 星星支持我們。",
+		"title": "AI Code Orchestrator {{version}} 已發布",
+		"support": "請在 <githubLink>GitHub</githubLink> 上給 AI Code Orchestrator 星星支持我們。",
 		"finalRelease": {
-			"title": "Roo Code 的最後一個版本",
-			"intro": "這是 Roo Code 的最後一個版本。<announcementLink>正如我們幾週前宣布的那樣</announcementLink>，我們決定將重心轉向 <roomoteLink>Roomote</roomoteLink>，這是我們的雲端代理平台，我們相信它是軟體開發的未來。非常感謝你在過去一年左右的支持。",
+			"title": "AI Code Orchestrator 的最後一個版本",
+			"intro": "這是 AI Code Orchestrator 的最後一個版本。<announcementLink>正如我們幾週前宣布的那樣</announcementLink>，我們決定將重心轉向 <remoteLink>remote</remoteLink>，這是我們的雲端代理平台，我們相信它是軟體開發的未來。非常感謝你在過去一年左右的支持。",
 			"continuity": "這個擴充功能應該會繼續無限期運作，但不會再收到錯誤修正、新功能或模型更新。",
-			"alternatives": "如果你想使用擴充功能，我們建議看看 <zooCodeLink>ZooCode</zooCodeLink>（由社群維護的 Roo Code fork）和 <clineLink>Cline</clineLink>（Roo Code 最初起源的專案）。",
+			"alternatives": "如果你想使用擴充功能，我們建議看看 <zooCodeLink>ZooCode</zooCodeLink>（由社群維護的 AI Code Orchestrator fork）和 <clineLink>Cline</clineLink>（AI Code Orchestrator 最初起源的專案）。",
 			"signoff": "Happy coding!"
 		},
 		"release": {
 			"heading": "新增功能：",
-			"gpt55": "透過 OpenAI Codex 支援 GPT-5.5：已在 OpenAI Codex 供應商中新增 GPT-5.5 支援，讓你可以直接在 Roo Code 中使用最新模型。",
+			"gpt55": "透過 OpenAI Codex 支援 GPT-5.5：已在 OpenAI Codex 供應商中新增 GPT-5.5 支援，讓你可以直接在 AI Code Orchestrator 中使用最新模型。",
 			"claudeOpus47": "Vertex AI 上的 Claude Opus 4.7：已將 Anthropic 最新旗艦推理模型 Claude Opus 4.7 新增至 Vertex AI 供應商。",
 			"checkpointNav": "前一個存檔點導覽：在聊天中新增控制項，可回到此前的存檔點，並提供完整的 i18n 支援。"
 		},
@@ -396,18 +396,18 @@
 	"profileViolationWarning": "目前設定檔與您的組織設定不相容",
 	"shellIntegration": {
 		"title": "命令執行警告",
-		"description": "命令正在沒有 VS Code 終端機 Shell 整合的情況下執行。若要隱藏此警告，可在 <settingsLink>Roo Code 設定</settingsLink> 的 <strong>終端機</strong> 區塊中停用 Shell 整合，或使用下方連結排解 VS Code 終端機整合問題。",
+		"description": "命令正在沒有 VS Code 終端機 Shell 整合的情況下執行。若要隱藏此警告，可在 <settingsLink>AI Code Orchestrator 設定</settingsLink> 的 <strong>終端機</strong> 區塊中停用 Shell 整合，或使用下方連結排解 VS Code 終端機整合問題。",
 		"troubleshooting": "點選此處查看 Shell 整合說明文件。"
 	},
 	"ask": {
 		"autoApprovedRequestLimitReached": {
 			"title": "已達自動核准請求上限",
-			"description": "Roo 已達到 {{count}} 次 API 請求的自動核准上限。您想重設計數並繼續工作嗎？",
+			"description": "AI Code Orchestrator 已達到 {{count}} 次 API 請求的自動核准上限。您想重設計數並繼續工作嗎？",
 			"button": "重設並繼續"
 		},
 		"autoApprovedCostLimitReached": {
 			"title": "已達自動核准費用上限",
-			"description": "Roo 已達到 ${{count}} 的自動核准費用上限。您想重設費用並繼續工作嗎？",
+			"description": "AI Code Orchestrator 已達到 ${{count}} 的自動核准費用上限。您想重設費用並繼續工作嗎？",
 			"button": "重設並繼續"
 		}
 	},
@@ -446,8 +446,8 @@
 		}
 	},
 	"slashCommand": {
-		"wantsToRun": "Roo 想要執行斜線指令",
-		"didRun": "Roo 執行了斜線指令"
+		"wantsToRun": "AI Code Orchestrator 想要執行斜線指令",
+		"didRun": "AI Code Orchestrator 執行了斜線指令"
 	},
 	"queuedMessages": {
 		"title": "佇列中的訊息",
@@ -476,12 +476,12 @@
 		"openMcpSettings": "開啟 MCP 設定"
 	},
 	"readCommandOutput": {
-		"title": "Roo read command output"
+		"title": "AI Code Orchestrator read command output"
 	},
 	"retiredProvider": {
 		"title": "供應商不再受支援",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "開啟設定",
-		"rooMessage": "As part of our decision to sunset the Roo Code extension, we also ended the Roo Code Router, which only existed to support the extension. Sorry about the hassle."
+		"aicoMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

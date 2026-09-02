@@ -11,20 +11,20 @@ import {
 	type GlobalSettings,
 	type SecretState,
 	type GlobalState,
-	type RooCodeSettings,
+	type AiCodeOrchestratorSettings,
 	providerSettingsSchema,
 	globalSettingsSchema,
 	isSecretStateKey,
 	isProviderName,
 	isRetiredProvider,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 
 import { logger } from "../../utils/logging"
 import { supportPrompt } from "../../shared/support-prompt"
 
 type GlobalStateKey = keyof GlobalState
 type SecretStateKey = keyof SecretState
-type RooCodeSettingsKey = keyof RooCodeSettings
+type AiCodeOrchestratorSettingsKey = keyof AiCodeOrchestratorSettings
 
 const PASS_THROUGH_STATE_KEYS = ["taskHistory"]
 
@@ -436,7 +436,7 @@ export class ContextProxy {
 	 * Sanitizes provider values by resetting unknown apiProvider values.
 	 * Active and retired providers are preserved.
 	 */
-	private sanitizeProviderValues(values: RooCodeSettings): RooCodeSettings {
+	private sanitizeProviderValues(values: AiCodeOrchestratorSettings): AiCodeOrchestratorSettings {
 		// Remove legacy Claude Code CLI wrapper keys that may still exist in global state.
 		// These keys were used by a removed local CLI runner and are no longer part of ProviderSettings.
 		const legacyKeys = ["claudeCodePath", "claudeCodeMaxOutputTokens"] as const
@@ -446,7 +446,7 @@ export class ContextProxy {
 			if (key in sanitizedValues) {
 				const copy = { ...sanitizedValues } as Record<string, unknown>
 				delete copy[key as string]
-				sanitizedValues = copy as RooCodeSettings
+				sanitizedValues = copy as AiCodeOrchestratorSettings
 			}
 		}
 
@@ -458,7 +458,7 @@ export class ContextProxy {
 			logger.info(`[ContextProxy] Sanitizing invalid provider "${values.apiProvider}" - resetting to undefined`)
 			// Return a new values object without the invalid apiProvider
 			const { apiProvider, ...restValues } = sanitizedValues
-			return restValues as RooCodeSettings
+			return restValues as AiCodeOrchestratorSettings
 		}
 		return sanitizedValues
 	}
@@ -488,22 +488,22 @@ export class ContextProxy {
 	}
 
 	/**
-	 * RooCodeSettings
+	 * AiCodeOrchestratorSettings
 	 */
 
-	public async setValue<K extends RooCodeSettingsKey>(key: K, value: RooCodeSettings[K]) {
+	public async setValue<K extends AiCodeOrchestratorSettingsKey>(key: K, value: AiCodeOrchestratorSettings[K]) {
 		return isSecretStateKey(key)
 			? this.storeSecret(key as SecretStateKey, value as string)
 			: this.updateGlobalState(key as GlobalStateKey, value)
 	}
 
-	public getValue<K extends RooCodeSettingsKey>(key: K): RooCodeSettings[K] {
+	public getValue<K extends AiCodeOrchestratorSettingsKey>(key: K): AiCodeOrchestratorSettings[K] {
 		return isSecretStateKey(key)
-			? (this.getSecret(key as SecretStateKey) as RooCodeSettings[K])
-			: (this.getGlobalState(key as GlobalStateKey) as RooCodeSettings[K])
+			? (this.getSecret(key as SecretStateKey) as AiCodeOrchestratorSettings[K])
+			: (this.getGlobalState(key as GlobalStateKey) as AiCodeOrchestratorSettings[K])
 	}
 
-	public getValues(): RooCodeSettings {
+	public getValues(): AiCodeOrchestratorSettings {
 		const globalState = this.getAllGlobalState()
 		const secretState = this.getAllSecretState()
 
@@ -511,8 +511,8 @@ export class ContextProxy {
 		return { ...globalState, ...secretState }
 	}
 
-	public async setValues(values: RooCodeSettings) {
-		const entries = Object.entries(values) as [RooCodeSettingsKey, unknown][]
+	public async setValues(values: AiCodeOrchestratorSettings) {
+		const entries = Object.entries(values) as [AiCodeOrchestratorSettingsKey, unknown][]
 		await Promise.all(entries.map(([key, value]) => this.setValue(key, value)))
 	}
 
@@ -524,7 +524,7 @@ export class ContextProxy {
 		try {
 			const globalSettings = globalSettingsExportSchema.parse(this.getValues())
 
-			// Exports should only contain global settings, so this skips project custom modes (those exist in the .roomode folder)
+			// Exports should only contain global settings, so this skips project custom modes (those exist in the .aico folder)
 			globalSettings.customModes = globalSettings.customModes?.filter((mode) => mode.source === "global")
 
 			return Object.fromEntries(Object.entries(globalSettings).filter(([_, value]) => value !== undefined))

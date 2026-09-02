@@ -9,13 +9,13 @@
 		}
 	},
 	"landing": {
-		"greeting": "Bem-vindo ao Roo Code!",
-		"introduction": "Com uma variedade de Modos integrados e extensíveis, o Roo Code permite que você planeje, arquitete, codifique, depure e aumente sua produtividade como nunca antes.",
+		"greeting": "Bem-vindo ao AI Code Orchestrator!",
+		"introduction": "Com uma variedade de Modos integrados e extensíveis, o AI Code Orchestrator permite que você planeje, arquitete, codifique, depure e aumente sua produtividade como nunca antes.",
 		"getStarted": "Get Started"
 	},
 	"providerSignup": {
 		"heading": "Escolha seu provedor",
-		"chooseProvider": "Roo precisa de um provedor LLM para funcionar. Escolha um para começar, você pode adicionar mais depois.",
+		"chooseProvider": "AI Code Orchestrator precisa de um provedor LLM para funcionar. Escolha um para começar, você pode adicionar mais depois.",
 		"learnMore": "Saiba mais",
 		"useAnotherProvider": "Provedor de terceiros",
 		"useAnotherProviderDescription": "Insira uma chave API e comece.",

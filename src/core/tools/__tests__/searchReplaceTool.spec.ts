@@ -39,7 +39,7 @@ vi.mock("../../../utils/fs", () => ({
 vi.mock("../../prompts/responses", () => ({
 	formatResponse: {
 		toolError: vi.fn((msg) => `Error: ${msg}`),
-		rooIgnoreError: vi.fn((path) => `Access denied: ${path}`),
+		aicoIgnoreError: vi.fn((path) => `Access denied: ${path}`),
 		createPrettyPatch: vi.fn(() => "mock-diff"),
 	},
 }))
@@ -115,10 +115,10 @@ describe("searchReplaceTool", () => {
 				}),
 			}),
 		}
-		mockCline.rooIgnoreController = {
+		mockCline.aicoIgnoreController = {
 			validateAccess: vi.fn().mockReturnValue(true),
 		}
-		mockCline.rooProtectedController = {
+		mockCline.aicoProtectedController = {
 			isWriteProtected: vi.fn().mockReturnValue(false),
 		}
 		mockCline.diffViewProvider = {
@@ -173,7 +173,7 @@ describe("searchReplaceTool", () => {
 
 		mockedFileExistsAtPath.mockResolvedValue(fileExists)
 		mockedFsReadFile.mockResolvedValue(fileContent)
-		mockCline.rooIgnoreController.validateAccess.mockReturnValue(accessAllowed)
+		mockCline.aicoIgnoreController.validateAccess.mockReturnValue(accessAllowed)
 
 		const nativeArgs: Record<string, unknown> = {
 			file_path: testFilePath,
@@ -388,7 +388,7 @@ describe("searchReplaceTool", () => {
 		it("tracks file context after successful edit", async () => {
 			await executeSearchReplaceTool()
 
-			expect(mockCline.fileContextTracker.trackFileContext).toHaveBeenCalledWith(testFilePath, "roo_edited")
+			expect(mockCline.fileContextTracker.trackFileContext).toHaveBeenCalledWith(testFilePath, "aico_edited")
 		})
 	})
 

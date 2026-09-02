@@ -1,5 +1,5 @@
 ---
-description: Define TypeScript/JavaScript tools that extend Roo's capabilities beyond built-in tools, with npm dependency support and per-tool environment variables.
+description: Define TypeScript/JavaScript tools that extend AI Code Orchestrator's capabilities beyond built-in tools, with npm dependency support and per-tool environment variables.
 keywords:
     - experimental features
     - custom tools
@@ -14,28 +14,28 @@ keywords:
 
 # Custom Tools
 
-Define TypeScript or JavaScript tools that Roo can call like built-in tools—standardize team workflows instead of re-prompting the same steps every task.
+Define TypeScript or JavaScript tools that AI Code Orchestrator can call like built-in tools—standardize team workflows instead of re-prompting the same steps every task.
 
 :::warning Experimental Feature
-Custom tools is an experimental feature. Custom tools are **automatically approved** when enabled—Roo won't ask for permission before running them. Only enable this feature if you trust your tool code.
+Custom tools is an experimental feature. Custom tools are **automatically approved** when enabled—AI Code Orchestrator won't ask for permission before running them. Only enable this feature if you trust your tool code.
 :::
 
 ---
 
 ## What it does
 
-Custom tools let you codify project-specific actions into TypeScript/JavaScript files that Roo calls like [`read_file()`](/basic-usage/how-tools-work) or [`execute_command()`](/basic-usage/how-tools-work). Ship tool schemas alongside your repo so teammates don't need to keep re-explaining the same workflow steps. Tools are validated with Zod and automatically transpiled from TypeScript.
+Custom tools let you codify project-specific actions into TypeScript/JavaScript files that AI Code Orchestrator calls like [`read_file()`](/basic-usage/how-tools-work) or [`execute_command()`](/basic-usage/how-tools-work). Ship tool schemas alongside your repo so teammates don't need to keep re-explaining the same workflow steps. Tools are validated with Zod and automatically transpiled from TypeScript.
 
 ---
 
 ## How to create a tool
 
-Tools live in `.roo/tools/` (project-specific) or `~/.roo/tools/` (global) as `.ts` or `.js` files. Tools from later directories can override earlier ones.
+Tools live in `.ai-code-orchestrator/tools/` (project-specific) or `~/.ai-code-orchestrator/tools/` (global) as `.ts` or `.js` files. Tools from later directories can override earlier ones.
 
 #### Basic structure
 
 ```typescript
-import { parametersSchema as z, defineCustomTool } from "@roo-code/types"
+import { parametersSchema as z, defineCustomTool } from "@AI Code Orchestrator/types"
 
 export default defineCustomTool({
 	name: "tool_name",
@@ -54,10 +54,10 @@ export default defineCustomTool({
 
 #### What you define
 
-- **`name`**: Tool name Roo sees in its available tools list
+- **`name`**: Tool name AI Code Orchestrator sees in its available tools list
 - **`description`**: Shown to the AI so it knows when to call the tool
 - **`parameters`**: Zod schema converted to JSON Schema for validation
-- **`execute`**: Async function returning a string result to Roo
+- **`execute`**: Async function returning a string result to AI Code Orchestrator
 
 Tools are dynamically loaded and transpiled with esbuild. Automatic reload on file changes isn't reliable—use the **Refresh Custom Tools** command to pick up changes immediately.
 
@@ -65,22 +65,22 @@ Tools are dynamically loaded and transpiled with esbuild. Automatic reload on fi
 
 ## Enabling the feature
 
-1. Open Roo Code settings (gear icon in top right)
+1. Open AI Code Orchestrator settings (gear icon in top right)
 2. Go to the "Experimental" tab
 3. Toggle "Enable custom tools"
 
 <img src="/img/custom-tools/custom-tools.png" alt="Enable custom tools toggle in experimental settings" width="400" />
 
-**Critical:** When enabled, custom tools are **auto-approved**—Roo runs them without asking. Disable if you don't trust the tool code.
+**Critical:** When enabled, custom tools are **auto-approved**—AI Code Orchestrator runs them without asking. Disable if you don't trust the tool code.
 
 ---
 
 ## Tool directories
 
-- **`.roo/tools/`** in your workspace: project-specific tools shared with your team
-- **`~/.roo/tools/`** in your home folder: personal tools across all projects
+- **`.ai-code-orchestrator/tools/`** in your workspace: project-specific tools shared with your team
+- **`~/.ai-code-orchestrator/tools/`** in your home folder: personal tools across all projects
 
-Tools from both directories are loaded. Tools with the same name in `.roo/tools/` override those in `~/.roo/tools/`.
+Tools from both directories are loaded. Tools with the same name in `.ai-code-orchestrator/tools/` override those in `~/.ai-code-orchestrator/tools/`.
 
 ---
 
@@ -90,7 +90,7 @@ Custom tools can use npm packages. Install dependencies in the same folder as yo
 
 ```bash
 # From your tool directory
-cd .roo/tools/
+cd .ai-code-orchestrator/tools/
 npm init -y
 npm install axios lodash
 ```
@@ -98,7 +98,7 @@ npm install axios lodash
 Then import in your tool:
 
 ```typescript
-import { parametersSchema as z, defineCustomTool } from "@roo-code/types"
+import { parametersSchema as z, defineCustomTool } from "@AI Code Orchestrator/types"
 import axios from "axios"
 
 export default defineCustomTool({
@@ -118,14 +118,14 @@ export default defineCustomTool({
 
 ## Per-Tool Environment Variables
 
-Roo copies `.env` and `.env.*` files from your tool directory into the tool's cache folder so your tool can load them at runtime. **Roo does not automatically inject these variables into `process.env`**—your tool must load them itself.
+AI Code Orchestrator copies `.env` and `.env.*` files from your tool directory into the tool's cache folder so your tool can load them at runtime. **AI Code Orchestrator does not automatically inject these variables into `process.env`**—your tool must load them itself.
 
 **Setup:**
 
 1. Create a `.env` file next to your tool:
 
     ```
-    .roo/tools/
+    .ai-code-orchestrator/tools/
     ├── my-tool.ts
     ├── .env          # Copied to cache dir at load time
     └── package.json
@@ -134,7 +134,7 @@ Roo copies `.env` and `.env.*` files from your tool directory into the tool's ca
 2. Add your secrets:
 
     ```bash
-    # .roo/tools/.env
+    # .ai-code-orchestrator/tools/.env
     SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX
     API_SECRET=your-secret-key
     ```
@@ -142,7 +142,7 @@ Roo copies `.env` and `.env.*` files from your tool directory into the tool's ca
 3. Load the `.env` in your tool using `dotenv` and `__dirname`:
 
     ```typescript
-    import { parametersSchema as z, defineCustomTool } from "@roo-code/types"
+    import { parametersSchema as z, defineCustomTool } from "@AI Code Orchestrator/types"
     import dotenv from "dotenv"
     import path from "path"
 
@@ -172,7 +172,7 @@ Roo copies `.env` and `.env.*` files from your tool directory into the tool's ca
     })
     ```
 
-**Why `__dirname`?** Roo copies your `.env` files into a cache directory alongside the transpiled tool. Using `__dirname` ensures your tool finds the `.env` in the correct location regardless of where the tool was originally defined.
+**Why `__dirname`?** AI Code Orchestrator copies your `.env` files into a cache directory alongside the transpiled tool. Using `__dirname` ensures your tool finds the `.env` in the correct location regardless of where the tool was originally defined.
 
 **Security:** Ensure your `.env` file is ignored by version control to keep secrets safe.
 
@@ -181,7 +181,7 @@ Roo copies `.env` and `.env.*` files from your tool directory into the tool's ca
 ## Limits
 
 - **No approval prompts**: Tools are auto-approved when the feature is enabled—security trade-off for convenience
-- **String-only results**: Tools must return strings (Roo's protocol constraint)
+- **String-only results**: Tools must return strings (AI Code Orchestrator's protocol constraint)
 - **No interactive input**: Tools can't prompt the user mid-execution
 - **Cache invalidation**: Tool updates may require reloading the window
 

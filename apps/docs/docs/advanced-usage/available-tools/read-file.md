@@ -2,7 +2,7 @@
 description: Explore the read_file tool's capabilities for examining file contents, supporting line ranges, PDF/DOCX extraction, image reading, and experimental multi-file concurrent reading.
 keywords:
     - read_file
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - file reading
     - concurrent reads
     - line numbers
@@ -16,7 +16,7 @@ keywords:
 
 # read_file
 
-The `read_file` tool examines the contents of files in a project. It allows Roo to understand code, configuration files, documentation, and now images to provide better assistance.
+The `read_file` tool examines the contents of files in a project. It allows AI Code Orchestrator to understand code, configuration files, documentation, and now images to provide better assistance.
 
 :::info Multi-File Support
 The `read_file` tool accepts multiple files via the `args` format. Concurrency and per‑request limits are configured in the UI; the backend tool doesn’t hard‑enforce a file count cap. Some models may use a simplified single‑file variant.
@@ -69,10 +69,10 @@ This tool reads the content of a specified file and returns it with line numbers
 
 ## When is it used?
 
-- When Roo needs to understand existing code structure
-- When Roo needs to analyze configuration files
-- When Roo needs to extract information from text files
-- When Roo needs to see code before suggesting changes
+- When AI Code Orchestrator needs to understand existing code structure
+- When AI Code Orchestrator needs to analyze configuration files
+- When AI Code Orchestrator needs to extract information from text files
+- When AI Code Orchestrator needs to see code before suggesting changes
 - When specific line numbers need to be referenced in discussions
 
 ---
@@ -194,9 +194,9 @@ The tool uses a clear decision hierarchy to determine how to read a file:
 
 ## Examples When Used
 
-- When asked to explain or improve code, Roo first reads the relevant files to understand the current implementation.
-- When troubleshooting configuration issues, Roo reads config files to identify potential problems.
-- When working with documentation, Roo reads existing docs to understand the current content before suggesting improvements.
+- When asked to explain or improve code, AI Code Orchestrator first reads the relevant files to understand the current implementation.
+- When troubleshooting configuration issues, AI Code Orchestrator reads config files to identify potential problems.
+- When working with documentation, AI Code Orchestrator reads existing docs to understand the current content before suggesting improvements.
 
 ---
 
@@ -319,7 +319,7 @@ Error: File not found at path 'non_existent_file.txt'.
 
 ### Attempting to Read a Blocked File
 
-If the file is excluded by rules in a `.rooignore` file:
+If the file is excluded by rules in a `.aicoignore` file:
 
 **Input:**
 
@@ -334,7 +334,7 @@ If the file is excluded by rules in a `.rooignore` file:
 ```xml
 <file>
   <path>.env</path>
-  <error>Access denied by .rooignore rules</error>
+  <error>Access denied by .aicoignore rules</error>
 </file>
 ```
 
@@ -639,7 +639,7 @@ When some files are approved and others are denied or blocked:
   </file>
   <file>
     <path>.env</path>
-    <error>Access denied by .rooignore rules</error>
+    <error>Access denied by .aicoignore rules</error>
   </file>
   <file>
     <path>src/secret-config.ts</path>
@@ -657,7 +657,7 @@ When requesting multiple files, you'll see a batch approval interface that allow
 - **Individual Control**: Override decisions for specific files
 - **File Preview**: Click file headers to open them in your editor
 
-The interface displays each file path clearly, making it easy to understand what Roo wants to access before granting permission.
+The interface displays each file path clearly, making it easy to understand what AI Code Orchestrator wants to access before granting permission.
 
 ### Mixed Content Types
 
@@ -684,7 +684,7 @@ You can read different types of files in a single request:
 </read_file>
 ```
 
-This allows Roo to analyze documentation, visual diagrams, configuration, and specifications all in one context.
+This allows AI Code Orchestrator to analyze documentation, visual diagrams, configuration, and specifications all in one context.
 
 ---
 

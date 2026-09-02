@@ -1,6 +1,6 @@
 import OpenAI from "openai"
 
-import { type ModelInfo, type ModelRecord } from "@roo-code/types"
+import { type ModelInfo, type ModelRecord } from "@ai-code-orchestrator/types"
 
 import { ApiHandlerOptions, RouterName } from "../../shared/api"
 

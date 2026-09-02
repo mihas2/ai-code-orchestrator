@@ -2,7 +2,7 @@ import { memo, type ReactNode, useState } from "react"
 import { Trans } from "react-i18next"
 import { VSCodeLink } from "@vscode/webview-ui-toolkit/react"
 
-import { Package } from "@roo/package"
+import { Package } from "@aico/package"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { vscode } from "@src/utils/vscode"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@src/components/ui"
@@ -46,7 +46,7 @@ const Announcement = ({ hideAnnouncement }: AnnouncementProps) => {
 								announcementLink: (
 									<ExternalLink href="https://x.com/mattrubens/status/2046636598859559114" />
 								),
-								roomoteLink: <ExternalLink href="https://roomote.dev/" />,
+								remoteLink: <ExternalLink href="https://remote.dev/" />,
 							}}
 						/>
 					</p>

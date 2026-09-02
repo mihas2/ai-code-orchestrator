@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-cline"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/roocode"><img src="https://img.shields.io/badge/roocode-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=AicoVeterinaryInc.ai-code-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
+  <a href="https://x.com/AI Code Orchestrator"><img src="https://img.shields.io/badge/AI Code Orchestrator-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
 </p>
-# Roo Code
+# AI Code Orchestrator
 
 > Jouw AI-aangedreven dev-team, rechtstreeks in je editor
 
@@ -28,11 +28,11 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-    </details>
+      </details>
 
 ---
 
-## Wat kan Roo Code voor JOU doen?
+## Wat kan AI Code Orchestrator voor JOU doen?
 
 - Genereer code vanuit natuurlijke taalomschrijvingen
 - Aanpassen met Modi: Code, Architect, Vraag, Debug en Aangepaste Modi
@@ -44,7 +44,7 @@
 
 ## Modi
 
-Roo Code past zich aan jouw werkwijze aan, niet andersom:
+AI Code Orchestrator past zich aan jouw werkwijze aan, niet andersom:
 
 - Code Modus: dagelijks coderen, bewerkingen en bestandsoperaties
 - Architect Modus: plan systemen, specificaties en migraties
@@ -52,21 +52,21 @@ Roo Code past zich aan jouw werkwijze aan, niet andersom:
 - Debug Modus: spoor problemen op, voeg logs toe, isoleer de oorzaak
 - Aangepaste Modi: bouw gespecialiseerde modi voor je team of workflow
 
-Meer info: [Modi gebruiken](https://roocodeinc.github.io/Roo-Code/basic-usage/using-modes) • [Aangepaste modi](https://roocodeinc.github.io/Roo-Code/advanced-usage/custom-modes)
+Meer info: [Modi gebruiken](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [Aangepaste modi](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)
 
 ## Hulpbronnen
 
-- **[Documentatie](https://roocodeinc.github.io/Roo-Code/):** De officiële gids voor het installeren, configureren en beheersen van Roo Code.
-- **[GitHub Issues](https://github.com/RooCodeInc/Roo-Code/issues):** Meld bugs en volg de ontwikkeling.
+- **[Documentatie](https://aiorchestrator.github.io/ai-code-orchestrator/):** De officiële gids voor het installeren, configureren en beheersen van AI Code Orchestrator.
+- **[GitHub Issues](https://github.com/AIOrchestrator/ai-code-orchestrator/issues):** Meld bugs en volg de ontwikkeling.
 
 ---
 
 ## Disclaimer
 
-**Let op**: Roo Code, Inc. geeft **geen** verklaringen of garanties met betrekking tot enige code, modellen of andere tools die worden geleverd of beschikbaar worden gesteld in verband met Roo Code, enige geassocieerde tools van derden, of enige resulterende output. U aanvaardt **alle risico's** die gepaard gaan met het gebruik van dergelijke tools of output; dergelijke tools worden geleverd op een **"AS IS"** en **"AS AVAILABLE"** basis. Dergelijke risico's kunnen omvatten, maar zijn niet beperkt tot, inbreuk op intellectueel eigendom, cyberkwetsbaarheden of -aanvallen, vooringenomenheid, onnauwkeurigheden, fouten, defecten, virussen, downtime, verlies of beschadiging van eigendommen, en/of persoonlijk letsel. U bent als enige verantwoordelijk voor uw gebruik van dergelijke tools of output (inclusief, maar niet beperkt tot, de wettigheid, geschiktheid en resultaten daarvan).
+**Let op**: AI Code Orchestrator, Inc. geeft **geen** verklaringen of garanties met betrekking tot enige code, modellen of andere tools die worden geleverd of beschikbaar worden gesteld in verband met AI Code Orchestrator, enige geassocieerde tools van derden, of enige resulterende output. U aanvaardt **alle risico's** die gepaard gaan met het gebruik van dergelijke tools of output; dergelijke tools worden geleverd op een **"AS IS"** en **"AS AVAILABLE"** basis. Dergelijke risico's kunnen omvatten, maar zijn niet beperkt tot, inbreuk op intellectueel eigendom, cyberkwetsbaarheden of -aanvallen, vooringenomenheid, onnauwkeurigheden, fouten, defecten, virussen, downtime, verlies of beschadiging van eigendommen, en/of persoonlijk letsel. U bent als enige verantwoordelijk voor uw gebruik van dergelijke tools of output (inclusief, maar niet beperkt tot, de wettigheid, geschiktheid en resultaten daarvan).
 
 ---
 
 ## Licentie
 
-[Apache 2.0 © 2025 Roo Code, Inc.](../../LICENSE)
+[Apache 2.0 © 2025 AI Code Orchestrator, Inc.](../../LICENSE)

@@ -2,7 +2,7 @@
 
 import * as path from "path"
 import { Anthropic } from "@anthropic-ai/sdk"
-import type { ModelInfo } from "@roo-code/types"
+import type { ModelInfo } from "@ai-code-orchestrator/types"
 import { BaseProvider } from "../../../api/providers/base-provider"
 
 // Mock the tree-sitter module
@@ -306,7 +306,7 @@ describe("foldedFileContext", () => {
 			// Verify generateFoldedFileContext was called with the right arguments
 			expect(mockedGenerateFoldedFileContext).toHaveBeenCalledWith(filesReadByRoo, {
 				cwd,
-				rooIgnoreController: undefined,
+				aicoIgnoreController: undefined,
 			})
 
 			// Verify the summary was created

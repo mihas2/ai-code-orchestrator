@@ -1,6 +1,10 @@
 import React, { useMemo } from "react"
 import { VSCodeCheckbox, VSCodeTextField, VSCodeDropdown, VSCodeOption } from "@vscode/webview-ui-toolkit/react"
-import { IMAGE_GENERATION_MODELS, type ImageGenerationProvider, getImageGenerationProvider } from "@roo-code/types"
+import {
+	IMAGE_GENERATION_MODELS,
+	type ImageGenerationProvider,
+	getImageGenerationProvider,
+} from "@ai-code-orchestrator/types"
 import { useAppTranslation } from "@/i18n/TranslationContext"
 
 interface ImageGenerationSettingsProps {

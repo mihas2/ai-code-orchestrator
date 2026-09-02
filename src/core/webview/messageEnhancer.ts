@@ -1,4 +1,4 @@
-import { ProviderSettings, ClineMessage, GlobalState } from "@roo-code/types"
+import { ProviderSettings, ClineMessage, GlobalState } from "@ai-code-orchestrator/types"
 import { supportPrompt } from "../../shared/support-prompt"
 import { singleCompletionHandler } from "../../utils/single-completion-handler"
 import { ProviderSettingsManager } from "../config/ProviderSettingsManager"

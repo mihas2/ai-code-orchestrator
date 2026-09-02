@@ -29,8 +29,8 @@ export const NODE_BUILTIN_MODULES: readonly string[] = [...builtinModules, ...bu
  * This provides a CommonJS-compatible `require` function for ESM bundles,
  * which is needed when bundled npm packages use `require()` internally.
  */
-export const COMMONJS_REQUIRE_BANNER = `import { createRequire as __roo_createRequire } from 'module';
-var require = __roo_createRequire(import.meta.url);`
+export const COMMONJS_REQUIRE_BANNER = `import { createRequire as __aico_createRequire } from 'module';
+var require = __aico_createRequire(import.meta.url);`
 
 // Get the directory where this module is located.
 function getModuleDir(): string | undefined {

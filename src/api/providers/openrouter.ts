@@ -9,7 +9,7 @@ import {
 	OPENROUTER_DEFAULT_PROVIDER_NAME,
 	OPEN_ROUTER_PROMPT_CACHING_MODELS,
 	DEEP_SEEK_DEFAULT_TEMPERATURE,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 
 import { NativeToolCallParser } from "../../core/assistant-message/NativeToolCallParser"
 

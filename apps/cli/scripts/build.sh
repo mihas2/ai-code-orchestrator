@@ -1,5 +1,5 @@
 #!/bin/bash
-# Roo Code CLI Local Build Script
+# AI Code Orchestrator CLI Local Build Script
 #
 # Usage:
 #   ./apps/cli/scripts/build.sh [options]
@@ -116,7 +116,7 @@ build() {
     pnpm bundle
 
     step "3/6" "Building CLI..."
-    pnpm --filter @roo-code/cli build
+    pnpm --filter @ai-code-orchestrator/cli build
 
     info "Build complete"
 }
@@ -125,8 +125,8 @@ build() {
 create_tarball() {
     step "4/6" "Creating release tarball for $PLATFORM..."
 
-    RELEASE_DIR="$REPO_ROOT/roo-cli-${PLATFORM}"
-    TARBALL="roo-cli-${PLATFORM}.tar.gz"
+    RELEASE_DIR="$REPO_ROOT/aico-cli-${PLATFORM}"
+    TARBALL="aico-cli-${PLATFORM}.tar.gz"
 
     # Clean up any previous build
     rm -rf "$RELEASE_DIR"
@@ -146,7 +146,7 @@ create_tarball() {
     node -e "
       const pkg = require('$CLI_DIR/package.json');
       const newPkg = {
-        name: '@roo-code/cli',
+        name: '@ai-code-orchestrator/cli',
         version: '$VERSION',
         type: 'module',
         dependencies: {
@@ -188,7 +188,7 @@ create_tarball() {
 
     # Create the wrapper script
     info "Creating wrapper script..."
-    cat > "$RELEASE_DIR/bin/roo" << 'WRAPPER_EOF'
+    cat > "$RELEASE_DIR/bin/aico" << 'WRAPPER_EOF'
 #!/usr/bin/env node
 
 import { fileURLToPath } from 'url';
@@ -199,18 +199,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Set environment variables for the CLI
-process.env.ROO_CLI_ROOT = join(__dirname, '..');
-process.env.ROO_EXTENSION_PATH = join(__dirname, '..', 'extension');
+process.env.AICO_CLI_ROOT = join(__dirname, '..');
+process.env.AICO_EXTENSION_PATH = join(__dirname, '..', 'extension');
 const ripgrepPath = join(__dirname, 'rg');
 if (existsSync(ripgrepPath)) {
-  process.env.ROO_RIPGREP_PATH = ripgrepPath;
+  process.env.AICO_RIPGREP_PATH = ripgrepPath;
 }
 
 // Import and run the actual CLI
 await import(join(__dirname, '..', 'lib', 'index.js'));
 WRAPPER_EOF
 
-    chmod +x "$RELEASE_DIR/bin/roo"
+    chmod +x "$RELEASE_DIR/bin/aico"
 
     # Create empty .env file
     touch "$RELEASE_DIR/.env"
@@ -258,24 +258,24 @@ verify_local_install() {
 
     TARBALL_PATH="$REPO_ROOT/$TARBALL"
 
-    ROO_LOCAL_TARBALL="$TARBALL_PATH" \
-    ROO_INSTALL_DIR="$VERIFY_INSTALL_DIR" \
-    ROO_BIN_DIR="$VERIFY_BIN_DIR" \
-    ROO_VERSION="$VERSION" \
+    AICO_LOCAL_TARBALL="$TARBALL_PATH" \
+    AICO_INSTALL_DIR="$VERIFY_INSTALL_DIR" \
+    AICO_BIN_DIR="$VERIFY_BIN_DIR" \
+    AICO_VERSION="$VERSION" \
     "$CLI_DIR/install.sh" || {
         rm -rf "$VERIFY_DIR"
         error "Installation verification failed!"
     }
 
     # Test --help
-    if ! "$VERIFY_BIN_DIR/roo" --help > /dev/null 2>&1; then
+    if ! "$VERIFY_BIN_DIR/aico" --help > /dev/null 2>&1; then
         rm -rf "$VERIFY_DIR"
         error "CLI --help check failed!"
     fi
     info "CLI --help check passed"
 
     # Test --version
-    if ! "$VERIFY_BIN_DIR/roo" --version > /dev/null 2>&1; then
+    if ! "$VERIFY_BIN_DIR/aico" --version > /dev/null 2>&1; then
         rm -rf "$VERIFY_DIR"
         error "CLI --version check failed!"
     fi
@@ -298,8 +298,8 @@ install_local() {
 
     TARBALL_PATH="$REPO_ROOT/$TARBALL"
 
-    ROO_LOCAL_TARBALL="$TARBALL_PATH" \
-    ROO_VERSION="$VERSION" \
+    AICO_LOCAL_TARBALL="$TARBALL_PATH" \
+    AICO_VERSION="$VERSION" \
     "$CLI_DIR/install.sh" || {
         error "Local installation failed!"
     }
@@ -316,15 +316,15 @@ print_summary() {
     echo ""
 
     if [ "$LOCAL_INSTALL" = true ]; then
-        echo "  Installed to: ~/.roo/cli"
-        echo "  Binary: ~/.local/bin/roo"
+        echo "  Installed to: ~/.ai-code-orchestrator/cli"
+        echo "  Binary: ~/.local/bin/aico"
         echo ""
         echo "  Test it out:"
-        echo "    roo --version"
-        echo "    roo --help"
+        echo "    aico --version"
+        echo "    aico --help"
     else
         echo "  To install manually:"
-        echo "    ROO_LOCAL_TARBALL=$REPO_ROOT/$TARBALL ./apps/cli/install.sh"
+        echo "    AICO_LOCAL_TARBALL=$REPO_ROOT/$TARBALL ./apps/cli/install.sh"
         echo ""
         echo "  Or re-run with --install:"
         echo "    ./apps/cli/scripts/build.sh --install"
@@ -340,7 +340,7 @@ main() {
     echo ""
     printf "${BLUE}${BOLD}"
     echo "  ╭─────────────────────────────────╮"
-    echo "  │   Roo Code CLI Local Build      │"
+    echo "  │   AI Code Orchestrator CLI Local Build      │"
     echo "  ╰─────────────────────────────────╯"
     printf "${NC}"
     echo ""

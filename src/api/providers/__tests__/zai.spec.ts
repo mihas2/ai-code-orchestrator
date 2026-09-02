@@ -11,7 +11,7 @@ import {
 	internationalZAiModels,
 	mainlandZAiModels,
 	ZAI_DEFAULT_TEMPERATURE,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 
 import { ZAiHandler } from "../zai"
 

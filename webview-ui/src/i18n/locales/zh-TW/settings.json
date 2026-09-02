@@ -40,7 +40,7 @@
 		"ui": "UI",
 		"experimental": "實驗性",
 		"language": "語言",
-		"about": "關於 Roo Code",
+		"about": "關於 AI Code Orchestrator",
 		"skills": "Skills"
 	},
 	"about": {
@@ -105,7 +105,7 @@
 		}
 	},
 	"prompts": {
-		"description": "設定用於快速操作的支援提示詞，如增強提示詞、解釋程式碼和修復問題。這些提示詞幫助 Roo 為常見開發工作提供更好的支援。"
+		"description": "設定用於快速操作的支援提示詞，如增強提示詞、解釋程式碼和修復問題。這些提示詞幫助 AI Code Orchestrator 為常見開發工作提供更好的支援。"
 	},
 	"codeIndex": {
 		"title": "程式碼庫索引",
@@ -226,10 +226,10 @@
 		"enabled": "自動核准已啟用",
 		"readOnly": {
 			"label": "讀取",
-			"description": "啟用後，Roo 將自動檢視目錄內容並讀取檔案，無需等待您的核准。",
+			"description": "啟用後，AI Code Orchestrator 將自動檢視目錄內容並讀取檔案，無需等待您的核准。",
 			"outsideWorkspace": {
 				"label": "包含工作區外的檔案",
-				"description": "允許 Roo 讀取目前工作區外的檔案且無需核准。"
+				"description": "允許 AI Code Orchestrator 讀取目前工作區外的檔案且無需核准。"
 			}
 		},
 		"write": {
@@ -238,11 +238,11 @@
 			"delayLabel": "寫入後延遲一小段時間，以便診斷工具偵測潛在問題",
 			"outsideWorkspace": {
 				"label": "包含工作區外的檔案",
-				"description": "允許 Roo 在目前工作區外建立與編輯檔案且無需核准。"
+				"description": "允許 AI Code Orchestrator 在目前工作區外建立與編輯檔案且無需核准。"
 			},
 			"protected": {
 				"label": "包含受保護的檔案",
-				"description": "允許 Roo 建立與編輯受保護的檔案（如 .rooignore 和 .roo/ 設定檔）且無需核准。"
+				"description": "允許 AI Code Orchestrator 建立與編輯受保護的檔案（如 .aicoignore 和 .ai-code-orchestrator/ 設定檔）且無需核准。"
 			}
 		},
 		"mcp": {
@@ -461,7 +461,7 @@
 			"draftModelDesc": "草稿模型必須來自相同模型系列才能正確運作。",
 			"selectDraftModel": "選擇草稿模型",
 			"noModelsFound": "未找到草稿模型。請確保 LM Studio 以伺服器模式執行。",
-			"description": "LM Studio 允許您在本機電腦執行模型。詳細資訊請參閱快速入門指南。您需要啟動 LM Studio 的本機伺服器功能才能與此擴充功能搭配使用。<span>注意：</span> Roo Code 使用複雜提示詞，與 Claude 模型搭配最佳。功能較弱的模型可能無法正常運作。"
+			"description": "LM Studio 允許您在本機電腦執行模型。詳細資訊請參閱快速入門指南。您需要啟動 LM Studio 的本機伺服器功能才能與此擴充功能搭配使用。<span>注意：</span> AI Code Orchestrator 使用複雜提示詞，與 Claude 模型搭配最佳。功能較弱的模型可能無法正常運作。"
 		},
 		"ollama": {
 			"baseUrl": "基礎 URL（選用）",
@@ -471,7 +471,7 @@
 			"numCtx": "上下文視窗大小（num_ctx）",
 			"numCtxHelp": "覆寫模型的預設上下文視窗大小。留空以使用模型的 Modelfile 設定。最小值為 128。",
 			"description": "Ollama 允許您在本機電腦執行模型。請參閱快速入門指南。",
-			"warning": "注意：Roo Code 使用複雜提示詞，與 Claude 模型搭配最佳。功能較弱的模型可能無法正常運作。"
+			"warning": "注意：AI Code Orchestrator 使用複雜提示詞，與 Claude 模型搭配最佳。功能較弱的模型可能無法正常運作。"
 		},
 		"openRouter": {
 			"providerRouting": {
@@ -481,7 +481,7 @@
 			}
 		},
 		"customModel": {
-			"capabilities": "設定自訂 OpenAI 相容模型的功能和定價。請謹慎設定模型功能，因為這會影響 Roo Code 的運作方式。",
+			"capabilities": "設定自訂 OpenAI 相容模型的功能和定價。請謹慎設定模型功能，因為這會影響 AI Code Orchestrator 的運作方式。",
 			"maxTokens": {
 				"label": "最大輸出 Token",
 				"description": "模型能在一則回應中產生的最大 Token 數量。（設為 -1 則由伺服器決定最大值）"
@@ -528,7 +528,7 @@
 		},
 		"consecutiveMistakeLimit": {
 			"label": "錯誤和重複限制",
-			"description": "在顯示「Roo 遇到問題」對話方塊前允許的連續錯誤或重複操作次數。設定為 0 可停用此安全機制（永不觸發）。",
+			"description": "在顯示「AI Code Orchestrator 遇到問題」對話方塊前允許的連續錯誤或重複操作次數。設定為 0 可停用此安全機制（永不觸發）。",
 			"unlimitedDescription": "已啟用無限重試（自動繼續）。對話方塊將永遠不會出現。",
 			"warning": "⚠️ 設定為 0 允許無限重試，這可能會消耗大量 API 使用量"
 		},
@@ -556,7 +556,7 @@
 			"maxTokensLabel": "最大輸出 Token",
 			"maxTokensDescription": "Claude Code 回應的最大輸出 Token 數量。預設為 8000。"
 		},
-		"retiredRooProviderMessage": "As part of our decision to sunset the Roo Code extension, we also ended the Roo Code Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredAicoProviderMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -565,18 +565,18 @@
 		},
 		"enable": {
 			"label": "啟用自動檢查點",
-			"description": "啟用後，Roo 將在工作執行期間自動建立檢查點，方便檢視變更或回到較早的狀態。 <0>了解更多</0>"
+			"description": "啟用後，AI Code Orchestrator 將在工作執行期間自動建立檢查點，方便檢視變更或回到較早的狀態。 <0>了解更多</0>"
 		}
 	},
 	"notifications": {
 		"sound": {
 			"label": "啟用音效",
-			"description": "啟用後，Roo 將為通知和事件播放音效。",
+			"description": "啟用後，AI Code Orchestrator 將為通知和事件播放音效。",
 			"volumeLabel": "音量"
 		},
 		"tts": {
 			"label": "啟用文字轉語音",
-			"description": "啟用後，Roo 將使用文字轉語音功能朗讀其回應。",
+			"description": "啟用後，AI Code Orchestrator 將使用文字轉語音功能朗讀其回應。",
 			"speedLabel": "速度"
 		}
 	},
@@ -584,7 +584,7 @@
 		"description": "控制 AI 上下文視窗中要包含哪些資訊，會影響 Token 用量和回應品質",
 		"autoCondenseContextPercent": {
 			"label": "觸發智慧上下文壓縮的閾值",
-			"description": "當上下文視窗達到此閾值時，Roo 將自動壓縮它。"
+			"description": "當上下文視窗達到此閾值時，AI Code Orchestrator 將自動壓縮它。"
 		},
 		"condensingApiConfiguration": {
 			"label": "上下文壓縮的 API 設定",
@@ -600,7 +600,7 @@
 		},
 		"autoCondenseContext": {
 			"name": "自動觸發智慧上下文壓縮",
-			"description": "啟用時，Roo 會在達到閾值時自動壓縮上下文。停用時，您仍可手動觸發上下文壓縮。"
+			"description": "啟用時，AI Code Orchestrator 會在達到閾值時自動壓縮上下文。停用時，您仍可手動觸發上下文壓縮。"
 		},
 		"openTabs": {
 			"label": "開啟分頁的上下文限制",
@@ -610,9 +610,9 @@
 			"label": "工作區檔案的上下文限制",
 			"description": "目前工作目錄中最多包含多少個檔案。數值越高提供的上下文越多，但 Token 用量也會增加。"
 		},
-		"rooignore": {
-			"label": "在清單和搜尋中顯示被 .rooignore 排除的檔案",
-			"description": "啟用後，符合 .rooignore 規則的檔案會在清單中顯示並標示鎖定圖示。停用後，這些檔案將完全從檔案清單和搜尋結果中隱藏。"
+		"aicoignore": {
+			"label": "在清單和搜尋中顯示被 .aicoignore 排除的檔案",
+			"description": "啟用後，符合 .aicoignore 規則的檔案會在清單中顯示並標示鎖定圖示。停用後，這些檔案將完全從檔案清單和搜尋結果中隱藏。"
 		},
 		"maxConcurrentFileReads": {
 			"label": "並行檔案讀取限制",
@@ -620,7 +620,7 @@
 		},
 		"maxReadFile": {
 			"label": "檔案讀取自動截斷閾值",
-			"description": "當模型未指定起始/結束值時，Roo 讀取的行數。如果此數值小於檔案總行數，Roo 將產生程式碼定義的行號索引。特殊情況：-1 指示 Roo 讀取整個檔案（不建立索引），0 指示不讀取任何行並僅提供行索引以取得最小上下文。較低的值可最小化初始上下文使用，允許後續精確的行範圍讀取。明確指定起始/結束的請求不受此設定限制。 <0>了解更多</0>",
+			"description": "當模型未指定起始/結束值時，AI Code Orchestrator 讀取的行數。如果此數值小於檔案總行數，AI Code Orchestrator 將產生程式碼定義的行號索引。特殊情況：-1 指示 AI Code Orchestrator 讀取整個檔案（不建立索引），0 指示不讀取任何行並僅提供行索引以取得最小上下文。較低的值可最小化初始上下文使用，允許後續精確的行範圍讀取。明確指定起始/結束的請求不受此設定限制。 <0>了解更多</0>",
 			"lines": "行",
 			"always_full_read": "始終讀取整個檔案"
 		},
@@ -673,7 +673,7 @@
 		},
 		"enableSubfolderRules": {
 			"label": "啟用子資料夾規則",
-			"description": "遞迴發現並載入子目錄中的 .roo/rules 和 AGENTS.md 檔案。適用於具有每包規則的 monorepo。"
+			"description": "遞迴發現並載入子目錄中的 .ai-code-orchestrator/rules 和 AGENTS.md 檔案。適用於具有每包規則的 monorepo。"
 		}
 	},
 	"terminal": {
@@ -687,15 +687,15 @@
 		},
 		"outputLineLimit": {
 			"label": "終端機輸出限制",
-			"description": "保留首尾行並丟棄中間行以保持在限制內。降低可節省 Token；提高可為 Roo 提供更多中間細節。Roo 看到內容被跳過的佔位符。<0>了解更多</0>"
+			"description": "保留首尾行並丟棄中間行以保持在限制內。降低可節省 Token；提高可為 AI Code Orchestrator 提供更多中間細節。AI Code Orchestrator 看到內容被跳過的佔位符。<0>了解更多</0>"
 		},
 		"outputCharacterLimit": {
 			"label": "終端機字元限制",
-			"description": "透過強制限制輸出大小來覆寫行限制以防止記憶體問題。如果超出，保留開頭和結尾並向 Roo 顯示內容被跳過的佔位符。<0>了解更多</0>"
+			"description": "透過強制限制輸出大小來覆寫行限制以防止記憶體問題。如果超出，保留開頭和結尾並向 AI Code Orchestrator 顯示內容被跳過的佔位符。<0>了解更多</0>"
 		},
 		"outputPreviewSize": {
 			"label": "命令輸出預覽大小",
-			"description": "控制 Roo 直接看到的命令輸出量。完整輸出始終會被儲存，需要時可以存取。",
+			"description": "控制 AI Code Orchestrator 直接看到的命令輸出量。完整輸出始終會被儲存，需要時可以存取。",
 			"options": {
 				"small": "小 (5KB)",
 				"medium": "中 (10KB)",
@@ -708,7 +708,7 @@
 		},
 		"shellIntegrationDisabled": {
 			"label": "使用內嵌終端機（建議）",
-			"description": "在內嵌終端機（聊天）中執行命令以繞過 shell 設定檔/整合，實現更快、更可靠的執行。停用時，Roo 使用 VS Code 終端機及您的 shell 設定檔、提示和外掛程式。<0>了解更多</0>"
+			"description": "在內嵌終端機（聊天）中執行命令以繞過 shell 設定檔/整合，實現更快、更可靠的執行。停用時，AI Code Orchestrator 使用 VS Code 終端機及您的 shell 設定檔、提示和外掛程式。<0>了解更多</0>"
 		},
 		"commandDelay": {
 			"label": "終端機命令延遲",
@@ -745,7 +745,7 @@
 	"advanced": {
 		"diff": {
 			"label": "透過差異比對編輯",
-			"description": "啟用後，Roo 可更快速地編輯檔案，並自動拒絕不完整的整檔覆寫",
+			"description": "啟用後，AI Code Orchestrator 可更快速地編輯檔案，並自動拒絕不完整的整檔覆寫",
 			"strategy": {
 				"label": "差異比對策略",
 				"options": {
@@ -762,7 +762,7 @@
 		},
 		"todoList": {
 			"label": "啟用待辦事項清單工具",
-			"description": "啟用後，Roo 可以建立和管理待辦事項清單來追蹤任務進度。這有助於將複雜任務組織成可管理的步驟。"
+			"description": "啟用後，AI Code Orchestrator 可以建立和管理待辦事項清單來追蹤任務進度。這有助於將複雜任務組織成可管理的步驟。"
 		}
 	},
 	"experimental": {
@@ -772,19 +772,19 @@
 		},
 		"INSERT_BLOCK": {
 			"name": "使用實驗性插入內容工具",
-			"description": "啟用實驗性的插入內容工具，允許 Roo 直接在指定行號插入內容，而無需產生差異比對。"
+			"description": "啟用實驗性的插入內容工具，允許 AI Code Orchestrator 直接在指定行號插入內容，而無需產生差異比對。"
 		},
 		"CONCURRENT_FILE_READS": {
 			"name": "啟用並行檔案讀取",
-			"description": "啟用後，Roo 可以在單一請求中讀取多個檔案。停用後，Roo 必須逐一讀取檔案。在使用能力較弱的模型或希望對檔案存取有更多控制時，停用此功能可能會有所幫助。"
+			"description": "啟用後，AI Code Orchestrator 可以在單一請求中讀取多個檔案。停用後，AI Code Orchestrator 必須逐一讀取檔案。在使用能力較弱的模型或希望對檔案存取有更多控制時，停用此功能可能會有所幫助。"
 		},
 		"MULTI_SEARCH_AND_REPLACE": {
 			"name": "使用實驗性多區塊差異比對工具",
-			"description": "啟用後，Roo 將使用多區塊差異比對工具，嘗試在單一請求中更新檔案內的多個程式碼區塊。"
+			"description": "啟用後，AI Code Orchestrator 將使用多區塊差異比對工具，嘗試在單一請求中更新檔案內的多個程式碼區塊。"
 		},
 		"PREVENT_FOCUS_DISRUPTION": {
 			"name": "背景編輯",
-			"description": "啟用後可防止編輯器焦點中斷。檔案編輯會在背景進行，不會開啟 diff 檢視或搶奪焦點。您可以在 Roo 進行變更時繼續不受干擾地工作。檔案可能會在不獲得焦點的情況下開啟以捕獲診斷，或保持完全關閉。"
+			"description": "啟用後可防止編輯器焦點中斷。檔案編輯會在背景進行，不會開啟 diff 檢視或搶奪焦點。您可以在 AI Code Orchestrator 進行變更時繼續不受干擾地工作。檔案可能會在不獲得焦點的情況下開啟以捕獲診斷，或保持完全關閉。"
 		},
 		"ASSISTANT_MESSAGE_PARSER": {
 			"name": "使用全新訊息解析器",
@@ -796,7 +796,7 @@
 		},
 		"IMAGE_GENERATION": {
 			"name": "啟用 AI 影像生成",
-			"description": "啟用後，Roo 可以使用 OpenRouter 的影像生成模型，從文字提示產生影像。需要設定 OpenRouter API 金鑰。",
+			"description": "啟用後，AI Code Orchestrator 可以使用 OpenRouter 的影像生成模型，從文字提示產生影像。需要設定 OpenRouter API 金鑰。",
 			"providerLabel": "供應商",
 			"providerDescription": "選擇用於影像生成的供應商。",
 			"openRouterApiKeyLabel": "OpenRouter API 金鑰",
@@ -809,13 +809,13 @@
 		},
 		"RUN_SLASH_COMMAND": {
 			"name": "啟用模型啟動的斜線命令",
-			"description": "啟用時，Roo 可以執行您的斜線命令來執行工作流程。"
+			"description": "啟用時，AI Code Orchestrator 可以執行您的斜線命令來執行工作流程。"
 		},
 		"CUSTOM_TOOLS": {
 			"name": "啟用自訂工具",
-			"description": "啟用後，Roo 可以從專案中的 .roo/tools 目錄或全域工具目錄 ~/.roo/tools 載入並使用自訂 TypeScript/JavaScript 工具。注意：這些工具將自動獲得核准。",
+			"description": "啟用後，AI Code Orchestrator 可以從專案中的 .ai-code-orchestrator/tools 目錄或全域工具目錄 ~/.ai-code-orchestrator/tools 載入並使用自訂 TypeScript/JavaScript 工具。注意：這些工具將自動獲得核准。",
 			"toolsHeader": "可用自訂工具",
-			"noTools": "未載入自訂工具。請向專案的 .roo/tools 目錄或全域工具目錄 ~/.roo/tools 新增 .ts 或 .js 檔案。",
+			"noTools": "未載入自訂工具。請向專案的 .ai-code-orchestrator/tools 目錄或全域工具目錄 ~/.ai-code-orchestrator/tools 新增 .ts 或 .js 檔案。",
 			"refreshButton": "重新整理",
 			"refreshing": "正在重新整理...",
 			"refreshSuccess": "工具重新整理成功",
@@ -825,7 +825,7 @@
 	},
 	"promptCaching": {
 		"label": "停用提示詞快取",
-		"description": "勾選後，Roo 將不會為此模型使用提示詞快取。"
+		"description": "勾選後，AI Code Orchestrator 將不會為此模型使用提示詞快取。"
 	},
 	"temperature": {
 		"useCustom": "使用自訂溫度",
@@ -855,7 +855,7 @@
 		}
 	},
 	"modelPicker": {
-		"automaticFetch": "此擴充功能會自動從 <serviceLink>{{serviceName}}</serviceLink> 取得最新的可用模型清單。如果不確定要選哪個模型，建議使用 <defaultModelLink>{{defaultModelId}}</defaultModelLink>，這是與 Roo Code 最佳搭配的模型。您也可以搜尋「free」來檢視目前可用的免費選項。",
+		"automaticFetch": "此擴充功能會自動從 <serviceLink>{{serviceName}}</serviceLink> 取得最新的可用模型清單。如果不確定要選哪個模型，建議使用 <defaultModelLink>{{defaultModelId}}</defaultModelLink>，這是與 AI Code Orchestrator 最佳搭配的模型。您也可以搜尋「free」來檢視目前可用的免費選項。",
 		"label": "模型",
 		"searchPlaceholder": "搜尋",
 		"noMatchFound": "找不到符合的結果",

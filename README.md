@@ -2,76 +2,56 @@
   <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
 
-# AI Orchestrator
+# AI Code Orchestrator
 
-> Your AI-Powered Dev Team, Right in Your Editor
+> Your AI-powered development team, right in your editor.
 
-<details>
-  <summary>🌐 Available languages</summary>
+AI Code Orchestrator is a VS Code extension and CLI for planning, implementing, reviewing, and explaining software with configurable AI agents. It combines chat, code actions, terminal workflows, custom modes, MCP integrations, and multi-agent orchestration in one workspace.
 
-- [English](README.md)
-- [Català](locales/ca/README.md)
-- [Deutsch](locales/de/README.md)
-- [Español](locales/es/README.md)
-- [Français](locales/fr/README.md)
-- [हिंदी](locales/hi/README.md)
-- [Bahasa Indonesia](locales/id/README.md)
-- [Italiano](locales/it/README.md)
-- [日本語](locales/ja/README.md)
-- [한국어](locales/ko/README.md)
-- [Nederlands](locales/nl/README.md)
-- [Polski](locales/pl/README.md)
-- [Português (BR)](locales/pt-BR/README.md)
-- [Русский](locales/ru/README.md)
-- [Türkçe](locales/tr/README.md)
-- [Tiếng Việt](locales/vi/README.md)
-- [简体中文](locales/zh-CN/README.md)
-- [繁體中文](locales/zh-TW/README.md)
-- ...
-      </details>
+## Capabilities
 
----
-
-## What Can AI Orchestrator Do For YOU?
-
-- Generate Code from natural language descriptions and specs
-- Adapt with Modes: Code, Architect, Ask, Debug, and Custom Modes
-- Refactor & Debug existing code
-- Write & Update documentation
-- Answer Questions about your codebase
-- Automate repetitive tasks
-- Utilize MCP Servers
+- Generate and modify code from natural-language requirements
+- Plan architecture and break work into coordinated tasks
+- Review changes, diagnose failures, and improve existing code
+- Work with files, terminals, images, and external MCP tools
+- Configure providers, models, permissions, and custom modes
+- Continue tasks from the editor or the command line
 
 ## Modes
 
-AI Orchestrator adapts to how you work:
+AI Code Orchestrator adapts to the work at hand:
 
-- Code Mode: everyday coding, edits, and file ops
-- Architect Mode: plan systems, specs, and migrations
-- Ask Mode: fast answers, explanations, and docs
-- Debug Mode: trace issues, add logs, isolate root causes
-- Custom Modes: build specialized modes for your team or workflow
+- **Code** - implement changes and operate on project files
+- **Architect** - design systems, specifications, and migrations
+- **Ask** - answer questions and explain code
+- **Debug** - isolate root causes and validate fixes
+- **Custom** - create specialized workflows for a team
 
-Learn more: [Using Modes](https://roocodeinc.github.io/Roo-Code/basic-usage/using-modes) • [Custom Modes](https://roocodeinc.github.io/Roo-Code/advanced-usage/custom-modes)
+## Documentation
 
-## Resources
+See the project documentation in `apps/docs` and the orchestration specification in `docs/`.
 
-- **[Documentation](https://roocodeinc.github.io/Roo-Code/):** The official guide to installing, configuring, and mastering AI Orchestrator.
-- **[GitHub Issues](https://github.com/RooCodeInc/Roo-Code/issues):** Report bugs and track development.
+## Installation
 
----
+Install the **AI Code Orchestrator** extension from the VS Code Marketplace, or build a VSIX locally:
 
-## Disclaimer
+```bash
+pnpm install
+pnpm vsix
+```
 
-The AI Orchestrator Extension was shut down on May 15th.
+The CLI is available from the monorepo during development:
 
-- If you're looking for an alternative, check out [ZooCode](https://github.com/Zoo-Code-Org/Zoo-Code/) (a fork started by the AI Orchestrator community) and [Cline](https://cline.bot/) (from where AI Orchestrator originated).
-- If you were a paying user and have billing questions, please write [billing@roocode.com](mailto:billing@roocode.com).
+```bash
+pnpm --filter @AI Code Orchestrator/cli dev
+```
 
-**Please note** that AI Orchestrator, Inc does **not** make any representations or warranties regarding any code, models, or other tools provided or made available in connection with AI Orchestrator, any associated third-party tools, or any resulting outputs. You assume **all risks** associated with the use of any such tools or outputs; such tools are provided on an **"AS IS"** and **"AS AVAILABLE"** basis. Such risks may include, without limitation, intellectual property infringement, cyber vulnerabilities or attacks, bias, inaccuracies, errors, defects, viruses, downtime, property loss or damage, and/or personal injury. You are solely responsible for your use of any such tools or outputs (including, without limitation, the legality, appropriateness, and results thereof).
+The package scope and legacy command identifiers are retained for compatibility with existing integrations.
 
----
+## Attribution
+
+AI Code Orchestrator was created based on AI Code Orchestrator Code. The implementation retains selected compatible APIs and identifiers so existing integrations can continue to work.
 
 ## License
 
-[Apache 2.0 © 2026 AI Orchestrator, Inc.](./LICENSE)
+[Apache 2.0](./LICENSE)

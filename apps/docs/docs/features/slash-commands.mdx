@@ -1,21 +1,21 @@
 ---
-description: Learn how to create and use custom slash commands in Roo Code to automate workflows and extend functionality with markdown-based definitions.
+description: Learn how to create and use custom slash commands in AI Code Orchestrator to automate workflows and extend functionality with markdown-based definitions.
 keywords:
   - slash commands
   - custom commands
-  - Roo Code commands
+  - AI Code Orchestrator commands
   - command automation
   - workflow automation
   - markdown commands
-  - .roo/commands
+  - .ai-code-orchestrator/commands
 ---
 
 # Slash Commands
 
-Create custom slash commands to automate repetitive tasks and extend Roo Code's functionality with simple markdown files.
+Create custom slash commands to automate repetitive tasks and extend AI Code Orchestrator's functionality with simple markdown files.
 
 :::tip Quick Start
-Type `/` in chat to select a command. To create or manage commands, open Settings > Slash Commands. You can still store commands in `.roo/commands/` (project) or `~/.roo/commands/` (global).
+Type `/` in chat to select a command. To create or manage commands, open Settings > Slash Commands. You can still store commands in `.ai-code-orchestrator/commands/` (project) or `~/.ai-code-orchestrator/commands/` (global).
 :::
 
 ---
@@ -36,10 +36,10 @@ Slash commands let you create reusable prompts and workflows that can be trigger
 
 ## Creating Custom Commands
 
-Custom commands extend Roo Code's functionality by adding markdown files to specific directories:
+Custom commands extend AI Code Orchestrator's functionality by adding markdown files to specific directories:
 
-- **Project-specific**: `.roo/commands/` in your workspace root
-- **Global**: `~/.roo/commands/` in your home directory
+- **Project-specific**: `.ai-code-orchestrator/commands/` in your workspace root
+- **Global**: `~/.ai-code-orchestrator/commands/` in your home directory
 
 The filename becomes the command name. For example:
 - `review.md` → `/review`
@@ -103,7 +103,7 @@ Please perform a thorough security review of the selected code:
 **Frontmatter Fields:**
 - **`description`**: Appears in the command menu to help users understand the command's purpose
 - **`argument-hint`**: (Optional) Provides a hint about expected arguments when using the command. See [Argument Hints](#argument-hints) for detailed information
-- **`mode`**: (Optional) Mode slug to switch to before running the command (e.g., `code`, `architect`). Roo switches to this mode first, then executes the command content in that mode's context
+- **`mode`**: (Optional) Mode slug to switch to before running the command (e.g., `code`, `architect`). AI Code Orchestrator switches to this mode first, then executes the command content in that mode's context
 
 ---
 
@@ -111,7 +111,7 @@ Please perform a thorough security review of the selected code:
 
 Create and maintain commands from Settings.
 
-1. Click the gear icon in Roo Code and open Settings
+1. Click the gear icon in AI Code Orchestrator and open Settings
 2. Go to the Slash Commands tab
 3. Click "New Command", name it, and choose location (Project or Global)
 4. The command file opens with starter template content
@@ -190,7 +190,7 @@ Review the current system architecture and suggest improvements for:
 - Data flow optimization
 ```
 
-When you run this command, Roo switches to Architect mode first, then processes the command content with Architect's role definition and tool restrictions.
+When you run this command, AI Code Orchestrator switches to Architect mode first, then processes the command content with Architect's role definition and tool restrictions.
 
 **Development Workflows**
 
@@ -357,7 +357,7 @@ Analyze the current test coverage and:
 
 ## Built-in Commands
 
-Roo Code includes powerful built-in commands that provide specialized functionality:
+AI Code Orchestrator includes powerful built-in commands that provide specialized functionality:
 
 ### The `init` Command
 
@@ -371,7 +371,7 @@ The `/init` command is a comprehensive AI assistant setup tool that analyzes you
 - **Code Style Extraction**: Captures coding conventions and patterns
 
 **Creates AI Assistant Configuration:**
-- Generates mode-specific `AGENTS.md` files in `.roo/rules-*` directories
+- Generates mode-specific `AGENTS.md` files in `.ai-code-orchestrator/rules-*` directories
 - Creates detailed rules for different AI assistant modes (Code, Architect, Debug, etc.)
 - Produces concise, high-signal documentation following the "non-obvious-only" principle
 - Supports multiple AI assistant formats (Claude, Cursor, Copilot)
@@ -392,7 +392,7 @@ The `init` command is especially useful when starting work on a new project or w
 ## Troubleshooting
 
 **Commands Not Appearing:**
-- **Check file location**: Ensure custom command files are in `.roo/commands/` or `~/.roo/commands/`
+- **Check file location**: Ensure custom command files are in `.ai-code-orchestrator/commands/` or `~/.ai-code-orchestrator/commands/`
 - **Verify file extension**: Custom commands must be `.md` files
 - **Reload window**: Sometimes VS Code needs to be reloaded to detect new command files
 
@@ -403,12 +403,12 @@ When a slash command isn't found, the LLM will see an error message indicating w
 New commands created through the UI receive template content to help you get started. This template includes basic structure and examples that you can customize.
 
 **Command Conflicts:**
-- Project commands (`.roo/commands/`) override global commands (`~/.roo/commands/`) with the same name
+- Project commands (`.ai-code-orchestrator/commands/`) override global commands (`~/.ai-code-orchestrator/commands/`) with the same name
 - Built-in commands cannot be overridden
 - When creating duplicate names through the UI, numbers are appended (e.g., `new-command-1`, `new-command-2`)
 
 **File System Errors:**
-- **Permission Issues**: Ensure you have write permissions to the `.roo/commands/` directory
+- **Permission Issues**: Ensure you have write permissions to the `.ai-code-orchestrator/commands/` directory
 - **Directory Creation**: The system will attempt to create the commands directory if it doesn't exist
 - **Symbolic Links**: Command directories support symbolic links for sharing commands across projects
 
@@ -420,7 +420,7 @@ The slash menu includes mode-switching commands (like `/code`, `/ask`) that fund
 
 ## See Also
 
-- [Using Modes](/basic-usage/using-modes) - Learn about Roo Code's different operational modes
-- [Custom Instructions](/features/custom-instructions) - Set persistent instructions for Roo Code
+- [Using Modes](/basic-usage/using-modes) - Learn about AI Code Orchestrator's different operational modes
+- [Custom Instructions](/features/custom-instructions) - Set persistent instructions for AI Code Orchestrator
 - [Keyboard Shortcuts](/features/keyboard-shortcuts) - Quick access to commands
 - [Task Management](/features/task-todo-list) - Manage complex workflows

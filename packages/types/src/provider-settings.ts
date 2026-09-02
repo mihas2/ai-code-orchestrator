@@ -70,7 +70,7 @@ export const isInternalProvider = (key: string): key is InternalProvider =>
 /**
  * CustomProvider
  *
- * Custom providers are completely configurable within Roo Code settings.
+ * Custom providers are completely configurable within AI Code Orchestrator settings.
  */
 
 export const customProviders = ["openai"] as const
@@ -141,7 +141,7 @@ export const retiredProviderNames = [
 	"groq",
 	"huggingface",
 	"io-intelligence",
-	"roo",
+	"aico",
 ] as const
 
 export const retiredProviderNamesSchema = z.enum(retiredProviderNames)

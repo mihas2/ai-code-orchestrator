@@ -1,14 +1,14 @@
 ---
-description: Browse all Roo Code release notes and version updates. Find detailed changelogs, new features, bug fixes, and improvements for each version.
+description: Browse all AI Code Orchestrator release notes and version updates. Find detailed changelogs, new features, bug fixes, and improvements for each version.
 keywords:
-    - roo code updates
+    - AI Code Orchestrator updates
     - release notes
     - version history
     - changelog
     - new features
     - bug fixes
     - improvements
-    - roo code versions
+    - AI Code Orchestrator versions
 ---
 
 # Extension Release Notes
@@ -17,7 +17,7 @@ See what's new in every release here.
 
 We release often, sometimes multiple times per day, so make sure to always be on the latest to have access to the most recent bug fixes and improvements.
 
-If you want to live on the edge and try things out before it's released, we have a [Nightly channel](https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-code-nightly).
+If you want to live on the edge and try things out before it's released, we have a [Nightly channel](https://marketplace.visualstudio.com/items?itemName=AicoVeterinaryInc.AI Code Orchestrator-nightly).
 
 ---
 

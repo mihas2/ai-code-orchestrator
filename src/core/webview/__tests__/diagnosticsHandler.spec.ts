@@ -74,7 +74,7 @@ describe("generateErrorDiagnostics", () => {
 		})
 
 		expect(result.success).toBe(true)
-		expect(result.filePath).toContain("roo-diagnostics-")
+		expect(result.filePath).toContain("aico-diagnostics-")
 
 		// Verify we attempted to read API history
 		expect(fs.readFile).toHaveBeenCalledWith(path.join("/mock/task-dir", "api_conversation_history.json"), "utf8")
@@ -83,11 +83,11 @@ describe("generateErrorDiagnostics", () => {
 		expect(fs.writeFile).toHaveBeenCalledTimes(1)
 		const [writtenPath, writtenContent] = vi.mocked(fs.writeFile).mock.calls[0]
 		// taskId.slice(0, 8) = "test-tas" from "test-task-id"
-		expect(String(writtenPath)).toContain("roo-diagnostics-test-tas")
+		expect(String(writtenPath)).toContain("aico-diagnostics-test-tas")
 		expect(String(writtenContent)).toContain(
 			"// Please attach this file to a GitHub issue if it helps diagnose the problem faster",
 		)
-		expect(String(writtenContent)).not.toContain("support@roocode.com")
+		expect(String(writtenContent)).not.toContain("support@AI Code Orchestrator")
 		expect(String(writtenContent)).toContain('"error":')
 		expect(String(writtenContent)).toContain('"history":')
 		expect(String(writtenContent)).toContain('"version": "1.2.3"')

@@ -15,19 +15,19 @@ import {
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-	title: "Roo Code Documentation",
+	title: "AI Code Orchestrator Documentation",
 	tagline: "AI-powered autonomous coding agent for VS Code - Complete documentation, guides, and tutorials",
 	favicon: "img/favicon.ico",
 
 	// Set the production url of your site here
-	url: "https://roocodeinc.github.io",
+	url: "https://aiorchestrator.github.io",
 	// Set the /<baseUrl>/ pathname under which your site is served
 	// For GitHub pages deployment, it is often '/<projectName>/'
-	baseUrl: "/Roo-Code/",
+	baseUrl: "/AI Code Orchestrator-Code/",
 
 	// GitHub pages deployment config (if needed)
-	organizationName: "RooCodeInc",
-	projectName: "Roo-Code",
+	organizationName: "AIOrchestrator",
+	projectName: "AI Code Orchestrator-Code",
 
 	onBrokenLinks: "warn",
 	markdown: {
@@ -170,8 +170,8 @@ const config: Config = {
 						from: ["/advanced-usage/mcp", "/mcp/overview"],
 					},
 					{
-						to: "/features/mcp/using-mcp-in-roo",
-						from: ["/mcp/using-mcp-in-roo"],
+						to: "/features/mcp/using-mcp-in-aico",
+						from: ["/mcp/using-mcp-in-aico"],
 					},
 					{
 						to: "/features/mcp/what-is-mcp",
@@ -259,51 +259,55 @@ const config: Config = {
 						from: ["/features/tools/write-to-file"],
 					},
 					{
-						to: "/advanced-usage/roo-code-nightly",
+						to: "/advanced-usage/aico-code-nightly",
 						from: ["/advanced-usage/prerelease-build"],
 					},
-					// Redirect removed Roo Code Router provider aliases
+					// Redirect removed AI Code Orchestrator Router provider aliases
 					{
 						to: "/providers",
-						from: ["/providers/roo"],
+						from: ["/providers/aico"],
 					},
 					{
 						to: "/providers",
-						from: ["/providers/roo-code-cloud"],
+						from: ["/providers/ai-code-orchestrator-cloud"],
 					},
 					{
 						to: "/providers",
-						from: ["/roo-code-provider", "/roo-code-provider/overview"],
+						from: ["/ai-code-orchestrator-provider", "/ai-code-orchestrator-provider/overview"],
 					},
 					// Redirect removed Cloud, Router, Credits, and billing pages
 					{
 						to: "/",
 						from: [
 							"/sunset",
-							"/roo-code-cloud",
-							"/roo-code-cloud/overview",
-							"/roo-code-cloud/login",
-							"/roo-code-cloud/connect",
-							"/roo-code-cloud/cloud-agents",
-							"/roo-code-cloud/environments",
-							"/roo-code-cloud/task-sync",
-							"/roo-code-cloud/task-sharing",
-							"/roo-code-cloud/analytics",
-							"/roo-code-cloud/github-integration",
-							"/roo-code-cloud/slack-integration",
-							"/roo-code-cloud/team-plan",
-							"/roo-code-cloud/what-is-roo-code-cloud",
-							"/roo-code-cloud/dashboard",
-							"/roo-code-cloud/roomote-control",
+							"/ai-code-orchestrator-cloud",
+							"/ai-code-orchestrator-cloud/overview",
+							"/ai-code-orchestrator-cloud/login",
+							"/ai-code-orchestrator-cloud/connect",
+							"/ai-code-orchestrator-cloud/cloud-agents",
+							"/ai-code-orchestrator-cloud/environments",
+							"/ai-code-orchestrator-cloud/task-sync",
+							"/ai-code-orchestrator-cloud/task-sharing",
+							"/ai-code-orchestrator-cloud/analytics",
+							"/ai-code-orchestrator-cloud/github-integration",
+							"/ai-code-orchestrator-cloud/slack-integration",
+							"/ai-code-orchestrator-cloud/team-plan",
+							"/ai-code-orchestrator-cloud/what-is-ai-code-orchestrator-cloud",
+							"/ai-code-orchestrator-cloud/dashboard",
+							"/ai-code-orchestrator-cloud/remote-control",
 						],
 					},
 					{
 						to: "/providers",
-						from: ["/roo-code-router", "/roo-code-router/overview", "/providers/roo-code-router"],
+						from: [
+							"/ai-code-orchestrator-router",
+							"/ai-code-orchestrator-router/overview",
+							"/providers/ai-code-orchestrator-router",
+						],
 					},
 					{
 						to: "/advanced-usage/rate-limits-costs",
-						from: ["/credits", "/credits/overview", "/roo-code-cloud/billing-subscriptions"],
+						from: ["/credits", "/credits/overview", "/ai-code-orchestrator-cloud/billing-subscriptions"],
 					},
 					// Redirect removed Human Relay provider page
 					{
@@ -354,11 +358,11 @@ const config: Config = {
 			{
 				name: "keywords",
 				content:
-					"Roo Code, AI coding assistant, VS Code extension, autonomous coding agent, AI pair programmer, code generation, documentation",
+					"AI Code Orchestrator, AI coding assistant, VS Code extension, autonomous coding agent, AI pair programmer, code generation, documentation",
 			},
 			{ name: "twitter:card", content: "summary_large_image" },
-			{ name: "twitter:site", content: "@roocode" },
-			{ name: "twitter:creator", content: "@roocode" },
+			{ name: "twitter:site", content: "@aicodeorchestrator" },
+			{ name: "twitter:creator", content: "@aicodeorchestrator" },
 			{ property: "og:type", content: "website" },
 			{ property: "og:locale", content: "en_US" },
 		],
@@ -370,9 +374,9 @@ const config: Config = {
 		image: "/img/social-share.png", // Default Open Graph image
 		navbar: {
 			logo: {
-				alt: "Roo Code Logo",
-				src: "img/roo-code-logo-dark.svg",
-				srcDark: "img/roo-code-logo-white.svg",
+				alt: "AI Code Orchestrator Logo",
+				src: "img/ai-code-orchestrator-logo-dark.svg",
+				srcDark: "img/ai-code-orchestrator-logo-white.svg",
 			},
 			items: [
 				{
@@ -384,9 +388,9 @@ const config: Config = {
 		footer: {
 			style: "dark",
 			logo: {
-				alt: "Roo Code Logo",
-				src: "img/roo-code-logo-dark.svg",
-				srcDark: "img/roo-code-logo-white.svg",
+				alt: "AI Code Orchestrator Logo",
+				src: "img/ai-code-orchestrator-logo-dark.svg",
+				srcDark: "img/ai-code-orchestrator-logo-white.svg",
 				width: 120,
 				height: 24,
 			},

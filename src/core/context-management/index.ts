@@ -4,8 +4,8 @@ import crypto from "crypto"
 import { ApiHandler, ApiHandlerCreateMessageMetadata } from "../../api"
 import { MAX_CONDENSE_THRESHOLD, MIN_CONDENSE_THRESHOLD, summarizeConversation, SummarizeResponse } from "../condense"
 import { ApiMessage } from "../task-persistence/apiMessages"
-import { ANTHROPIC_DEFAULT_MAX_TOKENS } from "@roo-code/types"
-import { RooIgnoreController } from "../ignore/RooIgnoreController"
+import { ANTHROPIC_DEFAULT_MAX_TOKENS } from "@ai-code-orchestrator/types"
+import { AicoIgnoreController } from "../ignore/AicoIgnoreController"
 
 /**
  * Context Management
@@ -219,12 +219,12 @@ export type ContextManagementOptions = {
 	metadata?: ApiHandlerCreateMessageMetadata
 	/** Optional environment details string to include in the condensed summary */
 	environmentDetails?: string
-	/** Optional array of file paths read by Roo during the task (will be folded via tree-sitter) */
+	/** Optional array of file paths read by AI Code Orchestrator during the task (will be folded via tree-sitter) */
 	filesReadByRoo?: string[]
 	/** Optional current working directory for resolving file paths (required if filesReadByRoo is provided) */
 	cwd?: string
 	/** Optional controller for file access validation */
-	rooIgnoreController?: RooIgnoreController
+	aicoIgnoreController?: AicoIgnoreController
 }
 
 export type ContextManagementResult = SummarizeResponse & {
@@ -257,7 +257,7 @@ export async function manageContext({
 	environmentDetails,
 	filesReadByRoo,
 	cwd,
-	rooIgnoreController,
+	aicoIgnoreController,
 }: ContextManagementOptions): Promise<ContextManagementResult> {
 	let error: string | undefined
 	let errorDetails: string | undefined
@@ -314,7 +314,7 @@ export async function manageContext({
 				environmentDetails,
 				filesReadByRoo,
 				cwd,
-				rooIgnoreController,
+				aicoIgnoreController,
 			})
 			if (result.error) {
 				error = result.error

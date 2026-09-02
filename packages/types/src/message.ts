@@ -134,7 +134,7 @@ export function isNonBlockingAsk(ask: ClineAsk): ask is NonBlockingAsk {
  * - `mcp_server_response`: Response received from MCP server
  * - `subtask_result`: Result of a completed subtask
  * - `checkpoint_saved`: Indicates a checkpoint has been saved
- * - `rooignore_error`: Error related to .rooignore file processing
+ * - `aicoignore_error`: Error related to .aicoignore file processing
  * - `diff_error`: Error occurred while applying a diff/patch
  * - `condense_context`: Context condensation/summarization has started
  * - `condense_context_error`: Error occurred during context condensation
@@ -161,7 +161,7 @@ export const clineSays = [
 	"mcp_server_response",
 	"subtask_result",
 	"checkpoint_saved",
-	"rooignore_error",
+	"aicoignore_error",
 	"diff_error",
 	"condense_context",
 	"condense_context_error",

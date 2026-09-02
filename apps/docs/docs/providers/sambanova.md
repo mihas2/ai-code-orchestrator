@@ -1,10 +1,10 @@
 ---
 sidebar_label: SambaNova
-description: Configure SambaNova's high-speed AI models in Roo Code. Experience enterprise-grade inference with competitive performance and diverse model selection.
+description: Configure SambaNova's high-speed AI models in AI Code Orchestrator. Experience enterprise-grade inference with competitive performance and diverse model selection.
 keywords:
     - sambanova
     - sambanova ai
-    - roo code
+    - AI Code Orchestrator
     - api provider
     - high-speed inference
     - enterprise ai
@@ -12,7 +12,7 @@ keywords:
     - fast inference
 ---
 
-# Using SambaNova With Roo Code
+# Using SambaNova With AI Code Orchestrator
 
 SambaNova specializes in providing high-speed inference for large language models, utilizing their Reconfigurable Dataflow Units (RDUs) through their SambaCloud portal. This delivers fast response times for supported models.
 
@@ -22,21 +22,21 @@ SambaNova specializes in providing high-speed inference for large language model
 
 ## Getting an API Key
 
-To use SambaNova with Roo Code, you'll need an API key from the [SambaCloud](https://cloud.sambanova.ai?utm_source=roocode&utm_medium=external&utm_campaign=cloud_signup). After signing up, navigate to the API Keys section in the left panel to create and copy your SambaCloud API key.
+To use SambaNova with AI Code Orchestrator, you'll need an API key from the [SambaCloud](https://cloud.sambanova.ai?utm_source=AI Code Orchestrator&utm_medium=external&utm_campaign=cloud_signup). After signing up, navigate to the API Keys section in the left panel to create and copy your SambaCloud API key.
 
 ---
 
 ## Available Models
 
-Roo Code automatically fetches all available models from the SambaNova API.
+AI Code Orchestrator automatically fetches all available models from the SambaNova API.
 
 For the complete, up-to-date model list and capabilities, see [SambaCloud's supported models documentation](https://docs.sambanova.ai/cloud/docs/get-started/supported-models).
 
 ---
 
-## Configuration in Roo Code
+## Configuration in AI Code Orchestrator
 
-1. **Open Roo Code Settings:** Click the gear icon (<Codicon name="gear" />) in the Roo Code panel.
+1. **Open AI Code Orchestrator Settings:** Click the gear icon (<Codicon name="gear" />) in the AI Code Orchestrator panel.
 2. **Select Provider:** Choose "SambaNova" from the "API Provider" dropdown.
 3. **Enter API Key:** Paste your SambaNova API key into the "SambaNova API Key" field.
 4. **Select Model:** Choose your desired model from the "Model" dropdown.

@@ -134,8 +134,8 @@
 	z-index: 1;
 }
 
-/* Exact utility classes from roocode.com */
-.roo-gradient-heading {
+/* Exact utility classes from AI Code Orchestrator */
+.ai-code-orchestrator-gradient-heading {
 	background: linear-gradient(to bottom, hsl(var(--foreground)), hsl(var(--foreground) / 0.7));
 	background-clip: text;
 	-webkit-background-clip: text;
@@ -146,19 +146,19 @@
 }
 
 @media (min-width: 640px) {
-	.roo-gradient-heading {
+	.ai-code-orchestrator-gradient-heading {
 		font-size: 3rem;
 	}
 }
 
-.roo-text-gradient-blue {
+.ai-code-orchestrator-text-gradient-blue {
 	background: linear-gradient(to right, rgb(96, 165, 250), rgb(34, 211, 238));
 	background-clip: text;
 	-webkit-background-clip: text;
 	color: transparent;
 }
 
-.roo-feature-card {
+.ai-code-orchestrator-feature-card {
 	position: relative;
 	height: 100%;
 	border-radius: calc(var(--radius) + 4px);
@@ -169,11 +169,11 @@
 	transition: border-color 0.3s ease;
 }
 
-.roo-feature-card:hover {
+.ai-code-orchestrator-feature-card:hover {
 	border-color: hsl(var(--border));
 }
 
-.roo-feature-card::before {
+.ai-code-orchestrator-feature-card::before {
 	content: "";
 	position: absolute;
 	inset: -1px;
@@ -185,19 +185,19 @@
 	z-index: -1;
 }
 
-.roo-feature-card:hover::before {
+.ai-code-orchestrator-feature-card:hover::before {
 	opacity: 1;
 }
 
 /* Exact background blur effects from sections */
-.roo-section-background {
+.ai-code-orchestrator-section-background {
 	position: relative;
 	overflow: hidden;
 	border-top: 1px solid hsl(var(--border));
 	padding: 8rem 0;
 }
 
-.roo-section-background::before {
+.ai-code-orchestrator-section-background::before {
 	content: "";
 	position: absolute;
 	top: 50%;
@@ -212,7 +212,7 @@
 }
 
 /* Container system */
-.roo-container {
+.ai-code-orchestrator-container {
 	margin: 0 auto;
 	max-width: 1200px;
 	padding-left: 1rem;
@@ -220,20 +220,20 @@
 }
 
 @media (min-width: 640px) {
-	.roo-container {
+	.ai-code-orchestrator-container {
 		padding-left: 1.5rem;
 		padding-right: 1.5rem;
 	}
 }
 
 @media (min-width: 1024px) {
-	.roo-container {
+	.ai-code-orchestrator-container {
 		padding-left: 2rem;
 		padding-right: 2rem;
 	}
 }
 
-/* Exact animations from roocode.com */
+/* Exact animations from AI Code Orchestrator */
 @keyframes fade-in {
 	from {
 		opacity: 0;
@@ -253,11 +253,11 @@
 	}
 }
 
-.roo-fade-in {
+.ai-code-orchestrator-fade-in {
 	animation: fade-in 0.5s ease-out;
 }
 
-.roo-pulse-glow {
+.ai-code-orchestrator-pulse-glow {
 	animation: pulse-glow 3s infinite;
 }
 
@@ -315,7 +315,7 @@ div[style*="min-height:100vh"] {
 	display: none;
 }
 
-/* Video Grid Styles with Roo Code styling */
+/* Video Grid Styles with AI Code Orchestrator styling */
 .video-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -372,7 +372,7 @@ div[style*="min-height:100vh"] {
 	line-height: 1;
 }
 
-/* Enhanced code blocks with Roo Code styling */
+/* Enhanced code blocks with AI Code Orchestrator styling */
 pre {
 	white-space: pre-wrap !important;
 	word-wrap: break-word !important;
@@ -388,7 +388,7 @@ pre {
 	--ifm-container-width: 1400px;
 }
 
-/* Exact navbar styling from roocode.com */
+/* Exact navbar styling from AI Code Orchestrator */
 .navbar {
 	position: sticky !important;
 	top: 0 !important;
@@ -451,7 +451,7 @@ pre {
 	background-color: transparent !important;
 }
 
-/* Match roocode.com's container system */
+/* Match AI Code Orchestrator's container system */
 .navbar__inner {
 	max-width: 1400px; /* Match the container width */
 	margin: 0 auto;
@@ -550,7 +550,7 @@ pre {
 	min-height: 100vh;
 }
 
-/* Clean sidebar like roocode.com */
+/* Clean sidebar like AI Code Orchestrator */
 .theme-doc-sidebar-container {
 	backdrop-filter: blur(20px);
 	border-right: 1px solid hsl(var(--border)) !important;
@@ -573,13 +573,13 @@ pre {
 }
 
 /* Feature cards with subtle backgrounds */
-.roo-feature-card {
+.ai-code-orchestrator-feature-card {
 	background: hsl(var(--background) / 0.4) !important;
 	backdrop-filter: blur(20px);
 	border: 1px solid hsl(var(--border) / 0.2);
 }
 
-.roo-section-background {
+.ai-code-orchestrator-section-background {
 	background: transparent !important;
 }
 
@@ -614,7 +614,7 @@ html[data-theme="light"] {
 	--ifm-heading-color: hsl(var(--foreground));
 }
 
-/* Set default theme to dark to match roocode.com */
+/* Set default theme to dark to match AI Code Orchestrator */
 html {
 	--ifm-background-color: hsl(var(--background));
 	--ifm-font-color-base: hsl(var(--foreground));
@@ -642,7 +642,7 @@ html {
 }
 
 /* ============================================
-   TYPOGRAPHY SYSTEM FROM ROOCODE.COM
+   TYPOGRAPHY SYSTEM FROM AICO.COM
    ============================================ */
 
 /* Import Inter font from Google Fonts */
@@ -663,7 +663,7 @@ body {
    ============================================ */
 
 /* Primary hero heading - responsive scaling */
-.roo-hero-heading {
+.ai-code-orchestrator-hero-heading {
 	font-size: 1.875rem; /* text-3xl */
 	font-weight: 700; /* font-bold */
 	letter-spacing: -0.025em; /* tracking-tight */
@@ -671,25 +671,25 @@ body {
 }
 
 @media (min-width: 640px) {
-	.roo-hero-heading {
+	.ai-code-orchestrator-hero-heading {
 		font-size: 2.25rem;
 	} /* sm:text-4xl */
 }
 
 @media (min-width: 768px) {
-	.roo-hero-heading {
+	.ai-code-orchestrator-hero-heading {
 		font-size: 3rem;
 	} /* md:text-5xl */
 }
 
 @media (min-width: 1024px) {
-	.roo-hero-heading {
+	.ai-code-orchestrator-hero-heading {
 		font-size: 3.75rem;
 	} /* lg:text-6xl */
 }
 
 /* Gradient text effect for hero */
-.roo-gradient-text {
+.ai-code-orchestrator-gradient-text {
 	background: linear-gradient(to right, rgb(96, 165, 250), rgb(34, 211, 238));
 	background-clip: text;
 	-webkit-background-clip: text;
@@ -697,20 +697,20 @@ body {
 }
 
 /* Section headings */
-.roo-section-heading {
+.ai-code-orchestrator-section-heading {
 	font-size: 1.875rem; /* text-3xl */
 	font-weight: 700; /* font-bold */
 	letter-spacing: -0.025em; /* tracking-tight */
 }
 
 @media (min-width: 640px) {
-	.roo-section-heading {
+	.ai-code-orchestrator-section-heading {
 		font-size: 2.25rem;
 	} /* sm:text-4xl */
 }
 
 /* Gradient section headings */
-.roo-section-heading-gradient {
+.ai-code-orchestrator-section-heading-gradient {
 	background: linear-gradient(to bottom, hsl(var(--foreground)), hsl(var(--foreground) / 0.7));
 	background-clip: text;
 	-webkit-background-clip: text;
@@ -721,13 +721,13 @@ body {
 }
 
 @media (min-width: 640px) {
-	.roo-section-heading-gradient {
+	.ai-code-orchestrator-section-heading-gradient {
 		font-size: 3rem;
 	} /* sm:text-5xl */
 }
 
 /* Subsection headings */
-.roo-subsection-heading {
+.ai-code-orchestrator-subsection-heading {
 	font-size: 1.25rem; /* text-xl */
 	font-weight: 500; /* font-medium */
 	color: hsl(var(--foreground) / 0.9);
@@ -735,14 +735,14 @@ body {
 }
 
 /* Card titles */
-.roo-card-title {
+.ai-code-orchestrator-card-title {
 	font-size: 1.25rem; /* text-xl */
 	font-weight: 700; /* font-bold */
 	margin-bottom: 0.5rem;
 }
 
 /* Feature card titles */
-.roo-feature-title {
+.ai-code-orchestrator-feature-title {
 	font-size: 1.25rem; /* text-xl */
 	font-weight: 500; /* font-medium */
 	color: hsl(var(--foreground) / 0.9);
@@ -754,7 +754,7 @@ body {
    ============================================ */
 
 /* Primary body text */
-.roo-body-text {
+.ai-code-orchestrator-body-text {
 	font-size: 1rem; /* text-base */
 	color: hsl(var(--muted-foreground));
 	margin-top: 1rem;
@@ -762,41 +762,41 @@ body {
 }
 
 @media (min-width: 640px) {
-	.roo-body-text {
+	.ai-code-orchestrator-body-text {
 		margin-top: 1.5rem; /* sm:mt-6 */
 		font-size: 1.125rem; /* sm:text-lg */
 	}
 }
 
 /* Lead text / larger body text */
-.roo-lead-text {
+.ai-code-orchestrator-lead-text {
 	font-size: 1.125rem; /* text-lg */
 	color: hsl(var(--muted-foreground));
 	margin-top: 1.5rem;
 }
 
 /* Feature descriptions */
-.roo-feature-description {
+.ai-code-orchestrator-feature-description {
 	line-height: 1.625; /* leading-relaxed */
 	color: hsl(var(--muted-foreground));
 }
 
 /* Small descriptive text */
-.roo-small-text {
+.ai-code-orchestrator-small-text {
 	font-size: 0.875rem; /* text-sm */
 	color: hsl(var(--muted-foreground));
 	line-height: 1.5; /* leading-6 */
 }
 
 /* Footer text */
-.roo-footer-text {
+.ai-code-orchestrator-footer-text {
 	font-size: 0.875rem; /* text-sm */
 	line-height: 1.5; /* leading-6 */
 	color: hsl(var(--muted-foreground));
 }
 
 /* Copyright text */
-.roo-copyright {
+.ai-code-orchestrator-copyright {
 	font-size: 0.875rem; /* text-sm */
 	line-height: 1.25; /* leading-5 */
 	color: hsl(var(--muted-foreground));
@@ -808,7 +808,7 @@ body {
    ============================================ */
 
 /* Code blocks */
-.roo-code-block {
+.ai-code-orchestrator-block {
 	font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
 	font-size: 0.75rem; /* text-xs */
 	color: hsl(var(--muted-foreground));
@@ -819,13 +819,13 @@ body {
 }
 
 @media (min-width: 640px) {
-	.roo-code-block {
+	.ai-code-orchestrator-block {
 		font-size: 0.875rem; /* sm:text-sm */
 	}
 }
 
 @media (min-width: 1024px) {
-	.roo-code-block {
+	.ai-code-orchestrator-block {
 		max-height: 50vh; /* lg:max-h-[50vh] */
 	}
 }
@@ -835,7 +835,7 @@ body {
    ============================================ */
 
 /* Main navigation links */
-.roo-nav-link {
+.ai-code-orchestrator-nav-link {
 	font-size: 0.875rem; /* text-sm */
 	font-weight: 500; /* font-medium */
 	color: hsl(var(--muted-foreground));
@@ -845,13 +845,13 @@ body {
 	text-decoration: none;
 }
 
-.roo-nav-link:hover {
+.ai-code-orchestrator-nav-link:hover {
 	transform: scale(1.05); /* hover:scale-105 */
 	color: hsl(var(--foreground)); /* hover:text-foreground */
 }
 
 /* Mobile navigation links */
-.roo-mobile-nav-link {
+.ai-code-orchestrator-mobile-nav-link {
 	width: 100%;
 	padding: 0.75rem 2rem; /* py-3 px-8 */
 	text-align: left;
@@ -864,13 +864,13 @@ body {
 	text-decoration: none;
 }
 
-.roo-mobile-nav-link:hover {
+.ai-code-orchestrator-mobile-nav-link:hover {
 	background-color: hsl(var(--accent)); /* hover:bg-accent */
 	color: hsl(var(--foreground)); /* hover:text-foreground */
 }
 
 /* Footer section links */
-.roo-footer-link {
+.ai-code-orchestrator-footer-link {
 	font-size: 0.875rem; /* text-sm */
 	line-height: 1.5; /* leading-6 */
 	color: hsl(var(--muted-foreground));
@@ -878,23 +878,23 @@ body {
 	text-decoration: none;
 }
 
-.roo-footer-link:hover {
+.ai-code-orchestrator-footer-link:hover {
 	color: hsl(var(--foreground)); /* hover:text-foreground */
 }
 
 /* Social media links */
-.roo-social-link {
+.ai-code-orchestrator-social-link {
 	color: hsl(var(--muted-foreground));
 	transition: color 200ms;
 	text-decoration: none;
 }
 
-.roo-social-link:hover {
+.ai-code-orchestrator-social-link:hover {
 	color: hsl(var(--foreground)); /* hover:text-foreground */
 }
 
 /* GitHub stats link */
-.roo-github-link {
+.ai-code-orchestrator-github-link {
 	display: flex;
 	align-items: center;
 	gap: 0.375rem; /* gap-1.5 */
@@ -905,12 +905,12 @@ body {
 	text-decoration: none;
 }
 
-.roo-github-link:hover {
+.ai-code-orchestrator-github-link:hover {
 	color: hsl(var(--foreground)); /* hover:text-foreground */
 }
 
 /* Documentation/external links */
-.roo-external-link {
+.ai-code-orchestrator-external-link {
 	color: hsl(var(--muted-foreground));
 	transition:
 		transform 200ms,
@@ -918,13 +918,13 @@ body {
 	text-decoration: none;
 }
 
-.roo-external-link:hover {
+.ai-code-orchestrator-external-link:hover {
 	transform: scale(1.05); /* hover:scale-105 */
 	color: hsl(var(--foreground)); /* hover:text-foreground */
 }
 
 /* Email links */
-.roo-email-link {
+.ai-code-orchestrator-email-link {
 	font-size: 0.875rem; /* text-sm */
 	line-height: 1.5; /* leading-6 */
 	color: hsl(var(--muted-foreground));
@@ -932,12 +932,12 @@ body {
 	text-decoration: none;
 }
 
-.roo-email-link:hover {
+.ai-code-orchestrator-email-link:hover {
 	color: hsl(var(--foreground)); /* hover:text-foreground */
 }
 
 /* Scroll to section links */
-.roo-scroll-link {
+.ai-code-orchestrator-scroll-link {
 	color: hsl(var(--muted-foreground));
 	transition:
 		transform 200ms,
@@ -946,13 +946,13 @@ body {
 	cursor: pointer;
 }
 
-.roo-scroll-link:hover {
+.ai-code-orchestrator-scroll-link:hover {
 	transform: scale(1.05); /* hover:scale-105 */
 	color: hsl(var(--foreground)); /* hover:text-foreground */
 }
 
 /* Footer scroll links */
-.roo-footer-scroll-link {
+.ai-code-orchestrator-footer-scroll-link {
 	font-size: 0.875rem; /* text-sm */
 	line-height: 1.5; /* leading-6 */
 	color: hsl(var(--muted-foreground));
@@ -961,7 +961,7 @@ body {
 	cursor: pointer;
 }
 
-.roo-footer-scroll-link:hover {
+.ai-code-orchestrator-footer-scroll-link:hover {
 	color: hsl(var(--foreground)); /* hover:text-foreground */
 }
 
@@ -970,49 +970,49 @@ body {
    ============================================ */
 
 /* Text color classes */
-.roo-text-foreground {
+.ai-code-orchestrator-text-foreground {
 	color: hsl(var(--foreground));
 }
 
-.roo-text-muted {
+.ai-code-orchestrator-text-muted {
 	color: hsl(var(--muted-foreground));
 }
 
-.roo-text-foreground-90 {
+.ai-code-orchestrator-text-foreground-90 {
 	color: hsl(var(--foreground) / 0.9);
 }
 
-.roo-text-foreground-80 {
+.ai-code-orchestrator-text-foreground-80 {
 	color: hsl(var(--foreground) / 0.8);
 }
 
 /* Brand colors for accent text */
-.roo-text-blue-400 {
+.ai-code-orchestrator-text-blue-400 {
 	color: rgb(96, 165, 250);
 }
 
-.roo-text-cyan-400 {
+.ai-code-orchestrator-text-cyan-400 {
 	color: rgb(34, 211, 238);
 }
 
-.roo-text-green-400 {
+.ai-code-orchestrator-text-green-400 {
 	color: rgb(74, 222, 128);
 }
 
-.roo-text-green-500 {
+.ai-code-orchestrator-text-green-500 {
 	color: rgb(34, 197, 94);
 }
 
-.roo-text-red-500 {
+.ai-code-orchestrator-text-red-500 {
 	color: rgb(239, 68, 68);
 }
 
 /* Specific text colors used in components */
-.roo-text-gray-400 {
+.ai-code-orchestrator-text-gray-400 {
 	color: rgb(156, 163, 175);
 }
 
-.roo-text-gray-200 {
+.ai-code-orchestrator-text-gray-200 {
 	color: rgb(229, 231, 235);
 }
 
@@ -1021,7 +1021,7 @@ body {
    ============================================ */
 
 /* Primary action buttons */
-.roo-button-primary {
+.ai-code-orchestrator-button-primary {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -1039,34 +1039,34 @@ body {
 	text-decoration: none;
 }
 
-.roo-button-primary:hover {
+.ai-code-orchestrator-button-primary:hover {
 	background-color: hsl(var(--primary) / 0.9); /* hover:bg-primary/90 */
 }
 
 /* Large buttons */
-.roo-button-lg {
+.ai-code-orchestrator-button-lg {
 	height: 2.5rem; /* h-10 */
 	border-radius: calc(var(--radius) - 2px);
 	padding: 0 2rem; /* px-8 */
 }
 
 /* Button with custom hover states */
-.roo-button-custom-hover {
+.ai-code-orchestrator-button-custom-hover {
 	width: 100%;
 	transition: background-color 200ms;
 }
 
-.roo-button-custom-hover:hover {
+.ai-code-orchestrator-button-custom-hover:hover {
 	background-color: rgb(229, 231, 235); /* hover:bg-gray-200 */
 }
 
-[data-theme="dark"] .roo-button-custom-hover {
+[data-theme="dark"] .ai-code-orchestrator-button-custom-hover {
 	background-color: white;
 	color: black;
 }
 
 /* Outline buttons */
-.roo-button-outline {
+.ai-code-orchestrator-button-outline {
 	border: 1px solid hsl(var(--input));
 	background-color: hsl(var(--background));
 	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -1075,13 +1075,13 @@ body {
 		color 200ms;
 }
 
-.roo-button-outline:hover {
+.ai-code-orchestrator-button-outline:hover {
 	background-color: hsl(var(--accent)); /* hover:bg-accent */
 	color: hsl(var(--accent-foreground)); /* hover:text-accent-foreground */
 }
 
 /* Install button with icon */
-.roo-install-button {
+.ai-code-orchestrator-install-button {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.375rem; /* gap-1.5 */
@@ -1095,12 +1095,12 @@ body {
 	text-decoration: none;
 }
 
-.roo-install-button:hover {
+.ai-code-orchestrator-install-button:hover {
 	background-color: hsl(var(--primary) / 0.9); /* hover:bg-primary/90 */
 }
 
 /* Font weight for separator dots */
-.roo-font-black {
+.ai-code-orchestrator-font-black {
 	font-weight: 900; /* font-black */
 }
 
@@ -1109,40 +1109,40 @@ body {
    ============================================ */
 
 /* Scale hover effect for navigation */
-.roo-hover-scale {
+.ai-code-orchestrator-hover-scale {
 	transition:
 		transform 200ms,
 		color 200ms;
 }
 
-.roo-hover-scale:hover {
+.ai-code-orchestrator-hover-scale:hover {
 	transform: scale(1.05); /* hover:scale-105 */
 }
 
 /* Background hover effects */
-.roo-hover-bg {
+.ai-code-orchestrator-hover-bg {
 	transition: background-color 200ms;
 }
 
-.roo-hover-bg:hover {
+.ai-code-orchestrator-hover-bg:hover {
 	background-color: hsl(var(--accent)); /* hover:bg-accent */
 }
 
 /* Card hover effects */
-.roo-card-hover {
+.ai-code-orchestrator-card-hover {
 	transition: border-color 300ms;
 }
 
-.roo-card-hover:hover {
+.ai-code-orchestrator-card-hover:hover {
 	border-color: hsl(var(--border)); /* hover:border-border */
 }
 
 /* Focus visible states */
-.roo-focus-visible {
+.ai-code-orchestrator-focus-visible {
 	outline: none;
 }
 
-.roo-focus-visible:focus-visible {
+.ai-code-orchestrator-focus-visible:focus-visible {
 	outline: 2px solid hsl(var(--ring));
 	outline-offset: 2px;
 }
@@ -1152,30 +1152,30 @@ body {
    ============================================ */
 
 /* Text that hides on small screens */
-.roo-hide-small {
+.ai-code-orchestrator-hide-small {
 	display: none;
 }
 
 @media (min-width: 320px) {
-	.roo-hide-small {
+	.ai-code-orchestrator-hide-small {
 		display: inline; /* max-[320px]:hidden */
 	}
 }
 
 /* Large screen only text */
-.roo-lg-only {
+.ai-code-orchestrator-lg-only {
 	display: none;
 }
 
 @media (min-width: 1024px) {
-	.roo-lg-only {
+	.ai-code-orchestrator-lg-only {
 		display: inline; /* max-lg:hidden */
 	}
 }
 
 /* Font size adjustments for mobile install buttons */
 @media (max-width: 1023px) {
-	.roo-install-mobile {
+	.ai-code-orchestrator-install-mobile {
 		font-size: 0.75rem; /* max-lg:text-xs */
 	}
 }
@@ -1390,7 +1390,7 @@ body {
 	font-size: 0.875rem !important;
 }
 
-/* DocSearch button keys - styled to match roocode.com */
+/* DocSearch button keys - styled to match AI Code Orchestrator */
 .DocSearch-Button-Keys {
 	display: flex !important;
 	align-items: center;
@@ -1481,7 +1481,7 @@ body {
 }
 
 /* ============================================
-   CONTENT STYLING TO MATCH ROOCODE.COM
+   CONTENT STYLING TO MATCH AICO.COM
    ============================================ */
 
 /* Better font rendering on dark background */
@@ -1601,12 +1601,12 @@ main[class*="docMainContainer"] {
 	font-weight: 500;
 }
 
-/* Paragraph spacing - match roocode.com */
+/* Paragraph spacing - match AI Code Orchestrator */
 .theme-doc-markdown p {
 	font-size: var(--p-size);
 	line-height: var(--p-line-height);
 	letter-spacing: var(--p-letter-spacing);
-	color: hsl(var(--foreground) / 0.9); /* 90% brightness like roocode.com */
+	color: hsl(var(--foreground) / 0.9); /* 90% brightness like AI Code Orchestrator */
 	margin-bottom: 1rem;
 	font-weight: 400; /* Ensure normal weight */
 }
@@ -1655,7 +1655,7 @@ main[class*="docMainContainer"] {
 	margin-bottom: 0.5rem;
 }
 
-/* Code blocks with roocode.com styling */
+/* Code blocks with AI Code Orchestrator styling */
 .theme-code-block {
 	margin: var(--figure-margin) 0;
 	border-radius: calc(var(--radius)) !important;
@@ -1705,7 +1705,7 @@ main[class*="docMainContainer"] {
 	color: hsl(var(--muted-foreground));
 }
 
-/* Admonitions (alerts) with roocode.com style */
+/* Admonitions (alerts) with AI Code Orchestrator style */
 .theme-admonition {
 	margin: var(--block-spacing) 0 !important;
 	padding: calc(var(--block-spacing) * 0.5) calc(var(--block-spacing) * 0.5) calc(var(--block-spacing) * 0.25) !important;
@@ -1740,7 +1740,7 @@ main[class*="docMainContainer"] {
   fill: rgb(var(--accent)); */
 }
 
-/* Tables with roocode.com styling */
+/* Tables with AI Code Orchestrator styling */
 .theme-doc-markdown table {
 	width: 100%;
 	margin: var(--figure-margin) 0;
@@ -1980,7 +1980,7 @@ html {
 }
 
 /* ============================================
-   FINAL ROOCODE.COM MATCHING STYLES
+   FINAL AICO.COM MATCHING STYLES
    ============================================ */
 
 /* Apply sidebar link styles */
@@ -2193,10 +2193,10 @@ a.breadcrumbs__link:hover {
 	font-weight: 500;
 }
 /* ============================================
-   FOOTER LAYOUT - ROOCODE.COM STYLE
+   FOOTER LAYOUT - AICO.COM STYLE
    ============================================ */
 
-/* Footer Layout - roocode.com style */
+/* Footer Layout - AI Code Orchestrator style */
 .footer__main {
 	display: flex;
 	gap: 4rem;

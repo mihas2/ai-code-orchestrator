@@ -10,24 +10,24 @@ import { appendImages } from "@src/utils/imageUtils"
 import { getCostBreakdownIfNeeded } from "@src/utils/costFormatting"
 import { batchConsecutive } from "@src/utils/batchConsecutive"
 
-import type { ClineAsk, ClineSayTool, ClineMessage, ExtensionMessage, AudioType } from "@roo-code/types"
-import { isRetiredProvider } from "@roo-code/types"
+import type { ClineAsk, ClineSayTool, ClineMessage, ExtensionMessage, AudioType } from "@ai-code-orchestrator/types"
+import { isRetiredProvider } from "@ai-code-orchestrator/types"
 
-import { findLast } from "@roo/array"
-import { SuggestionItem } from "@roo-code/types"
-import { combineApiRequests } from "@roo/combineApiRequests"
-import { combineCommandSequences } from "@roo/combineCommandSequences"
-import { getApiMetrics } from "@roo/getApiMetrics"
-import { getAllModes } from "@roo/modes"
-import { ProfileValidator } from "@roo/ProfileValidator"
-import { getLatestTodo } from "@roo/todo"
+import { findLast } from "@aico/array"
+import { SuggestionItem } from "@ai-code-orchestrator/types"
+import { combineApiRequests } from "@aico/combineApiRequests"
+import { combineCommandSequences } from "@aico/combineCommandSequences"
+import { getApiMetrics } from "@aico/getApiMetrics"
+import { getAllModes } from "@aico/modes"
+import { ProfileValidator } from "@aico/ProfileValidator"
+import { getLatestTodo } from "@aico/todo"
 
 import { vscode } from "@src/utils/vscode"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { useSelectedModel } from "@src/components/ui/hooks/useSelectedModel"
-import RooHero from "@src/components/welcome/RooHero"
-import RooTips from "@src/components/welcome/RooTips"
+import AicoHero from "@src/components/welcome/AicoHero"
+import AicoTips from "@src/components/welcome/AicoTips"
 import { StandardTooltip, Button } from "@src/components/ui"
 import VersionIndicator from "../common/VersionIndicator"
 import HistoryPreview from "../history/HistoryPreview"
@@ -1618,9 +1618,9 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							className="absolute top-2 right-3 z-10"
 						/>
 						<div className="flex flex-col gap-4 w-full">
-							<RooHero />
-							{/* Show RooTips when authenticated or when user is new */}
-							{taskHistory.length < 6 && <RooTips />}
+							<AicoHero />
+							{/* Show AicoTips when authenticated or when user is new */}
+							{taskHistory.length < 6 && <AicoTips />}
 							{/* Everyone should see their task history if any */}
 							{taskHistory.length > 0 && <HistoryPreview />}
 						</div>
@@ -1757,8 +1757,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					<WarningRow
 						title={t("chat:retiredProvider.title")}
 						message={t(
-							apiConfiguration?.apiProvider === "roo"
-								? "chat:retiredProvider.rooMessage"
+							apiConfiguration?.apiProvider === "aico"
+								? "chat:retiredProvider.aicoMessage"
 								: "chat:retiredProvider.message",
 						)}
 						actionText={t("chat:retiredProvider.openSettings")}
@@ -1797,7 +1797,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				</div>
 			)}
 
-			<div id="roo-portal" />
+			<div id="aico-portal" />
 		</div>
 	)
 }

@@ -1,7 +1,7 @@
 ---
-description: Roo Code 3.18 introduces experimental codebase indexing, enhanced context condensing, YAML support for custom modes, and Gemini 2.5 Flash support.
+description: AI Code Orchestrator 3.18 introduces experimental codebase indexing, enhanced context condensing, YAML support for custom modes, and Gemini 2.5 Flash support.
 keywords:
-  - Roo Code 3.18
+  - AI Code Orchestrator 3.18
   - release notes
   - codebase indexing
   - context condensing
@@ -9,7 +9,7 @@ keywords:
   - Gemini 2.5
 ---
 
-# Roo Code 3.18 Release Notes (2025-05-21)
+# AI Code Orchestrator 3.18 Release Notes (2025-05-21)
 
 This release introduces advanced AI models with enhanced reasoning capabilities, comprehensive context condensing improvements, YAML support for custom modes, streamlined development infrastructure, and numerous quality-of-life improvements and bug fixes.
 
@@ -61,16 +61,16 @@ For full details, see the main [Intelligent Context Condensing documentation](/f
 
 ## Custom Modes: YAML Support
 
-Custom mode configuration is now significantly improved with **YAML support** for both global and project-level (`.roomodes`) definitions. YAML is the new default, offering superior readability with cleaner syntax, support for comments (`#`), and easier multi-line string management. While JSON remains supported for backward compatibility, YAML streamlines mode creation, sharing, and version control.
+Custom mode configuration is now significantly improved with **YAML support** for both global and project-level (`.agent-modes`) definitions. YAML is the new default, offering superior readability with cleaner syntax, support for comments (`#`), and easier multi-line string management. While JSON remains supported for backward compatibility, YAML streamlines mode creation, sharing, and version control.
 
 For comprehensive details on YAML benefits, syntax, and migrating existing JSON configurations, please see our updated [Custom Modes documentation](/features/custom-modes#migration-to-yaml-format). (thanks R-omk! Additional thanks to GreatScottyMac for the YAML inspiration!)
 
 ---
 
 ## API Cost Control: Request Limits
-To enhance API cost management, you can now set a **Max Requests** limit for auto-approved actions. This prevents Roo Code from making an excessive number of consecutive API calls without your re-approval.
+To enhance API cost management, you can now set a **Max Requests** limit for auto-approved actions. This prevents AI Code Orchestrator from making an excessive number of consecutive API calls without your re-approval.
 
-<img src="/img/v3.18.0/v3.18.0.png" alt="Setting the Max Requests limit for auto-approved actions in Roo Code settings." width="600" />
+<img src="/img/v3.18.0/v3.18.0.png" alt="Setting the Max Requests limit for auto-approved actions in AI Code Orchestrator settings." width="600" />
 *Setting the "Max Requests" for auto-approved actions.*
 
 <img src="/img/v3.18.0/v3.18.0-1.png" alt="Warning message indicating the auto-approved request limit has been reached." width="600" />
@@ -148,7 +148,7 @@ Access the latest `gemini-2.5-flash-preview-05-20` model, including its thinking
 *   **Build Process**: Improved pnpm bootstrapping and fixed bootstrap script parameters for better compatibility (thanks KJ7LNW!, ChuKhaLi!)
 *   **Code Quality**: Simplified object assignment and modernized code patterns (thanks noritaka1166!)
 *   **Monorepo Migration**: Switched codebase to a monorepo structure for improved development workflow
-*   **Automated Nightly Builds**: Created automated [nightly release system](/advanced-usage/roo-code-nightly) to deliver the latest features and fixes more quickly
+*   **Automated Nightly Builds**: Created automated [nightly release system](/advanced-usage/AI Code Orchestrator-nightly) to deliver the latest features and fixes more quickly
 *   **Enhanced Toolchain**: Improved build processes and dependency management for better reliability
 *   **Modern Linting**: ESLint 9 upgrade with shared configurations catches issues before they reach users
 *   **E2E Test Suite**: Reorganized end-to-end testing infrastructure for better quality assurance

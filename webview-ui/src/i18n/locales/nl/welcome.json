@@ -9,13 +9,13 @@
 		}
 	},
 	"landing": {
-		"greeting": "Welkom bij Roo Code!",
-		"introduction": "Met een reeks ingebouwde en uitbreidbare Modi laat Roo Code je plannen, ontwerpen, coderen, debuggen en je productiviteit verhogen als nooit tevoren.",
+		"greeting": "Welkom bij AI Code Orchestrator!",
+		"introduction": "Met een reeks ingebouwde en uitbreidbare Modi laat AI Code Orchestrator je plannen, ontwerpen, coderen, debuggen en je productiviteit verhogen als nooit tevoren.",
 		"getStarted": "Get Started"
 	},
 	"providerSignup": {
 		"heading": "Kies je provider",
-		"chooseProvider": "Roo heeft een LLM-provider nodig om te werken. Kies er een om te beginnen, je kunt er later meer toevoegen.",
+		"chooseProvider": "AI Code Orchestrator heeft een LLM-provider nodig om te werken. Kies er een om te beginnen, je kunt er later meer toevoegen.",
 		"learnMore": "Meer informatie",
 		"useAnotherProvider": "Provider van derden",
 		"useAnotherProviderDescription": "Voer een API-sleutel in en begin.",

@@ -1,8 +1,8 @@
 ---
-description: Learn how update_todo_list creates dynamic TODO lists with status tracking, enabling step-by-step task management for complex workflows in Roo Code.
+description: Learn how update_todo_list creates dynamic TODO lists with status tracking, enabling step-by-step task management for complex workflows in AI Code Orchestrator.
 keywords:
     - update_todo_list
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - task management
     - TODO lists
     - workflow tracking
@@ -35,7 +35,7 @@ This tool creates and manages an interactive todo list that appears as a UI comp
 ## When is it used?
 
 - When managing complex, multi-step tasks that benefit from structured tracking
-- When Roo needs to show progress through a series of related activities
+- When AI Code Orchestrator needs to show progress through a series of related activities
 - When tasks require step-by-step completion verification before proceeding
 - When new actionable items are discovered during long or complex workflows
 - When providing clear checkpoints and progress visibility to users
@@ -139,11 +139,11 @@ The tool uses a specific markdown format for todo items:
 
 ## Examples When Used
 
-- When developing a web application, Roo creates a todo list tracking design, implementation, testing, and deployment phases.
-- When setting up a development environment, Roo tracks installation of dependencies, configuration steps, and verification tasks.
-- When debugging complex issues, Roo maintains a list of investigation steps, potential causes, and testing procedures.
-- When refactoring code, Roo tracks which files need updates, what tests need modification, and documentation changes required.
-- When implementing new features, Roo manages tasks for planning, coding, testing, and integration steps.
+- When developing a web application, AI Code Orchestrator creates a todo list tracking design, implementation, testing, and deployment phases.
+- When setting up a development environment, AI Code Orchestrator tracks installation of dependencies, configuration steps, and verification tasks.
+- When debugging complex issues, AI Code Orchestrator maintains a list of investigation steps, potential causes, and testing procedures.
+- When refactoring code, AI Code Orchestrator tracks which files need updates, what tests need modification, and documentation changes required.
+- When implementing new features, AI Code Orchestrator manages tasks for planning, coding, testing, and integration steps.
 
 ---
 

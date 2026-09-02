@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@/utils/test-utils"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import type { SkillMetadata } from "@roo-code/types"
+import type { SkillMetadata } from "@ai-code-orchestrator/types"
 
 import { ExtensionStateContextProvider } from "@/context/ExtensionStateContext"
 import { vscode } from "@/utils/vscode"
@@ -33,7 +33,7 @@ vi.mock("@/utils/docLinks", () => ({
 }))
 
 // Mock modes
-vi.mock("@roo/modes", () => ({
+vi.mock("@aico/modes", () => ({
 	getAllModes: () => [
 		{ slug: "code", name: "Code" },
 		{ slug: "architect", name: "Architect" },
@@ -139,20 +139,20 @@ const mockSkills: SkillMetadata[] = [
 	{
 		name: "project-skill",
 		description: "A project skill",
-		path: "/workspace/.roo/skills/project-skill/SKILL.md",
+		path: "/workspace/.ai-code-orchestrator/skills/project-skill/SKILL.md",
 		source: "project",
 	},
 	{
 		name: "project-mode-skill",
 		description: "A project mode-specific skill",
-		path: "/workspace/.roo/skills/project-mode-skill/SKILL.md",
+		path: "/workspace/.ai-code-orchestrator/skills/project-mode-skill/SKILL.md",
 		source: "project",
 		modeSlugs: ["architect"],
 	},
 	{
 		name: "global-skill",
 		description: "A global skill",
-		path: "/home/.roo/skills/global-skill/SKILL.md",
+		path: "/home/.ai-code-orchestrator/skills/global-skill/SKILL.md",
 		source: "global",
 	},
 ]

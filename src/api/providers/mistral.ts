@@ -2,7 +2,12 @@ import { Anthropic } from "@anthropic-ai/sdk"
 import { Mistral } from "@mistralai/mistralai"
 import OpenAI from "openai"
 
-import { type MistralModelId, mistralDefaultModelId, mistralModels, MISTRAL_DEFAULT_TEMPERATURE } from "@roo-code/types"
+import {
+	type MistralModelId,
+	mistralDefaultModelId,
+	mistralModels,
+	MISTRAL_DEFAULT_TEMPERATURE,
+} from "@ai-code-orchestrator/types"
 
 import { ApiHandlerOptions } from "../../shared/api"
 

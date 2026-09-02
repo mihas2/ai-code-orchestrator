@@ -6,7 +6,7 @@ import {
 	IMAGE_GENERATION_MODEL_IDS,
 	IMAGE_GENERATION_MODELS,
 	getImageGenerationProvider,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 import { Task } from "../task/Task"
 import { formatResponse } from "../prompts/responses"
 import { fileExistsAtPath } from "../../utils/fs"
@@ -55,10 +55,10 @@ export class GenerateImageTool extends BaseTool<"generate_image"> {
 			return
 		}
 
-		const accessAllowed = task.rooIgnoreController?.validateAccess(relPath)
+		const accessAllowed = task.aicoIgnoreController?.validateAccess(relPath)
 		if (!accessAllowed) {
-			await task.say("rooignore_error", relPath)
-			pushToolResult(formatResponse.rooIgnoreError(relPath))
+			await task.say("aicoignore_error", relPath)
+			pushToolResult(formatResponse.aicoIgnoreError(relPath))
 			return
 		}
 
@@ -76,10 +76,10 @@ export class GenerateImageTool extends BaseTool<"generate_image"> {
 				return
 			}
 
-			const inputImageAccessAllowed = task.rooIgnoreController?.validateAccess(inputImagePath)
+			const inputImageAccessAllowed = task.aicoIgnoreController?.validateAccess(inputImagePath)
 			if (!inputImageAccessAllowed) {
-				await task.say("rooignore_error", inputImagePath)
-				pushToolResult(formatResponse.rooIgnoreError(inputImagePath))
+				await task.say("aicoignore_error", inputImagePath)
+				pushToolResult(formatResponse.aicoIgnoreError(inputImagePath))
 				return
 			}
 
@@ -119,7 +119,7 @@ export class GenerateImageTool extends BaseTool<"generate_image"> {
 			}
 		}
 
-		const isWriteProtected = task.rooProtectedController?.isWriteProtected(relPath) || false
+		const isWriteProtected = task.aicoProtectedController?.isWriteProtected(relPath) || false
 
 		// Use shared utility for backwards compatibility logic
 		const imageProvider = getImageGenerationProvider(
@@ -237,7 +237,7 @@ export class GenerateImageTool extends BaseTool<"generate_image"> {
 			await fs.writeFile(absolutePath, imageBuffer)
 
 			if (finalPath) {
-				await task.fileContextTracker.trackFileContext(finalPath, "roo_edited")
+				await task.fileContextTracker.trackFileContext(finalPath, "aico_edited")
 			}
 
 			task.didEditFile = true

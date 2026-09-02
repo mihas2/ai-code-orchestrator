@@ -1,4 +1,4 @@
-import type { ProviderSettings } from "@roo-code/types"
+import type { ProviderSettings } from "@ai-code-orchestrator/types"
 
 import { buildApiHandler, SingleCompletionHandler } from "../api"
 

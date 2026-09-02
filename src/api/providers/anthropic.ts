@@ -9,7 +9,7 @@ import {
 	anthropicDefaultModelId,
 	anthropicModels,
 	ANTHROPIC_DEFAULT_MAX_TOKENS,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 
 import type { ApiHandlerOptions } from "../../shared/api"
 

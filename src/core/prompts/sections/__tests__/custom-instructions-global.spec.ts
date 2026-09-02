@@ -7,20 +7,20 @@ const {
 	mockReadFile,
 	mockReaddir,
 	mockLstat,
-	mockGetRooDirectoriesForCwd,
-	mockGetAllRooDirectoriesForCwd,
+	mockGetAicoDirectoriesForCwd,
+	mockGetAllAicoDirectoriesForCwd,
 	mockGetAgentsDirectoriesForCwd,
-	mockGetGlobalRooDirectory,
+	mockGetGlobalAicoDirectory,
 } = vi.hoisted(() => ({
 	mockHomedir: vi.fn(),
 	mockStat: vi.fn(),
 	mockReadFile: vi.fn(),
 	mockReaddir: vi.fn(),
 	mockLstat: vi.fn(),
-	mockGetRooDirectoriesForCwd: vi.fn(),
-	mockGetAllRooDirectoriesForCwd: vi.fn(),
+	mockGetAicoDirectoriesForCwd: vi.fn(),
+	mockGetAllAicoDirectoriesForCwd: vi.fn(),
 	mockGetAgentsDirectoriesForCwd: vi.fn(),
-	mockGetGlobalRooDirectory: vi.fn(),
+	mockGetGlobalAicoDirectory: vi.fn(),
 }))
 
 // Mock os module
@@ -41,31 +41,31 @@ vi.mock("fs/promises", () => ({
 	},
 }))
 
-// Mock the roo-config service
-vi.mock("../../../../services/roo-config", () => ({
-	getRooDirectoriesForCwd: mockGetRooDirectoriesForCwd,
-	getAllRooDirectoriesForCwd: mockGetAllRooDirectoriesForCwd,
+// Mock the aico-config service
+vi.mock("../../../../services/aico-config", () => ({
+	getAicoDirectoriesForCwd: mockGetAicoDirectoriesForCwd,
+	getAllAicoDirectoriesForCwd: mockGetAllAicoDirectoriesForCwd,
 	getAgentsDirectoriesForCwd: mockGetAgentsDirectoriesForCwd,
-	getGlobalRooDirectory: mockGetGlobalRooDirectory,
+	getGlobalAicoDirectory: mockGetGlobalAicoDirectory,
 }))
 
 import { loadRuleFiles, addCustomInstructions } from "../custom-instructions"
 
-describe("custom-instructions global .roo support", () => {
+describe("custom-instructions global .ai-code-orchestrator support", () => {
 	const mockCwd = "/mock/project"
 	const mockHomeDir = "/mock/home"
-	const globalRooDir = path.join(mockHomeDir, ".roo")
-	const projectRooDir = path.join(mockCwd, ".roo")
+	const globalAicoDir = path.join(mockHomeDir, ".ai-code-orchestrator")
+	const projectAicoDir = path.join(mockCwd, ".ai-code-orchestrator")
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockHomedir.mockReturnValue(mockHomeDir)
-		mockGetRooDirectoriesForCwd.mockReturnValue([globalRooDir, projectRooDir])
-		// getAllRooDirectoriesForCwd is now async and returns the same directories by default
-		mockGetAllRooDirectoriesForCwd.mockResolvedValue([globalRooDir, projectRooDir])
-		// getAgentsDirectoriesForCwd returns parent directories (without .roo)
+		mockGetAicoDirectoriesForCwd.mockReturnValue([globalAicoDir, projectAicoDir])
+		// getAllAicoDirectoriesForCwd is now async and returns the same directories by default
+		mockGetAllAicoDirectoriesForCwd.mockResolvedValue([globalAicoDir, projectAicoDir])
+		// getAgentsDirectoriesForCwd returns parent directories (without .ai-code-orchestrator)
 		mockGetAgentsDirectoriesForCwd.mockResolvedValue([mockCwd])
-		mockGetGlobalRooDirectory.mockReturnValue(globalRooDir)
+		mockGetGlobalAicoDirectory.mockReturnValue(globalAicoDir)
 		// Default lstat to reject (file not found)
 		mockLstat.mockRejectedValue(new Error("ENOENT"))
 	})
@@ -173,7 +173,7 @@ describe("custom-instructions global .roo support", () => {
 			expect(globalIndex).toBeLessThan(projectIndex)
 		})
 
-		it("should fall back to legacy .roorules file when no .roo/rules directories exist", async () => {
+		it("should fall back to legacy .aicorules file when no .ai-code-orchestrator/rules directories exist", async () => {
 			// Mock directory existence - neither exist
 			mockStat
 				.mockRejectedValueOnce(new Error("ENOENT")) // global rules dir doesn't exist
@@ -184,7 +184,7 @@ describe("custom-instructions global .roo support", () => {
 
 			const result = await loadRuleFiles(mockCwd)
 
-			expect(result).toContain("# Rules from .roorules:")
+			expect(result).toContain("# Rules from .aicorules:")
 			expect(result).toContain("legacy rule content")
 		})
 
@@ -198,7 +198,7 @@ describe("custom-instructions global .roo support", () => {
 			// The safeReadFile function catches ENOENT errors and returns empty string
 			// So we don't need to mock rejections, just empty responses
 			mockReadFile
-				.mockResolvedValueOnce("") // .roorules returns empty (simulating ENOENT caught by safeReadFile)
+				.mockResolvedValueOnce("") // .aicorules returns empty (simulating ENOENT caught by safeReadFile)
 				.mockResolvedValueOnce("") // .clinerules returns empty (simulating ENOENT caught by safeReadFile)
 
 			const result = await loadRuleFiles(mockCwd)
@@ -242,7 +242,7 @@ describe("custom-instructions global .roo support", () => {
 				.mockResolvedValueOnce("global mode rule content")
 				.mockResolvedValueOnce("project mode rule content")
 				.mockResolvedValueOnce("") // AGENTS.md file (empty)
-				.mockResolvedValueOnce("") // .roorules legacy file (empty)
+				.mockResolvedValueOnce("") // .aicorules legacy file (empty)
 				.mockResolvedValueOnce("") // .clinerules legacy file (empty)
 
 			const result = await addCustomInstructions("", "", mockCwd, mode)
@@ -266,14 +266,14 @@ describe("custom-instructions global .roo support", () => {
 
 			// Mock legacy mode file reading
 			mockReadFile
-				.mockResolvedValueOnce("legacy mode rule content") // .roorules-code
+				.mockResolvedValueOnce("legacy mode rule content") // .aicorules-code
 				.mockResolvedValueOnce("") // AGENTS.md file (empty)
-				.mockResolvedValueOnce("") // generic .roorules (empty)
+				.mockResolvedValueOnce("") // generic .aicorules (empty)
 				.mockResolvedValueOnce("") // generic .clinerules (empty)
 
 			const result = await addCustomInstructions("", "", mockCwd, mode)
 
-			expect(result).toContain("# Rules from .roorules-code:")
+			expect(result).toContain("# Rules from .aicorules-code:")
 			expect(result).toContain("legacy mode rule content")
 		})
 	})

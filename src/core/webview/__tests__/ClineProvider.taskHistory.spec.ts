@@ -1,7 +1,7 @@
-// pnpm --filter roo-cline test core/webview/__tests__/ClineProvider.taskHistory.spec.ts
+// pnpm --filter ai-code-orchestrator test core/webview/__tests__/ClineProvider.taskHistory.spec.ts
 
 import * as vscode from "vscode"
-import type { HistoryItem, ExtensionMessage } from "@roo-code/types"
+import type { HistoryItem, ExtensionMessage } from "@ai-code-orchestrator/types"
 
 import { ContextProxy } from "../../config/ContextProxy"
 import { ClineProvider } from "../ClineProvider"

@@ -1,5 +1,5 @@
 {
-	"extends": "@roo-code/config-typescript/base.json",
+	"extends": "@ai-code-orchestrator/config-typescript/base.json",
 	"compilerOptions": {
 		"outDir": "out"
 	},

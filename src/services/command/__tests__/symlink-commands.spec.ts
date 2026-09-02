@@ -5,9 +5,9 @@ import { getCommand, getCommands } from "../commands"
 
 // Mock fs and path modules
 vi.mock("fs/promises")
-vi.mock("../roo-config", () => ({
-	getGlobalRooDirectory: vi.fn(() => "/mock/global/.roo"),
-	getProjectRooDirectoryForCwd: vi.fn(() => "/mock/project/.roo"),
+vi.mock("../aico-config", () => ({
+	getGlobalAicoDirectory: vi.fn(() => "/mock/global/.ai-code-orchestrator"),
+	getProjectAicoDirectoryForCwd: vi.fn(() => "/mock/project/.ai-code-orchestrator"),
 }))
 vi.mock("../built-in-commands", () => ({
 	getBuiltInCommands: vi.fn(() => Promise.resolve([])),
@@ -93,13 +93,13 @@ description: Symlinked command
 					name: "regular.md",
 					isFile: () => true,
 					isSymbolicLink: () => false,
-					parentPath: "/mock/project/.roo/commands",
+					parentPath: "/mock/project/.ai-code-orchestrator/commands",
 				},
 				{
 					name: "symlink.md",
 					isFile: () => false,
 					isSymbolicLink: () => true,
-					parentPath: "/mock/project/.roo/commands",
+					parentPath: "/mock/project/.ai-code-orchestrator/commands",
 				},
 			])
 
@@ -202,7 +202,7 @@ description: Symlinked command
 							name: "linked-dir",
 							isFile: () => false,
 							isSymbolicLink: () => true,
-							parentPath: "/mock/project/.roo/commands",
+							parentPath: "/mock/project/.ai-code-orchestrator/commands",
 						},
 					])
 				}
@@ -282,7 +282,7 @@ description: Symlinked command
 					name: "cyclic.md",
 					isFile: () => false,
 					isSymbolicLink: () => true,
-					parentPath: "/mock/project/.roo/commands",
+					parentPath: "/mock/project/.ai-code-orchestrator/commands",
 				},
 			])
 
@@ -345,13 +345,13 @@ description: Symlinked command
 					name: "regular.md",
 					isFile: () => true,
 					isSymbolicLink: () => false,
-					parentPath: "/mock/project/.roo/commands",
+					parentPath: "/mock/project/.ai-code-orchestrator/commands",
 				},
 				{
 					name: "broken.md",
 					isFile: () => false,
 					isSymbolicLink: () => true,
-					parentPath: "/mock/project/.roo/commands",
+					parentPath: "/mock/project/.ai-code-orchestrator/commands",
 				},
 			])
 
@@ -415,7 +415,7 @@ description: Symlinked command
 					name: "my-alias.md", // Symlink name
 					isFile: () => false,
 					isSymbolicLink: () => true,
-					parentPath: "/mock/project/.roo/commands",
+					parentPath: "/mock/project/.ai-code-orchestrator/commands",
 				},
 			])
 

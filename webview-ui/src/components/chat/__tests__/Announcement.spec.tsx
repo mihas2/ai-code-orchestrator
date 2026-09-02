@@ -10,7 +10,7 @@ vi.mock("@src/utils/vscode", () => ({
 	},
 }))
 
-vi.mock("@roo/package", () => ({
+vi.mock("@aico/package", () => ({
 	Package: {
 		version: "3.53.0",
 	},
@@ -29,13 +29,13 @@ vi.mock("react-i18next", () => ({
 		if (i18nKey === "chat:announcement.finalRelease.intro") {
 			return (
 				<span>
-					This is the last Roo Code release.{" "}
+					This is the last AI Code Orchestrator release.{" "}
 					{components?.announcementLink &&
 						React.cloneElement(components.announcementLink, {}, "As we announced a few weeks ago")}
 					, we{"'"}ve decided to shift our focus to{" "}
-					{components?.roomoteLink && React.cloneElement(components.roomoteLink, {}, "Roomote")}, our cloud
-					agent platform, which we believe to be the future of software development. Thank you so much for
-					your support throughout the past year or so.
+					{components?.remoteLink && React.cloneElement(components.remoteLink, {}, "remote")}, our cloud agent
+					platform, which we believe to be the future of software development. Thank you so much for your
+					support throughout the past year or so.
 				</span>
 			)
 		}
@@ -45,8 +45,8 @@ vi.mock("react-i18next", () => ({
 				<span>
 					If you want to use an extension, we recommend checking out{" "}
 					{components?.zooCodeLink && React.cloneElement(components.zooCodeLink, {}, "ZooCode")} and{" "}
-					{components?.clineLink && React.cloneElement(components.clineLink, {}, "Cline")} (where Roo Code
-					originally started).
+					{components?.clineLink && React.cloneElement(components.clineLink, {}, "Cline")} (where AI Code
+					Orchestrator originally started).
 				</span>
 			)
 		}
@@ -59,7 +59,7 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 	useAppTranslation: () => ({
 		t: (key: string, options?: { version?: string }) => {
 			const translations: Record<string, string> = {
-				"chat:announcement.finalRelease.title": "The last Roo Code release",
+				"chat:announcement.finalRelease.title": "The last AI Code Orchestrator release",
 				"chat:announcement.finalRelease.continuity":
 					"This extension should continue to work indefinitely, but it won't receive bug fixes, new features, or model updates.",
 				"chat:announcement.finalRelease.signoff": "Happy coding!",
@@ -78,8 +78,8 @@ describe("Announcement", () => {
 	it("renders the final release announcement", () => {
 		render(<Announcement hideAnnouncement={vi.fn()} />)
 
-		expect(screen.getByText("The last Roo Code release")).toBeInTheDocument()
-		expect(screen.getByText(/This is the last Roo Code release/)).toBeInTheDocument()
+		expect(screen.getByText("The last AI Code Orchestrator release")).toBeInTheDocument()
+		expect(screen.getByText(/This is the last AI Code Orchestrator release/)).toBeInTheDocument()
 		expect(
 			screen.getByText(
 				"This extension should continue to work indefinitely, but it won't receive bug fixes, new features, or model updates.",

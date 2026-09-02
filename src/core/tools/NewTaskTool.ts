@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 
-import { TodoItem } from "@roo-code/types"
+import { TodoItem } from "@ai-code-orchestrator/types"
 
 import { Task } from "../task/Task"
 import { getModeBySlug } from "../../shared/modes"

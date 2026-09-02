@@ -3,7 +3,7 @@ import { Anthropic } from "@anthropic-ai/sdk"
 
 import { LiteLLMHandler } from "../lite-llm"
 import { ApiHandlerOptions } from "../../../shared/api"
-import { litellmDefaultModelId, litellmDefaultModelInfo } from "@roo-code/types"
+import { litellmDefaultModelId, litellmDefaultModelInfo } from "@ai-code-orchestrator/types"
 
 // Mock vscode first to avoid import errors
 vi.mock("vscode", () => ({}))

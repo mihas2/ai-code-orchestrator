@@ -1,18 +1,18 @@
 ---
-description: Learn how the access_mcp_resource tool retrieves data from Model Context Protocol servers for additional context in Roo Code tasks.
+description: Learn how the access_mcp_resource tool retrieves data from Model Context Protocol servers for additional context in AI Code Orchestrator tasks.
 keywords:
     - access_mcp_resource
     - MCP
     - Model Context Protocol
     - MCP resources
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - context retrieval
     - API integration
 ---
 
 # access_mcp_resource
 
-The `access_mcp_resource` tool retrieves data from resources exposed by connected Model Context Protocol (MCP) servers. It allows Roo to access files, API responses, documentation, or system information that provides additional context for tasks.
+The `access_mcp_resource` tool retrieves data from resources exposed by connected Model Context Protocol (MCP) servers. It allows AI Code Orchestrator to access files, API responses, documentation, or system information that provides additional context for tasks.
 
 ---
 
@@ -33,10 +33,10 @@ This tool connects to MCP servers and fetches data from their exposed resources.
 
 ## When is it used?
 
-- When Roo needs additional context from external systems
-- When Roo needs to access domain-specific data from specialized MCP servers
-- When Roo needs to retrieve reference documentation hosted by MCP servers
-- When Roo needs to integrate real-time data from external APIs via MCP
+- When AI Code Orchestrator needs additional context from external systems
+- When AI Code Orchestrator needs to access domain-specific data from specialized MCP servers
+- When AI Code Orchestrator needs to retrieve reference documentation hosted by MCP servers
+- When AI Code Orchestrator needs to integrate real-time data from external APIs via MCP
 
 ---
 
@@ -93,7 +93,7 @@ When the `access_mcp_resource` tool is invoked, it follows this process:
     - Receives a structured response with metadata and content arrays
     - Processes text content for display to the user
     - Handles image data specially for appropriate display
-    - Returns the processed resource data to Roo for use in the current task
+    - Returns the processed resource data to AI Code Orchestrator for use in the current task
 
 ---
 
@@ -118,10 +118,10 @@ MCP servers can provide two main types of resources:
 
 ## Examples When Used
 
-- When helping with API development, Roo retrieves endpoint specifications from MCP resources to ensure correct implementation.
-- When assisting with data visualization, Roo accesses current data samples from connected MCP servers.
-- When working in specialized domains, Roo retrieves technical documentation to provide accurate guidance.
-- When generating industry-specific code, Roo references compliance requirements from documentation resources.
+- When helping with API development, AI Code Orchestrator retrieves endpoint specifications from MCP resources to ensure correct implementation.
+- When assisting with data visualization, AI Code Orchestrator accesses current data samples from connected MCP servers.
+- When working in specialized domains, AI Code Orchestrator retrieves technical documentation to provide accurate guidance.
+- When generating industry-specific code, AI Code Orchestrator references compliance requirements from documentation resources.
 
 ---
 

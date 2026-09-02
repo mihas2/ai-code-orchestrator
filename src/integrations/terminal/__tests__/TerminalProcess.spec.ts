@@ -35,7 +35,7 @@ describe("TerminalProcess", () => {
 			shellIntegration: {
 				executeCommand: vi.fn(),
 			},
-			name: "Roo Code",
+			name: "AI Code Orchestrator",
 			processId: Promise.resolve(123),
 			creationOptions: {},
 			exitStatus: undefined,

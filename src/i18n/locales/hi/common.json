@@ -1,6 +1,6 @@
 {
 	"extension": {
-		"name": "Roo Code",
+		"name": "AI Code Orchestrator",
 		"description": "आपके एडिटर में AI डेवलपर्स की पूरी टीम।"
 	},
 	"number_format": {
@@ -142,7 +142,7 @@
 	"warnings": {
 		"no_terminal_content": "कोई टर्मिनल सामग्री चयनित नहीं",
 		"missing_task_files": "इस टास्क की फाइलें गायब हैं। क्या आप इसे टास्क सूची से हटाना चाहते हैं?",
-		"auto_import_failed": "RooCode सेटिंग्स का स्वचालित आयात विफल: {{error}}"
+		"auto_import_failed": "AiCodeOrchestrator सेटिंग्स का स्वचालित आयात विफल: {{error}}"
 	},
 	"info": {
 		"no_changes": "कोई परिवर्तन नहीं मिला।",
@@ -151,7 +151,7 @@
 		"custom_storage_path_set": "कस्टम स्टोरेज पाथ सेट किया गया: {{path}}",
 		"default_storage_path": "डिफ़ॉल्ट स्टोरेज पाथ का उपयोग पुनः शुरू किया गया",
 		"settings_imported": "सेटिंग्स सफलतापूर्वक इम्पोर्ट की गईं।",
-		"auto_import_success": "RooCode सेटिंग्स {{filename}} से स्वचालित रूप से आयात की गईं",
+		"auto_import_success": "AiCodeOrchestrator सेटिंग्स {{filename}} से स्वचालित रूप से आयात की गईं",
 		"share_link_copied": "साझा लिंक क्लिपबोर्ड पर कॉपी किया गया",
 		"image_copied_to_clipboard": "छवि डेटा URI क्लिपबोर्ड में कॉपी की गई",
 		"image_saved": "छवि {{path}} में सहेजी गई",
@@ -184,12 +184,12 @@
 	},
 	"storage": {
 		"prompt_custom_path": "वार्तालाप इतिहास के लिए कस्टम स्टोरेज पाथ दर्ज करें, डिफ़ॉल्ट स्थान का उपयोग करने के लिए खाली छोड़ दें",
-		"path_placeholder": "D:\\RooCodeStorage",
-		"enter_absolute_path": "कृपया एक पूर्ण पाथ दर्ज करें (उदाहरण: D:\\RooCodeStorage या /home/user/storage)",
+		"path_placeholder": "D:\\AIOrchestratorStorage",
+		"enter_absolute_path": "कृपया एक पूर्ण पाथ दर्ज करें (उदाहरण: D:\\AIOrchestratorStorage या /home/user/storage)",
 		"enter_valid_path": "कृपया एक वैध पाथ दर्ज करें"
 	},
 	"input": {
-		"task_prompt": "Roo को क्या करना है?",
+		"task_prompt": "AI Code Orchestrator को क्या करना है?",
 		"task_placeholder": "अपना कार्य यहाँ लिखें"
 	},
 	"settings": {
@@ -197,8 +197,8 @@
 	},
 	"customModes": {
 		"errors": {
-			"yamlParseError": ".roomodes फ़ाइल में लाइन {{line}} पर अमान्य YAML। कृपया जांचें:\n• सही इंडेंटेशन (टैब नहीं, स्पेस का उपयोग करें)\n• मैचिंग कोट्स और ब्रैकेट्स\n• वैध YAML सिंटैक्स",
-			"schemaValidationError": ".roomodes में अमान्य कस्टम मोड फॉर्मेट:\n{{issues}}",
+			"yamlParseError": ".agent-modes फ़ाइल में लाइन {{line}} पर अमान्य YAML। कृपया जांचें:\n• सही इंडेंटेशन (टैब नहीं, स्पेस का उपयोग करें)\n• मैचिंग कोट्स और ब्रैकेट्स\n• वैध YAML सिंटैक्स",
+			"schemaValidationError": ".agent-modes में अमान्य कस्टम मोड फॉर्मेट:\n{{issues}}",
 			"invalidFormat": "अमान्य कस्टम मोड फॉर्मेट। कृपया सुनिश्चित करें कि आपकी सेटिंग्स सही YAML फॉर्मेट का पालन करती हैं।",
 			"updateFailed": "कस्टम मोड अपडेट विफल: {{error}}",
 			"deleteFailed": "कस्टम मोड डिलीट विफल: {{error}}",
@@ -227,6 +227,6 @@
 	},
 	"docsLink": {
 		"label": "Docs",
-		"url": "https://github.com/RooCodeInc/Roo-Code"
+		"url": "https://github.com/AIOrchestrator/ai-code-orchestrator"
 	}
 }

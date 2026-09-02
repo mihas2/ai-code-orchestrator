@@ -4,15 +4,15 @@ import * as vscode from "vscode"
 import matter from "gray-matter"
 
 import type { ClineProvider } from "../../core/webview/ClineProvider"
-import { getGlobalRooDirectory, getGlobalAgentsDirectory, getProjectAgentsDirectoryForCwd } from "../roo-config"
-import { directoryExists, fileExists } from "../roo-config"
+import { getGlobalAicoDirectory, getGlobalAgentsDirectory, getProjectAgentsDirectoryForCwd } from "../aico-config"
+import { directoryExists, fileExists } from "../aico-config"
 import { SkillMetadata, SkillContent } from "../../shared/skills"
 import { modes, getAllModes } from "../../shared/modes"
 import {
 	validateSkillName as validateSkillNameShared,
 	SkillNameValidationError,
 	SKILL_NAME_MAX_LENGTH,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 import { t } from "../../i18n"
 
 // Re-export for convenience
@@ -37,8 +37,8 @@ export class SkillsManager {
 	 * Discover all skills from global and project directories.
 	 * Supports both generic skills (skills/) and mode-specific skills (skills-{mode}/).
 	 * Also supports symlinks:
-	 * - .roo/skills can be a symlink to a directory containing skill subdirectories
-	 * - .roo/skills/[dirname] can be a symlink to a skill directory
+	 * - .ai-code-orchestrator/skills can be a symlink to a directory containing skill subdirectories
+	 * - .ai-code-orchestrator/skills/[dirname] can be a symlink to a skill directory
 	 */
 	async discoverSkills(): Promise<void> {
 		this.skills.clear()
@@ -366,13 +366,13 @@ export class SkillsManager {
 		// Determine base directory
 		let baseDir: string
 		if (source === "global") {
-			baseDir = getGlobalRooDirectory()
+			baseDir = getGlobalAicoDirectory()
 		} else {
 			const provider = this.providerRef.deref()
 			if (!provider?.cwd) {
 				throw new Error(t("skills:errors.no_workspace"))
 			}
-			baseDir = path.join(provider.cwd, ".roo")
+			baseDir = path.join(provider.cwd, ".ai-code-orchestrator")
 		}
 
 		// Always use the generic skills directory (mode info stored in frontmatter now)
@@ -475,13 +475,13 @@ Add your skill instructions here.
 		// Determine base directory
 		let baseDir: string
 		if (source === "global") {
-			baseDir = getGlobalRooDirectory()
+			baseDir = getGlobalAicoDirectory()
 		} else {
 			const provider = this.providerRef.deref()
 			if (!provider?.cwd) {
 				throw new Error(t("skills:errors.no_workspace"))
 			}
-			baseDir = path.join(provider.cwd, ".roo")
+			baseDir = path.join(provider.cwd, ".ai-code-orchestrator")
 		}
 
 		// Determine source and destination directories
@@ -572,10 +572,10 @@ Add your skill instructions here.
 		}>
 	> {
 		const dirs: Array<{ dir: string; source: "global" | "project"; mode?: string }> = []
-		const globalRooDir = getGlobalRooDirectory()
+		const globalAicoDir = getGlobalAicoDirectory()
 		const globalAgentsDir = getGlobalAgentsDirectory()
 		const provider = this.providerRef.deref()
-		const projectRooDir = provider?.cwd ? path.join(provider.cwd, ".roo") : null
+		const projectAicoDir = provider?.cwd ? path.join(provider.cwd, ".ai-code-orchestrator") : null
 		const projectAgentsDir = provider?.cwd ? getProjectAgentsDirectoryForCwd(provider.cwd) : null
 
 		// Get list of modes to check for mode-specific skills
@@ -587,8 +587,8 @@ Add your skill instructions here.
 		//    (via Map.set replacement during discovery - same source+mode+name key gets replaced)
 		//
 		// Processing order (later directories override earlier ones at the same source level):
-		// - Global: .agents/skills first, then .roo/skills (so .roo wins)
-		// - Project: .agents/skills first, then .roo/skills (so .roo wins)
+		// - Global: .agents/skills first, then .ai-code-orchestrator/skills (so .ai-code-orchestrator wins)
+		// - Project: .agents/skills first, then .ai-code-orchestrator/skills (so .ai-code-orchestrator wins)
 
 		// Global .agents directories (lowest priority - shared across agents)
 		dirs.push({ dir: path.join(globalAgentsDir, "skills"), source: "global" })
@@ -604,17 +604,17 @@ Add your skill instructions here.
 			}
 		}
 
-		// Global .roo directories (Roo-specific, higher priority than .agents)
-		dirs.push({ dir: path.join(globalRooDir, "skills"), source: "global" })
+		// Global .ai-code-orchestrator directories (AI Code Orchestrator-specific, higher priority than .agents)
+		dirs.push({ dir: path.join(globalAicoDir, "skills"), source: "global" })
 		for (const mode of modesList) {
-			dirs.push({ dir: path.join(globalRooDir, `skills-${mode}`), source: "global", mode })
+			dirs.push({ dir: path.join(globalAicoDir, `skills-${mode}`), source: "global", mode })
 		}
 
-		// Project .roo directories (highest priority)
-		if (projectRooDir) {
-			dirs.push({ dir: path.join(projectRooDir, "skills"), source: "project" })
+		// Project .ai-code-orchestrator directories (highest priority)
+		if (projectAicoDir) {
+			dirs.push({ dir: path.join(projectAicoDir, "skills"), source: "project" })
 			for (const mode of modesList) {
-				dirs.push({ dir: path.join(projectRooDir, `skills-${mode}`), source: "project", mode })
+				dirs.push({ dir: path.join(projectAicoDir, `skills-${mode}`), source: "project", mode })
 			}
 		}
 
@@ -655,19 +655,19 @@ Add your skill instructions here.
 		if (!provider?.cwd) return
 
 		// Watch for changes in skills directories
-		const globalRooDir = getGlobalRooDirectory()
+		const globalAicoDir = getGlobalAicoDirectory()
 		const globalAgentsDir = getGlobalAgentsDirectory()
-		const projectRooDir = path.join(provider.cwd, ".roo")
+		const projectAicoDir = path.join(provider.cwd, ".ai-code-orchestrator")
 		const projectAgentsDir = getProjectAgentsDirectoryForCwd(provider.cwd)
 
-		// Watch global .roo skills directory
-		this.watchDirectory(path.join(globalRooDir, "skills"))
+		// Watch global .ai-code-orchestrator skills directory
+		this.watchDirectory(path.join(globalAicoDir, "skills"))
 
 		// Watch global .agents skills directory
 		this.watchDirectory(path.join(globalAgentsDir, "skills"))
 
-		// Watch project .roo skills directory
-		this.watchDirectory(path.join(projectRooDir, "skills"))
+		// Watch project .ai-code-orchestrator skills directory
+		this.watchDirectory(path.join(projectAicoDir, "skills"))
 
 		// Watch project .agents skills directory
 		this.watchDirectory(path.join(projectAgentsDir, "skills"))
@@ -675,9 +675,9 @@ Add your skill instructions here.
 		// Watch mode-specific directories for all available modes
 		const modesList = await this.getAvailableModes()
 		for (const mode of modesList) {
-			// .roo mode-specific
-			this.watchDirectory(path.join(globalRooDir, `skills-${mode}`))
-			this.watchDirectory(path.join(projectRooDir, `skills-${mode}`))
+			// .ai-code-orchestrator mode-specific
+			this.watchDirectory(path.join(globalAicoDir, `skills-${mode}`))
+			this.watchDirectory(path.join(projectAicoDir, `skills-${mode}`))
 			// .agents mode-specific
 			this.watchDirectory(path.join(globalAgentsDir, `skills-${mode}`))
 			this.watchDirectory(path.join(projectAgentsDir, `skills-${mode}`))

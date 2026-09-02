@@ -1,4 +1,4 @@
-import { type FireworksModelId, fireworksDefaultModelId, fireworksModels } from "@roo-code/types"
+import { type FireworksModelId, fireworksDefaultModelId, fireworksModels } from "@ai-code-orchestrator/types"
 
 import type { ApiHandlerOptions } from "../../shared/api"
 

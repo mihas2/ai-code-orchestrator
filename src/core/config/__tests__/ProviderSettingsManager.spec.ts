@@ -2,7 +2,7 @@
 
 import { ExtensionContext } from "vscode"
 
-import type { ProviderSettings } from "@roo-code/types"
+import type { ProviderSettings } from "@ai-code-orchestrator/types"
 
 import { ProviderSettingsManager, ProviderProfiles } from "../ProviderSettingsManager"
 
@@ -338,7 +338,7 @@ describe("ProviderSettingsManager", () => {
 				},
 			}
 
-			expect(mockSecrets.store.mock.calls[0][0]).toEqual("roo_cline_config_api_config")
+			expect(mockSecrets.store.mock.calls[0][0]).toEqual("ai_code_orchestrator_config_api_config")
 			expect(storedConfig).toEqual(expectedConfig)
 		})
 
@@ -388,7 +388,7 @@ describe("ProviderSettingsManager", () => {
 				},
 			}
 
-			expect(mockSecrets.store.mock.calls[0][0]).toEqual("roo_cline_config_api_config")
+			expect(mockSecrets.store.mock.calls[0][0]).toEqual("ai_code_orchestrator_config_api_config")
 			expect(storedConfig).toEqual(expectedConfig)
 		})
 
@@ -432,7 +432,7 @@ describe("ProviderSettingsManager", () => {
 
 			const storedConfig = JSON.parse(mockSecrets.store.mock.calls[mockSecrets.store.mock.calls.length - 1][1])
 			expect(mockSecrets.store.mock.calls[mockSecrets.store.mock.calls.length - 1][0]).toEqual(
-				"roo_cline_config_api_config",
+				"ai_code_orchestrator_config_api_config",
 			)
 			expect(storedConfig).toEqual(expectedConfig)
 		})
@@ -558,14 +558,14 @@ describe("ProviderSettingsManager", () => {
 	})
 
 	describe("LoadConfig", () => {
-		it("preserves Roo Code Router configs as retired providers", async () => {
+		it("preserves AI Code Orchestrator Router configs as retired providers", async () => {
 			const existingConfig = {
 				currentApiConfigName: "default",
 				apiConfigs: {
 					default: {
-						apiProvider: "roo",
+						apiProvider: "aico",
 						apiModelId: "xai/grok-code-fast-1",
-						rooApiKey: "legacy-key",
+						aicoApiKey: "legacy-key",
 						id: "default-id",
 					},
 				},
@@ -835,7 +835,7 @@ describe("ProviderSettingsManager", () => {
 			await providerSettingsManager.resetAllConfigs()
 
 			// Should have called delete with the correct config key
-			expect(mockSecrets.delete).toHaveBeenCalledWith("roo_cline_config_api_config")
+			expect(mockSecrets.delete).toHaveBeenCalledWith("ai_code_orchestrator_config_api_config")
 		})
 	})
 

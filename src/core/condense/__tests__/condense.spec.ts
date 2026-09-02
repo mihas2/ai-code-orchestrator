@@ -1,7 +1,7 @@
 // npx vitest src/core/condense/__tests__/condense.spec.ts
 
 import { Anthropic } from "@anthropic-ai/sdk"
-import type { ModelInfo } from "@roo-code/types"
+import type { ModelInfo } from "@ai-code-orchestrator/types"
 
 import { BaseProvider } from "../../../api/providers/base-provider"
 import { ApiMessage } from "../../task-persistence/apiMessages"

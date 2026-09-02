@@ -67,14 +67,14 @@ vi.mock("../../../utils/path", () => {
 	}
 })
 
-// Mock fs/promises for RooIgnoreController
+// Mock fs/promises for AicoIgnoreController
 vi.mock("fs/promises", () => ({
 	default: {
 		readFile: vi.fn().mockRejectedValue(new Error("File not found")),
 	},
 }))
 
-// Mock file utils for RooIgnoreController
+// Mock file utils for AicoIgnoreController
 vi.mock("../../../utils/fs", () => ({
 	fileExistsAtPath: vi.fn().mockResolvedValue(false),
 }))

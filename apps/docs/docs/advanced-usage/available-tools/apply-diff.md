@@ -1,12 +1,12 @@
 ---
-description: Master the apply_diff tool for making surgical code changes using fuzzy matching and line hints in Roo Code with multi-file support.
+description: Master the apply_diff tool for making surgical code changes using fuzzy matching and line hints in AI Code Orchestrator with multi-file support.
 keywords:
     - apply_diff
     - file editing
     - code modifications
     - fuzzy matching
     - diff tool
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - multi-file edits
 ---
 
@@ -35,7 +35,7 @@ This tool applies targeted changes to existing files using fuzzy matching guided
 
 ## When is it used?
 
-- When Roo needs to make precise changes to existing code without rewriting entire files.
+- When AI Code Orchestrator needs to make precise changes to existing code without rewriting entire files.
 - When refactoring specific sections of code while maintaining surrounding context.
 - When fixing bugs in existing code with surgical precision.
 - When implementing feature enhancements that modify only certain parts of a file.
@@ -50,7 +50,7 @@ This tool applies targeted changes to existing files using fuzzy matching guided
 - Preserves code formatting and indentation passively by replacing exact blocks.
 - Shows changes in a diff view for user review and editing before applying.
 - Tracks consecutive errors per file (`consecutiveMistakeCountForApplyDiff`) to prevent repeated failures.
-- Validates file access against `.rooignore` rules.
+- Validates file access against `.aicoignore` rules.
 - Handles multi-line edits effectively.
 
 ---
@@ -70,7 +70,7 @@ This tool applies targeted changes to existing files using fuzzy matching guided
 When the `apply_diff` tool is invoked, it follows this process:
 
 1.  **Parameter Validation**: Validates required `path` and `diff` parameters.
-2.  **RooIgnore Check**: Validates if the target file path is allowed by `.rooignore` rules.
+2.  **AicoIgnore Check**: Validates if the target file path is allowed by `.aicoignore` rules.
 3.  **File Analysis**: Loads the target file content.
 4.  **Match Finding**: Uses a fuzzy matching algorithm (Levenshtein on normalized strings) guided by the `:start_line:` hint within a context window (`BUFFER_LINES`), searching middle-out to locate the target content based on the confidence threshold.
 5.  **Change Preparation**: Generates the proposed changes by replacing the identified block.

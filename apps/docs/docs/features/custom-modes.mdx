@@ -1,8 +1,8 @@
 ---
-description: Learn how to create custom modes in Roo Code to tailor AI behavior for specific tasks. Configure tool access, file permissions, and specialized instructions.
+description: Learn how to create custom modes in AI Code Orchestrator to tailor AI behavior for specific tasks. Configure tool access, file permissions, and specialized instructions.
 keywords:
   - custom modes
-  - Roo Code customization
+  - AI Code Orchestrator customization
   - AI assistant configuration
   - mode creation
   - tool permissions
@@ -11,14 +11,14 @@ keywords:
 
 # Customizing Modes
 
-Roo Code allows you to create **custom modes** to tailor Roo's behavior to specific tasks or workflows. Custom modes can be either **global** (available across all projects) or **project-specific** (defined within a single project).
+AI Code Orchestrator allows you to create **custom modes** to tailor AI Code Orchestrator's behavior to specific tasks or workflows. Custom modes can be either **global** (available across all projects) or **project-specific** (defined within a single project).
 
 :::tip Sticky Models for Efficient Workflow
-Each mode—including custom ones—features **Sticky Models**. This means Roo Code automatically remembers and selects the last model you used with a particular mode. This lets you assign different preferred models to different tasks without constant reconfiguration, as Roo switches between models when you change modes.
+Each mode—including custom ones—features **Sticky Models**. This means AI Code Orchestrator automatically remembers and selects the last model you used with a particular mode. This lets you assign different preferred models to different tasks without constant reconfiguration, as AI Code Orchestrator switches between models when you change modes.
 :::
 
 :::info Discover Modes
-Looking for ready-to-use custom modes? Visit the [Roo Code Marketplace](/features/marketplace) to browse and install modes with a single click. The marketplace offers specialized modes for various tasks like React development, documentation writing, testing, and more.
+Looking for ready-to-use custom modes? Visit the [AI Code Orchestrator Marketplace](/features/marketplace) to browse and install modes with a single click. The marketplace offers specialized modes for various tasks like React development, documentation writing, testing, and more.
 :::
 
 ---
@@ -32,23 +32,23 @@ Looking for ready-to-use custom modes? Visit the [Roo Code Marketplace](/feature
 
 <img src="/img/custom-modes/custom-modes-3.png" alt="Overview of custom modes interface" width="500" />
 
-    *Roo Code's interface for creating and managing custom modes.*
+    *AI Code Orchestrator's interface for creating and managing custom modes.*
 
 ---
 
 ## What's Included in a Custom Mode?
 
-Custom modes are defined by several key properties. Understanding these concepts will help you tailor Roo's behavior effectively.
+Custom modes are defined by several key properties. Understanding these concepts will help you tailor AI Code Orchestrator's behavior effectively.
 
 | UI Field / YAML Property                 | Conceptual Description                                                                                                                                                                                                                                                                                                                                                                                       |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Slug (`slug`)                            | A **unique internal identifier** for the mode. It's used by Roo Code to reference the mode, especially for associating [mode-specific instruction files](#mode-specific-instructions-via-filesdirectories).                                                                                                                                                                                                   |
-| Name (`name`)                            | The **display name** for the mode as it appears in the Roo Code user interface. This should be human-readable and descriptive.                                                                                                                                                                                                                                                                               |
+| Slug (`slug`)                            | A **unique internal identifier** for the mode. It's used by AI Code Orchestrator to reference the mode, especially for associating [mode-specific instruction files](#mode-specific-instructions-via-filesdirectories).                                                                                                                                                                                                   |
+| Name (`name`)                            | The **display name** for the mode as it appears in the AI Code Orchestrator user interface. This should be human-readable and descriptive.                                                                                                                                                                                                                                                                               |
 | Description (`description`)              | A **short, user-friendly summary** of the mode's purpose displayed in the mode selector UI.<br />- This text appears below the mode's name in the redesigned mode selector, offering users a quick understanding of the mode's function.<br />- Keep this concise and focused on what the mode does for the user.                                                                                              |
-| Role Definition (`roleDefinition`)       | Defines the **core identity and expertise** of the mode. This text is placed at the beginning of the system prompt.<br />- Its primary function is to define Roo's personality and behavior when this mode is active.<br />- With the introduction of the `description` field, the `roleDefinition` should provide a detailed description of the mode's identity, while the `description` field handles the short summary for the UI.<br />- The `whenToUse` property now takes precedence for summarization in automated contexts like task orchestration. |
-| Available Tools (`groups`)               | Defines the **allowed toolsets and file access permissions** for the mode.<br />- In the UI, this corresponds to selecting which general categories of tools (like reading files, editing files, browsing, or executing commands) the mode can use.<br />- The UI shows which files can be edited in the 'Allowed files' section under each mode.<br />- File type restrictions for the "edit" group are typically managed via manual YAML/JSON configuration or by asking Roo to set them up, as detailed in the [Property Details for `groups`](#groups). |
-| When to Use (optional) (`whenToUse`)     | (Optional) Provides **guidance for Roo's automated decision-making**, particularly for mode selection and task orchestration.<br />- This text is used by Roo, particularly the [`🪃 Orchestrator`](/basic-usage/using-modes#orchestrator-mode-aka-boomerang-mode) mode, for [orchestrating tasks](/features/boomerang-tasks) (e.g., via the [`new_task`](/advanced-usage/available-tools/new-task) tool).<br />- It also helps Roo decide which mode is appropriate when [switching modes](/basic-usage/using-modes#switching-between-modes) (e.g., via the [`switch_mode`](/advanced-usage/available-tools/switch-mode) tool).<br />- This field is **not displayed in the mode selector UI** - that's handled by the `description` field. |
-| Custom Instructions (optional) (`customInstructions`) | **Specific behavioral guidelines** or rules for the mode.<br />- These instructions are added near the end of the system prompt to further refine Roo's behavior beyond the `roleDefinition`.<br />- This can be provided directly in the configuration or via separate instruction files.                                                                                                                               |
+| Role Definition (`roleDefinition`)       | Defines the **core identity and expertise** of the mode. This text is placed at the beginning of the system prompt.<br />- Its primary function is to define AI Code Orchestrator's personality and behavior when this mode is active.<br />- With the introduction of the `description` field, the `roleDefinition` should provide a detailed description of the mode's identity, while the `description` field handles the short summary for the UI.<br />- The `whenToUse` property now takes precedence for summarization in automated contexts like task orchestration. |
+| Available Tools (`groups`)               | Defines the **allowed toolsets and file access permissions** for the mode.<br />- In the UI, this corresponds to selecting which general categories of tools (like reading files, editing files, browsing, or executing commands) the mode can use.<br />- The UI shows which files can be edited in the 'Allowed files' section under each mode.<br />- File type restrictions for the "edit" group are typically managed via manual YAML/JSON configuration or by asking AI Code Orchestrator to set them up, as detailed in the [Property Details for `groups`](#groups). |
+| When to Use (optional) (`whenToUse`)     | (Optional) Provides **guidance for AI Code Orchestrator's automated decision-making**, particularly for mode selection and task orchestration.<br />- This text is used by AI Code Orchestrator, particularly the [`🪃 Orchestrator`](/basic-usage/using-modes#orchestrator-mode-aka-boomerang-mode) mode, for [orchestrating tasks](/features/boomerang-tasks) (e.g., via the [`new_task`](/advanced-usage/available-tools/new-task) tool).<br />- It also helps AI Code Orchestrator decide which mode is appropriate when [switching modes](/basic-usage/using-modes#switching-between-modes) (e.g., via the [`switch_mode`](/advanced-usage/available-tools/switch-mode) tool).<br />- This field is **not displayed in the mode selector UI** - that's handled by the `description` field. |
+| Custom Instructions (optional) (`customInstructions`) | **Specific behavioral guidelines** or rules for the mode.<br />- These instructions are added near the end of the system prompt to further refine AI Code Orchestrator's behavior beyond the `roleDefinition`.<br />- This can be provided directly in the configuration or via separate instruction files.                                                                                                                               |
 
 ---
 ## Import/Export Modes
@@ -66,7 +66,7 @@ Easily share, back up, and template your custom modes. This feature lets you exp
 
 ### Use Case
 
-**Before**: Manually recreating custom modes and copying `.roo/rules-{slug}/` folders for each new project or team member. Changing slugs required manual path updates in the YAML file.
+**Before**: Manually recreating custom modes and copying `.ai-code-orchestrator/rules-{slug}/` folders for each new project or team member. Changing slugs required manual path updates in the YAML file.
 
 **With this feature**: A single click exports a mode and all its rules to a YAML file. Another click imports it, setting everything up automatically. You can now change the slug in the exported file and the import process handles all path updates automatically.
 
@@ -82,15 +82,15 @@ The import/export functionality is managed from the **Modes** view.
 3.  Click the **Export Mode** button (the download icon).
 4.  Choose a location to save the `.yaml` file.
 
-Roo packages the mode's configuration and any rules found in the project's `.roo/rules-{slug}/` directory into the YAML file.
+AI Code Orchestrator packages the mode's configuration and any rules found in the project's `.ai-code-orchestrator/rules-{slug}/` directory into the YAML file.
 
 #### Importing a Mode
 1.  Click the **Import Mode** button (the upload icon) in the **Modes** view.
 2.  Select the mode's YAML file.
 3.  Choose the import level in the dialog that appears:
     ![Import Level Dialog](/img/custom-modes/custom-modes-6.png)
-    -   **Project**: The mode is available only in the current workspace. It's added to the `.roomodes` file, and its rules are saved to the `.roo/rules-{slug}/` directory within the project.
-    -   **Global**: The mode is available in all your projects. It's added to your global settings, and its rules are stored in your system's global Roo configuration directory (e.g., `~/.roo/rules-{slug}/`).
+    -   **Project**: The mode is available only in the current workspace. It's added to the `.agent-modes` file, and its rules are saved to the `.ai-code-orchestrator/rules-{slug}/` directory within the project.
+    -   **Global**: The mode is available in all your projects. It's added to your global settings, and its rules are stored in your system's global AI Code Orchestrator configuration directory (e.g., `~/.ai-code-orchestrator/rules-{slug}/`).
 
 **Note:** When exporting modes with rules, all file paths are normalized to use forward slashes for cross-platform compatibility. This ensures modes can be shared between team members using different operating systems.
 
@@ -129,13 +129,13 @@ Note: The automatic slug change handling during import ensures that rule file pa
 - The existing mode will be overwritten with the configuration from the imported file.
 
 **"What's the main difference between a Global and Project import?"**
-- **Global** modes are available across all your VS Code projects. **Project** modes are specific to the workspace where they are imported and are stored in a `.roomodes` file at the root of your project.
+- **Global** modes are available across all your VS Code projects. **Project** modes are specific to the workspace where they are imported and are stored in a `.agent-modes` file at the root of your project.
 
 **"Can I export built-in modes like Code or Architect?"**
 - Yes. If you have customized a built-in mode (e.g., by changing its instructions), you can export it to save your customizations.
 
 **"What if I import a mode with rules at the Global level?"**
-- The rules are still preserved. They are stored in a global `rules-{slug}` folder in your user home directory (e.g., `~/.roo/rules-my-custom-mode/`) instead of the project-specific `.roo` folder.
+- The rules are still preserved. They are stored in a global `rules-{slug}` folder in your user home directory (e.g., `~/.ai-code-orchestrator/rules-my-custom-mode/`) instead of the project-specific `.ai-code-orchestrator` folder.
 
 **"How does the slug change feature work?"**
 - When you change the slug in an exported YAML file before importing, the import process updates the rule file paths to match the new slug. This ensures the mode works correctly with its new identity.
@@ -146,19 +146,19 @@ Note: The automatic slug change handling during import ensures that rule file pa
 
 You can create and configure custom modes in several ways:
 
-To configure modes, open the Roo Code panel, click the Mode menu under the chatbox, then click the <Codicon name="settings-gear" />. From there, use "Edit Global Modes" to open settings/custom_modes.yaml, or "Edit Project Modes (.roomodes)" to open your workspace-level configuration.
+To configure modes, open the AI Code Orchestrator panel, click the Mode menu under the chatbox, then click the <Codicon name="settings-gear" />. From there, use "Edit Global Modes" to open settings/custom_modes.yaml, or "Edit Project Modes (.agent-modes)" to open your workspace-level configuration.
 
-### 1. Ask Roo! (Recommended)
+### 1. Ask AI Code Orchestrator! (Recommended)
 
-You can quickly create a basic custom mode by asking Roo Code to do it for you. For example:
+You can quickly create a basic custom mode by asking AI Code Orchestrator to do it for you. For example:
 ```
 Create a new mode called "Documentation Writer". It should only be able to read files and write Markdown files.
 ```
-Roo Code will guide you through the process, prompting for necessary information for the properties described in the [What's Included in a Custom Mode?](#whats-included-in-a-custom-mode) table. Roo will create the mode using the preferred YAML format. For fine-tuning or making specific adjustments later, you can use the Modes page or manual configuration.
+AI Code Orchestrator will guide you through the process, prompting for necessary information for the properties described in the [What's Included in a Custom Mode?](#whats-included-in-a-custom-mode) table. AI Code Orchestrator will create the mode using the preferred YAML format. For fine-tuning or making specific adjustments later, you can use the Modes page or manual configuration.
 
 ### 2. Using the Modes Page
 
-1.  **Open the Modes page:** Open the Roo Code panel, click the Mode menu under the chatbox, then click the <Codicon name="settings-gear" />.
+1.  **Open the Modes page:** Open the AI Code Orchestrator panel, click the Mode menu under the chatbox, then click the <Codicon name="settings-gear" />.
 2.  **Create New Mode:** Click the <Codicon name="add" /> button to the right of the Modes heading.
 3.  **Fill in Fields:**
 
@@ -166,20 +166,20 @@ Roo Code will guide you through the process, prompting for necessary information
 
     *The custom mode creation interface showing fields for name, slug, description, save location, role definition, available tools, custom instructions.*
 
-    The interface provides fields for `Name`, `Slug`, `Description`, `Save Location`, `Role Definition`, `When to Use (optional)`, `Available Tools`, and `Custom Instructions`. After filling these, click the "Create Mode" button. Roo Code will save the new mode in YAML format.
+    The interface provides fields for `Name`, `Slug`, `Description`, `Save Location`, `Role Definition`, `When to Use (optional)`, `Available Tools`, and `Custom Instructions`. After filling these, click the "Create Mode" button. AI Code Orchestrator will save the new mode in YAML format.
 
-*Refer to the [What's Included in a Custom Mode?](#whats-included-in-a-custom-mode) table for conceptual explanations of each property. File type restrictions for the "edit" tool group can be added by asking Roo or through manual YAML/JSON configuration.*
+*Refer to the [What's Included in a Custom Mode?](#whats-included-in-a-custom-mode) table for conceptual explanations of each property. File type restrictions for the "edit" tool group can be added by asking AI Code Orchestrator or through manual YAML/JSON configuration.*
 
 ### 3. Manual Configuration (YAML & JSON)
 
-You can directly edit the configuration files to create or modify custom modes. This method offers the most control over all properties. Roo Code now supports both YAML (preferred) and JSON formats.
+You can directly edit the configuration files to create or modify custom modes. This method offers the most control over all properties. AI Code Orchestrator now supports both YAML (preferred) and JSON formats.
 
 *   **Global Modes:** Edit the `custom_modes.yaml` (preferred) or `custom_modes.json` file. From the Modes page, click "Edit Global Modes" to open `settings/custom_modes.yaml`.
-*   **Project Modes:** Edit the `.roomodes` file (which can be YAML or JSON) in your project root. From the Modes page, click "Edit Project Modes (.roomodes)" to open or create the workspace file.
+*   **Project Modes:** Edit the `.agent-modes` file (which can be YAML or JSON) in your project root. From the Modes page, click "Edit Project Modes (.agent-modes)" to open or create the workspace file.
 
 These files define an array/list of custom modes.
 
-**YAML Example (`custom_modes.yaml` or `.roomodes`):**
+**YAML Example (`custom_modes.yaml` or `.agent-modes`):**
 ```yaml
 customModes:
   - slug: docs-writer
@@ -198,7 +198,7 @@ customModes:
     # ... other properties
 ```
 
-**JSON Alternative (`custom_modes.json` or `.roomodes`):**
+**JSON Alternative (`custom_modes.json` or `.agent-modes`):**
 ```json
 {
   "customModes": [
@@ -227,14 +227,14 @@ customModes:
 ##### `slug`
 *   **Purpose:** A unique identifier for the mode.
 *   **Format:** Must match the pattern `/^[a-zA-Z0-9-]+$/` (only letters, numbers, and hyphens).
-*   **Usage:** Used internally and in file/directory names for mode-specific rules (e.g., `.roo/rules-{slug}/`).
+*   **Usage:** Used internally and in file/directory names for mode-specific rules (e.g., `.ai-code-orchestrator/rules-{slug}/`).
 *   **Recommendation:** Keep it short and descriptive.
 *   **Note:** The `source` property is automatically added by the system and shouldn't be manually set.
 *   *YAML Example:* `slug: docs-writer`
 *   *JSON Example:* `"slug": "docs-writer"`
 
 ##### `name`
-*   **Purpose:** The display name shown in the Roo Code UI.
+*   **Purpose:** The display name shown in the AI Code Orchestrator UI.
 *   **Format:** Can include spaces and proper capitalization.
 *   *YAML Example:* `name: 📝 Documentation Writer`
 *   *JSON Example:* `"name": "Documentation Writer"`
@@ -291,9 +291,9 @@ customModes:
     ```
 
 ##### `whenToUse`
-*   **Purpose:** (Optional) Provides guidance for Roo's automated decision-making, particularly for mode selection and task orchestration.
+*   **Purpose:** (Optional) Provides guidance for AI Code Orchestrator's automated decision-making, particularly for mode selection and task orchestration.
 *   **Format:** A string describing ideal scenarios or task types for this mode.
-*   **Usage:** This field is used by Roo for automated decisions and is **not displayed in the mode selector UI** - that's handled by the `description` field. If populated, Roo uses this description for orchestration and mode switching; otherwise, the first sentence of `roleDefinition` is used.
+*   **Usage:** This field is used by AI Code Orchestrator for automated decisions and is **not displayed in the mode selector UI** - that's handled by the `description` field. If populated, AI Code Orchestrator uses this description for orchestration and mode switching; otherwise, the first sentence of `roleDefinition` is used.
 *   *YAML Example:* `whenToUse: This mode is best for refactoring Python code.`
 *   *JSON Example:* `"whenToUse": "This mode is best for refactoring Python code."`
 
@@ -349,7 +349,7 @@ YAML is now the preferred format for defining custom modes due to several advant
 *   **Less Punctuation:** YAML generally requires less punctuation (like commas and braces) compared to JSON, reducing syntax errors.
 *   **Editor Support:** Most modern code editors provide excellent syntax highlighting and validation for YAML files, further enhancing readability and reducing errors.
 
-While JSON is still fully supported and won't be deprecated, new modes created via the UI or by asking Roo will default to YAML. Both `.roomodes` files and global configuration files can be either YAML or JSON format.
+While JSON is still fully supported and won't be deprecated, new modes created via the UI or by asking AI Code Orchestrator will default to YAML. Both `.agent-modes` files and global configuration files can be either YAML or JSON format.
 
 #### Tips for Working with YAML
 
@@ -362,24 +362,24 @@ When editing YAML manually, keep these points in mind:
 
 ### Migration to YAML Format
 
-*   **Global Modes:** The automatic migration from `custom_modes.json` to `custom_modes.yaml` happens only for global modes when Roo Code starts up, under these conditions:
-    1.  Roo Code starts up.
+*   **Global Modes:** The automatic migration from `custom_modes.json` to `custom_modes.yaml` happens only for global modes when AI Code Orchestrator starts up, under these conditions:
+    1.  AI Code Orchestrator starts up.
     2.  A `custom_modes.json` file exists.
     3.  No `custom_modes.yaml` file exists yet.
     The migration process reads the existing JSON file, converts it to YAML format, creates a new `custom_modes.yaml` file, and preserves the original JSON file (e.g., by renaming it) for rollback purposes. If `custom_modes.yaml` already exists, it will be used, and no automatic migration of `custom_modes.json` will occur.
 
-*   **Project Modes (`.roomodes`):**
-    *   **No automatic startup migration:** Unlike global modes, project-specific `.roomodes` files are not automatically converted from JSON to YAML when Roo Code starts. Manual conversion is required for existing JSON `.roomodes` files.
-    *   **Format Detection:** Roo Code can read `.roomodes` files in either YAML or JSON format. Roo Code automatically detects the format of `.roomodes` files by attempting to parse them as YAML first.
-    *   **Conversion on UI Edit:** If you edit a project-specific mode through the Roo Code UI (e.g., via the Modes page), and the existing `.roomodes` file is in JSON format, Roo Code will save the changes in YAML format. This effectively converts the file to YAML. The original JSON content will be overwritten with YAML.
-    *   **Manual Conversion:** If you want to convert an existing `.roomodes` JSON file to YAML without making UI edits, you'll need to do this manually. You can:
-        1.  Open your existing JSON `.roomodes` file.
-        2.  Convert its content to YAML (you can ask Roo to help with this, or use an online converter).
-        3.  Replace the content of your `.roomodes` file with the new YAML content, or rename the old file (e.g., `.roomodes.json.bak`) and save the new content into a file named `.roomodes`.
+*   **Project Modes (`.agent-modes`):**
+    *   **No automatic startup migration:** Unlike global modes, project-specific `.agent-modes` files are not automatically converted from JSON to YAML when AI Code Orchestrator starts. Manual conversion is required for existing JSON `.agent-modes` files.
+    *   **Format Detection:** AI Code Orchestrator can read `.agent-modes` files in either YAML or JSON format. AI Code Orchestrator automatically detects the format of `.agent-modes` files by attempting to parse them as YAML first.
+    *   **Conversion on UI Edit:** If you edit a project-specific mode through the AI Code Orchestrator UI (e.g., via the Modes page), and the existing `.agent-modes` file is in JSON format, AI Code Orchestrator will save the changes in YAML format. This effectively converts the file to YAML. The original JSON content will be overwritten with YAML.
+    *   **Manual Conversion:** If you want to convert an existing `.agent-modes` JSON file to YAML without making UI edits, you'll need to do this manually. You can:
+        1.  Open your existing JSON `.agent-modes` file.
+        2.  Convert its content to YAML (you can ask AI Code Orchestrator to help with this, or use an online converter).
+        3.  Replace the content of your `.agent-modes` file with the new YAML content, or rename the old file (e.g., `.agent-modes.json.bak`) and save the new content into a file named `.agent-modes`.
         Ensure the resulting YAML is valid.
 
 :::tip
-For manual conversions of `.roomodes` files, you can use online JSON to YAML converters or ask Roo to help reformat a specific mode configuration from JSON to YAML. Always validate your YAML before saving.
+For manual conversions of `.agent-modes` files, you can use online JSON to YAML converters or ask AI Code Orchestrator to help reformat a specific mode configuration from JSON to YAML. Always validate your YAML before saving.
 :::
 ---
 
@@ -388,20 +388,20 @@ For manual conversions of `.roomodes` files, you can use online JSON to YAML con
 :::info Mode-Specific Instruction File Locations
 You can provide instructions for custom modes using dedicated files or directories within your workspace. This allows for better organization and version control compared to only using the `customInstructions` property.
 
-**Preferred Method: Directory (`.roo/rules-{mode-slug}/`)**
+**Preferred Method: Directory (`.ai-code-orchestrator/rules-{mode-slug}/`)**
 ```
 .
-├── .roo/
+├── .ai-code-orchestrator/
 │   └── rules-docs-writer/  # Example for mode slug "docs-writer"
 │       ├── 01-style-guide.md
 │       └── 02-formatting.txt
 └── ... (other project files)
 ```
 
-**Fallback Method: Single File (`.roorules-{mode-slug}`)**
+**Fallback Method: Single File (`.aicorules-{mode-slug}`)**
 ```
 .
-├── .roorules-docs-writer  # Example for mode slug "docs-writer"
+├── .aicorules-docs-writer  # Example for mode slug "docs-writer"
 └── ... (other project files)
 ```
 
@@ -411,8 +411,8 @@ For backward compatibility, the system also checks for `.clinerules-{mode-slug}`
 The directory method takes precedence if it exists and contains files.
 
 **Rules Directory Scope:**
-- **Global modes:** Rules are stored in `~/.roo/rules-{slug}/` (note the trailing slash)
-- **Project modes:** Rules are stored in `{workspace}/.roo/rules-{slug}/` (note the trailing slash)
+- **Global modes:** Rules are stored in `~/.ai-code-orchestrator/rules-{slug}/` (note the trailing slash)
+- **Project modes:** Rules are stored in `{workspace}/.ai-code-orchestrator/rules-{slug}/` (note the trailing slash)
 :::
 
 In addition to the `customInstructions` property, you can provide mode-specific instructions via files in your workspace. This is particularly useful for:
@@ -421,23 +421,23 @@ In addition to the `customInstructions` property, you can provide mode-specific 
 *   Managing instructions easily with version control.
 *   Allowing non-technical team members to modify instructions without editing YAML/JSON.
 
-There are two ways Roo Code loads these instructions, with a clear preference for the newer directory-based method:
+There are two ways AI Code Orchestrator loads these instructions, with a clear preference for the newer directory-based method:
 
-**1. Preferred Method: Directory-Based Instructions (`.roo/rules-{mode-slug}/`)**
+**1. Preferred Method: Directory-Based Instructions (`.ai-code-orchestrator/rules-{mode-slug}/`)**
 
-*   **Structure:** Create a directory named `.roo/rules-{mode-slug}/` in your workspace root. Replace `{mode-slug}` with your mode's slug (e.g., `.roo/rules-docs-writer/`).
-*   **Content:** Place one or more files (e.g., `.md`, `.txt`) containing your instructions inside this directory. You can organize instructions further using subdirectories. Files within the `.roo/rules-{mode-slug}/` directory are read recursively and appended in alphabetical order based on filename (case-insensitive).
+*   **Structure:** Create a directory named `.ai-code-orchestrator/rules-{mode-slug}/` in your workspace root. Replace `{mode-slug}` with your mode's slug (e.g., `.ai-code-orchestrator/rules-docs-writer/`).
+*   **Content:** Place one or more files (e.g., `.md`, `.txt`) containing your instructions inside this directory. You can organize instructions further using subdirectories. Files within the `.ai-code-orchestrator/rules-{mode-slug}/` directory are read recursively and appended in alphabetical order based on filename (case-insensitive).
 *   **Loading:** All instruction files found within this directory structure will be loaded and applied to the specified mode. System files (`.DS_Store`, `.swp`, etc.) and cache files are automatically excluded.
 *   **Advanced Features:** The system supports symbolic links with cycle detection for advanced file organization.
 
-**2. Fallback (Backward Compatibility): File-Based Instructions (`.roorules-{mode-slug}`)**
+**2. Fallback (Backward Compatibility): File-Based Instructions (`.aicorules-{mode-slug}`)**
 
-*   **Structure:** If the `.roo/rules-{mode-slug}/` directory **does not exist or is empty**, Roo Code will look for a single file named `.roorules-{mode-slug}` in your workspace root (e.g., `.roorules-docs-writer`).
+*   **Structure:** If the `.ai-code-orchestrator/rules-{mode-slug}/` directory **does not exist or is empty**, AI Code Orchestrator will look for a single file named `.aicorules-{mode-slug}` in your workspace root (e.g., `.aicorules-docs-writer`).
 *   **Loading:** If found, the content of this single file will be loaded as instructions for the mode.
 
 **Precedence:**
 
-*   The **directory-based method (`.roo/rules-{mode-slug}/`) takes precedence**. If this directory exists and contains files, any corresponding root-level `.roorules-{mode-slug}` file will be **ignored** for that mode.
+*   The **directory-based method (`.ai-code-orchestrator/rules-{mode-slug}/`) takes precedence**. If this directory exists and contains files, any corresponding root-level `.aicorules-{mode-slug}` file will be **ignored** for that mode.
 *   This ensures that projects migrated to the new directory structure behave predictably, while older projects using the single-file method remain compatible.
 
 **Combining with `customInstructions`:**
@@ -451,27 +451,27 @@ There are two ways Roo Code loads these instructions, with a clear preference fo
 
 Mode configurations are applied in this order:
 
-1. Project-level mode configurations (from `.roomodes` - YAML or JSON)
+1. Project-level mode configurations (from `.agent-modes` - YAML or JSON)
 2. Global mode configurations (from `custom_modes.yaml`, then `custom_modes.json` if YAML not found)
 3. Default mode configurations
 
-**Important:** When modes with the same slug exist in both `.roomodes` and global settings, the `.roomodes` version completely overrides the global one. This applies to ALL properties, not just some. For instance, if you have a global 'code' mode and a project-specific 'code' mode in `.roomodes`, the project version will be used when working in that project, and all properties from the global version are ignored.
+**Important:** When modes with the same slug exist in both `.agent-modes` and global settings, the `.agent-modes` version completely overrides the global one. This applies to ALL properties, not just some. For instance, if you have a global 'code' mode and a project-specific 'code' mode in `.agent-modes`, the project version will be used when working in that project, and all properties from the global version are ignored.
 
 You can override any default mode by including a mode with the same slug in your global or project-specific configuration.
 
-*   **Note on Instruction Files:** Within the loading of mode-specific instructions from the filesystem, the directory `.roo/rules-{mode-slug}/` takes precedence over the single file `.roorules-{mode-slug}` found in the workspace root.
+*   **Note on Instruction Files:** Within the loading of mode-specific instructions from the filesystem, the directory `.ai-code-orchestrator/rules-{mode-slug}/` takes precedence over the single file `.aicorules-{mode-slug}` found in the workspace root.
 
 ---
 
 ## Overriding Default Modes
 
-You can override Roo Code's built-in modes (like `💻 Code`, `🪲 Debug`, `❓ Ask`, `🏗️ Architect`, `🪃 Orchestrator`) with customized versions. This is done by creating a custom mode with the same slug as a default mode (e.g., `code`, `debug`).
+You can override AI Code Orchestrator's built-in modes (like `💻 Code`, `🪲 Debug`, `❓ Ask`, `🏗️ Architect`, `🪃 Orchestrator`) with customized versions. This is done by creating a custom mode with the same slug as a default mode (e.g., `code`, `debug`).
 
 ### Overriding Modes Globally
 
 To customize a default mode across all your projects:
 
-1. **Open the Modes page:** Open the Roo Code panel, click the Mode menu under the chatbox, then click the <Codicon name="settings-gear" />.
+1. **Open the Modes page:** Open the AI Code Orchestrator panel, click the Mode menu under the chatbox, then click the <Codicon name="settings-gear" />.
 2. **Edit Global Modes:** Click "Edit Global Modes" to open `settings/custom_modes.yaml` (or `custom_modes.json`).
 3. **Add Your Override:**
 
@@ -512,8 +512,8 @@ This example replaces the default `💻 Code` mode with a version restricted to 
 
 To override a default mode for just one project:
 
-1. **Open the Modes page:** Open the Roo Code panel, click the Mode menu under the chatbox, then click the <Codicon name="settings-gear" />.
-2. **Edit Project Modes (.roomodes):** Click "Edit Project Modes (.roomodes)" to open or create the workspace file.
+1. **Open the Modes page:** Open the AI Code Orchestrator panel, click the Mode menu under the chatbox, then click the <Codicon name="settings-gear" />.
+2. **Edit Project Modes (.agent-modes):** Click "Edit Project Modes (.agent-modes)" to open or create the workspace file.
 3. **Add Your Override:**
 
 **YAML Example:**
@@ -568,13 +568,13 @@ When overriding default modes, test carefully. Consider backing up configuration
 Regular expressions (`fileRegex`) offer fine-grained control over file editing permissions.
 
 :::tip
-**Let Roo Build Your Regex Patterns**
+**Let AI Code Orchestrator Build Your Regex Patterns**
 
-Instead of writing complex regex manually, ask Roo:
+Instead of writing complex regex manually, ask AI Code Orchestrator:
 ```
 Create a regex pattern that matches JavaScript files but excludes test files
 ```
-Roo will generate the pattern. Remember to adapt it for YAML (usually single backslashes) or JSON (double backslashes).
+AI Code Orchestrator will generate the pattern. Remember to adapt it for YAML (usually single backslashes) or JSON (double backslashes).
 :::
 
 When you specify `fileRegex`, you're creating a pattern that file paths must match.
@@ -629,10 +629,10 @@ This information helps you understand why your operation was blocked and what fi
 When exporting built-in modes (like Code, Architect, Ask, Debug), any customizations you've made are included in the export. This allows you to share your personalized versions of built-in modes with others.
 
 ### Mode Deletion and Rules
-When deleting a mode through the UI, Roo Code will prompt you about deleting the associated rules folder, showing the exact path before deletion. This helps prevent accidental loss of custom instructions.
+When deleting a mode through the UI, AI Code Orchestrator will prompt you about deleting the associated rules folder, showing the exact path before deletion. This helps prevent accidental loss of custom instructions.
 
 ### Global Rules Directory
-In addition to mode-specific rules directories, there's also a generic `.roo/rules/` directory (without mode suffix) that can be used for shared rules across all modes.
+In addition to mode-specific rules directories, there's also a generic `.ai-code-orchestrator/rules/` directory (without mode suffix) that can be used for shared rules across all modes.
 
 ### Troubleshooting
 

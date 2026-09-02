@@ -1,12 +1,12 @@
 ---
 sidebar_label: ChatGPT Plus/Pro
 title: ChatGPT Plus/Pro
-description: Use OpenAI models in Roo Code with your ChatGPT Plus/Pro subscription (OAuth sign-in, no API key).
+description: Use OpenAI models in AI Code Orchestrator with your ChatGPT Plus/Pro subscription (OAuth sign-in, no API key).
 keywords:
     - OpenAI Codex
     - ChatGPT Plus
     - ChatGPT Pro
-    - Roo Code
+    - AI Code Orchestrator
     - OAuth
     - no api key
     - subscription
@@ -14,13 +14,13 @@ keywords:
 
 ---
 
-## Quickstart: Connect your subscription to Roo Code
+## Quickstart: Connect your subscription to AI Code Orchestrator
 
-1. Open Roo Code settings (click the gear icon <Codicon name="gear" /> in the Roo Code panel).
+1. Open AI Code Orchestrator settings (click the gear icon <Codicon name="gear" /> in the AI Code Orchestrator panel).
 2. In **API Provider**, select **OpenAI – ChatGPT Plus/Pro**.
 3. Click **Sign in to OpenAI Codex**.
 4. Finish the sign-in flow in your browser.
-5. Back in Roo Code settings, pick a model from the dropdown.
+5. Back in AI Code Orchestrator settings, pick a model from the dropdown.
 6. Save.
 
 ## Tips and Notes
@@ -31,5 +31,5 @@ keywords:
 
 ## What you can't do (and why)
 
-- **You can't use arbitrary OpenAI API models.** This provider only exposes the models listed in Roo's Codex model catalog.
-- **You can't export/migrate your sign-in state with settings export.** OAuth tokens are stored in VS Code SecretStorage, which isn't included in Roo's settings export.
+- **You can't use arbitrary OpenAI API models.** This provider only exposes the models listed in AI Code Orchestrator's Codex model catalog.
+- **You can't export/migrate your sign-in state with settings export.** OAuth tokens are stored in VS Code SecretStorage, which isn't included in AI Code Orchestrator's settings export.

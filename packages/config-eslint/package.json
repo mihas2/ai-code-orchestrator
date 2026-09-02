@@ -1,5 +1,5 @@
 {
-	"name": "@roo-code/config-eslint",
+	"name": "@ai-code-orchestrator/config-eslint",
 	"private": true,
 	"type": "module",
 	"exports": {

@@ -1,7 +1,7 @@
 // npx vitest src/components/welcome/__tests__/WelcomeViewProvider.spec.tsx
 
 import { render, screen, fireEvent } from "@/utils/test-utils"
-import { openRouterDefaultModelId } from "@roo-code/types"
+import { openRouterDefaultModelId } from "@ai-code-orchestrator/types"
 
 import * as ExtensionStateContext from "@src/context/ExtensionStateContext"
 const { ExtensionStateContextProvider } = ExtensionStateContext
@@ -33,8 +33,8 @@ vi.mock("../../common/Tab", () => ({
 	TabContent: ({ children }: any) => <div data-testid="tab-content">{children}</div>,
 }))
 
-vi.mock("../RooHero", () => ({
-	default: () => <div data-testid="roo-hero">Roo Hero</div>,
+vi.mock("../AicoHero", () => ({
+	default: () => <div data-testid="aico-hero">AI Code Orchestrator Hero</div>,
 }))
 
 vi.mock("lucide-react", () => ({

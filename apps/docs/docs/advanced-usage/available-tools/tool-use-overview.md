@@ -1,7 +1,7 @@
 ---
-description: Comprehensive guide to Roo Code's tool system, including tool groups, calling mechanisms, mode integration, and best practices for AI-powered development.
+description: Comprehensive guide to AI Code Orchestrator's tool system, including tool groups, calling mechanisms, mode integration, and best practices for AI-powered development.
 keywords:
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - tool system
     - tool groups
     - AI development
@@ -14,7 +14,7 @@ keywords:
 
 # Tool Use Overview
 
-Roo Code implements a sophisticated tool system that allows AI models to interact with your development environment in a controlled and secure manner. This document explains how tools work, when they're called, and how they're managed.
+AI Code Orchestrator implements a sophisticated tool system that allows AI models to interact with your development environment in a controlled and secure manner. This document explains how tools work, when they're called, and how they're managed.
 
 ---
 
@@ -51,7 +51,7 @@ Certain tools are accessible regardless of the current mode:
 
 ### Read Tools
 
-These tools help Roo understand your code and project:
+These tools help AI Code Orchestrator understand your code and project:
 
 - [read_file](/advanced-usage/available-tools/read-file) - Examines the contents of files
 - [list_files](/advanced-usage/available-tools/list-files) - Maps your project's file structure
@@ -59,14 +59,14 @@ These tools help Roo understand your code and project:
 
 ### Search Tools
 
-These tools help Roo find patterns and functionality across your codebase:
+These tools help AI Code Orchestrator find patterns and functionality across your codebase:
 
 - [search_files](/advanced-usage/available-tools/search-files) - Finds patterns across multiple files using regex
 - [codebase_search](/advanced-usage/available-tools/codebase-search) - Performs semantic searches across your indexed codebase
 
 ### Edit Tools
 
-These tools help Roo make changes to your code:
+These tools help AI Code Orchestrator make changes to your code:
 
 - [apply_diff](/advanced-usage/available-tools/apply-diff) - Makes precise, surgical changes to your code
 - [apply_patch](/advanced-usage/available-tools/apply-patch) - Applies multi-file unified diff patches
@@ -77,20 +77,20 @@ These tools help Roo make changes to your code:
 
 ### Image Tools
 
-These tools help Roo generate and edit images:
+These tools help AI Code Orchestrator generate and edit images:
 
 - [generate_image](/advanced-usage/available-tools/generate-image) - Generates AI-powered images from text prompts
 
 ### Command Tools
 
-These tools help Roo execute commands:
+These tools help AI Code Orchestrator execute commands:
 
 - [execute_command](/advanced-usage/available-tools/execute-command) - Runs system commands and programs
 - [run_slash_command](/advanced-usage/available-tools/run-slash-command) - Executes predefined slash commands for templated instructions _(Experimental - requires enablement)_
 
 ### MCP Tools
 
-These tools help Roo connect with external services:
+These tools help AI Code Orchestrator connect with external services:
 
 - [use_mcp_tool](/advanced-usage/available-tools/use-mcp-tool) - Uses specialized external tools
 - [access_mcp_resource](/advanced-usage/available-tools/access-mcp-resource) - Accesses external data sources
@@ -112,18 +112,18 @@ These tools help manage the conversation and task flow:
 
 ### Handling Complex Tasks
 
-For certain complex operations that require multiple steps, Roo doesn't just figure them out on the fly. Instead, it follows predefined, internal plans to ensure consistency and accuracy.
+For certain complex operations that require multiple steps, AI Code Orchestrator doesn't just figure them out on the fly. Instead, it follows predefined, internal plans to ensure consistency and accuracy.
 
-A prime example is creating a new MCP server, identified internally by `create_mcp_server`. **This identifier does not represent a tool you will see being called.** Rather, when you ask Roo to create a server, it triggers this known, multi-step workflow.
+A prime example is creating a new MCP server, identified internally by `create_mcp_server`. **This identifier does not represent a tool you will see being called.** Rather, when you ask AI Code Orchestrator to create a server, it triggers this known, multi-step workflow.
 
-This specific workflow is initiated by Roo using its internal `fetch_instructions` tool (with the task `create_mcp_server`) to retrieve a detailed plan. This plan then guides Roo to make calls to several standard, documented tools in sequence, such as:
+This specific workflow is initiated by AI Code Orchestrator using its internal `fetch_instructions` tool (with the task `create_mcp_server`) to retrieve a detailed plan. This plan then guides AI Code Orchestrator to make calls to several standard, documented tools in sequence, such as:
 
 - [`execute_command`](/advanced-usage/available-tools/execute-command) for running setup scripts (e.g., `npx @modelcontextprotocol/create-server`).
 - [`write_to_file`](/advanced-usage/available-tools/write-to-file) or [`apply_diff`](/advanced-usage/available-tools/apply-diff) for creating or modifying server code and configuration files.
 - [`ask_followup_question`](/advanced-usage/available-tools/ask-followup-question) to gather necessary information like API keys from you.
 - Other standard tools as needed for steps like determining file locations or updating configuration entries.
 
-So, while the overall task (like `create_mcp_server`) is complex, it's ultimately accomplished by intelligently orchestrating the standard tools available in your environment. This approach allows Roo to reliably perform complex operations by leveraging the tools documented here.
+So, while the overall task (like `create_mcp_server`) is complex, it's ultimately accomplished by intelligently orchestrating the standard tools available in your environment. This approach allows AI Code Orchestrator to reliably perform complex operations by leveraging the tools documented here.
 
 ### When Tools Are Called
 

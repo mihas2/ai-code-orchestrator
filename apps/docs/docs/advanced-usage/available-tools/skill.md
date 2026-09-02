@@ -1,11 +1,11 @@
 ---
-description: Load and execute skill instructions using the skill tool for specialized tasks in Roo Code.
+description: Load and execute skill instructions using the skill tool for specialized tasks in AI Code Orchestrator.
 keywords:
     - skill
     - skills
     - specialized tasks
     - instructions
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - automation
     - workflows
 ---
@@ -27,7 +27,7 @@ The tool accepts these parameters:
 
 ## What It Does
 
-This tool retrieves skill instructions from the skills directory and loads them into the active conversation. Skills are pre-written instruction sets that guide Roo through complex, multi-step procedures. The tool is mode-aware, loading skills specific to the current mode when available.
+This tool retrieves skill instructions from the skills directory and loads them into the active conversation. Skills are pre-written instruction sets that guide AI Code Orchestrator through complex, multi-step procedures. The tool is mode-aware, loading skills specific to the current mode when available.
 
 ---
 
@@ -57,18 +57,18 @@ This tool retrieves skill instructions from the skills directory and loads them 
 When the `skill` tool is invoked, it follows this process:
 
 1. **Skill Resolution**: Searches for the named skill in the following locations (highest priority first):
-    - Project `.roo` mode-specific (e.g., `.roo/skills-code/`)
-    - Project `.roo` generic (`.roo/skills/`)
+    - Project `.ai-code-orchestrator` mode-specific (e.g., `.ai-code-orchestrator/skills-code/`)
+    - Project `.ai-code-orchestrator` generic (`.ai-code-orchestrator/skills/`)
     - Project `.agents` mode-specific (e.g., `.agents/skills-code/`)
     - Project `.agents` generic (`.agents/skills/`)
-    - Global `.roo` mode-specific (e.g., `~/.roo/skills-code/`)
-    - Global `.roo` generic (`~/.roo/skills/`)
+    - Global `.ai-code-orchestrator` mode-specific (e.g., `~/.ai-code-orchestrator/skills-code/`)
+    - Global `.ai-code-orchestrator` generic (`~/.ai-code-orchestrator/skills/`)
     - Global `.agents` mode-specific (e.g., `~/.agents/skills-code/`)
     - Global `.agents` generic (`~/.agents/skills/`)
 2. **Skill Loading**: Loads the skill's main instruction file (typically `SKILL.md`).
 3. **Context Injection**: Injects skill instructions into conversation context.
-4. **Linked Files**: Files referenced in the skill are **not** automatically loaded; Roo must explicitly read them if needed.
-5. **Execution**: Roo follows the skill's instructions to complete the task.
+4. **Linked Files**: Files referenced in the skill are **not** automatically loaded; AI Code Orchestrator must explicitly read them if needed.
+5. **Execution**: AI Code Orchestrator follows the skill's instructions to complete the task.
 
 ---
 
@@ -77,10 +77,10 @@ When the `skill` tool is invoked, it follows this process:
 Skills are dynamically loaded based on the current mode and project configuration. Common skills include:
 
 - `create-mcp-server`: Guide for creating Model Context Protocol servers
-- `create-mode`: Guide for creating custom Roo Code modes
+- `create-mode`: Guide for creating custom AI Code Orchestrator modes
 - `find-skills`: Helps discover and install agent skills
 
-To see available skills, check the skills list in the system prompt or ask Roo "what skills are available?"
+To see available skills, check the skills list in the system prompt or ask AI Code Orchestrator "what skills are available?"
 
 ---
 

@@ -7,7 +7,7 @@ import { ApiMessage } from "../task-persistence/apiMessages"
 import { maybeRemoveImageBlocks } from "../../api/transform/image-cleaning"
 import { findLast } from "../../shared/array"
 import { supportPrompt } from "../../shared/support-prompt"
-import { RooIgnoreController } from "../ignore/RooIgnoreController"
+import { AicoIgnoreController } from "../ignore/AicoIgnoreController"
 import { generateFoldedFileContext } from "./foldedFileContext"
 
 export type { FoldedFileContextResult, FoldedFileContextOptions } from "./foldedFileContext"
@@ -230,7 +230,7 @@ export type SummarizeConversationOptions = {
 	environmentDetails?: string
 	filesReadByRoo?: string[]
 	cwd?: string
-	rooIgnoreController?: RooIgnoreController
+	aicoIgnoreController?: AicoIgnoreController
 }
 
 /**
@@ -263,7 +263,7 @@ export async function summarizeConversation(options: SummarizeConversationOption
 		environmentDetails,
 		filesReadByRoo,
 		cwd,
-		rooIgnoreController,
+		aicoIgnoreController,
 	} = options
 
 	const response: SummarizeResponse = { messages, cost: 0, summary: "" }
@@ -413,7 +413,7 @@ ${commandBlocks}
 		try {
 			const foldedResult = await generateFoldedFileContext(filesReadByRoo, {
 				cwd,
-				rooIgnoreController,
+				aicoIgnoreController,
 			})
 			if (foldedResult.sections.length > 0) {
 				for (const section of foldedResult.sections) {

@@ -5,7 +5,7 @@ import * as path from "path"
 
 import * as vscode from "vscode"
 
-import type { ProviderName } from "@roo-code/types"
+import type { ProviderName } from "@ai-code-orchestrator/types"
 
 import { importSettings, importSettingsFromFile, importSettingsWithFeedback, exportSettings } from "../importExport"
 import { ProviderSettingsManager } from "../ProviderSettingsManager"
@@ -1038,7 +1038,7 @@ describe("importExport", () => {
 
 		it("should export settings to the selected file location", async () => {
 			;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-				fsPath: "/mock/path/roo-code-settings.json",
+				fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 			})
 
 			const mockProviderProfiles = {
@@ -1065,7 +1065,7 @@ describe("importExport", () => {
 			expect(mockContextProxy.export).toHaveBeenCalled()
 			expect(fs.mkdir).toHaveBeenCalledWith("/mock/path", { recursive: true })
 
-			expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/roo-code-settings.json", {
+			expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/ai-code-orchestrator-settings.json", {
 				providerProfiles: mockProviderProfiles,
 				globalSettings: mockGlobalSettings,
 			})
@@ -1073,7 +1073,7 @@ describe("importExport", () => {
 
 		it("should include globalSettings when allowedMaxRequests is null", async () => {
 			;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-				fsPath: "/mock/path/roo-code-settings.json",
+				fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 			})
 
 			const mockProviderProfiles = {
@@ -1097,7 +1097,7 @@ describe("importExport", () => {
 				contextProxy: mockContextProxy,
 			})
 
-			expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/roo-code-settings.json", {
+			expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/ai-code-orchestrator-settings.json", {
 				providerProfiles: mockProviderProfiles,
 				globalSettings: mockGlobalSettings,
 			})
@@ -1105,7 +1105,7 @@ describe("importExport", () => {
 
 		it("should handle errors during the export process", async () => {
 			;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-				fsPath: "/mock/path/roo-code-settings.json",
+				fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 			})
 
 			mockProviderSettingsManager.export.mockResolvedValue({
@@ -1135,7 +1135,7 @@ describe("importExport", () => {
 
 		it("should handle errors during directory creation", async () => {
 			;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-				fsPath: "/mock/path/roo-code-settings.json",
+				fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 			})
 
 			mockProviderSettingsManager.export.mockResolvedValue({
@@ -1172,13 +1172,15 @@ describe("importExport", () => {
 				defaultUri: expect.anything(),
 			})
 
-			expect(vscode.Uri.file).toHaveBeenCalledWith(path.join("/mock/home", "Downloads", "roo-code-settings.json"))
+			expect(vscode.Uri.file).toHaveBeenCalledWith(
+				path.join("/mock/home", "Downloads", "ai-code-orchestrator-settings.json"),
+			)
 		})
 
 		describe("codebase indexing export", () => {
 			it("should export correct base URL for OpenAI Compatible provider", async () => {
 				;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-					fsPath: "/mock/path/roo-code-settings.json",
+					fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 				})
 
 				const mockProviderProfiles = {
@@ -1220,7 +1222,7 @@ describe("importExport", () => {
 					contextProxy: mockContextProxy,
 				})
 
-				expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/roo-code-settings.json", {
+				expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/ai-code-orchestrator-settings.json", {
 					providerProfiles: mockProviderProfiles,
 					globalSettings: mockGlobalSettings,
 				})
@@ -1228,7 +1230,7 @@ describe("importExport", () => {
 
 			it("should export model dimension for OpenAI Compatible provider", async () => {
 				;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-					fsPath: "/mock/path/roo-code-settings.json",
+					fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 				})
 
 				const mockProviderProfiles = {
@@ -1275,7 +1277,7 @@ describe("importExport", () => {
 
 			it("should not mix settings between different providers", async () => {
 				;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-					fsPath: "/mock/path/roo-code-settings.json",
+					fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 				})
 
 				const mockProviderProfiles = {
@@ -1335,7 +1337,7 @@ describe("importExport", () => {
 
 			it("should handle missing provider-specific settings gracefully", async () => {
 				;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-					fsPath: "/mock/path/roo-code-settings.json",
+					fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 				})
 
 				const mockProviderProfiles = {
@@ -1373,7 +1375,7 @@ describe("importExport", () => {
 				})
 
 				// Should not throw an error and should preserve original settings
-				expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/roo-code-settings.json", {
+				expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/ai-code-orchestrator-settings.json", {
 					providerProfiles: mockProviderProfiles,
 					globalSettings: mockGlobalSettings, // Should remain unchanged
 				})
@@ -1381,7 +1383,7 @@ describe("importExport", () => {
 
 			it("should maintain backward compatibility with existing exports", async () => {
 				;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-					fsPath: "/mock/path/roo-code-settings.json",
+					fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 				})
 
 				const mockProviderProfiles = {
@@ -1416,7 +1418,7 @@ describe("importExport", () => {
 				})
 
 				// Should not modify settings for non-openai-compatible providers
-				expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/roo-code-settings.json", {
+				expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/ai-code-orchestrator-settings.json", {
 					providerProfiles: mockProviderProfiles,
 					globalSettings: mockGlobalSettings, // Should remain unchanged
 				})
@@ -1424,7 +1426,7 @@ describe("importExport", () => {
 
 			it("should handle missing current provider gracefully", async () => {
 				;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-					fsPath: "/mock/path/roo-code-settings.json",
+					fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 				})
 
 				const mockProviderProfiles = {
@@ -1461,7 +1463,7 @@ describe("importExport", () => {
 				})
 
 				// Should not throw an error and should preserve original settings
-				expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/roo-code-settings.json", {
+				expect(safeWriteJson).toHaveBeenCalledWith("/mock/path/ai-code-orchestrator-settings.json", {
 					providerProfiles: mockProviderProfiles,
 					globalSettings: mockGlobalSettings, // Should remain unchanged
 				})
@@ -2134,7 +2136,7 @@ describe("importExport", () => {
 			// when the OpenAI Compatible settings are stored in global state via contextProxy
 
 			;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-				fsPath: "/mock/path/roo-code-settings.json",
+				fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 			})
 
 			// Set up provider profiles - note that the OpenAI Compatible provider does NOT have
@@ -2214,7 +2216,7 @@ describe("importExport", () => {
 				// Using deepseek provider which uses apiModelId and has supportsReasoningBudget: false
 
 				;(vscode.window.showSaveDialog as Mock).mockResolvedValue({
-					fsPath: "/mock/path/roo-code-settings.json",
+					fsPath: "/mock/path/ai-code-orchestrator-settings.json",
 				})
 
 				// Use a real ProviderSettingsManager instance to test the actual filtering logic
