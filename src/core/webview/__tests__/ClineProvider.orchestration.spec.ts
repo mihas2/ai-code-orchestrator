@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import EventEmitter from "events"
 
-import { RooCodeEventName } from "@roo-code/types"
+import { AiCodeOrchestratorEventName } from "@ai-code-orchestrator/types"
 import { ClineProvider } from "../ClineProvider"
 import type { StartOrchestrationInput } from "../../orchestration/types"
 
@@ -144,7 +144,12 @@ describe("ClineProvider TaskCompleted result boundary", () => {
 		const service = await provider.getOrchestrationService()
 		await service.start({ ...input, settings: { ...settings, requireIntegrationApproval: true } })
 		await service.dispatch("run")
-		child.emit(RooCodeEventName.TaskCompleted, "child", { totalTokensIn: 7, totalTokensOut: 3, totalCost: 0.2 }, {})
+		child.emit(
+			AiCodeOrchestratorEventName.TaskCompleted,
+			"child",
+			{ totalTokensIn: 7, totalTokensOut: 3, totalCost: 0.2 },
+			{},
+		)
 		await new Promise((resolve) => setImmediate(resolve))
 		const snapshot = await service.getSnapshot("run")
 		expect(snapshot.nodes[0].status).toBe("ready_to_integrate")
@@ -164,7 +169,12 @@ describe("ClineProvider TaskCompleted result boundary", () => {
 		const service = await provider.getOrchestrationService()
 		await service.start(input)
 		await service.dispatch("run")
-		child.emit(RooCodeEventName.TaskCompleted, "child", { totalTokensIn: 1, totalTokensOut: 2, totalCost: 0 }, {})
+		child.emit(
+			AiCodeOrchestratorEventName.TaskCompleted,
+			"child",
+			{ totalTokensIn: 1, totalTokensOut: 2, totalCost: 0 },
+			{},
+		)
 		await new Promise((resolve) => setImmediate(resolve))
 		const snapshot = await service.getSnapshot("run")
 		expect(snapshot.nodes[0].status).toBe("failed")

@@ -1,4 +1,4 @@
-import type { ModelRoute, OrchestrationSettings } from "@roo-code/types"
+import type { ModelRoute, OrchestrationSettings } from "@ai-code-orchestrator/types"
 
 export type RunStatus =
 	| "planning"

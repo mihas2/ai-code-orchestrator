@@ -19,7 +19,7 @@ export class GitWorkerWorkspaceRegistry {
 
 	constructor(
 		private readonly repository: string,
-		root = path.join(os.tmpdir(), "roo-orchestration-workers"),
+		root = path.join(os.tmpdir(), "aico-orchestration-workers"),
 	) {
 		this.root = root
 	}

@@ -3,7 +3,7 @@ import {
 	DEFAULT_ORCHESTRATION_SETTINGS,
 	orchestrationSettingsSchema,
 	type OrchestrationSettings,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 import { vscode } from "@src/utils/vscode"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { SectionHeader } from "./SectionHeader"
