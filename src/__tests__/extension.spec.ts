@@ -3,6 +3,12 @@
 import type * as vscode from "vscode"
 
 vi.mock("vscode", () => ({
+	RelativePattern: class RelativePattern {
+		constructor(
+			public readonly base: string,
+			public readonly pattern: string,
+		) {}
+	},
 	window: {
 		createOutputChannel: vi.fn().mockReturnValue({
 			appendLine: vi.fn(),
@@ -13,6 +19,9 @@ vi.mock("vscode", () => ({
 			onDidChangeTabs: vi.fn(),
 		},
 		onDidChangeActiveTextEditor: vi.fn(),
+	},
+	Uri: {
+		file: vi.fn((path: string) => ({ fsPath: path })),
 	},
 	workspace: {
 		registerTextDocumentContentProvider: vi.fn(),

@@ -478,6 +478,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		})
 
 		this.apiConfiguration = apiConfiguration
+		console.log(
+			`[model-debug:Task.constructor] task=${this.taskId} provider=${apiConfiguration.apiProvider ?? "unset"} model=${apiConfiguration.apiModelId ?? apiConfiguration.openRouterModelId ?? apiConfiguration.openAiModelId ?? "unset"}`,
+		)
 		this.api = buildApiHandler(this.apiConfiguration)
 		this.autoApprovalHandler = new AutoApprovalHandler()
 
@@ -1534,6 +1537,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	public updateApiConfiguration(newApiConfiguration: ProviderSettings): void {
 		// Update the configuration and rebuild the API handler
 		this.apiConfiguration = newApiConfiguration
+		console.log(
+			`[model-debug:Task.updateApiConfiguration] task=${this.taskId} provider=${newApiConfiguration.apiProvider ?? "unset"} model=${newApiConfiguration.apiModelId ?? newApiConfiguration.openRouterModelId ?? newApiConfiguration.openAiModelId ?? "unset"}`,
+		)
 		this.api = buildApiHandler(this.apiConfiguration)
 	}
 
@@ -4150,7 +4156,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			...(shouldIncludeTools
 				? {
 						tools: allTools,
-						tool_choice: "auto",
+						// A normal task turn must advance through a tool call. Providers that
+						// do not support `required` can still ignore this hint and use the retry guard.
+						tool_choice: "required",
 						parallelToolCalls: true,
 						// When mode restricts tools, provide allowedFunctionNames so providers
 						// like Gemini can see all tools in history but only call allowed ones

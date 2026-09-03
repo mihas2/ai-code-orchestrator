@@ -64,11 +64,17 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 		// Invariant: parent closed before child creation
 		expect(removeClineFromStack).toHaveBeenCalledTimes(1)
 		// Child task is created with startTask: false and initialStatus: "active"
-		expect(createTask).toHaveBeenCalledWith("Do something", undefined, parentTask, {
-			initialTodos: [],
-			initialStatus: "active",
-			startTask: false,
-		})
+		expect(createTask).toHaveBeenCalledWith(
+			"Do something",
+			undefined,
+			parentTask,
+			expect.objectContaining({
+				initialTodos: [],
+				initialStatus: "active",
+				startTask: false,
+			}),
+			undefined,
+		)
 
 		// Metadata persistence - parent gets "delegated" status (child status is set at creation via initialStatus)
 		expect(updateTaskHistory).toHaveBeenCalledTimes(1)

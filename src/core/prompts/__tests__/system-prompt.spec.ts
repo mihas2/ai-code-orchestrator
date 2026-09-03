@@ -490,8 +490,8 @@ describe("SYSTEM_PROMPT", () => {
 			settings, // settings
 		)
 
-		// update_todo_list is still referenced by mode instructions, but tool catalogs are not embedded.
-		expect(prompt).toContain("update_todo_list")
+		// Native tools are supplied out-of-band; the prompt enforces tool use without embedding a catalog.
+		expect(prompt).toContain("You must call at least one tool per assistant response")
 		expect(prompt).not.toContain("## update_todo_list")
 	})
 
@@ -518,8 +518,8 @@ describe("SYSTEM_PROMPT", () => {
 			settings, // settings
 		)
 
-		// update_todo_list is still referenced by mode instructions, but tool catalogs are not embedded.
-		expect(prompt).toContain("update_todo_list")
+		// Native tools are supplied out-of-band; the prompt enforces tool use without embedding a catalog.
+		expect(prompt).toContain("You must call at least one tool per assistant response")
 		expect(prompt).not.toContain("## update_todo_list")
 	})
 
@@ -567,8 +567,8 @@ describe("SYSTEM_PROMPT", () => {
 		expect(prompt).not.toContain("Usage:")
 		expect(prompt).not.toContain("Examples:")
 
-		// Should still contain role definition and other non-XML sections
-		expect(prompt).toContain(modes[0].roleDefinition)
+		// Should still contain the selected mode's role definition and other non-XML sections
+		expect(prompt).toContain(modes.find((mode) => mode.slug === defaultModeSlug)!.roleDefinition)
 		expect(prompt).toContain("CAPABILITIES")
 		expect(prompt).toContain("RULES")
 		expect(prompt).toContain("SYSTEM INFORMATION")

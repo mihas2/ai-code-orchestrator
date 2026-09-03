@@ -42,16 +42,16 @@ export const formatResponse = {
 	noToolsUsed: () => {
 		const instructions = getToolInstructionsReminder()
 
-		return `[ERROR] You did not use a tool in your previous response! Please retry with a tool use.
+		return `[ERROR] Your previous assistant response contained text/reasoning but no native tool call. Retry now and emit a tool call as the entire assistant action; do not explain the retry in prose.
 
 ${instructions}
 
-# Next Steps
+# Choose the required tool now
+- If the user's task is complete, call attempt_completion and put the final result in its parameters.
+- If essential information is missing, call ask_followup_question and put the question and 2-4 actionable options in its parameters.
+- Otherwise, call the most relevant inspection or execution tool for the next concrete step.
 
-If you have completed the user's task, use the attempt_completion tool.
-If you require additional information from the user, use the ask_followup_question tool.
-Otherwise, if you have not completed the task and do not need additional information, then proceed with the next step of the task.
-(This is an automated message, so do not respond to it conversationally.)`
+This is an automated message. Do not respond conversationally or return another text-only answer.`
 	},
 
 	tooManyMistakes: (feedback?: string) =>
@@ -218,7 +218,7 @@ const formatImagesIntoBlocks = (images?: string[]): Anthropic.ImageBlockParam[] 
 
 const toolUseInstructionsReminderNative = `# Reminder: Instructions for Tool Use
 
-Tools are invoked using the platform's native tool calling mechanism. Each tool requires specific parameters as defined in the tool descriptions. Refer to the tool definitions provided in your system instructions for the correct parameter structure and usage examples.
+Tools are invoked using the platform's native tool calling mechanism. A valid assistant turn must contain a native tool call, not a prose description of a call and not hidden XML. Choose the tool that performs the next concrete action. Use attempt_completion only after the user's task is fully complete, and use ask_followup_question only when essential information is missing. Put reasoning or progress context in the selected tool's parameters when supported.
 
 Always ensure you provide all required parameters for the tool you wish to use.`
 

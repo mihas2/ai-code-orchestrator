@@ -38,6 +38,7 @@ function providerBoundary(enabled: boolean, mode: string) {
 	const provider = Object.create(ClineProvider.prototype) as ClineProvider
 	Object.defineProperty(provider, "cwd", { value: process.cwd(), configurable: true })
 	Object.assign(provider, {
+		outputChannel: { appendLine: vi.fn() },
 		context: {
 			globalState: {
 				get: (key: string) => values.get(key),
@@ -151,6 +152,26 @@ describe("ClineProvider orchestration route resolution", () => {
 		expect(await provider.resolveOrchestrationRoute({ role: "worker" })).toMatchObject({
 			profileId: "b",
 			modelId: "model-B2",
+		})
+	})
+
+	it("uses an assigned model even when legacy inheritPrimary is true", async () => {
+		const provider = routeProvider(
+			{
+				currentApiConfigName: "A",
+				roleAssignments: {
+					roles: { architect: { profileName: "B", modelId: "claude-opus-4-8", inheritPrimary: true } },
+				},
+			},
+			{
+				A: { id: "a", name: "A", apiProvider: "anthropic", apiModelId: "claude-sonnet-4-6" },
+				B: { id: "b", name: "B", apiProvider: "anthropic", apiModelId: "claude-sonnet-4-6" },
+			},
+		)
+		expect(await provider.resolveOrchestrationRoute({ role: "architect" })).toMatchObject({
+			profileId: "b",
+			modelId: "claude-opus-4-8",
+			source: "explicit",
 		})
 	})
 

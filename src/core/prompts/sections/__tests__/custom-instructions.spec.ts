@@ -138,7 +138,7 @@ describe("loadRuleFiles", () => {
 		})
 
 		const result = await loadRuleFiles("/fake/path")
-		expect(result).toBe("\n# Rules from .aicorules:\nroo rules content\n")
+		expect(result).toBe("\n# Rules from .aicorules:\naico rules content\n")
 	})
 
 	it("should handle when no rule files exist", async () => {
@@ -403,7 +403,7 @@ describe("loadRuleFiles", () => {
 		})
 
 		const result = await loadRuleFiles("/fake/path")
-		expect(result).toBe("\n# Rules from .aicorules:\nroo rules content\n")
+		expect(result).toBe("\n# Rules from .aicorules:\naico rules content\n")
 	})
 
 	it("should handle errors when reading directory", async () => {
@@ -424,7 +424,7 @@ describe("loadRuleFiles", () => {
 		})
 
 		const result = await loadRuleFiles("/fake/path")
-		expect(result).toBe("\n# Rules from .aicorules:\nroo rules content\n")
+		expect(result).toBe("\n# Rules from .aicorules:\naico rules content\n")
 	})
 
 	it("should read files from nested subdirectories in .ai-code-orchestrator/rules/", async () => {

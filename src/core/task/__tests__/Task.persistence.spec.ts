@@ -163,7 +163,15 @@ vi.mock("../../environment/getEnvironmentDetails", () => ({
 	getEnvironmentDetails: vi.fn().mockResolvedValue(""),
 }))
 
-vi.mock("../../ignore/AicoIgnoreController")
+vi.mock("../../ignore/AicoIgnoreController", () => ({
+	AicoIgnoreController: vi.fn().mockImplementation(() => ({
+		initialize: vi.fn().mockResolvedValue(undefined),
+		filterPaths: vi.fn((paths: string[]) => paths),
+		validateAccess: vi.fn().mockReturnValue(true),
+		validateCommand: vi.fn().mockReturnValue(undefined),
+		dispose: vi.fn(),
+	})),
+}))
 
 vi.mock("../../condense", async (importOriginal) => {
 	const actual = (await importOriginal()) as Record<string, unknown>

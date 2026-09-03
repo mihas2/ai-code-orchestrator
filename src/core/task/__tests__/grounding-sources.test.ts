@@ -95,7 +95,15 @@ vi.mock("../../environment/getEnvironmentDetails", () => ({
 }))
 
 // Mock AicoIgnoreController
-vi.mock("../../ignore/AicoIgnoreController")
+vi.mock("../../ignore/AicoIgnoreController", () => ({
+	AicoIgnoreController: vi.fn().mockImplementation(() => ({
+		initialize: vi.fn().mockResolvedValue(undefined),
+		filterPaths: vi.fn((paths: string[]) => paths),
+		validateAccess: vi.fn().mockReturnValue(true),
+		validateCommand: vi.fn().mockReturnValue(undefined),
+		dispose: vi.fn(),
+	})),
+}))
 
 // Mock condense
 vi.mock("../../condense", () => ({

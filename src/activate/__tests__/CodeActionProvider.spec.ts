@@ -110,7 +110,7 @@ describe("CodeActionProvider", () => {
 			const actions = provider.provideCodeActions(mockDocument, mockRange, mockContext)
 
 			expect(actions).toEqual([])
-			expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith("ai-orchestrator")
+			expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith("ai-code-orchestrator")
 			expect(mockGet).toHaveBeenCalledWith("enableCodeActions", true)
 		})
 

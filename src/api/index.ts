@@ -122,6 +122,9 @@ export interface ApiHandler {
 
 export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 	const { apiProvider, ...options } = configuration
+	console.log(
+		`[model-debug:buildApiHandler] provider=${apiProvider ?? "unset"} model=${configuration.apiModelId ?? configuration.openRouterModelId ?? configuration.openAiModelId ?? "unset"}`,
+	)
 
 	if (apiProvider && isRetiredProvider(apiProvider)) {
 		const retiredProviderMessage =

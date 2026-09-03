@@ -150,10 +150,22 @@ const TaskHeader = ({
 				<div className="flex justify-between items-center gap-0">
 					<div className="flex items-center select-none grow min-w-0">
 						<div className="grow min-w-0">
-							{isTaskExpanded && <span className="font-bold">{t("chat:task.title")}</span>}
+							{isTaskExpanded && (
+								<div className="flex items-center gap-2">
+									<span className="font-bold">{t("chat:task.title")}</span>
+									<span className="text-xs text-vscode-descriptionForeground" title={modelId}>
+										{modelId}
+									</span>
+								</div>
+							)}
 							{!isTaskExpanded && (
 								<div className="flex items-center gap-2 whitespace-nowrap overflow-hidden text-ellipsis">
 									<Mention text={task.text} />
+									<span
+										className="shrink-0 text-xs text-vscode-descriptionForeground"
+										title={modelId}>
+										{modelId}
+									</span>
 								</div>
 							)}
 						</div>

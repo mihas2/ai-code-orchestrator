@@ -78,10 +78,10 @@ export interface ResolveModelRouteInput {
 	resolvedAt?: number
 }
 
-/** Resolves only within the already-selected provider profile. */
+/** Resolves only within the already-selected provider profile. A persisted modelId wins even for legacy inconsistent flags. */
 export function resolveModelRoute(input: ResolveModelRouteInput): ModelRoute {
 	const roleSetting = input.roleModels?.roleModels[input.role]
-	const roleModelId = roleSetting?.inheritPrimary === false ? roleSetting.modelId : undefined
+	const roleModelId = roleSetting?.modelId
 	const modelId = input.explicitModelId ?? roleModelId ?? input.primaryModelId
 	if (!modelId) throw new Error("Unable to resolve model route: profile has no primary model")
 	return {

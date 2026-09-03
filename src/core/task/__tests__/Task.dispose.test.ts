@@ -10,7 +10,15 @@ vi.mock("../../../integrations/terminal/TerminalRegistry", () => ({
 		releaseTerminalsForTask: vi.fn(),
 	},
 }))
-vi.mock("../../ignore/AicoIgnoreController")
+vi.mock("../../ignore/AicoIgnoreController", () => ({
+	AicoIgnoreController: vi.fn().mockImplementation(() => ({
+		initialize: vi.fn().mockResolvedValue(undefined),
+		filterPaths: vi.fn((paths: string[]) => paths),
+		validateAccess: vi.fn().mockReturnValue(true),
+		validateCommand: vi.fn().mockReturnValue(undefined),
+		dispose: vi.fn(),
+	})),
+}))
 vi.mock("../../protect/AicoProtectedController")
 vi.mock("../../context-tracking/FileContextTracker")
 vi.mock("../../../integrations/editor/DiffViewProvider")

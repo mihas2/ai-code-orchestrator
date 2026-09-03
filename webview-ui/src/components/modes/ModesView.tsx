@@ -980,6 +980,13 @@ const ModesView = () => {
 								profileName={selectedProfile?.name}
 								onModelChange={updateRoleAssignment}
 							/>
+							<div
+								className="text-xs text-vscode-descriptionForeground"
+								data-testid="effective-role-model">
+								{profileProvider
+									? `${profileProvider} / ${roleAssignment?.modelId ?? primaryModel}`
+									: ""}
+							</div>
 						</div>
 					</div>
 				</div>

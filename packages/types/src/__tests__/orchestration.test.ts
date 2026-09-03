@@ -59,9 +59,9 @@ describe("resolveModelRoute", () => {
 		expect(
 			resolveModelRoute({
 				...base,
-				roleModels: { schemaVersion: 1, roleModels: { code: { modelId: "ignored", inheritPrimary: true } } },
+				roleModels: { schemaVersion: 1, roleModels: { code: { modelId: "role", inheritPrimary: true } } },
 			}),
-		).toMatchObject({ modelId: "primary", source: "primary" })
+		).toMatchObject({ modelId: "role", source: "role" })
 	})
 
 	it("distinguishes inherited and explicit role model overrides", () => {

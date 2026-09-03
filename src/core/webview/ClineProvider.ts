@@ -363,6 +363,9 @@ export class ClineProvider
 
 		// Ensure getState() resolves correctly.
 		const state = await this.getState()
+		this.log(
+			`[model-debug:startup] roleAssignments=${JSON.stringify(state.roleAssignments ?? null)} mode=${state.mode} profile=${state.currentApiConfigName ?? "default"} model=${getModelId(state.apiConfiguration) ?? "unset"}`,
+		)
 
 		if (!state || typeof state.mode !== "string") {
 			throw new Error(t("common:errors.retrieve_current_mode"))
@@ -1067,7 +1070,7 @@ export class ClineProvider
 		const state = await this.getState()
 		const context = redactPlannerContext(`${goal}\nWorkspace: ${this.cwd}`)
 		const raw = await task.api.completePrompt(
-			`Return ONLY JSON plan: {\"version\":1,\"nodes\":[{\"id\":\"n1\",\"role\":\"worker\",\"mode\":\"code\",\"objective\":\"...\",\"acceptanceCriteria\":[],\"constraints\":[],\"fileScopes\":{\"include\":[],\"exclude\":[]},\"dependencies\":[],\"tokenBudget\":1}]}\nGoal: ${context}`,
+			`Return ONLY JSON plan: {\"version\":1,\"nodes\":[{\"id\":\"n1\",\"role\":\"worker\",\"mode\":\"code\",\"objective\":\"...\",\"acceptanceCriteria\":[],\"constraints\":[],\"fileScopes\":{\"include\":[],\"exclude\":[]},\"dependencies\":[],\"tokenBudget\":1}]}\n\nFile scope rules: fileScopes must contain only project source code and configuration files necessary to complete the goal. NEVER include .git or any of its subdirectories, .aico or any of its subdirectories, node_modules, .vscode, or other standard service/tooling directories and files (for example build output, caches, logs, and IDE metadata). These paths are forbidden even if they appear relevant; leave them out of both include and exclude scopes.\nGoal: ${context}`,
 		)
 		let nodes: ReturnType<typeof parseAndValidatePlan>
 		try {
@@ -1107,6 +1110,9 @@ export class ClineProvider
 		nodeId?: string
 	}): Promise<import("@ai-code-orchestrator/types").ModelRoute> {
 		const state = await this.getState()
+		this.log(
+			`[model-debug:orchestration.route] input role=${node.role} mode=${node.mode ?? "unset"} nodeId=${node.nodeId ?? "unset"} assignments=${JSON.stringify(state.roleAssignments ?? null)} activeProfile=${state.currentApiConfigName ?? "default"}`,
+		)
 		// New assignments are keyed by role; accept mode/node keys for persisted legacy plans.
 		const assignments = state.roleAssignments?.roles
 		const assignment =
@@ -1122,10 +1128,26 @@ export class ClineProvider
 				: assignedProfileId
 					? await this.providerSettingsManager.getProfile({ id: assignedProfileId })
 					: await this.providerSettingsManager.getProfile({ name: activeProfileName })
-		} catch {
+		} catch (error) {
+			this.log(
+				`[Orchestration route] Profile '${profileRef ?? assignedProfileId ?? activeProfileName}' for role '${node.role}' could not be loaded; falling back to active profile '${activeProfileName}': ${error instanceof Error ? error.message : String(error)}`,
+			)
 			profile = await this.providerSettingsManager.getProfile({ name: activeProfileName })
 		}
 		const profileName = profile.name ?? activeProfileName
+		if (!profileRef && !assignedProfileId) {
+			this.log(
+				`[Orchestration route] Role '${node.role}' has no assigned profile; using active profile '${activeProfileName}'.`,
+			)
+		}
+		this.log(
+			`[model-debug:orchestration.route] selected assignment=${JSON.stringify(assignment ?? null)} profile=${profileName} provider=${profile.apiProvider ?? "unset"} primary=${getModelId(profile) ?? "unset"}`,
+		)
+		if (assignment?.modelId && assignment.inheritPrimary !== false) {
+			this.log(
+				`[Orchestration route] Role '${node.role}' has model '${assignment.modelId}' with inheritPrimary=true; using the explicitly configured role model for backwards compatibility.`,
+			)
+		}
 		if (!profile.apiProvider) throw new Error(`Role '${node.role}' has no configured provider profile`)
 
 		const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
@@ -1133,7 +1155,8 @@ export class ClineProvider
 			provider: profile.apiProvider,
 			primaryModelId: getModelId(profile) ?? "",
 			role: node.role,
-			explicitModelId: assignment?.inheritPrimary === false ? assignment.modelId : undefined,
+			// Role assignments are global and take precedence over profile primary models.
+			explicitModelId: assignment?.modelId,
 			roleModels: profile.profileRoleModelSettings,
 		})
 		return route
@@ -2260,9 +2283,16 @@ export class ClineProvider
 		const cwd = this.cwd
 		const currentTask = this.getCurrentTask()
 
+		// While a task is open, its snapshot is authoritative. In particular, a role
+		// model can differ from the globally active profile shown outside a task.
+		const displayedApiConfiguration = currentTask?.apiConfiguration ?? apiConfiguration
+		this.log(
+			`[model-debug:webview.state] currentTask=${currentTask?.taskId ?? "none"} apiModel=${getModelId(displayedApiConfiguration) ?? "unset"} provider=${displayedApiConfiguration.apiProvider ?? "unset"} roleAssignments=${JSON.stringify(roleAssignments ?? null)}`,
+		)
+
 		return {
 			version: this.context.extension?.packageJSON?.version ?? "",
-			apiConfiguration,
+			apiConfiguration: displayedApiConfiguration,
 			customInstructions,
 			alwaysAllowReadOnly: alwaysAllowReadOnly ?? false,
 			alwaysAllowReadOnlyOutsideWorkspace: alwaysAllowReadOnlyOutsideWorkspace ?? false,
@@ -2604,7 +2634,15 @@ export class ClineProvider
 
 	// @deprecated - Use `ContextProxy#setValue` instead.
 	private async updateGlobalState<K extends keyof GlobalState>(key: K, value: GlobalState[K]) {
+		if (key === "roleAssignments") {
+			this.log(`[model-debug:globalState.save] key=${String(key)} value=${JSON.stringify(value)}`)
+		}
 		await this.contextProxy.setValue(key, value)
+		if (key === "roleAssignments") {
+			this.log(
+				`[model-debug:globalState.save] completed reread=${JSON.stringify(this.contextProxy.getValue(key))}`,
+			)
+		}
 	}
 
 	// @deprecated - Use `ContextProxy#getValue` instead.
@@ -2803,6 +2841,9 @@ export class ClineProvider
 		options: CreateTaskOptions = {},
 		configuration: AiCodeOrchestratorSettings = {},
 	): Promise<Task> {
+		this.log(
+			`[model-debug:createTask] enter mode=${configuration.mode ?? "unset"} roleSlug=${configuration.mode ?? "unset"} configuration=${JSON.stringify(configuration)} parent=${parentTask?.taskId ?? "none"}`,
+		)
 		if (configuration) {
 			await this.setValues(configuration)
 
@@ -2843,8 +2884,59 @@ export class ClineProvider
 			}
 		}
 
-		const { apiConfiguration, organizationAllowList, enableCheckpoints, checkpointTimeout, experiments } =
-			await this.getState()
+		const state = await this.getState()
+		const { apiConfiguration, organizationAllowList, enableCheckpoints, checkpointTimeout, experiments } = state
+
+		// Task owns the immutable configuration used to build its API handler. Resolve the
+		// role route here, before construction, rather than only updating global UI state.
+		let effectiveApiConfiguration = apiConfiguration
+		const taskMode = configuration.mode ?? state.mode
+		const roleAssignment = state.roleAssignments?.roles[taskMode]
+		this.log(
+			`[model-debug:createTask] state mode=${taskMode} roleAssignment=${JSON.stringify(roleAssignment ?? null)} allAssignments=${JSON.stringify(state.roleAssignments ?? null)}`,
+		)
+		const activeProfileName = state.currentApiConfigName ?? "default"
+		this.log(
+			`[model-route:createTask] step=input mode=${taskMode} assignment=${JSON.stringify(roleAssignment ?? null)} activeProfile=${activeProfileName} activeProvider=${apiConfiguration.apiProvider ?? "unset"} activeModel=${getModelId(apiConfiguration) ?? "unset"}`,
+		)
+
+		if (roleAssignment?.modelId || roleAssignment?.profileName) {
+			let profile = apiConfiguration
+			let profileName = activeProfileName
+			if (roleAssignment.profileName) {
+				this.log(
+					`[model-route:createTask] step=profile-load mode=${taskMode} requestedProfile=${roleAssignment.profileName}`,
+				)
+				const loadedProfile = await this.providerSettingsManager.getProfile({
+					name: roleAssignment.profileName,
+				})
+				const { name, ...providerSettings } = loadedProfile
+				profile = providerSettings
+				profileName = name ?? roleAssignment.profileName
+			}
+			if (!profile.apiProvider) throw new Error(`Role '${taskMode}' has no configured provider profile`)
+			const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
+				profileId: profileName,
+				provider: profile.apiProvider,
+				primaryModelId: getModelId(profile) ?? "",
+				role: taskMode,
+				explicitModelId: roleAssignment.modelId,
+				roleModels: profile.profileRoleModelSettings,
+			})
+			const modelKey = modelIdKeysByProvider[profile.apiProvider as keyof typeof modelIdKeysByProvider]
+			if (!modelKey) throw new Error(`Role '${taskMode}' uses unsupported provider '${profile.apiProvider}'`)
+			effectiveApiConfiguration = { ...profile, [modelKey]: route.modelId }
+			this.log(
+				`[model-route:createTask] step=resolved mode=${taskMode} profile=${route.profileId} provider=${route.provider} model=${route.modelId} source=${route.source} modelKey=${modelKey}`,
+			)
+			this.log(
+				`[model-debug:createTask] final effectiveApiConfiguration=${JSON.stringify(effectiveApiConfiguration)} effectiveModel=${getModelId(effectiveApiConfiguration) ?? "unset"}`,
+			)
+		} else {
+			this.log(
+				`[model-route:createTask] step=fallback mode=${taskMode} reason=no-role-assignment profile=${activeProfileName} provider=${apiConfiguration.apiProvider ?? "unset"} model=${getModelId(apiConfiguration) ?? "unset"}`,
+			)
+		}
 
 		// Single-open-task invariant: always enforce for user-initiated top-level tasks
 		if (!parentTask) {
@@ -2855,13 +2947,16 @@ export class ClineProvider
 			}
 		}
 
-		if (!ProfileValidator.isProfileAllowed(apiConfiguration, organizationAllowList)) {
+		if (!ProfileValidator.isProfileAllowed(effectiveApiConfiguration, organizationAllowList)) {
 			throw new OrganizationAllowListViolationError(t("common:errors.violated_organization_allowlist"))
 		}
 
+		this.log(
+			`[model-debug:createTask] before-Task model=${getModelId(effectiveApiConfiguration) ?? "unset"} provider=${effectiveApiConfiguration.apiProvider ?? "unset"}`,
+		)
 		const task = new Task({
 			provider: this,
-			apiConfiguration,
+			apiConfiguration: effectiveApiConfiguration,
 			enableCheckpoints,
 			checkpointTimeout,
 			consecutiveMistakeLimit: apiConfiguration.consecutiveMistakeLimit,
