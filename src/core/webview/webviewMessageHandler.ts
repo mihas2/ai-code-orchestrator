@@ -528,7 +528,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "updateRoleAssignment": {
 			if (!message.role || !message.roleAssignment) throw new Error("Role assignment is required")
 			provider.log(
-				`[model-debug:roleAssignment.save] incoming role=${message.role} assignment=${JSON.stringify(message.roleAssignment)}`,
+				`[model-debug:handler] incoming roleAssignment role=${message.role} profileName=${message.roleAssignment.profileName ?? "unset"} modelId=${message.roleAssignment.modelId ?? "unset"}`,
 			)
 			const { roleAssignmentsSchema } = await import("@ai-code-orchestrator/types")
 			const current = getGlobalState("roleAssignments") ?? { schemaVersion: 1, roles: {} }
@@ -539,7 +539,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			if (!parsed.success) throw new Error("Invalid role assignment")
 			await updateGlobalState("roleAssignments", parsed.data)
 			provider.log(
-				`[model-debug:roleAssignment.save] persisted=${JSON.stringify(parsed.data)} reread=${JSON.stringify(getGlobalState("roleAssignments"))}`,
+				`[model-debug:handler] saved roleAssignment=${JSON.stringify(parsed.data.roles[message.role])} merged=${JSON.stringify(parsed.data)} reread=${JSON.stringify(getGlobalState("roleAssignments"))}`,
 			)
 			await provider.postStateToWebview()
 			break
@@ -747,10 +747,32 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 		case "askResponse":
 			{
+				const task = provider.getCurrentTask()
+				const messageTaskId = message.taskId
+				const messageInstanceId = message.instanceId
+				const currentTaskId = task?.taskId
+				const currentInstanceId = task?.instanceId
+				console.log("[yesButtonClicked] validation:", {
+					messageTaskId,
+					messageInstanceId,
+					currentTaskId,
+					currentInstanceId,
+					matches: messageTaskId === currentTaskId && messageInstanceId === currentInstanceId,
+					askResponse: message.askResponse,
+				})
+				if (
+					!message.taskId ||
+					!message.instanceId ||
+					message.taskId !== currentTaskId ||
+					message.instanceId !== currentInstanceId
+				) {
+					provider.log(
+						`[askResponse] Ignoring stale response for ${message.taskId ?? "unknown"}.${message.instanceId ?? "unknown"}; current is ${currentTaskId ?? "unknown"}.${currentInstanceId ?? "unknown"}`,
+					)
+					break
+				}
 				const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
-				provider
-					.getCurrentTask()
-					?.handleWebviewAskResponse(message.askResponse!, resolved.text, resolved.images)
+				task?.handleWebviewAskResponse(message.askResponse!, resolved.text, resolved.images)
 			}
 			break
 
@@ -1288,7 +1310,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			const result = checkoutRestorePayloadSchema.safeParse(message.payload)
 
 			if (result.success) {
-				await provider.cancelTask()
+				await provider.cancelTask(undefined, undefined, true)
 
 				try {
 					await pWaitFor(() => provider.getCurrentTask()?.isInitialized === true, { timeout: 3_000 })
@@ -1306,7 +1328,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 		}
 		case "cancelTask":
-			await provider.cancelTask()
+			await provider.cancelTask(message.taskId, message.instanceId)
 			break
 		case "cancelAutoApproval":
 			// Cancel any pending auto-approval timeout for the current task

@@ -294,6 +294,7 @@ export type ExtensionState = Pick<
 	version: string
 	clineMessages: ClineMessage[]
 	currentTaskId?: string
+	currentTaskInstanceId?: string
 	currentTaskItem?: HistoryItem
 	currentTaskTodos?: TodoItem[] // Initial todos for the current task
 	apiConfiguration: ProviderSettings
@@ -545,6 +546,7 @@ export interface WebviewMessage {
 	orchestrationRunId?: string
 	orchestrationNodeId?: string
 	taskId?: string
+	instanceId?: string
 	editedMessageContent?: string
 	tab?: "settings" | "history" | "mcp" | "modes" | "chat"
 	disabled?: boolean

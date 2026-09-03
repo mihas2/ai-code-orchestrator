@@ -5,25 +5,27 @@ import * as vscode from "vscode"
 
 import type { AiCodeOrchestratorAPI } from "@ai-code-orchestrator/types"
 
+import { MockAIProvider } from "./mock-provider"
 import { waitFor } from "./utils"
 
 export async function run() {
-	const extension = vscode.extensions.getExtension<AiCodeOrchestratorAPI>("AicoVeterinaryInc.ai-code-orchestrator")
+	const extension = vscode.extensions.getExtension<AiCodeOrchestratorAPI>("AIOrchestrator.ai-code-orchestrator")
 
 	if (!extension) {
 		throw new Error("Extension not found")
 	}
 
 	const api = extension.isActive ? extension.exports : await extension.activate()
+	const mockProvider = new MockAIProvider()
 
 	await api.setConfiguration({
-		apiProvider: "openrouter" as const,
-		openRouterApiKey: process.env.OPENROUTER_API_KEY!,
-		openRouterModelId: "openai/gpt-4.1",
+		apiProvider: "fake-ai" as const,
+		apiModelId: "mock-e2e-model",
+		fakeAi: mockProvider,
 	})
 
 	await vscode.commands.executeCommand("ai-code-orchestrator.SidebarProvider.focus")
-	await waitFor(() => api.isReady())
+	await waitFor(() => api.isReady(), { timeout: 120_000 })
 
 	globalThis.api = api
 

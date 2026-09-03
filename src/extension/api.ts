@@ -251,7 +251,7 @@ export class API extends EventEmitter<AiCodeOrchestratorEvents> implements AiCod
 	}
 
 	public async cancelCurrentTask() {
-		await this.sidebarProvider.cancelTask()
+		await this.sidebarProvider.cancelTask(undefined, undefined, true)
 	}
 
 	public async sendMessage(text?: string, images?: string[]) {

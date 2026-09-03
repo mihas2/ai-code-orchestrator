@@ -109,6 +109,11 @@ export class NewTaskTool extends BaseTool<"new_task"> {
 				return
 			}
 
+			// Clear approval UI before the active task changes.
+			await task.say("user_feedback", "Delegating to child task...", undefined, false)
+			await provider.postStateToWebview()
+			await new Promise((resolve) => setTimeout(resolve, 50))
+
 			// Delegate parent and open child as sole active task
 			const child = await (provider as any).delegateParentAndOpenChild({
 				parentTaskId: task.taskId,

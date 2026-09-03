@@ -5,6 +5,7 @@ import type { ClineMessage } from "@ai-code-orchestrator/types"
 
 import { vscode } from "@src/utils/vscode"
 import { Button } from "@src/components/ui"
+import { useExtensionState } from "@src/context/ExtensionStateContext"
 
 type AutoApprovedRequestLimitWarningProps = {
 	message: ClineMessage
@@ -12,6 +13,7 @@ type AutoApprovedRequestLimitWarningProps = {
 
 export const AutoApprovedRequestLimitWarning = memo(({ message }: AutoApprovedRequestLimitWarningProps) => {
 	const [buttonClicked, setButtonClicked] = useState(false)
+	const { currentTaskId, currentTaskInstanceId } = useExtensionState()
 	const { count, type = "requests" } = JSON.parse(message.text ?? "{}")
 
 	if (buttonClicked) {
@@ -55,7 +57,12 @@ export const AutoApprovedRequestLimitWarning = memo(({ message }: AutoApprovedRe
 					onClick={(e) => {
 						e.preventDefault()
 						setButtonClicked(true)
-						vscode.postMessage({ type: "askResponse", askResponse: "yesButtonClicked" })
+						vscode.postMessage({
+							type: "askResponse",
+							askResponse: "yesButtonClicked",
+							taskId: currentTaskId,
+							instanceId: currentTaskInstanceId,
+						})
 					}}>
 					<Trans i18nKey={buttonKey} ns="chat" />
 				</Button>
