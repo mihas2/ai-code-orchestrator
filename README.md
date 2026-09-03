@@ -2,11 +2,11 @@
   <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
 
-# AI Code Orchestrator
+# AI Orchestrator
 
 > Your AI-powered development team, right in your editor.
 
-AI Code Orchestrator is a VS Code extension and CLI for planning, implementing, reviewing, and explaining software with configurable AI agents. It combines chat, code actions, terminal workflows, custom modes, MCP integrations, and multi-agent orchestration in one workspace.
+AI Orchestrator is a VS Code extension and CLI for planning, implementing, reviewing, and explaining software with configurable AI agents. It combines chat, code actions, terminal workflows, custom modes, MCP integrations, and multi-agent orchestration in one workspace.
 
 ## Capabilities
 
@@ -19,7 +19,7 @@ AI Code Orchestrator is a VS Code extension and CLI for planning, implementing, 
 
 ## Modes
 
-AI Code Orchestrator adapts to the work at hand:
+AI Orchestrator adapts to the work at hand:
 
 - **Code** - implement changes and operate on project files
 - **Architect** - design systems, specifications, and migrations
@@ -33,7 +33,7 @@ See the project documentation in `apps/docs` and the orchestration specification
 
 ## Installation
 
-Install the **AI Code Orchestrator** extension from the VS Code Marketplace, or build a VSIX locally:
+Install the **AI Orchestrator** extension from the VS Code Marketplace, or build a VSIX locally:
 
 ```bash
 pnpm install
@@ -43,14 +43,14 @@ pnpm vsix
 The CLI is available from the monorepo during development:
 
 ```bash
-pnpm --filter @AI Code Orchestrator/cli dev
+pnpm --filter @AI Orchestrator/cli dev
 ```
 
 The package scope and legacy command identifiers are retained for compatibility with existing integrations.
 
 ## Attribution
 
-AI Code Orchestrator was created based on AI Code Orchestrator Code. The implementation retains selected compatible APIs and identifiers so existing integrations can continue to work.
+AI Orchestrator was created based on AI Orchestrator Code. The implementation retains selected compatible APIs and identifiers so existing integrations can continue to work.
 
 ## License
 

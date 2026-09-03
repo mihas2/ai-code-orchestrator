@@ -10,7 +10,11 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
-			"args": ["--extensionDevelopmentPath=${workspaceFolder}/src"],
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}/src",
+				"--user-data-dir=${workspaceFolder}/.vscode/aico-debug-user-data",
+				"--extensions-dir=${workspaceFolder}/.vscode/aico-debug-extensions"
+			],
 			"sourceMaps": true,
 			"outFiles": ["${workspaceFolder}/src/dist/**/*.js"],
 			"preLaunchTask": "${defaultBuildTask}",

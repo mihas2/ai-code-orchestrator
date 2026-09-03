@@ -240,11 +240,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	const enableLogging = typeof socketPath === "string"
 
 	// Watch the core files and automatically reload the extension host.
-	if (process.env.NODE_ENV === "development") {
-		const watchPaths = [
-			{ path: context.extensionPath, pattern: "**/*.ts" },
-			{ path: path.join(context.extensionPath, "../packages/types"), pattern: "**/*.ts" },
-		]
+	if (context.extensionMode === vscode.ExtensionMode.Development) {
+		const watchPaths = [{ path: context.extensionPath, pattern: "**/*.ts" }]
+		const typesPath = path.join(context.extensionPath, "../packages/types")
+		if (fs.existsSync(typesPath)) {
+			watchPaths.push({ path: typesPath, pattern: "**/*.ts" })
+		}
 
 		console.log(
 			`♻️♻️♻️ Core auto-reloading: Watching for changes in ${watchPaths.map(({ path }) => path).join(", ")}`,

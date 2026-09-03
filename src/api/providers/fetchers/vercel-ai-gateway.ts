@@ -28,15 +28,15 @@ const vercelAiGatewayPricingSchema = z.object({
 
 const vercelAiGatewayModelSchema = z.object({
 	id: z.string(),
-	object: z.string(),
-	created: z.number(),
-	owned_by: z.string(),
-	name: z.string(),
-	description: z.string(),
-	context_window: z.number(),
-	max_tokens: z.number(),
+	object: z.string().optional(),
+	created: z.number().optional(),
+	owned_by: z.string().optional(),
+	name: z.string().optional(),
+	description: z.string().optional(),
+	context_window: z.number().optional(),
+	max_tokens: z.number().optional(),
 	type: z.string(),
-	pricing: vercelAiGatewayPricingSchema,
+	pricing: vercelAiGatewayPricingSchema.optional(),
 })
 
 export type VercelAiGatewayModel = z.infer<typeof vercelAiGatewayModelSchema>
@@ -46,8 +46,8 @@ export type VercelAiGatewayModel = z.infer<typeof vercelAiGatewayModelSchema>
  */
 
 const vercelAiGatewayModelsResponseSchema = z.object({
-	object: z.string(),
-	data: z.array(vercelAiGatewayModelSchema),
+	object: z.string().optional(),
+	data: z.array(z.unknown()),
 })
 
 type VercelAiGatewayModelsResponse = z.infer<typeof vercelAiGatewayModelsResponseSchema>
@@ -61,15 +61,21 @@ export async function getVercelAiGatewayModels(options?: ApiHandlerOptions): Pro
 	const baseURL = "https://ai-gateway.vercel.sh/v1"
 
 	try {
-		const response = await axios.get<VercelAiGatewayModelsResponse>(`${baseURL}/models`)
+		const response = await axios.get<unknown>(`${baseURL}/models`)
 		const result = vercelAiGatewayModelsResponseSchema.safeParse(response.data)
-		const data = result.success ? result.data.data : response.data.data
-
 		if (!result.success) {
-			console.error(`Vercel AI Gateway models response is invalid ${JSON.stringify(result.error.format())}`)
+			console.error("Vercel AI Gateway models response is invalid: expected a list of models")
+			return models
 		}
 
-		for (const model of data) {
+		let skipped = 0
+		for (const rawModel of result.data.data) {
+			const modelResult = vercelAiGatewayModelSchema.safeParse(rawModel)
+			if (!modelResult.success) {
+				skipped++
+				continue
+			}
+			const model = modelResult.data
 			const { id } = model
 
 			// Only include language models for chat inference.
@@ -79,6 +85,9 @@ export async function getVercelAiGatewayModels(options?: ApiHandlerOptions): Pro
 			}
 
 			models[id] = parseVercelAiGatewayModel({ id, model })
+		}
+		if (skipped > 0) {
+			console.error(`Vercel AI Gateway skipped ${skipped} malformed model entr${skipped === 1 ? "y" : "ies"}`)
 		}
 	} catch (error) {
 		console.error(
@@ -105,8 +114,8 @@ export const parseVercelAiGatewayModel = ({ id, model }: { id: string; model: Ve
 		VERCEL_AI_GATEWAY_VISION_ONLY_MODELS.has(id) || VERCEL_AI_GATEWAY_VISION_AND_TOOLS_MODELS.has(id)
 
 	const modelInfo: ModelInfo = {
-		maxTokens: model.max_tokens,
-		contextWindow: model.context_window,
+		maxTokens: model.max_tokens ?? 8192,
+		contextWindow: model.context_window ?? 200000,
 		supportsImages,
 		supportsPromptCache,
 		inputPrice: parseApiPrice(model.pricing?.input),
