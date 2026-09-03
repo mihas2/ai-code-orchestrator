@@ -38,12 +38,40 @@ function within(path: string, allowed: readonly string[]) {
 		(root) => root === "." || path === root || path.startsWith(root.endsWith("/") ? root : `${root}/`),
 	)
 }
+export function extractPlannerJson(raw: string): string {
+	const start = raw.search(/[\[{]/)
+	if (start === -1) throw new Error("Planner returned malformed JSON: no JSON object or array found")
+
+	const opening = raw[start]
+	const closing = opening === "{" ? "}" : "]"
+	let depth = 0
+	let inString = false
+	let escaped = false
+	for (let i = start; i < raw.length; i++) {
+		const char = raw[i]
+		if (inString) {
+			if (escaped) escaped = false
+			else if (char === "\\") escaped = true
+			else if (char === '"') inString = false
+			continue
+		}
+		if (char === '"') {
+			inString = true
+			continue
+		}
+		if (char === opening) depth++
+		else if (char === closing && --depth === 0) return raw.slice(start, i + 1)
+	}
+	throw new Error("Planner returned malformed JSON: incomplete JSON value")
+}
+
 export function parseAndValidatePlan(raw: string, limits: PlannerLimits): PlanNodeInput[] {
 	let value: unknown
 	try {
-		value = JSON.parse(raw)
-	} catch {
-		throw new Error("Planner returned malformed JSON")
+		value = JSON.parse(extractPlannerJson(raw))
+	} catch (error) {
+		if (error instanceof Error && error.message.startsWith("Planner returned malformed JSON")) throw error
+		throw new Error("Planner returned malformed JSON: invalid JSON value")
 	}
 	const parsed = planSchema.safeParse(value)
 	if (!parsed.success)

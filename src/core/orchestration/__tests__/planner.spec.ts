@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseAndValidatePlan, redactPlannerContext } from "../planner"
+import { extractPlannerJson, parseAndValidatePlan, redactPlannerContext } from "../planner"
 
 const limits = { modes: ["code", "debug"], allowedScopes: ["src", "."], maxChildTokens: 100, maxRunTokens: 150 }
 const plan = (
@@ -20,7 +20,19 @@ const plan = (
 
 describe("planner adapter", () => {
 	it("parses a valid plan", () => expect(parseAndValidatePlan(plan(), limits)[0].nodeId).toBe("a"))
-	it("rejects malformed JSON", () => expect(() => parseAndValidatePlan("{", limits)).toThrow("malformed JSON"))
+	it.each([
+		["plain JSON", plan()],
+		["fenced JSON", `\`\`\`json\n${plan()}\n\`\`\``],
+		["surrounded JSON", `Here is the plan:\n${plan()}\nThat is all.`],
+	])("extracts %s", (_, raw) => expect(parseAndValidatePlan(raw, limits)[0].nodeId).toBe("a"))
+	it("extracts arrays while preserving nested strings", () =>
+		expect(extractPlannerJson('prefix ["} ]", {"ok": true}] suffix')).toBe('["} ]", {"ok": true}]'))
+	it("rejects empty and malformed JSON", () => {
+		expect(() => parseAndValidatePlan("", limits)).toThrow("malformed JSON")
+		expect(() => parseAndValidatePlan("{", limits)).toThrow("malformed JSON")
+	})
+	it("reports schema validation separately", () =>
+		expect(() => parseAndValidatePlan('{"version":1,"nodes":[]}', limits)).toThrow("invalid plan"))
 	it("rejects cycles", () =>
 		expect(() =>
 			parseAndValidatePlan(

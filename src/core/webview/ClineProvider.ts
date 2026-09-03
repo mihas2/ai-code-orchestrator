@@ -1068,12 +1068,21 @@ export class ClineProvider
 		const raw = await task.api.completePrompt(
 			`Return ONLY JSON plan: {\"version\":1,\"nodes\":[{\"id\":\"n1\",\"role\":\"worker\",\"mode\":\"code\",\"objective\":\"...\",\"acceptanceCriteria\":[],\"constraints\":[],\"fileScopes\":{\"include\":[],\"exclude\":[]},\"dependencies\":[],\"tokenBudget\":1}]}\nGoal: ${context}`,
 		)
-		const nodes = parseAndValidatePlan(raw, {
-			modes: DEFAULT_MODES.map((m) => m.slug),
-			allowedScopes: [".", this.cwd],
-			maxChildTokens: settings.maxChildTokens,
-			maxRunTokens: settings.maxRunTokens,
-		})
+		let nodes: ReturnType<typeof parseAndValidatePlan>
+		try {
+			nodes = parseAndValidatePlan(raw, {
+				modes: DEFAULT_MODES.map((m) => m.slug),
+				allowedScopes: [".", this.cwd],
+				maxChildTokens: settings.maxChildTokens,
+				maxRunTokens: settings.maxRunTokens,
+			})
+		} catch (error) {
+			const diagnostic = raw.trim().replace(/(?:api[_-]?key|token|secret|password)\s*[:=]\s*\S+/gi, "[REDACTED]")
+			this.log(
+				`[Orchestration planner] ${error instanceof Error ? error.message : String(error)}; response: ${diagnostic.slice(0, 500)}`,
+			)
+			throw error
+		}
 		for (const node of nodes) {
 			node.inputContract.runId = runId
 			node.inputContract.goal = goal
