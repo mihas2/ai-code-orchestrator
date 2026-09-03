@@ -126,6 +126,12 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 		`[model-debug:buildApiHandler] provider=${apiProvider ?? "unset"} model=${configuration.apiModelId ?? configuration.openRouterModelId ?? configuration.openAiModelId ?? "unset"}`,
 	)
 
+	// Compatibility fallback for legacy configurations using the shared model field.
+	const normalizedOptions =
+		apiProvider === "openai" && options.openAiModelId == null && configuration.apiModelId != null
+			? { ...options, openAiModelId: configuration.apiModelId }
+			: options
+
 	if (apiProvider && isRetiredProvider(apiProvider)) {
 		const retiredProviderMessage =
 			apiProvider === "aico"
@@ -147,7 +153,7 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 				? new AnthropicVertexHandler(options)
 				: new VertexHandler(options)
 		case "openai":
-			return new OpenAiHandler(options)
+			return new OpenAiHandler(normalizedOptions)
 		case "ollama":
 			return new NativeOllamaHandler(options)
 		case "lmstudio":
