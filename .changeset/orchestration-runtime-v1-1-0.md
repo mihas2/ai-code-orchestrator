@@ -1,8 +1,8 @@
-# AI Code Orchestrator Changelog
+---
+"ai-code-orchestrator": minor
+---
 
-## [1.1.0] - 2026-09-03
-
-### Features
+**Features**
 
 - Added reviewer role with specialized prompts for code review workflow
 - Updated orchestrator mode prompts for team-lead protocol
@@ -11,18 +11,14 @@
 - Added context optimization infrastructure (content-digest cache, deduplication, stable prefixes)
 - Added provider capabilities interface for feature detection
 
-### Bug Fixes
+**Bug Fixes**
 
 - Fixed float encoding checkbox state persistence after save
 
-### Tests
+**Tests**
 
 - Added comprehensive orchestration test coverage (14 new tests: UI, integration, performance)
 
-### Documentation
+**Documentation**
 
 - Updated orchestration specification and implementation references
-
-## [1.0.0]
-
-- Initial release
