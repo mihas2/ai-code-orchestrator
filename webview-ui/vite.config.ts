@@ -113,10 +113,9 @@ export default defineConfig(({ mode }) => {
 			// Use a single combined CSS bundle so all webviews share styles
 			cssCodeSplit: false,
 			rollupOptions: {
-				// Externalize vscode module - it's imported by file-search.ts which is
-				// dynamically imported by aico-config/index.ts, but should never be bundled
-				// in the webview since it's not available in the browser context
-				external: ["vscode"],
+				// Keep extension-host-only modules out of the browser bundle. These are
+				// reached through shared prompt/mode code but are unavailable in a webview.
+				external: ["vscode", "fs", "fs/promises", "path", "os", "module", "child_process", "readline"],
 				input: {
 					index: resolve(__dirname, "index.html"),
 				},
