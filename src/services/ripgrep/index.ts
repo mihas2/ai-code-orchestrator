@@ -89,6 +89,7 @@ export async function getBinPath(
 	vscodeAppRoot: string,
 	resolvePackage: (id: string) => string = runtimeRequire.resolve,
 	pathExists: (candidate: string) => boolean = fs.existsSync,
+	readDirectory: (directory: string) => string[] = (directory) => fs.readdirSync(directory),
 ): Promise<string | undefined> {
 	const checkedPaths: string[] = []
 	const check = (candidate: string): string | undefined => {
@@ -103,8 +104,8 @@ export async function getBinPath(
 		const packageRoot = path.resolve(path.dirname(packageEntry), "..")
 		const resolved = check(path.join(packageRoot, "bin", binName))
 		if (resolved) return resolved
-	} catch {
-		// The dependency is absent from this runtime; continue with VS Code paths.
+	} catch (error) {
+		console.error(`Could not resolve @vscode/ripgrep: ${error instanceof Error ? error.message : String(error)}`)
 	}
 
 	// Electron/VS Code installations can place the bundled package under either
@@ -134,6 +135,22 @@ export async function getBinPath(
 	for (const root of extensionRoots) {
 		const found = check(path.join(root, "node_modules", "@vscode", "ripgrep", "bin", binName))
 		if (found) return found
+	}
+
+	// Strict pnpm installs may leave the package only in the virtual store.
+	const storeRoots = Array.from(new Set([process.cwd(), ...extensionRoots]))
+	for (const root of storeRoots) {
+		const storePath = path.join(root, "node_modules", ".pnpm")
+		let entries: string[]
+		try {
+			entries = readDirectory(storePath)
+		} catch {
+			continue
+		}
+		for (const entry of entries.filter((name) => name.startsWith("@vscode+ripgrep@"))) {
+			const found = check(path.join(storePath, entry, "node_modules", "@vscode", "ripgrep", "bin", binName))
+			if (found) return found
+		}
 	}
 
 	console.error(`Could not find ripgrep binary. Checked paths:\n${checkedPaths.join("\n")}`)

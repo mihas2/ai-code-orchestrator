@@ -514,6 +514,9 @@ importers:
       '@vscode/codicons':
         specifier: ^0.0.36
         version: 0.0.36
+      '@vscode/ripgrep':
+        specifier: 1.17.0
+        version: 1.17.0
       ai-sdk-provider-poe:
         specifier: 2.0.18
         version: 2.0.18(ai@6.0.77(zod@3.25.76))(zod@3.25.76)

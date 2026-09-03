@@ -55,8 +55,22 @@ describe("Ripgrep binary resolution", () => {
 			"/vscode",
 			() => "/workspace/package/lib/index.js",
 			(candidate) => candidate.endsWith("/bin/rg"),
+			() => [],
 		)
 		expect(resolved).toBe("/workspace/package/bin/rg")
+	})
+
+	it("uses the pnpm store when the package link is absent", async () => {
+		const storeBinary = `${process.cwd()}/node_modules/.pnpm/@vscode+ripgrep@1.17.0/node_modules/@vscode/ripgrep/bin/rg`
+		const resolved = await getBinPath(
+			"/vscode",
+			() => {
+				throw new Error("missing link")
+			},
+			(candidate) => candidate === storeBinary,
+			(directory) => (directory === `${process.cwd()}/node_modules/.pnpm` ? ["@vscode+ripgrep@1.17.0"] : []),
+		)
+		expect(resolved).toBe(storeBinary)
 	})
 
 	it("logs every checked path when no binary exists", async () => {
@@ -67,8 +81,10 @@ describe("Ripgrep binary resolution", () => {
 				throw new Error("missing")
 			},
 			() => false,
+			() => ["@vscode+ripgrep@1.17.0"],
 		)
-		expect(error).toHaveBeenCalledWith(expect.stringContaining("Checked paths:"))
+		const checkedLog = error.mock.calls.find(([message]) => message.includes("Checked paths:"))?.[0]
+		expect(checkedLog).toContain("/node_modules/.pnpm/@vscode+ripgrep@1.17.0/")
 		error.mockRestore()
 	})
 })
