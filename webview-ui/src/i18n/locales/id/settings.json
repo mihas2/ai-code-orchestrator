@@ -208,7 +208,8 @@
 		"stoppingButton": "Menghentikan...",
 		"workspaceToggleLabel": "Aktifkan pengindeksan untuk ruang kerja ini",
 		"workspaceDisabledMessage": "Pengindeksan dikonfigurasi tetapi tidak diaktifkan untuk ruang kerja ini.",
-		"autoEnableDefaultLabel": "Aktifkan pengindeksan secara otomatis untuk ruang kerja baru"
+		"autoEnableDefaultLabel": "Aktifkan pengindeksan secara otomatis untuk ruang kerja baru",
+		"useFloatEncodingLabel": "Gunakan Float Encoding"
 	},
 	"autoApprove": {
 		"toggleShortcut": "Anda dapat mengonfigurasi pintasan global untuk pengaturan ini <SettingsLink>di preferensi IDE Anda</SettingsLink>.",

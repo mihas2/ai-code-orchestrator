@@ -208,7 +208,8 @@
 		"stoppingButton": "Aturant...",
 		"workspaceToggleLabel": "Activar la indexació per a aquest espai de treball",
 		"workspaceDisabledMessage": "La indexació està configurada però no habilitada per a aquest espai de treball.",
-		"autoEnableDefaultLabel": "Habilitar automàticament la indexació per a nous espais de treball"
+		"autoEnableDefaultLabel": "Habilitar automàticament la indexació per a nous espais de treball",
+		"useFloatEncodingLabel": "Utilitza la codificació float"
 	},
 	"autoApprove": {
 		"toggleShortcut": "Pots configurar una drecera global per a aquesta configuració <SettingsLink>a les preferències del teu IDE</SettingsLink>.",

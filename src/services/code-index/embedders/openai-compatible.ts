@@ -37,6 +37,8 @@ export class OpenAICompatibleEmbedder implements IEmbedder {
 	private readonly apiKey: string
 	private readonly isFullUrl: boolean
 	private readonly maxItemTokens: number
+	private readonly useFloatEncoding: boolean
+	private readonly modelDimension?: number
 
 	// Global rate limiting state shared across all instances
 	private static globalRateLimitState = {
@@ -55,7 +57,14 @@ export class OpenAICompatibleEmbedder implements IEmbedder {
 	 * @param modelId Optional model identifier (defaults to "text-embedding-3-small")
 	 * @param maxItemTokens Optional maximum tokens per item (defaults to MAX_ITEM_TOKENS)
 	 */
-	constructor(baseUrl: string, apiKey: string, modelId?: string, maxItemTokens?: number) {
+	constructor(
+		baseUrl: string,
+		apiKey: string,
+		modelId?: string,
+		maxItemTokens?: number,
+		useFloatEncoding = false,
+		modelDimension?: number,
+	) {
 		if (!baseUrl) {
 			throw new Error(t("embeddings:validation.baseUrlRequired"))
 		}
@@ -81,6 +90,8 @@ export class OpenAICompatibleEmbedder implements IEmbedder {
 		// Cache the URL type check for performance
 		this.isFullUrl = this.isFullEndpointUrl(baseUrl)
 		this.maxItemTokens = maxItemTokens || MAX_ITEM_TOKENS
+		this.useFloatEncoding = useFloatEncoding
+		this.modelDimension = modelDimension
 	}
 
 	/**
@@ -214,7 +225,7 @@ export class OpenAICompatibleEmbedder implements IEmbedder {
 			body: JSON.stringify({
 				input: batchTexts,
 				model: model,
-				encoding_format: "base64",
+				encoding_format: this.useFloatEncoding ? "float" : "base64",
 			}),
 		})
 
@@ -273,28 +284,15 @@ export class OpenAICompatibleEmbedder implements IEmbedder {
 					response = (await this.embeddingsClient.embeddings.create({
 						input: batchTexts,
 						model: model,
-						// OpenAI package (as of v4.78.1) has a parsing issue that truncates embedding dimensions to 256
-						// when processing numeric arrays, which breaks compatibility with models using larger dimensions.
-						// By requesting base64 encoding, we bypass the package's parser and handle decoding ourselves.
-						encoding_format: "base64",
+						// Base64 remains the compatibility default; float can be selected for servers that require it.
+						encoding_format: this.useFloatEncoding ? "float" : "base64",
 					})) as OpenAIEmbeddingResponse
 				}
 
-				// Convert base64 embeddings to float32 arrays
-				const processedEmbeddings = response.data.map((item: EmbeddingItem) => {
-					if (typeof item.embedding === "string") {
-						const buffer = Buffer.from(item.embedding, "base64")
-
-						// Create Float32Array view over the buffer
-						const float32Array = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4)
-
-						return {
-							...item,
-							embedding: Array.from(float32Array),
-						}
-					}
-					return item
-				})
+				const processedEmbeddings = response.data.map((item: EmbeddingItem) => ({
+					...item,
+					embedding: this.normalizeEmbedding(item.embedding),
+				}))
 
 				// Replace the original data with processed embeddings
 				response.data = processedEmbeddings
@@ -366,11 +364,10 @@ export class OpenAICompatibleEmbedder implements IEmbedder {
 				response = (await this.embeddingsClient.embeddings.create({
 					input: testTexts,
 					model: modelToUse,
-					encoding_format: "base64",
+					encoding_format: this.useFloatEncoding ? "float" : "base64",
 				})) as OpenAIEmbeddingResponse
 			}
 
-			// Check if we got a valid response
 			if (!response?.data || response.data.length === 0) {
 				return {
 					valid: false,
@@ -378,8 +375,28 @@ export class OpenAICompatibleEmbedder implements IEmbedder {
 				}
 			}
 
+			const embedding = this.normalizeEmbedding(response.data[0].embedding)
+			if (
+				embedding.length === 0 ||
+				(this.modelDimension !== undefined && embedding.length !== this.modelDimension)
+			) {
+				return { valid: false, error: "embeddings:validation.invalidResponse" }
+			}
+
 			return { valid: true }
 		}, "openai-compatible")
+	}
+
+	private normalizeEmbedding(embedding: string | number[]): number[] {
+		if (Array.isArray(embedding)) {
+			return embedding
+		}
+
+		const buffer = Buffer.from(embedding, "base64")
+		if (buffer.byteLength % Float32Array.BYTES_PER_ELEMENT !== 0) {
+			return []
+		}
+		return Array.from(new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4))
 	}
 
 	/**

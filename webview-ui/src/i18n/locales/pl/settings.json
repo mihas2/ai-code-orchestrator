@@ -208,7 +208,8 @@
 		"stoppingButton": "Zatrzymywanie...",
 		"workspaceToggleLabel": "Włącz indeksowanie dla tego workspace'a",
 		"workspaceDisabledMessage": "Indeksowanie jest skonfigurowane, ale nie włączone dla tego workspace'a.",
-		"autoEnableDefaultLabel": "Automatycznie włączaj indeksowanie dla nowych workspace'ów"
+		"autoEnableDefaultLabel": "Automatycznie włączaj indeksowanie dla nowych workspace'ów",
+		"useFloatEncodingLabel": "Użyj kodowania float"
 	},
 	"autoApprove": {
 		"toggleShortcut": "Możesz skonfigurować globalny skrót dla tego ustawienia <SettingsLink>w preferencjach swojego IDE</SettingsLink>.",

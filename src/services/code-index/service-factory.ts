@@ -69,6 +69,9 @@ export class CodeIndexServiceFactory {
 				config.openAiCompatibleOptions.baseUrl,
 				config.openAiCompatibleOptions.apiKey,
 				config.modelId,
+				undefined,
+				config.openAiCompatibleOptions.useFloatEncoding ?? false,
+				this.configManager.currentModelDimension,
 			)
 		} else if (provider === "gemini") {
 			if (!config.geminiOptions?.apiKey) {
@@ -100,6 +103,7 @@ export class CodeIndexServiceFactory {
 				config.modelId,
 				undefined, // maxItemTokens
 				config.openRouterOptions.specificProvider,
+				config.openRouterOptions.useFloatEncoding ?? false,
 			)
 		}
 

@@ -40,6 +40,7 @@ export class OpenRouterEmbedder implements IEmbedder {
 	private readonly maxItemTokens: number
 	private readonly baseUrl: string = "https://openrouter.ai/api/v1"
 	private readonly specificProvider?: string
+	private readonly useFloatEncoding: boolean
 
 	// Global rate limiting state shared across all instances
 	private static globalRateLimitState = {
@@ -58,7 +59,13 @@ export class OpenRouterEmbedder implements IEmbedder {
 	 * @param maxItemTokens Optional maximum tokens per item (defaults to MAX_ITEM_TOKENS)
 	 * @param specificProvider Optional specific provider to route requests to
 	 */
-	constructor(apiKey: string, modelId?: string, maxItemTokens?: number, specificProvider?: string) {
+	constructor(
+		apiKey: string,
+		modelId?: string,
+		maxItemTokens?: number,
+		specificProvider?: string,
+		useFloatEncoding = false,
+	) {
 		if (!apiKey) {
 			throw new Error(t("embeddings:validation.apiKeyRequired"))
 		}
@@ -85,6 +92,7 @@ export class OpenRouterEmbedder implements IEmbedder {
 
 		this.defaultModelId = modelId || getDefaultModelId("openrouter")
 		this.maxItemTokens = maxItemTokens || MAX_ITEM_TOKENS
+		this.useFloatEncoding = useFloatEncoding
 	}
 
 	/**
@@ -193,7 +201,7 @@ export class OpenRouterEmbedder implements IEmbedder {
 					// OpenAI package (as of v4.78.1) has a parsing issue that truncates embedding dimensions to 256
 					// when processing numeric arrays, which breaks compatibility with models using larger dimensions.
 					// By requesting base64 encoding, we bypass the package's parser and handle decoding ourselves.
-					encoding_format: "base64",
+					encoding_format: this.useFloatEncoding ? "float" : "base64",
 				}
 
 				// Add provider routing if a specific provider is set
@@ -209,21 +217,10 @@ export class OpenRouterEmbedder implements IEmbedder {
 					requestParams,
 				)) as OpenRouterEmbeddingResponse
 
-				// Convert base64 embeddings to float32 arrays
-				const processedEmbeddings = response.data.map((item: EmbeddingItem) => {
-					if (typeof item.embedding === "string") {
-						const buffer = Buffer.from(item.embedding, "base64")
-
-						// Create Float32Array view over the buffer
-						const float32Array = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4)
-
-						return {
-							...item,
-							embedding: Array.from(float32Array),
-						}
-					}
-					return item
-				})
+				const processedEmbeddings = response.data.map((item: EmbeddingItem) => ({
+					...item,
+					embedding: this.normalizeEmbedding(item.embedding),
+				}))
 
 				// Replace the original data with processed embeddings
 				response.data = processedEmbeddings
@@ -289,7 +286,7 @@ export class OpenRouterEmbedder implements IEmbedder {
 			const requestParams: any = {
 				input: testTexts,
 				model: modelToUse,
-				encoding_format: "base64",
+				encoding_format: this.useFloatEncoding ? "float" : "base64",
 			}
 
 			// Add provider routing if a specific provider is set
@@ -305,8 +302,11 @@ export class OpenRouterEmbedder implements IEmbedder {
 				requestParams,
 			)) as OpenRouterEmbeddingResponse
 
-			// Check if we got a valid response
-			if (!response?.data || response.data.length === 0) {
+			if (
+				!response?.data ||
+				response.data.length === 0 ||
+				!this.normalizeEmbedding(response.data[0].embedding).length
+			) {
 				return {
 					valid: false,
 					error: "embeddings:validation.invalidResponse",
@@ -315,6 +315,13 @@ export class OpenRouterEmbedder implements IEmbedder {
 
 			return { valid: true }
 		}, "openrouter")
+	}
+
+	private normalizeEmbedding(embedding: string | number[]): number[] {
+		if (Array.isArray(embedding)) return embedding
+		const buffer = Buffer.from(embedding, "base64")
+		if (buffer.byteLength % Float32Array.BYTES_PER_ELEMENT !== 0) return []
+		return Array.from(new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4))
 	}
 
 	/**

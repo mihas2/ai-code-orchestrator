@@ -76,6 +76,7 @@ interface LocalCodeIndexSettings {
 	codeIndexQdrantApiKey?: string
 	codebaseIndexOpenAiCompatibleBaseUrl?: string
 	codebaseIndexOpenAiCompatibleApiKey?: string
+	codebaseIndexOpenAiCompatibleUseFloatEncoding: boolean
 	codebaseIndexGeminiApiKey?: string
 	codebaseIndexMistralApiKey?: string
 	codebaseIndexVercelAiGatewayApiKey?: string
@@ -220,6 +221,7 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 		codeIndexQdrantApiKey: "",
 		codebaseIndexOpenAiCompatibleBaseUrl: "",
 		codebaseIndexOpenAiCompatibleApiKey: "",
+		codebaseIndexOpenAiCompatibleUseFloatEncoding: false,
 		codebaseIndexGeminiApiKey: "",
 		codebaseIndexMistralApiKey: "",
 		codebaseIndexVercelAiGatewayApiKey: "",
@@ -259,6 +261,8 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 				codeIndexQdrantApiKey: "",
 				codebaseIndexOpenAiCompatibleBaseUrl: codebaseIndexConfig.codebaseIndexOpenAiCompatibleBaseUrl || "",
 				codebaseIndexOpenAiCompatibleApiKey: "",
+				codebaseIndexOpenAiCompatibleUseFloatEncoding:
+					codebaseIndexConfig.codebaseIndexOpenAiCompatibleUseFloatEncoding ?? false,
 				codebaseIndexGeminiApiKey: "",
 				codebaseIndexMistralApiKey: "",
 				codebaseIndexVercelAiGatewayApiKey: "",
@@ -1020,6 +1024,17 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 													</p>
 												)}
 											</div>
+
+											<VSCodeCheckbox
+												checked={currentSettings.codebaseIndexOpenAiCompatibleUseFloatEncoding}
+												onChange={(e: any) =>
+													updateSetting(
+														"codebaseIndexOpenAiCompatibleUseFloatEncoding",
+														e.target.checked,
+													)
+												}>
+												<span>{t("settings:codeIndex.useFloatEncodingLabel")}</span>
+											</VSCodeCheckbox>
 										</>
 									)}
 
