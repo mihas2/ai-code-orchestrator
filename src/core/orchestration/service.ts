@@ -254,6 +254,7 @@ export class OrchestrationService implements OrchestratorService {
 			n.artifactRefs = [...new Set(e.result.artifactRefs)]
 		}
 		if (e.error) n.error = e.error
+		if (e.usage) n.usage = e.usage
 		if (e.usage) reconcileBudget(s.run.budget, reserved, 0, e.usage)
 		else reconcileBudget(s.run.budget, reserved, 0, {})
 		s.run.activeNodeIds = s.run.activeNodeIds.filter((x) => x !== n.nodeId)
@@ -321,11 +322,24 @@ export class OrchestrationService implements OrchestratorService {
 		await this.persist(s)
 		if (!terminalRun.has(s.run.status) && s.run.status !== "paused") await this.dispatch(id)
 	}
+	async reviewNodeById(id: string, nid: string) {
+		const s = await this.require(id)
+		const n = s.nodes.find((x) => x.nodeId === nid)
+		if (!n || n.status !== "awaiting_review") throw new Error("Node is not awaiting review")
+		await this.reviewNode(s, n)
+		await this.persist(s)
+	}
+
 	async retryNode(id: string, nid: string) {
 		const s = await this.require(id),
 			n = s.nodes.find((x) => x.nodeId === nid)
-		if (!n || n.status !== "failed" || n.attempt >= n.maxAttempts || terminalRun.has(s.run.status))
-			throw new Error("Node cannot be retried")
+		if (
+			!n ||
+			(n.status !== "failed" && n.status !== "needs_rework") ||
+			n.attempt >= n.maxAttempts ||
+			terminalRun.has(s.run.status)
+		)
+			throw new Error("Node cannot be retried or reworked")
 		n.status = "planned"
 		delete n.error
 		await this.persist(s)

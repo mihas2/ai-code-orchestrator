@@ -37,13 +37,42 @@ export interface OrchestrationEventState {
 }
 
 export interface OrchestrationSnapshotState {
-	run: { runId: string; goal: string; status: string }
+	run: {
+		runId: string
+		goal: string
+		status: string
+		budget?: {
+			used?: {
+				inputTokens?: number
+				cachedInputTokens?: number
+				outputTokens?: number
+				reasoningTokens?: number
+				cost?: number
+			}
+		}
+	}
 	nodes: Array<{
 		nodeId: string
+		taskId?: string
 		title: string
+		role?: string
 		status: string
 		dependsOn: string[]
-		outputContract?: { summary: string }
+		route?: { profileId: string; provider: string; modelId: string }
+		usage?: {
+			inputTokens?: number
+			cachedInputTokens?: number
+			outputTokens?: number
+			reasoningTokens?: number
+			cost?: number
+		}
+		timestamps?: Record<string, number>
+		artifactRefs?: string[]
+		outputContract?: {
+			summary: string
+			filesChanged?: string[]
+			tests?: Array<{ command: string; passed: boolean }>
+		}
 	}>
 	events: OrchestrationEventState[]
 	pendingApproval?: "plan" | "integration"

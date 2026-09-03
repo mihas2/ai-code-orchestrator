@@ -1,8 +1,12 @@
 import { useEffect } from "react"
 import { vscode } from "@src/utils/vscode"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
+import { DependencyGraph } from "./DependencyGraph"
+import { NodeCard } from "./NodeCard"
+import { useTranslation } from "react-i18next"
 
 export function OrchestrationPanel({ runId }: { runId: string }) {
+	const { t } = useTranslation("orchestration")
 	const { orchestrationSnapshot: snapshot, orchestrationEvents } = useExtensionState()
 	useEffect(() => {
 		vscode.postMessage({ type: "orchestrationSnapshot", orchestrationRunId: runId })
@@ -16,7 +20,7 @@ export function OrchestrationPanel({ runId }: { runId: string }) {
 			| "orchestrationApproveIntegration",
 	) => vscode.postMessage({ type, orchestrationRunId: runId })
 	if (!snapshot || snapshot.run.runId !== runId)
-		return <div className="p-3 text-sm text-vscode-descriptionForeground">Loading orchestration run...</div>
+		return <div className="p-3 text-sm text-vscode-descriptionForeground">{t("loading")}</div>
 	return (
 		<section className="flex flex-col gap-3 p-3 min-w-0">
 			<header className="flex flex-wrap items-center justify-between gap-2">
@@ -24,35 +28,27 @@ export function OrchestrationPanel({ runId }: { runId: string }) {
 				<span>{snapshot.run.status}</span>
 			</header>
 			<div className="flex flex-wrap gap-2">
-				<button onClick={() => action("orchestrationPause")}>Pause</button>
-				<button onClick={() => action("orchestrationResume")}>Resume</button>
-				<button onClick={() => action("orchestrationCancel")}>Cancel</button>
+				<button onClick={() => action("orchestrationPause")}>{t("actions.pause")}</button>
+				<button onClick={() => action("orchestrationResume")}>{t("actions.resume")}</button>
+				<button onClick={() => action("orchestrationCancel")}>{t("actions.cancel")}</button>
 				{snapshot.pendingApproval === "plan" && (
-					<button onClick={() => action("orchestrationApprovePlan")}>Approve plan</button>
+					<button onClick={() => action("orchestrationApprovePlan")}>{t("actions.approvePlan")}</button>
 				)}
 				{snapshot.pendingApproval === "integration" && (
-					<button onClick={() => action("orchestrationApproveIntegration")}>Approve integration</button>
+					<button onClick={() => action("orchestrationApproveIntegration")}>
+						{t("actions.approveIntegration")}
+					</button>
 				)}
 			</div>
+			<DependencyGraph nodes={snapshot.nodes} title={t("dependencyGraph")} />
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
 				{snapshot.nodes.map((node) => (
-					<article key={node.nodeId} className="border border-vscode-panel-border rounded p-2 min-w-0">
-						<div className="flex justify-between gap-2">
-							<span className="truncate">{node.title}</span>
-							<span>{node.status}</span>
-						</div>
-						<div className="text-xs text-vscode-descriptionForeground">
-							Depends on: {node.dependsOn.join(", ") || "none"}
-						</div>
-						{node.outputContract?.summary && (
-							<p className="text-sm break-words">{node.outputContract.summary}</p>
-						)}
-					</article>
+					<NodeCard key={node.nodeId} node={node} runId={runId} />
 				))}
 			</div>
 			{snapshot.findings?.length ? (
 				<div className="text-sm">
-					Review findings:{" "}
+					{t("findings")}:{" "}
 					{snapshot.findings.map((finding) => (
 						<div key={finding.id} className="break-words">
 							[{finding.severity}] {finding.message}

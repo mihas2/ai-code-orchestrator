@@ -278,6 +278,59 @@ describe("OrchestrationService", () => {
 		await expect(service.retryNode("r", "a")).rejects.toThrow()
 	})
 
+	it("accepts minor and note findings without rework", async () => {
+		const store = memory()
+		const review = {
+			review: vi.fn(async () => ({
+				findings: [
+					{
+						id: "minor",
+						severity: "minor" as const,
+						message: "Consider documenting this edge case",
+						provenance: { artifactRefs: [], conflictRefs: [], detectedAt: 1 },
+					},
+					{
+						id: "note",
+						severity: "note" as const,
+						message: "Informational observation",
+						provenance: { artifactRefs: [], conflictRefs: [], detectedAt: 1 },
+					},
+				],
+				artifactRefs: [],
+			})),
+		}
+		const service = new OrchestrationService(
+			store.persistence,
+			{ start: async ({ node }) => ({ taskId: node.nodeId, cancel: async () => undefined }) },
+			undefined,
+			{ review },
+		)
+		await service.start({ ...input(), settings: { ...settings, reviewPolicy: "completion" } })
+		await service.dispatch("r")
+		const result = {
+			contractVersion: 1 as const,
+			status: "completed" as const,
+			summary: "ok",
+			filesRead: [],
+			filesChanged: [],
+			artifactRefs: [],
+			tests: [],
+			assumptions: [],
+			risks: [],
+			openQuestions: [],
+			nextActions: [],
+		}
+		await service.handleChildEvent({
+			runId: "r",
+			nodeId: "a",
+			idempotencyKey: "a-minor",
+			status: "integrated",
+			result,
+		})
+		expect(store.get().nodes[0].status).toBe("ready_to_integrate")
+		expect(review.review).toHaveBeenCalledTimes(1)
+	})
+
 	it("validates routes before starting workers and reports rejected capabilities", async () => {
 		const store = memory()
 		const start = vi.fn(async ({ node }) => ({ taskId: node.nodeId, cancel: async () => undefined }))

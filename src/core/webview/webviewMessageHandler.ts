@@ -547,11 +547,30 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			await provider.postStateToWebview()
 			break
 		}
+		case "orchestrationOpenTask":
+		case "orchestrationViewDiff": {
+			const runId = message.orchestrationRunId
+			const nodeId = message.orchestrationNodeId
+			if (!runId || !nodeId) throw new Error("Orchestration run and node ids are required")
+			const snapshot = await (await provider.getOrchestrationService()).getSnapshot(runId)
+			const node = snapshot.nodes.find((item) => item.nodeId === nodeId)
+			if (!node) throw new Error("Unknown orchestration node")
+			if (message.type === "orchestrationOpenTask") {
+				if (!node.taskId) throw new Error("Orchestration node has no child task")
+				await provider.showTaskWithId(node.taskId)
+			} else {
+				const file = node.outputContract?.filesChanged[0]
+				if (!file) throw new Error("Orchestration node has no changed files")
+				await provider.postMessageToWebview({ type: "invoke", invoke: "sendMessage", text: `@${file}` })
+			}
+			break
+		}
 		case "orchestrationSnapshot":
 		case "orchestrationPause":
 		case "orchestrationResume":
 		case "orchestrationCancel":
 		case "orchestrationRetry":
+		case "orchestrationReview":
 		case "orchestrationApprovePlan":
 		case "orchestrationApproveIntegration": {
 			const runId = message.orchestrationRunId
@@ -572,6 +591,10 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				case "orchestrationRetry":
 					if (!message.orchestrationNodeId) throw new Error("Orchestration node id is required")
 					await service.retryNode(runId, message.orchestrationNodeId)
+					break
+				case "orchestrationReview":
+					if (!message.orchestrationNodeId) throw new Error("Orchestration node id is required")
+					await service.reviewNodeById(runId, message.orchestrationNodeId)
 					break
 				case "orchestrationApprovePlan":
 					await service.approvePlan(runId)
@@ -2288,6 +2311,8 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					codebaseIndexEmbedderModelId: settings.codebaseIndexEmbedderModelId,
 					codebaseIndexEmbedderModelDimension: settings.codebaseIndexEmbedderModelDimension, // Generic dimension
 					codebaseIndexOpenAiCompatibleBaseUrl: settings.codebaseIndexOpenAiCompatibleBaseUrl,
+					codebaseIndexOpenAiCompatibleUseFloatEncoding:
+						settings.codebaseIndexOpenAiCompatibleUseFloatEncoding ?? false,
 					codebaseIndexBedrockRegion: settings.codebaseIndexBedrockRegion,
 					codebaseIndexBedrockProfile: settings.codebaseIndexBedrockProfile,
 					codebaseIndexSearchMaxResults: settings.codebaseIndexSearchMaxResults,

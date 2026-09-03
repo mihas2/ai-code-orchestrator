@@ -530,6 +530,9 @@ export interface WebviewMessage {
 		| "orchestrationResume"
 		| "orchestrationCancel"
 		| "orchestrationRetry"
+		| "orchestrationReview"
+		| "orchestrationOpenTask"
+		| "orchestrationViewDiff"
 		| "orchestrationApprovePlan"
 		| "orchestrationApproveIntegration"
 		| "updateOrchestrationSettings"
@@ -619,6 +622,7 @@ export interface WebviewMessage {
 		codebaseIndexEmbedderModelId: string
 		codebaseIndexEmbedderModelDimension?: number // Generic dimension for all providers
 		codebaseIndexOpenAiCompatibleBaseUrl?: string
+		codebaseIndexOpenAiCompatibleUseFloatEncoding?: boolean
 		codebaseIndexBedrockRegion?: string
 		codebaseIndexBedrockProfile?: string
 		codebaseIndexSearchMaxResults?: number
