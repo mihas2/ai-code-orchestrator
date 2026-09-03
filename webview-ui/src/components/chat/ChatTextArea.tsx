@@ -104,7 +104,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			const currentConfig = listApiConfigMeta?.find((config) => config.name === currentApiConfigName)
 			return {
 				currentConfigId: currentConfig?.id || "",
-				displayName: currentApiConfigName || "", // Use the name directly for display.
+				displayName: `${currentApiConfigName || ""} ${currentConfig?.modelId || ""}`.trim(),
 			}
 		}, [listApiConfigMeta, currentApiConfigName])
 

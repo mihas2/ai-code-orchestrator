@@ -85,6 +85,8 @@ export type TaskProviderEvents = {
 
 export interface CreateTaskOptions {
 	taskId?: string
+	/** Keeps role-routed tasks isolated from subsequent global profile changes. */
+	isRoleSpecificConfig?: boolean
 	/** Explicit isolated workspace used by orchestration workers. */
 	workspacePath?: string
 	enableCheckpoints?: boolean

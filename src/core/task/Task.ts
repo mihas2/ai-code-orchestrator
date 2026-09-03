@@ -385,6 +385,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// No streaming parser is required.
 	assistantMessageParser?: undefined
 	private providerProfileChangeListener?: (config: { name: string; provider?: string }) => void
+	private readonly isRoleSpecificConfig: boolean
 
 	// Native tool call streaming state (track which index each tool is at)
 	private streamingToolCallIndices: Map<string, number> = new Map()
@@ -430,6 +431,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		initialTodos,
 		workspacePath,
 		initialStatus,
+		isRoleSpecificConfig = false,
 	}: TaskOptions) {
 		super()
 
@@ -477,10 +479,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			console.error("Failed to initialize AicoIgnoreController:", error)
 		})
 
-		this.apiConfiguration = apiConfiguration
-		console.log(
-			`[model-debug:Task.constructor] task=${this.taskId} provider=${apiConfiguration.apiProvider ?? "unset"} model=${apiConfiguration.apiModelId ?? apiConfiguration.openRouterModelId ?? apiConfiguration.openAiModelId ?? "unset"}`,
+		this.isRoleSpecificConfig = isRoleSpecificConfig
+		provider.log(
+			`[model-debug:Task] constructor isRoleSpecificConfig=${isRoleSpecificConfig} model=${getModelId(apiConfiguration) ?? "unset"} provider=${apiConfiguration.apiProvider ?? "unset"}`,
 		)
+		this.apiConfiguration = apiConfiguration
 		this.api = buildApiHandler(this.apiConfiguration)
 		this.autoApprovalHandler = new AutoApprovalHandler()
 
@@ -657,6 +660,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		this.providerProfileChangeListener = async () => {
 			try {
+				provider.log(
+					`[model-debug:Task] profile-change isRoleSpecificConfig=${this.isRoleSpecificConfig} decision=${this.isRoleSpecificConfig ? "ignore-global" : "apply-global"}`,
+				)
+				if (this.isRoleSpecificConfig) {
+					return
+				}
 				const newState = await provider.getState()
 				if (newState?.apiConfiguration) {
 					this.updateApiConfiguration(newState.apiConfiguration)
@@ -1537,9 +1546,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	public updateApiConfiguration(newApiConfiguration: ProviderSettings): void {
 		// Update the configuration and rebuild the API handler
 		this.apiConfiguration = newApiConfiguration
-		console.log(
-			`[model-debug:Task.updateApiConfiguration] task=${this.taskId} provider=${newApiConfiguration.apiProvider ?? "unset"} model=${newApiConfiguration.apiModelId ?? newApiConfiguration.openRouterModelId ?? newApiConfiguration.openAiModelId ?? "unset"}`,
-		)
 		this.api = buildApiHandler(this.apiConfiguration)
 	}
 
@@ -1567,11 +1573,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				if (providerProfile) {
 					await provider.setProviderProfile(providerProfile)
 
-					// Update this task's API configuration to match the new profile
-					// This ensures the parser state is synchronized with the selected model
-					const newState = await provider.getState()
-					if (newState?.apiConfiguration) {
-						this.updateApiConfiguration(newState.apiConfiguration)
+					// Role-routed tasks keep their isolated model configuration.
+					if (!this.isRoleSpecificConfig) {
+						const newState = await provider.getState()
+						if (newState?.apiConfiguration) {
+							this.updateApiConfiguration(newState.apiConfiguration)
+						}
 					}
 				}
 

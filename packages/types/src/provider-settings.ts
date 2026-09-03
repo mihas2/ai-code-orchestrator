@@ -497,8 +497,15 @@ export const modelIdKeys = [
 export type ModelIdKey = (typeof modelIdKeys)[number]
 
 export const getModelId = (settings: ProviderSettings): string | undefined => {
-	const modelIdKey = modelIdKeys.find((key) => settings[key])
-	return modelIdKey ? settings[modelIdKey] : undefined
+	// A profile can retain model fields from a previous provider. Only read the
+	// field belonging to the current provider to avoid routing with stale data.
+	const modelIdKey =
+		settings.apiProvider === "openai"
+			? "openAiModelId"
+			: settings.apiProvider && settings.apiProvider in modelIdKeysByProvider
+				? modelIdKeysByProvider[settings.apiProvider as TypicalProvider]
+				: "apiModelId"
+	return settings[modelIdKey]
 }
 
 /**

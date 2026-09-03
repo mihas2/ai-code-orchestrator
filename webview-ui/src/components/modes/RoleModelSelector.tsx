@@ -75,6 +75,12 @@ export const RoleModelSelector = ({
 }: RoleModelSelectorProps) => {
 	const { t } = useAppTranslation()
 	const [fetchedModels, setFetchedModels] = useState<ModelRecord>({})
+	const [localProfileName, setLocalProfileName] = useState(profileName)
+
+	useEffect(() => {
+		console.debug(`[model-debug:UI] RoleModelSelector localProfileName changed: ${profileName ?? "unset"}`)
+		setLocalProfileName(profileName)
+	}, [profileName])
 	const routerProviders = [
 		"openrouter",
 		"vercel-ai-gateway",
@@ -187,7 +193,11 @@ export const RoleModelSelector = ({
 				const modelId = isVsCodeLm
 					? `${(value as { vendor?: string }).vendor}/${(value as { family?: string }).family}`
 					: (value as string)
-				onModelChange(profileName, modelId === primaryModel ? undefined : modelId)
+				const nextModelId = modelId === primaryModel ? undefined : modelId
+				console.debug(
+					`[model-debug:UI] RoleModelSelector onModelChange localProfileName=${localProfileName ?? "unset"} modelId=${nextModelId ?? "unset"}`,
+				)
+				onModelChange(localProfileName, nextModelId)
 			}}
 			defaultModelId={primaryModel}
 			modelIdKey={modelIdKey}

@@ -135,6 +135,9 @@ const ModesView = () => {
 
 	const updateRoleAssignment = useCallback(
 		(profileName: string | undefined, modelId: string | undefined) => {
+			console.debug(
+				`[model-debug:UI] ModesView.updateRoleAssignment role=${visualMode} profileName=${profileName ?? "unset"} modelId=${modelId ?? "unset"}`,
+			)
 			vscode.postMessage(createRoleAssignmentMessage(visualMode, profileName, modelId))
 		},
 		[visualMode],
@@ -973,18 +976,19 @@ const ModesView = () => {
 								provider={profileProvider}
 								apiConfiguration={{
 									...(apiConfiguration ?? {}),
+									...(selectedProfile ?? {}),
 									apiProvider: profileProvider,
 								}}
 								primaryModel={primaryModel}
 								selectedModelId={roleAssignment?.modelId}
-								profileName={selectedProfile?.name}
+								profileName={selectedProfileName}
 								onModelChange={updateRoleAssignment}
 							/>
 							<div
 								className="text-xs text-vscode-descriptionForeground"
 								data-testid="effective-role-model">
 								{profileProvider
-									? `${profileProvider} / ${roleAssignment?.modelId ?? primaryModel}`
+									? `${selectedProfileName ?? "default"} (${profileProvider}) / ${roleAssignment?.modelId ?? primaryModel}`
 									: ""}
 							</div>
 						</div>
