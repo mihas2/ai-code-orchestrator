@@ -525,6 +525,19 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 	}
 
 	switch (message.type) {
+		case "updateRoleAssignment": {
+			if (!message.role || !message.roleAssignment) throw new Error("Role assignment is required")
+			const { roleAssignmentsSchema } = await import("@ai-code-orchestrator/types")
+			const current = getGlobalState("roleAssignments") ?? { schemaVersion: 1, roles: {} }
+			const parsed = roleAssignmentsSchema.safeParse({
+				...current,
+				roles: { ...current.roles, [message.role]: message.roleAssignment },
+			})
+			if (!parsed.success) throw new Error("Invalid role assignment")
+			await updateGlobalState("roleAssignments", parsed.data)
+			await provider.postStateToWebview()
+			break
+		}
 		case "updateOrchestrationSettings": {
 			if (!message.orchestrationSettings) throw new Error("Orchestration settings are required")
 			const { orchestrationSettingsSchema } = await import("@ai-code-orchestrator/types")

@@ -24,6 +24,13 @@ describe("orchestration settings", () => {
 		const settings = profileRoleModelSettingsSchema.parse({ roleModels: { code: {} } })
 		expect(settings.roleModels.code?.inheritPrimary).toBe(true)
 	})
+
+	it("preserves orchestration defaults when settings are saved through the schema", () => {
+		const saved = orchestrationSettingsSchema.parse({ maxParallelWorkers: 6, contextPolicy: "full" })
+		expect(saved.maxParallelWorkers).toBe(6)
+		expect(saved.maxDepth).toBe(DEFAULT_ORCHESTRATION_SETTINGS.maxDepth)
+		expect(saved.reviewPolicy).toBe(DEFAULT_ORCHESTRATION_SETTINGS.reviewPolicy)
+	})
 })
 
 describe("resolveModelRoute", () => {
@@ -55,5 +62,18 @@ describe("resolveModelRoute", () => {
 				roleModels: { schemaVersion: 1, roleModels: { code: { modelId: "ignored", inheritPrimary: true } } },
 			}),
 		).toMatchObject({ modelId: "primary", source: "primary" })
+	})
+
+	it("distinguishes inherited and explicit role model overrides", () => {
+		const inherited = resolveModelRoute({
+			...base,
+			roleModels: { schemaVersion: 1, roleModels: { code: { inheritPrimary: true } } },
+		})
+		const explicit = resolveModelRoute({
+			...base,
+			explicitModelId: "alternative",
+		})
+		expect(inherited).toMatchObject({ modelId: "primary", source: "primary" })
+		expect(explicit).toMatchObject({ modelId: "alternative", source: "explicit" })
 	})
 })

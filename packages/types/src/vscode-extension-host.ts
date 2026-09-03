@@ -288,6 +288,7 @@ export type ExtensionState = Pick<
 	| "showWorktreesInHomeScreen"
 	| "disabledTools"
 	| "orchestrationSettings"
+	| "roleAssignments"
 > & {
 	lockApiConfigAcrossModes?: boolean
 	version: string
@@ -532,9 +533,12 @@ export interface WebviewMessage {
 		| "orchestrationApprovePlan"
 		| "orchestrationApproveIntegration"
 		| "updateOrchestrationSettings"
+		| "updateRoleAssignment"
 	text?: string
 	/** Orchestration run identifier, with nodeId required for retry. */
 	orchestrationSettings?: import("./orchestration.js").OrchestrationSettings
+	role?: string
+	roleAssignment?: import("./orchestration.js").RoleAssignments["roles"][string]
 	orchestrationRunId?: string
 	orchestrationNodeId?: string
 	taskId?: string

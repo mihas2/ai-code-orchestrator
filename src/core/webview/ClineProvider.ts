@@ -35,6 +35,7 @@ import {
 	DEFAULT_MODES,
 	DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
 	getModelId,
+	modelIdKeysByProvider,
 	isRetiredProvider,
 } from "@ai-code-orchestrator/types"
 import { aggregateTaskCostsRecursive, type AggregatedCosts } from "./aggregateTaskCosts"
@@ -1090,6 +1091,44 @@ export class ClineProvider
 		})
 	}
 
+	private async resolveOrchestrationRoute(node: {
+		role: string
+		mode?: string
+		nodeId?: string
+	}): Promise<import("@ai-code-orchestrator/types").ModelRoute> {
+		const state = await this.getState()
+		// New assignments are keyed by role; accept mode/node keys for persisted legacy plans.
+		const assignments = state.roleAssignments?.roles
+		const assignment =
+			assignments?.[node.role] ?? assignments?.[node.nodeId ?? ""] ?? assignments?.[node.mode ?? ""]
+		const activeProfileName: string = state.currentApiConfigName ?? "default"
+		const assignedProfileId = state.modeApiConfigs?.[node.mode ?? node.role]
+		const profileRef = assignment?.profileName
+		let profile: ProviderSettings & { id?: string; name?: string }
+		try {
+			// A role assignment is canonical. modeApiConfigs is only a compatibility fallback.
+			profile = profileRef
+				? await this.providerSettingsManager.getProfile({ name: profileRef })
+				: assignedProfileId
+					? await this.providerSettingsManager.getProfile({ id: assignedProfileId })
+					: await this.providerSettingsManager.getProfile({ name: activeProfileName })
+		} catch {
+			profile = await this.providerSettingsManager.getProfile({ name: activeProfileName })
+		}
+		const profileName = profile.name ?? activeProfileName
+		if (!profile.apiProvider) throw new Error(`Role '${node.role}' has no configured provider profile`)
+
+		const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
+			profileId: profile.id ?? this.getProviderProfileEntry(profileName)?.id ?? profileName,
+			provider: profile.apiProvider,
+			primaryModelId: getModelId(profile) ?? "",
+			role: node.role,
+			explicitModelId: assignment?.inheritPrimary === false ? assignment.modelId : undefined,
+			roleModels: profile.profileRoleModelSettings,
+		})
+		return route
+	}
+
 	public async getOrchestrationService(): Promise<OrchestrationService> {
 		const settings =
 			(await this.contextProxy.getValue("orchestrationSettings")) ??
@@ -1114,6 +1153,10 @@ export class ClineProvider
 					}
 					if (!parent) throw new Error("Orchestration has no safe Task adapter: parent task is not active")
 					const workspace = await workerRegistry.allocate(run.runId, node.nodeId, node.attempt)
+					const route = node.route
+					const selectedProfile = route
+						? await this.providerSettingsManager.getProfile({ id: route.profileId })
+						: undefined
 					const child = await this.delegateParentAndOpenChild({
 						parentTaskId: parent.taskId,
 						message: [
@@ -1126,6 +1169,16 @@ export class ClineProvider
 						initialTodos: [],
 						mode: node.mode,
 						workspacePath: workspace.path,
+						configuration:
+							selectedProfile && route
+								? {
+										...selectedProfile,
+										[modelIdKeysByProvider[
+											selectedProfile.apiProvider as keyof typeof modelIdKeysByProvider
+										]]: route.modelId,
+										currentApiConfigName: selectedProfile.name,
+									}
+								: undefined,
 					})
 					node.taskId = child.taskId
 					const complete = async (_taskId: string, usage: TokenUsage) => {
@@ -1217,7 +1270,10 @@ export class ClineProvider
 					const snapshot = await this.orchestrationService?.getSnapshot(event.runId)
 					if (snapshot) await this.postMessageToWebview({ type: "orchestrationSnapshot", payload: snapshot })
 				},
-				{ integration: new GitIntegrationAdapter(this.cwd) },
+				{
+					integration: new GitIntegrationAdapter(this.cwd),
+					route: { resolve: ({ node }) => this.resolveOrchestrationRoute(node) },
+				},
 			)
 			await this.orchestrationService.recover()
 		}
@@ -2180,6 +2236,7 @@ export class ClineProvider
 			includeCurrentTime,
 			includeCurrentCost,
 			maxGitStatusFiles,
+			roleAssignments,
 			imageGenerationProvider,
 			openRouterImageApiKey,
 			openRouterImageGenerationSelectedModel,
@@ -2290,6 +2347,7 @@ export class ClineProvider
 			includeCurrentTime: includeCurrentTime ?? true,
 			includeCurrentCost: includeCurrentCost ?? true,
 			maxGitStatusFiles: maxGitStatusFiles ?? 0,
+			roleAssignments,
 			imageGenerationProvider,
 			openRouterImageApiKey,
 			openRouterImageGenerationSelectedModel,
@@ -2428,6 +2486,7 @@ export class ClineProvider
 			},
 			profileThresholds: stateValues.profileThresholds ?? {},
 			lockApiConfigAcrossModes: this.context.workspaceState.get("lockApiConfigAcrossModes", false),
+			roleAssignments: stateValues.roleAssignments,
 			includeDiagnosticMessages: stateValues.includeDiagnosticMessages ?? true,
 			maxDiagnosticMessages: stateValues.maxDiagnosticMessages ?? 50,
 			includeTaskHistoryInEnhance: stateValues.includeTaskHistoryInEnhance ?? true,
@@ -2974,8 +3033,9 @@ export class ClineProvider
 		initialTodos: TodoItem[]
 		mode: string
 		workspacePath?: string
+		configuration?: AiCodeOrchestratorSettings
 	}): Promise<Task> {
-		const { parentTaskId, message, initialTodos, mode, workspacePath } = params
+		const { parentTaskId, message, initialTodos, mode, workspacePath, configuration } = params
 
 		// Metadata-driven delegation is always enabled
 
@@ -3062,12 +3122,18 @@ export class ClineProvider
 		// Without this, the child's fire-and-forget startTask() races with step 5,
 		// and the last writer to globalState overwrites the other's changes—
 		// causing the parent's delegation fields to be lost.
-		const child = await this.createTask(message, undefined, parent as any, {
-			initialTodos,
-			initialStatus: "active",
-			startTask: false,
-			workspacePath,
-		})
+		const child = await this.createTask(
+			message,
+			undefined,
+			parent as any,
+			{
+				initialTodos,
+				initialStatus: "active",
+				startTask: false,
+				workspacePath,
+			},
+			configuration,
+		)
 
 		// 5) Persist parent delegation metadata BEFORE the child starts writing.
 		try {

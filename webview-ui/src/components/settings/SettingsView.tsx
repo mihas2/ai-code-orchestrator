@@ -78,10 +78,10 @@ import { SlashCommandsSettings } from "./SlashCommandsSettings"
 import { SkillsSettings } from "./SkillsSettings"
 import { UISettings } from "./UISettings"
 import ModesView from "../modes/ModesView"
+import { OrchestrationSettings } from "./OrchestrationSettings"
 import McpView from "../mcp/McpView"
 import { WorktreesView } from "../worktrees/WorktreesView"
 import { SettingsSearch } from "./SettingsSearch"
-import { OrchestrationSettings } from "./OrchestrationSettings"
 import { useSearchIndexRegistry, SearchIndexProvider } from "./useSettingsSearch"
 
 export const settingsTabsContainer = "flex flex-1 overflow-hidden [&.narrow_.tab-label]:hidden"
@@ -202,6 +202,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		includeCurrentTime,
 		includeCurrentCost,
 		maxGitStatusFiles,
+		orchestrationSettings,
 	} = cachedState
 
 	const apiConfiguration = useMemo(() => cachedState.apiConfiguration ?? {}, [cachedState.apiConfiguration])
@@ -410,6 +411,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					openRouterImageGenerationSelectedModel,
 					experiments,
 					customSupportPrompts,
+					orchestrationSettings,
 				},
 			})
 
@@ -855,10 +857,12 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 
 						{/* Roles Section */}
 						{renderTab === "modes" && (
-							<div>
-								<OrchestrationSettings />
+							<>
 								<ModesView />
-							</div>
+								<OrchestrationSettings
+									onChange={(next) => setCachedStateField("orchestrationSettings", next)}
+								/>
+							</>
 						)}
 
 						{/* MCP Section */}

@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { orchestrationSettingsSchema } from "./orchestration.js"
+import { orchestrationSettingsSchema, roleAssignmentsSchema } from "./orchestration.js"
 
 import { type Keys } from "./type-fu.js"
 import {
@@ -191,6 +191,8 @@ export const globalSettingsSchema = z.object({
 
 	mcpEnabled: z.boolean().optional(),
 	orchestrationSettings: orchestrationSettingsSchema.optional(),
+	// Per-role profile/model overrides. Missing values inherit the active profile/model.
+	roleAssignments: roleAssignmentsSchema.optional(),
 
 	mode: z.string().optional(),
 	modeApiConfigs: z.record(z.string(), z.string()).optional(),

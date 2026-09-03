@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react"
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import {
 	VSCodeCheckbox,
 	VSCodeRadioGroup,
@@ -8,9 +8,16 @@ import {
 	VSCodeTextField,
 } from "@vscode/webview-ui-toolkit/react"
 import { Trans } from "react-i18next"
-import { ChevronDown, X, Upload, Download } from "lucide-react"
+import { ChevronDown, X, Upload, Download, ChevronsUpDown, Check } from "lucide-react"
 
-import { ModeConfig, GroupEntry, PromptComponent, ToolGroup, modeConfigSchema } from "@ai-code-orchestrator/types"
+import {
+	ModeConfig,
+	GroupEntry,
+	PromptComponent,
+	ToolGroup,
+	modeConfigSchema,
+	type ProviderName,
+} from "@ai-code-orchestrator/types"
 
 import {
 	Mode,
@@ -28,7 +35,10 @@ import { vscode } from "@src/utils/vscode"
 import { buildDocLink } from "@src/utils/docLinks"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
+import { cn } from "@src/lib/utils"
+import { getStaticModelsForProvider } from "@src/components/settings/utils/providerModelConfig"
 import { Section } from "@src/components/settings/Section"
+import { RoleModelSelector } from "@src/components/modes/RoleModelSelector"
 import {
 	Button,
 	Select,
@@ -63,6 +73,35 @@ function getGroupName(group: GroupEntry): ToolGroup {
 	return Array.isArray(group) ? group[0] : group
 }
 
+export function getRoleModelOptions(
+	primaryModel: string,
+	provider?: ProviderName,
+	routerModels?: Record<string, Record<string, unknown>>,
+	profileModels: string[] = [],
+): string[] {
+	const staticModels = provider ? getStaticModelsForProvider(provider) : {}
+	const dynamicModels = provider ? routerModels?.[provider] : undefined
+	return Array.from(
+		new Set(
+			[primaryModel, ...profileModels, ...Object.keys(staticModels), ...Object.keys(dynamicModels ?? {})].filter(
+				Boolean,
+			),
+		),
+	).sort()
+}
+
+export function createRoleAssignmentMessage(
+	role: string,
+	profileName: string | undefined,
+	modelId: string | undefined,
+) {
+	return {
+		type: "updateRoleAssignment" as const,
+		role,
+		roleAssignment: { profileName, modelId, inheritPrimary: !modelId },
+	}
+}
+
 const ModesView = () => {
 	const { t } = useAppTranslation()
 
@@ -70,6 +109,8 @@ const ModesView = () => {
 		customModePrompts,
 		listApiConfigMeta,
 		currentApiConfigName,
+		apiConfiguration,
+		roleAssignments,
 		mode,
 		customInstructions,
 		setCustomInstructions,
@@ -81,7 +122,23 @@ const ModesView = () => {
 	// 1. Updating the UI immediately when a mode is clicked
 	// 2. Not syncing with the backend mode state (which would cause flickering)
 	// 3. Still sending the mode change to the backend for persistence
-	const [visualMode, setVisualMode] = useState(mode)
+	const [visualMode, setVisualMode] = useState(mode || defaultModeSlug)
+
+	const roleAssignment = roleAssignments?.roles[visualMode]
+	const activeProfile = listApiConfigMeta?.find((profile) => profile.name === currentApiConfigName)
+	// A role may point at a different profile than the globally active profile.
+	const selectedProfile =
+		(listApiConfigMeta ?? []).find((profile) => profile.name === roleAssignment?.profileName) ?? activeProfile
+	const selectedProfileName = roleAssignment?.profileName ?? currentApiConfigName
+	const profileProvider = (selectedProfile?.apiProvider ?? apiConfiguration?.apiProvider) as ProviderName | undefined
+	const primaryModel = selectedProfile?.modelId ?? ""
+
+	const updateRoleAssignment = useCallback(
+		(profileName: string | undefined, modelId: string | undefined) => {
+			vscode.postMessage(createRoleAssignmentMessage(visualMode, profileName, modelId))
+		},
+		[visualMode],
+	)
 
 	// Build modes fresh each render so search reflects inline rename updates immediately
 	const modes = getAllModes(customModes)
@@ -889,22 +946,19 @@ const ModesView = () => {
 						)}
 					</div>
 
-					{/* API Configuration - Moved Here */}
 					<div className="mb-3">
 						<div className="font-bold mb-1">{t("prompts:apiConfiguration.title")}</div>
 						<div className="text-sm text-vscode-descriptionForeground mb-2">
 							{t("prompts:apiConfiguration.select")}
 						</div>
-						<div className="mb-2">
+						<div className="flex flex-col gap-2">
 							<Select
-								value={currentApiConfigName}
+								value={selectedProfileName}
 								onValueChange={(value) => {
-									vscode.postMessage({
-										type: "loadApiConfiguration",
-										text: value,
-									})
+									// Keep role selection independent from the global provider profile.
+									updateRoleAssignment(value, undefined)
 								}}>
-								<SelectTrigger className="w-full">
+								<SelectTrigger className="w-full" data-testid="role-profile-select">
 									<SelectValue placeholder={t("settings:common.select")} />
 								</SelectTrigger>
 								<SelectContent>
@@ -915,6 +969,17 @@ const ModesView = () => {
 									))}
 								</SelectContent>
 							</Select>
+							<RoleModelSelector
+								provider={profileProvider}
+								apiConfiguration={{
+									...(apiConfiguration ?? {}),
+									apiProvider: profileProvider,
+								}}
+								primaryModel={primaryModel}
+								selectedModelId={roleAssignment?.modelId}
+								profileName={selectedProfile?.name}
+								onModelChange={updateRoleAssignment}
+							/>
 						</div>
 					</div>
 				</div>
@@ -1683,6 +1748,79 @@ const ModesView = () => {
 				}}
 			/>
 		</div>
+	)
+}
+
+export function RoleModelPicker({
+	models,
+	value,
+	onChange,
+	placeholder,
+	searchPlaceholder,
+	noModelsFound,
+	customModelLabel,
+}: {
+	models: string[]
+	value?: string
+	onChange: (value: string) => void
+	placeholder: string
+	searchPlaceholder: string
+	noModelsFound: string
+	customModelLabel: (model: string) => string
+}) {
+	const [open, setOpen] = useState(false)
+	const [search, setSearch] = useState("")
+	const filtered = models.filter((model) => model.toLowerCase().includes(search.toLowerCase()))
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<Button
+					variant="combobox"
+					role="combobox"
+					aria-expanded={open}
+					className="w-full justify-between"
+					data-testid="role-model-select">
+					<span className="truncate">{value || placeholder}</span>
+					<ChevronsUpDown className="size-4 opacity-50" />
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+				<Command>
+					<CommandInput value={search} onValueChange={setSearch} placeholder={searchPlaceholder} />
+					<CommandList>
+						<CommandEmpty>{noModelsFound}</CommandEmpty>
+						<CommandGroup>
+							{filtered.map((model) => (
+								<CommandItem
+									key={model}
+									value={model}
+									onSelect={() => {
+										onChange(model)
+										setOpen(false)
+										setSearch("")
+									}}>
+									<span className="truncate">{model}</span>
+									<Check
+										className={cn("ml-auto size-4", model === value ? "opacity-100" : "opacity-0")}
+									/>
+								</CommandItem>
+							))}
+						</CommandGroup>
+					</CommandList>
+					{models.length === 0 && search && (
+						<CommandItem
+							value={search}
+							onSelect={() => {
+								onChange(search)
+								setOpen(false)
+								setSearch("")
+							}}>
+							{customModelLabel(search)}
+						</CommandItem>
+					)}
+				</Command>
+			</PopoverContent>
+		</Popover>
 	)
 }
 

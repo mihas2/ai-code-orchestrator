@@ -3,6 +3,8 @@ import { z } from "zod"
 export const orchestrationSchemaVersion = 1 as const
 
 export const profileRoleModelSettingSchema = z.object({
+	/** Optional profile name; omitted means use the active profile. */
+	profileName: z.string().min(1).optional(),
 	modelId: z.string().min(1).optional(),
 	inheritPrimary: z.boolean().default(true),
 })
@@ -13,6 +15,13 @@ export const profileRoleModelSettingsSchema = z.object({
 })
 
 export type ProfileRoleModelSettings = z.infer<typeof profileRoleModelSettingsSchema>
+
+/** Role assignments independent of the profile currently active in the editor. */
+export const roleAssignmentsSchema = z.object({
+	schemaVersion: z.literal(orchestrationSchemaVersion).default(orchestrationSchemaVersion),
+	roles: z.record(z.string(), profileRoleModelSettingSchema).default({}),
+})
+export type RoleAssignments = z.infer<typeof roleAssignmentsSchema>
 
 export const orchestrationContextPolicySchema = z.enum(["minimal", "balanced", "full"])
 export const orchestrationConflictPolicySchema = z.enum(["isolated", "patch", "serialized", "stop"])

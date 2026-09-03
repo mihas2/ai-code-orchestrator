@@ -46,8 +46,26 @@ function providerBoundary(enabled: boolean, mode: string) {
 		},
 		contextProxy: {
 			getValue: (key: string) => (key === "orchestrationSettings" ? { ...settings, enabled } : undefined),
+			getValues: () => ({ currentApiConfigName: "default" }),
+		},
+		providerSettingsManager: {
+			getProfile: vi.fn(async () => ({
+				id: "default-id",
+				name: "default",
+				apiProvider: "openrouter",
+				openRouterModelId: "default-model",
+			})),
 		},
 		getMode: vi.fn(async () => mode),
+		getCustomModes: vi.fn(async () => []),
+		resolveOrchestrationRoute: vi.fn(async () => ({
+			profileId: "default-id",
+			provider: "openrouter",
+			modelId: "default-model",
+			role: "worker",
+			source: "primary",
+			resolvedAt: Date.now(),
+		})),
 		postMessageToWebview: vi.fn(async () => undefined),
 	})
 	return provider
@@ -85,6 +103,68 @@ const input: StartOrchestrationInput = {
 		},
 	],
 }
+
+describe("ClineProvider orchestration route resolution", () => {
+	function routeProvider(state: any, profiles: Record<string, any>) {
+		const provider = providerBoundary(true, "orchestrator") as any
+		provider.getState = vi.fn(async () => state)
+		provider.providerSettingsManager = {
+			getProfile: vi.fn(async (ref: { name?: string; id?: string }) => {
+				const profile = ref.name
+					? profiles[ref.name]
+					: Object.values(profiles).find((p: any) => p.id === ref.id)
+				if (!profile) throw new Error("not found")
+				return profile
+			}),
+		}
+		provider.getProviderProfileEntry = vi.fn((name: string) => ({ id: profiles[name]?.id }))
+		provider.resolveOrchestrationRoute = ClineProvider.prototype["resolveOrchestrationRoute"].bind(provider)
+		return provider
+	}
+
+	it("uses assigned profile and explicit model instead of the active profile", async () => {
+		const provider = routeProvider(
+			{
+				currentApiConfigName: "A",
+				roleAssignments: { roles: { worker: { profileName: "B", modelId: "model-X", inheritPrimary: false } } },
+			},
+			{
+				A: { id: "a", name: "A", apiProvider: "openrouter", openRouterModelId: "model-A" },
+				B: { id: "b", name: "B", apiProvider: "openrouter", openRouterModelId: "model-B" },
+			},
+		)
+		expect(await provider.resolveOrchestrationRoute({ role: "worker", mode: "code" })).toMatchObject({
+			profileId: "b",
+			modelId: "model-X",
+		})
+	})
+
+	it("inherits the current primary model of the assigned profile", async () => {
+		const profiles = { B: { id: "b", name: "B", apiProvider: "openrouter", openRouterModelId: "model-B2" } }
+		const provider = routeProvider(
+			{
+				currentApiConfigName: "A",
+				roleAssignments: { roles: { worker: { profileName: "B", inheritPrimary: true } } },
+			},
+			profiles,
+		)
+		expect(await provider.resolveOrchestrationRoute({ role: "worker" })).toMatchObject({
+			profileId: "b",
+			modelId: "model-B2",
+		})
+	})
+
+	it("keeps active-profile fallback when no assignment exists", async () => {
+		const provider = routeProvider(
+			{ currentApiConfigName: "A" },
+			{ A: { id: "a", name: "A", apiProvider: "openrouter", openRouterModelId: "model-A" } },
+		)
+		expect(await provider.resolveOrchestrationRoute({ role: "worker" })).toMatchObject({
+			profileId: "a",
+			modelId: "model-A",
+		})
+	})
+})
 
 describe("ClineProvider orchestration boundary", () => {
 	it("does not allow the legacy enabled flag to disable orchestration", async () => {

@@ -1,20 +1,22 @@
 {
-	"title": "Modes",
+	"title": "Roles",
 	"done": "Done",
 	"modes": {
-		"title": "Modes",
-		"createNewMode": "Create new mode",
+		"title": "Roles",
+		"createNewMode": "Create new role",
 		"importMode": "Import Mode",
 		"editModesConfig": "Edit modes configuration",
 		"editGlobalModes": "Edit Global Modes",
 		"editProjectModes": "Edit Project Modes (.agent-modes)",
-		"createModeHelpText": "Modes are specialized personas that tailor AI Code Orchestrator's behavior. <0>Learn about Using Modes</0> or <1>Customizing Modes.</1>",
-		"selectMode": "Search modes",
-		"noMatchFound": "No modes found"
+		"createModeHelpText": "Roles are specialized personas that tailor AI Orchestrator's behavior. <0>Learn about Using Roles</0> or <1>Customizing Roles.</1>",
+		"selectMode": "Search roles",
+		"noMatchFound": "No roles found"
 	},
 	"apiConfiguration": {
 		"title": "API Configuration",
-		"select": "Select which API configuration to use for this mode"
+		"select": "Select the API profile and model for this role",
+		"inheritProfile": "Use active profile",
+		"inheritModel": "Use profile model"
 	},
 	"tools": {
 		"title": "Available Tools",
@@ -33,7 +35,7 @@
 	"roleDefinition": {
 		"title": "Role Definition",
 		"resetToDefault": "Reset to default",
-		"description": "Define AI Code Orchestrator's expertise and personality for this mode. This description shapes how AI Code Orchestrator presents itself and approaches tasks."
+		"description": "Define AI Orchestrator's expertise and personality for this mode. This description shapes how AI Orchestrator presents itself and approaches tasks."
 	},
 	"description": {
 		"title": "Short description (for humans)",
@@ -42,7 +44,7 @@
 	},
 	"whenToUse": {
 		"title": "When to Use (optional)",
-		"description": "Guidance for AI Code Orchestrator for when this mode should be used. This helps the Orchestrator choose the right mode for a task.",
+		"description": "Guidance for AI Orchestrator for when this mode should be used. This helps the Orchestrator choose the right mode for a task.",
 		"resetToDefault": "Reset to default 'When to Use' description"
 	},
 	"customInstructions": {
@@ -101,7 +103,7 @@
 		"types": {
 			"ENHANCE": {
 				"label": "Enhance Prompt",
-				"description": "Use prompt enhancement to get tailored suggestions or improvements for your inputs. This ensures AI Code Orchestrator understands your intent and provides the best possible responses. Available via the ✨ icon in chat."
+				"description": "Use prompt enhancement to get tailored suggestions or improvements for your inputs. This ensures AI Orchestrator understands your intent and provides the best possible responses. Available via the ✨ icon in chat."
 			},
 			"CONDENSE": {
 				"label": "Context Condensing",
@@ -166,7 +168,7 @@
 		},
 		"roleDefinition": {
 			"label": "Role Definition",
-			"description": "Define AI Code Orchestrator's expertise and personality for this mode."
+			"description": "Define AI Orchestrator's expertise and personality for this mode."
 		},
 		"description": {
 			"label": "Short description (for humans)",
@@ -174,7 +176,7 @@
 		},
 		"whenToUse": {
 			"label": "When to Use (optional)",
-			"description": "Guidance for AI Code Orchestrator for when this mode should be used. This helps the Orchestrator choose the right mode for a task."
+			"description": "Guidance for AI Orchestrator for when this mode should be used. This helps the Orchestrator choose the right mode for a task."
 		},
 		"tools": {
 			"label": "Available Tools",
