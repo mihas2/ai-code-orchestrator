@@ -177,9 +177,7 @@
 		},
 		"current": "Mevcut"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator mevcut göreve yardımcı olmak için ayrıntılı talimatlar almak istiyor"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "AI Code Orchestrator bu dosyayı okumak istiyor",
 		"wantsToReadOutsideWorkspace": "AI Code Orchestrator çalışma alanı dışındaki bu dosyayı okumak istiyor",
@@ -188,8 +186,6 @@
 		"wantsToEditOutsideWorkspace": "AI Code Orchestrator çalışma alanı dışındaki bu dosyayı düzenlemek istiyor",
 		"wantsToEditProtected": "AI Code Orchestrator korumalı bir yapılandırma dosyasını düzenlemek istiyor",
 		"wantsToCreate": "AI Code Orchestrator yeni bir dosya oluşturmak istiyor",
-		"wantsToSearchReplace": "AI Code Orchestrator bu dosyada arama ve değiştirme yapmak istiyor",
-		"didSearchReplace": "AI Code Orchestrator bu dosyada arama ve değiştirme yaptı",
 		"wantsToInsert": "AI Code Orchestrator bu dosyaya içerik eklemek istiyor",
 		"wantsToInsertWithLineNumber": "AI Code Orchestrator bu dosyanın {{lineNumber}}. satırına içerik eklemek istiyor",
 		"wantsToInsertAtEnd": "AI Code Orchestrator bu dosyanın sonuna içerik eklemek istiyor",
@@ -223,7 +219,6 @@
 		"pid": "PID: {{pid}}",
 		"exitStatus": "{{exitCode}} durumuyla çıkıldı",
 		"manageCommands": "Komut İzinlerini Yönet",
-		"commandManagementDescription": "Komut izinlerini yönetin: Otomatik yürütmeye izin vermek için ✓'e, yürütmeyi reddetmek için ✗'e tıklayın. Desenler açılıp kapatılabilir veya listelerden kaldırılabilir. <settingsLink>Tüm ayarları görüntüle</settingsLink>",
 		"addToAllowed": "İzin verilenler listesine ekle",
 		"removeFromAllowed": "İzin verilenler listesinden kaldır",
 		"addToDenied": "Reddedilenler listesine ekle",
@@ -256,7 +251,6 @@
 		"wantsToCreate": "AI Code Orchestrator <code>{{mode}}</code> modunda yeni bir alt görev oluşturmak istiyor",
 		"wantsToFinish": "AI Code Orchestrator bu alt görevi bitirmek istiyor",
 		"newTaskContent": "Alt Görev Talimatları",
-		"completionContent": "Alt Görev Tamamlandı",
 		"resultContent": "Alt Görev Sonuçları",
 		"defaultResult": "Lütfen sonraki göreve devam edin.",
 		"completionInstructions": "Alt görev tamamlandı! Sonuçları inceleyebilir ve düzeltmeler veya sonraki adımlar önerebilirsiniz. Her şey iyi görünüyorsa, sonucu üst göreve döndürmek için onaylayın.",
@@ -288,7 +282,6 @@
 		"tooltipManage": "Otomatik onay ayarlarını yönet",
 		"tooltipStatus": "Otomatik onay şunlar için etkinleştirildi: {{toggles}}",
 		"title": "Otomatik onayla",
-		"toggle": "Otomatik onayı aç/kapat",
 		"all": "Tümü",
 		"none": "Hiçbiri",
 		"description": "İzin istemeden bu eylemleri gerçekleştirin. Bunu yalnızca tamamen güvendiğiniz eylemler için etkinleştirin.",

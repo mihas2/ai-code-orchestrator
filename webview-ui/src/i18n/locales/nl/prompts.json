@@ -14,7 +14,9 @@
 	},
 	"apiConfiguration": {
 		"title": "API-configuratie",
-		"select": "Selecteer welke API-configuratie voor deze modus gebruikt moet worden"
+		"select": "Selecteer welke API-configuratie voor deze modus gebruikt moet worden",
+		"inheritProfile": "Actief profiel gebruiken",
+		"inheritModel": "Profielmodel gebruiken"
 	},
 	"tools": {
 		"title": "Beschikbare tools",
@@ -54,7 +56,6 @@
 	"exportMode": {
 		"title": "Modus exporteren",
 		"description": "Exporteer deze modus naar een YAML-bestand met alle regels inbegrepen voor eenvoudig delen met anderen.",
-		"export": "Modus exporteren",
 		"exporting": "Exporteren..."
 	},
 	"importMode": {

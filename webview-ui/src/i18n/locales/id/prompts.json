@@ -14,7 +14,9 @@
 	},
 	"apiConfiguration": {
 		"title": "Konfigurasi API",
-		"select": "Pilih konfigurasi API mana yang akan digunakan untuk mode ini"
+		"select": "Pilih konfigurasi API mana yang akan digunakan untuk mode ini",
+		"inheritProfile": "Gunakan profil aktif",
+		"inheritModel": "Gunakan model profil"
 	},
 	"tools": {
 		"title": "Tools yang Tersedia",
@@ -54,7 +56,6 @@
 	"exportMode": {
 		"title": "Ekspor Mode",
 		"description": "Ekspor mode ini ke file YAML dengan semua aturan yang disertakan untuk berbagi dengan mudah dengan orang lain.",
-		"export": "Ekspor Mode",
 		"exporting": "Mengekspor..."
 	},
 	"importMode": {

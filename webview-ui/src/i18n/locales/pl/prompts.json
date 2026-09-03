@@ -14,7 +14,9 @@
 	},
 	"apiConfiguration": {
 		"title": "Konfiguracja API",
-		"select": "Wybierz, której konfiguracji API użyć dla tego trybu"
+		"select": "Wybierz, której konfiguracji API użyć dla tego trybu",
+		"inheritProfile": "Użyj aktywnego profilu",
+		"inheritModel": "Użyj modelu profilu"
 	},
 	"tools": {
 		"title": "Dostępne narzędzia",
@@ -54,7 +56,6 @@
 	"exportMode": {
 		"title": "Eksportuj tryb",
 		"description": "Eksportuj ten tryb do pliku YAML ze wszystkimi regułami w celu łatwego udostępniania innym.",
-		"export": "Eksportuj tryb",
 		"exporting": "Eksportowanie..."
 	},
 	"importMode": {

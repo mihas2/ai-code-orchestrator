@@ -218,9 +218,7 @@
 		"wantsToLoad": "AI Code Orchestrator 想要載入技能",
 		"didLoad": "AI Code Orchestrator 載入了技能"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator 想要取得詳細指示以協助目前工作"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "AI Code Orchestrator 想要讀取此檔案",
 		"wantsToReadMultiple": "AI Code Orchestrator 想要讀取多個檔案",

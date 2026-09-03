@@ -1,3 +1,5 @@
-# @AI Code Orchestrator/ipc
+# Change Log
 
-## 0.0.1
+## [1.0.0]
+
+- Initial release

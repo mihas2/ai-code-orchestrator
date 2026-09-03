@@ -994,5 +994,33 @@
 			"descriptionRequired": "Beschreibung ist erforderlich",
 			"descriptionTooLong": "Beschreibung muss 1024 Zeichen oder weniger sein"
 		}
+	},
+	"roles": {
+		"title": "Allgemein",
+		"alwaysOn": "Orchestrierung ist immer aktiviert",
+		"intro": "Starte in der Orchestrator-Rolle. Wähle oben ein Profil und weise Spezialmodelle zu oder übernimm das primäre Profilmodell.",
+		"modelAssignments": "Modellzuweisungen für Rollen",
+		"modelHint": "Verfügbare Modelle stammen aus dem aktiven Profil. Primär: {{model}}",
+		"notConfigured": "nicht konfiguriert",
+		"inheritPrimary": "Primäres Modell übernehmen",
+		"save": "Rolleneinstellungen speichern",
+		"fields": {
+			"maxParallelWorkers": "Max. parallele Worker",
+			"maxDepth": "Max. Tiefe",
+			"maxReworkAttempts": "Max. Überarbeitungsversuche",
+			"timeoutMs": "Zeitüberschreitung (ms)",
+			"maxRunTokens": "Max. Ausführungstokens",
+			"maxRunCost": "Max. Ausführungskosten",
+			"maxChildTokens": "Max. Tokens für Unteraufgaben",
+			"maxChildCost": "Max. Kosten für Unteraufgaben",
+			"contextPolicy": "Kontext",
+			"conflictPolicy": "Konfliktbehandlung",
+			"reviewPolicy": "Überprüfung",
+			"requirePlanApproval": "Planbestätigung erforderlich",
+			"requireIntegrationApproval": "Integrationsbestätigung erforderlich",
+			"allowWorkerCommands": "Worker-Befehle erlauben",
+			"allowWorkerMcp": "Worker-MCP erlauben",
+			"persistTranscripts": "Transkripte speichern"
+		}
 	}
 }

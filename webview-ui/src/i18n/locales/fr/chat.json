@@ -185,8 +185,6 @@
 		"wantsToEditOutsideWorkspace": "AI Code Orchestrator veut éditer ce fichier en dehors de l'espace de travail",
 		"wantsToEditProtected": "AI Code Orchestrator veut éditer un fichier de configuration protégé",
 		"wantsToCreate": "AI Code Orchestrator veut créer un nouveau fichier",
-		"wantsToSearchReplace": "AI Code Orchestrator veut effectuer une recherche et remplacement sur ce fichier",
-		"didSearchReplace": "AI Code Orchestrator a effectué une recherche et remplacement sur ce fichier",
 		"wantsToInsert": "AI Code Orchestrator veut insérer du contenu dans ce fichier",
 		"wantsToInsertWithLineNumber": "AI Code Orchestrator veut insérer du contenu dans ce fichier à la ligne {{lineNumber}}",
 		"wantsToInsertAtEnd": "AI Code Orchestrator veut ajouter du contenu à la fin de ce fichier",
@@ -198,9 +196,7 @@
 		"wantsToGenerateImageProtected": "AI Code Orchestrator veut générer une image dans un emplacement protégé",
 		"didGenerateImage": "AI Code Orchestrator a généré une image"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator veut récupérer des instructions détaillées pour aider à la tâche actuelle"
-	},
+	"instructions": {},
 	"directoryOperations": {
 		"wantsToViewTopLevel": "AI Code Orchestrator veut voir les fichiers de premier niveau dans ce répertoire",
 		"didViewTopLevel": "AI Code Orchestrator a vu les fichiers de premier niveau dans ce répertoire",
@@ -255,7 +251,6 @@
 		"wantsToCreate": "AI Code Orchestrator veut créer une nouvelle sous-tâche en mode <code>{{mode}}</code>",
 		"wantsToFinish": "AI Code Orchestrator veut terminer cette sous-tâche",
 		"newTaskContent": "Instructions de la sous-tâche",
-		"completionContent": "Sous-tâche terminée",
 		"resultContent": "Résultats de la sous-tâche",
 		"defaultResult": "Veuillez continuer avec la tâche suivante.",
 		"completionInstructions": "Sous-tâche terminée ! Vous pouvez examiner les résultats et suggérer des corrections ou les prochaines étapes. Si tout semble bon, confirmez pour retourner le résultat à la tâche parente.",
@@ -287,7 +282,6 @@
 		"tooltipManage": "Gérer les paramètres d'approbation automatique",
 		"tooltipStatus": "Approbation automatique activée pour : {{toggles}}",
 		"title": "Approbation automatique",
-		"toggle": "Basculer l'approbation automatique",
 		"all": "Tout",
 		"none": "Aucun",
 		"description": "Exécutez ces actions sans demander la permission. N'activez cette option que pour les actions en lesquelles vous avez entièrement confiance.",

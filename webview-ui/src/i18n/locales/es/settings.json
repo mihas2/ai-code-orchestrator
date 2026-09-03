@@ -994,5 +994,33 @@
 			"descriptionRequired": "La descripción es obligatoria",
 			"descriptionTooLong": "La descripción debe tener como máximo 1024 caracteres"
 		}
+	},
+	"roles": {
+		"title": "General",
+		"alwaysOn": "La orquestación siempre está activa",
+		"intro": "Comienza en el rol de Orquestador. Elige un perfil arriba y asigna modelos especializados o hereda el modelo principal del perfil.",
+		"modelAssignments": "Asignaciones de modelos por rol",
+		"modelHint": "Los modelos disponibles proceden del perfil activo. Principal: {{model}}",
+		"notConfigured": "no configurado",
+		"inheritPrimary": "Heredar modelo principal",
+		"save": "Guardar configuración del rol",
+		"fields": {
+			"maxParallelWorkers": "Máximo de trabajadores paralelos",
+			"maxDepth": "Profundidad máxima",
+			"maxReworkAttempts": "Máximo de intentos de revisión",
+			"timeoutMs": "Tiempo de espera (ms)",
+			"maxRunTokens": "Máximo de tokens de ejecución",
+			"maxRunCost": "Coste máximo de ejecución",
+			"maxChildTokens": "Máximo de tokens secundarios",
+			"maxChildCost": "Coste máximo de secundarios",
+			"contextPolicy": "Contexto",
+			"conflictPolicy": "Gestión de conflictos",
+			"reviewPolicy": "Revisión",
+			"requirePlanApproval": "Requerir aprobación del plan",
+			"requireIntegrationApproval": "Requerir aprobación de integración",
+			"allowWorkerCommands": "Permitir comandos de trabajadores",
+			"allowWorkerMcp": "Permitir MCP en trabajadores",
+			"persistTranscripts": "Conservar transcripciones"
+		}
 	}
 }

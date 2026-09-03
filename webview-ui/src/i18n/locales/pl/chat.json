@@ -177,9 +177,7 @@
 		},
 		"current": "Bieżący"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator chce pobrać szczegółowe instrukcje, aby pomóc w bieżącym zadaniu"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "AI Code Orchestrator chce przeczytać ten plik",
 		"wantsToReadOutsideWorkspace": "AI Code Orchestrator chce przeczytać ten plik poza obszarem roboczym",
@@ -188,8 +186,6 @@
 		"wantsToEditOutsideWorkspace": "AI Code Orchestrator chce edytować ten plik poza obszarem roboczym",
 		"wantsToEditProtected": "AI Code Orchestrator chce edytować chroniony plik konfiguracyjny",
 		"wantsToCreate": "AI Code Orchestrator chce utworzyć nowy plik",
-		"wantsToSearchReplace": "AI Code Orchestrator chce wykonać wyszukiwanie i zamianę w tym pliku",
-		"didSearchReplace": "AI Code Orchestrator wykonał wyszukiwanie i zamianę w tym pliku",
 		"wantsToInsert": "AI Code Orchestrator chce wstawić zawartość do tego pliku",
 		"wantsToInsertWithLineNumber": "AI Code Orchestrator chce wstawić zawartość do tego pliku w linii {{lineNumber}}",
 		"wantsToInsertAtEnd": "AI Code Orchestrator chce dodać zawartość na końcu tego pliku",
@@ -255,7 +251,6 @@
 		"wantsToCreate": "AI Code Orchestrator chce utworzyć nowe podzadanie w trybie <code>{{mode}}</code>",
 		"wantsToFinish": "AI Code Orchestrator chce zakończyć to podzadanie",
 		"newTaskContent": "Instrukcje podzadania",
-		"completionContent": "Podzadanie zakończone",
 		"resultContent": "Wyniki podzadania",
 		"defaultResult": "Proszę kontynuować następne zadanie.",
 		"completionInstructions": "Podzadanie zakończone! Możesz przejrzeć wyniki i zasugerować poprawki lub następne kroki. Jeśli wszystko wygląda dobrze, potwierdź, aby zwrócić wynik do zadania nadrzędnego.",
@@ -287,7 +282,6 @@
 		"tooltipManage": "Zarządzaj ustawieniami automatycznego zatwierdzania",
 		"tooltipStatus": "Automatyczne zatwierdzanie włączone dla: {{toggles}}",
 		"title": "Automatyczne zatwierdzanie",
-		"toggle": "Przełącz automatyczne zatwierdzanie",
 		"all": "Wszystkie",
 		"none": "Żadne",
 		"description": "Wykonuj te działania bez pytania o zgodę. Włącz tę opcję tylko dla działań, którym w pełni ufasz.",

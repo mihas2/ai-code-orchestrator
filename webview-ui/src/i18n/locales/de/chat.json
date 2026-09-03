@@ -177,9 +177,7 @@
 		},
 		"current": "Aktuell"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator möchte detaillierte Anweisungen abrufen, um bei der aktuellen Aufgabe zu helfen"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "AI Code Orchestrator möchte diese Datei lesen",
 		"wantsToReadAndXMore": "AI Code Orchestrator möchte diese Datei und {{count}} weitere lesen",
@@ -189,8 +187,6 @@
 		"wantsToEditOutsideWorkspace": "AI Code Orchestrator möchte diese Datei außerhalb des Arbeitsbereichs bearbeiten",
 		"wantsToEditProtected": "AI Code Orchestrator möchte eine geschützte Konfigurationsdatei bearbeiten",
 		"wantsToCreate": "AI Code Orchestrator möchte eine neue Datei erstellen",
-		"wantsToSearchReplace": "AI Code Orchestrator möchte in dieser Datei suchen und ersetzen",
-		"didSearchReplace": "AI Code Orchestrator hat Suchen und Ersetzen in dieser Datei durchgeführt",
 		"wantsToInsert": "AI Code Orchestrator möchte Inhalte in diese Datei einfügen",
 		"wantsToInsertWithLineNumber": "AI Code Orchestrator möchte Inhalte in diese Datei in Zeile {{lineNumber}} einfügen",
 		"wantsToInsertAtEnd": "AI Code Orchestrator möchte Inhalte am Ende dieser Datei anhängen",
@@ -255,7 +251,6 @@
 		"wantsToCreate": "AI Code Orchestrator möchte eine neue Teilaufgabe im <code>{{mode}}</code>-Modus erstellen",
 		"wantsToFinish": "AI Code Orchestrator möchte diese Teilaufgabe abschließen",
 		"newTaskContent": "Teilaufgabenanweisungen",
-		"completionContent": "Teilaufgabe abgeschlossen",
 		"resultContent": "Teilaufgabenergebnisse",
 		"defaultResult": "Bitte fahre mit der nächsten Aufgabe fort.",
 		"completionInstructions": "Teilaufgabe abgeschlossen! Du kannst die Ergebnisse überprüfen und Korrekturen oder nächste Schritte vorschlagen. Wenn alles gut aussieht, bestätige, um das Ergebnis an die übergeordnete Aufgabe zurückzugeben.",
@@ -287,7 +282,6 @@
 		"tooltipManage": "Einstellungen für die automatische Genehmigung verwalten",
 		"tooltipStatus": "Automatische Genehmigung aktiviert für: {{toggles}}",
 		"title": "Automatische Genehmigung",
-		"toggle": "Automatische Genehmigung umschalten",
 		"all": "Alle",
 		"none": "Keine",
 		"description": "Führe diese Aktionen aus, ohne um Erlaubnis zu fragen. Aktiviere dies nur für Aktionen, denen du voll vertraust.",

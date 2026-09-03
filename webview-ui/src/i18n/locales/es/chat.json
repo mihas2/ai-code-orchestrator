@@ -177,9 +177,7 @@
 		},
 		"current": "Actual"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator quiere obtener instrucciones detalladas para ayudar con la tarea actual"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "AI Code Orchestrator quiere leer este archivo",
 		"wantsToReadOutsideWorkspace": "AI Code Orchestrator quiere leer este archivo fuera del espacio de trabajo",
@@ -188,8 +186,6 @@
 		"wantsToEditOutsideWorkspace": "AI Code Orchestrator quiere editar este archivo fuera del espacio de trabajo",
 		"wantsToEditProtected": "AI Code Orchestrator quiere editar un archivo de configuración protegido",
 		"wantsToCreate": "AI Code Orchestrator quiere crear un nuevo archivo",
-		"wantsToSearchReplace": "AI Code Orchestrator quiere realizar búsqueda y reemplazo en este archivo",
-		"didSearchReplace": "AI Code Orchestrator realizó búsqueda y reemplazo en este archivo",
 		"wantsToInsert": "AI Code Orchestrator quiere insertar contenido en este archivo",
 		"wantsToInsertWithLineNumber": "AI Code Orchestrator quiere insertar contenido en este archivo en la línea {{lineNumber}}",
 		"wantsToInsertAtEnd": "AI Code Orchestrator quiere añadir contenido al final de este archivo",
@@ -255,7 +251,6 @@
 		"wantsToCreate": "AI Code Orchestrator quiere crear una nueva subtarea en modo <code>{{mode}}</code>",
 		"wantsToFinish": "AI Code Orchestrator quiere finalizar esta subtarea",
 		"newTaskContent": "Instrucciones de la subtarea",
-		"completionContent": "Subtarea completada",
 		"resultContent": "Resultados de la subtarea",
 		"defaultResult": "Por favor, continúa con la siguiente tarea.",
 		"completionInstructions": "¡Subtarea completada! Puedes revisar los resultados y sugerir correcciones o próximos pasos. Si todo se ve bien, confirma para devolver el resultado a la tarea principal.",
@@ -287,7 +282,6 @@
 		"tooltipManage": "Administrar la configuración de aprobación automática",
 		"tooltipStatus": "Aprobación automática habilitada para: {{toggles}}",
 		"title": "Aprobación automática",
-		"toggle": "Alternar aprobación automática",
 		"all": "Todo",
 		"none": "Ninguno",
 		"description": "Ejecuta estas acciones sin pedir permiso. Habilita esto solo para acciones en las que confíes plenamente.",

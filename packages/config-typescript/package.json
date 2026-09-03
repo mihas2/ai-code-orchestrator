@@ -1,5 +1,6 @@
 {
 	"name": "@ai-code-orchestrator/config-typescript",
+	"version": "1.0.0",
 	"private": true,
 	"publishConfig": {
 		"access": "public"

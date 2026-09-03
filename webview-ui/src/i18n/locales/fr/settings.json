@@ -994,5 +994,33 @@
 			"descriptionRequired": "La description est obligatoire",
 			"descriptionTooLong": "La description doit contenir au maximum 1024 caractères"
 		}
+	},
+	"roles": {
+		"title": "Général",
+		"alwaysOn": "L'orchestration est toujours activée",
+		"intro": "Commencez dans le rôle d'Orchestrateur. Choisissez un profil ci-dessus, puis attribuez des modèles spécialisés ou héritez du modèle principal du profil.",
+		"modelAssignments": "Attributions de modèles par rôle",
+		"modelHint": "Les modèles disponibles proviennent du profil actif. Principal : {{model}}",
+		"notConfigured": "non configuré",
+		"inheritPrimary": "Hériter du modèle principal",
+		"save": "Enregistrer les paramètres du rôle",
+		"fields": {
+			"maxParallelWorkers": "Nombre maximal d’agents parallèles",
+			"maxDepth": "Profondeur maximale",
+			"maxReworkAttempts": "Nombre maximal de tentatives de reprise",
+			"timeoutMs": "Délai d’expiration (ms)",
+			"maxRunTokens": "Nombre maximal de tokens d’exécution",
+			"maxRunCost": "Coût maximal d’exécution",
+			"maxChildTokens": "Nombre maximal de tokens enfants",
+			"maxChildCost": "Coût maximal des enfants",
+			"contextPolicy": "Contexte",
+			"conflictPolicy": "Gestion des conflits",
+			"reviewPolicy": "Révision",
+			"requirePlanApproval": "Exiger l’approbation du plan",
+			"requireIntegrationApproval": "Exiger l’approbation de l’intégration",
+			"allowWorkerCommands": "Autoriser les commandes des agents",
+			"allowWorkerMcp": "Autoriser MCP pour les agents",
+			"persistTranscripts": "Conserver les transcriptions"
+		}
 	}
 }

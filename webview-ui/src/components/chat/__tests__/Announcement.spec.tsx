@@ -12,7 +12,7 @@ vi.mock("@src/utils/vscode", () => ({
 
 vi.mock("@aico/package", () => ({
 	Package: {
-		version: "3.53.0",
+		version: "1.0.0",
 	},
 }))
 

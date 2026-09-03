@@ -177,9 +177,7 @@
 		},
 		"current": "현재"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator는 현재 작업을 지원하기 위해 자세한 지침을 가져오려고 합니다"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "AI Code Orchestrator가 이 파일을 읽고 싶어합니다",
 		"wantsToReadOutsideWorkspace": "AI Code Orchestrator가 워크스페이스 외부의 이 파일을 읽고 싶어합니다",
@@ -188,8 +186,6 @@
 		"wantsToEditOutsideWorkspace": "AI Code Orchestrator가 워크스페이스 외부의 이 파일을 편집하고 싶어합니다",
 		"wantsToEditProtected": "AI Code Orchestrator가 보호된 설정 파일을 편집하고 싶어합니다",
 		"wantsToCreate": "AI Code Orchestrator가 새 파일을 만들고 싶어합니다",
-		"wantsToSearchReplace": "AI Code Orchestrator가 이 파일에서 검색 및 바꾸기를 수행하고 싶어합니다",
-		"didSearchReplace": "AI Code Orchestrator가 이 파일에서 검색 및 바꾸기를 수행했습니다",
 		"wantsToInsert": "AI Code Orchestrator가 이 파일에 내용을 삽입하고 싶어합니다",
 		"wantsToInsertWithLineNumber": "AI Code Orchestrator가 이 파일의 {{lineNumber}}번 줄에 내용을 삽입하고 싶어합니다",
 		"wantsToInsertAtEnd": "AI Code Orchestrator가 이 파일의 끝에 내용을 추가하고 싶어합니다",
@@ -255,7 +251,6 @@
 		"wantsToCreate": "AI Code Orchestrator가 <code>{{mode}}</code> 모드에서 새 하위 작업을 만들고 싶어합니다",
 		"wantsToFinish": "AI Code Orchestrator가 이 하위 작업을 완료하고 싶어합니다",
 		"newTaskContent": "하위 작업 지침",
-		"completionContent": "하위 작업 완료",
 		"resultContent": "하위 작업 결과",
 		"defaultResult": "다음 작업을 계속 진행해주세요.",
 		"completionInstructions": "하위 작업 완료! 결과를 검토하고 수정 사항이나 다음 단계를 제안할 수 있습니다. 모든 것이 괜찮아 보이면, 부모 작업에 결과를 반환하기 위해 확인해주세요.",
@@ -287,7 +282,6 @@
 		"tooltipManage": "자동 승인 설정 관리",
 		"tooltipStatus": "자동 승인 활성화됨: {{toggles}}",
 		"title": "자동 승인",
-		"toggle": "자동 승인 전환",
 		"all": "모두",
 		"none": "없음",
 		"description": "허가 없이 이러한 작업을 실행합니다. 전적으로 신뢰하는 작업에 대해서만 활성화하십시오.",

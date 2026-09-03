@@ -21,9 +21,7 @@
 		"openUiHistory": "Buka Riwayat UI",
 		"backToParentTask": "Tugas Induk"
 	},
-	"history": {
-		"title": "Riwayat"
-	},
+	"history": {},
 	"unpin": "Lepas Pin",
 	"pin": "Pin",
 	"fileChangesInConversation": {
@@ -37,9 +35,7 @@
 		"title": "Mulai Tugas Baru",
 		"tooltip": "Mulai tugas baru"
 	},
-	"reportBug": {
-		"title": "Laporkan Bug"
-	},
+	"reportBug": {},
 	"proceedAnyways": {
 		"title": "Lanjutkan Saja",
 		"tooltip": "Lanjutkan saat perintah dijalankan"
@@ -221,9 +217,7 @@
 		"wantsToLoad": "AI Code Orchestrator ingin memuat keterampilan",
 		"didLoad": "AI Code Orchestrator telah memuat keterampilan"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator ingin mengambil instruksi detail untuk membantu tugas saat ini"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "AI Code Orchestrator ingin membaca file ini",
 		"wantsToReadMultiple": "AI Code Orchestrator ingin membaca beberapa file",
@@ -239,8 +233,6 @@
 		"wantsToGenerateImageProtected": "AI Code Orchestrator ingin menghasilkan gambar di lokasi yang dilindungi",
 		"didGenerateImage": "AI Code Orchestrator telah menghasilkan gambar",
 		"wantsToCreate": "AI Code Orchestrator ingin membuat file baru",
-		"wantsToSearchReplace": "AI Code Orchestrator ingin mencari dan mengganti di file ini",
-		"didSearchReplace": "AI Code Orchestrator melakukan pencarian dan penggantian pada file ini",
 		"wantsToInsert": "AI Code Orchestrator ingin menyisipkan konten ke file ini",
 		"wantsToInsertWithLineNumber": "AI Code Orchestrator ingin menyisipkan konten ke file ini di baris {{lineNumber}}",
 		"wantsToInsertAtEnd": "AI Code Orchestrator ingin menambahkan konten ke akhir file ini"
@@ -306,7 +298,6 @@
 		"wantsToCreate": "AI Code Orchestrator ingin membuat subtugas baru dalam mode {{mode}}",
 		"wantsToFinish": "AI Code Orchestrator ingin menyelesaikan subtugas ini",
 		"newTaskContent": "Instruksi Subtugas",
-		"completionContent": "Subtugas Selesai",
 		"resultContent": "Hasil Subtugas",
 		"defaultResult": "Silakan lanjutkan ke tugas berikutnya.",
 		"completionInstructions": "Subtugas selesai! Kamu bisa meninjau hasilnya dan menyarankan koreksi atau langkah selanjutnya. Jika semuanya terlihat baik, konfirmasi untuk mengembalikan hasil ke tugas induk.",
@@ -343,7 +334,6 @@
 		"tooltipManage": "Kelola pengaturan persetujuan otomatis",
 		"tooltipStatus": "Persetujuan otomatis diaktifkan untuk: {{toggles}}",
 		"title": "Setujui Otomatis",
-		"toggle": "Beralih persetujuan otomatis",
 		"all": "Semua",
 		"none": "Tidak ada",
 		"description": "Jalankan tindakan ini tanpa meminta izin. Hanya aktifkan untuk tindakan yang Anda percayai sepenuhnya.",

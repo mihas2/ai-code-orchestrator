@@ -14,7 +14,9 @@
 	},
 	"apiConfiguration": {
 		"title": "API-Konfiguration",
-		"select": "Wähle, welche API-Konfiguration für diesen Modus verwendet werden soll"
+		"select": "Wähle, welche API-Konfiguration für diesen Modus verwendet werden soll",
+		"inheritProfile": "Aktives Profil verwenden",
+		"inheritModel": "Profilmodell verwenden"
 	},
 	"tools": {
 		"title": "Verfügbare Werkzeuge",
@@ -54,7 +56,6 @@
 	"exportMode": {
 		"title": "Modus exportieren",
 		"description": "Exportiert diesen Modus in eine YAML-Datei mit allen enthaltenen Regeln zum einfachen Teilen mit anderen.",
-		"export": "Modus exportieren",
 		"exporting": "Exportieren..."
 	},
 	"importMode": {

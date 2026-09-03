@@ -10,7 +10,7 @@ describe("generatePackageJson", () => {
 				displayName: "%extension.displayName%",
 				description: "%extension.description%",
 				publisher: "AicoVeterinaryInc",
-				version: "3.17.2",
+				version: "1.0.0",
 				icon: "assets/icons/icon.png",
 				contributes: {
 					viewsContainers: {
@@ -111,7 +111,7 @@ describe("generatePackageJson", () => {
 				name: "ai-code-orchestrator-nightly",
 				displayName: "AI Code Orchestrator Nightly",
 				publisher: "AicoVeterinaryInc",
-				version: "0.0.1",
+				version: "1.0.0",
 				icon: "assets/icons/icon-nightly.png",
 				scripts: {},
 			},
@@ -123,7 +123,7 @@ describe("generatePackageJson", () => {
 			displayName: "AI Code Orchestrator Nightly",
 			description: "%extension.description%",
 			publisher: "AicoVeterinaryInc",
-			version: "0.0.1",
+			version: "1.0.0",
 			icon: "assets/icons/icon-nightly.png",
 			contributes: {
 				viewsContainers: {

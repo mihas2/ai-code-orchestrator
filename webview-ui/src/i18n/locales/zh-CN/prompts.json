@@ -14,7 +14,9 @@
 	},
 	"apiConfiguration": {
 		"title": "API配置",
-		"select": "选择要用于此模式的API配置"
+		"select": "选择要用于此模式的API配置",
+		"inheritProfile": "使用活动配置",
+		"inheritModel": "使用配置中的模型"
 	},
 	"tools": {
 		"title": "可用功能",
@@ -54,7 +56,6 @@
 	"exportMode": {
 		"title": "导出模式",
 		"description": "将此模式导出为包含所有规则的 YAML 文件，以便与他人轻松共享。",
-		"export": "导出模式",
 		"exporting": "正在导出..."
 	},
 	"importMode": {

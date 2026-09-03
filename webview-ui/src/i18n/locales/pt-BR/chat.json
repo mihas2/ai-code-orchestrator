@@ -177,9 +177,7 @@
 		},
 		"current": "Atual"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator quer buscar instruções detalhadas para ajudar com a tarefa atual"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "AI Code Orchestrator quer ler este arquivo",
 		"wantsToReadOutsideWorkspace": "AI Code Orchestrator quer ler este arquivo fora do espaço de trabalho",
@@ -188,8 +186,6 @@
 		"wantsToEditOutsideWorkspace": "AI Code Orchestrator quer editar este arquivo fora do espaço de trabalho",
 		"wantsToEditProtected": "AI Code Orchestrator quer editar um arquivo de configuração protegido",
 		"wantsToCreate": "AI Code Orchestrator quer criar um novo arquivo",
-		"wantsToSearchReplace": "AI Code Orchestrator quer realizar busca e substituição neste arquivo",
-		"didSearchReplace": "AI Code Orchestrator realizou busca e substituição neste arquivo",
 		"wantsToInsert": "AI Code Orchestrator quer inserir conteúdo neste arquivo",
 		"wantsToInsertWithLineNumber": "AI Code Orchestrator quer inserir conteúdo neste arquivo na linha {{lineNumber}}",
 		"wantsToInsertAtEnd": "AI Code Orchestrator quer adicionar conteúdo ao final deste arquivo",
@@ -255,7 +251,6 @@
 		"wantsToCreate": "AI Code Orchestrator quer criar uma nova subtarefa no modo <code>{{mode}}</code>",
 		"wantsToFinish": "AI Code Orchestrator quer finalizar esta subtarefa",
 		"newTaskContent": "Instruções da subtarefa",
-		"completionContent": "Subtarefa concluída",
 		"resultContent": "Resultados da subtarefa",
 		"defaultResult": "Por favor, continue com a próxima tarefa.",
 		"completionInstructions": "Subtarefa concluída! Você pode revisar os resultados e sugerir correções ou próximos passos. Se tudo parecer bom, confirme para retornar o resultado à tarefa principal.",
@@ -287,7 +282,6 @@
 		"tooltipManage": "Gerenciar configurações de aprovação automática",
 		"tooltipStatus": "Aprovação automática habilitada para: {{toggles}}",
 		"title": "Aprovação automática",
-		"toggle": "Alternar aprovação automática",
 		"all": "Todos",
 		"none": "Nenhum",
 		"description": "Execute estas ações sem pedir permissão. Ative isso apenas para ações em que você confia totalmente.",

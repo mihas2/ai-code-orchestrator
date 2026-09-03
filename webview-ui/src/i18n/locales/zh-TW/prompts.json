@@ -14,7 +14,9 @@
 	},
 	"apiConfiguration": {
 		"title": "API 設定",
-		"select": "選擇此模式要使用的 API 設定"
+		"select": "選擇此模式要使用的 API 設定",
+		"inheritProfile": "使用目前設定檔",
+		"inheritModel": "使用設定檔模型"
 	},
 	"tools": {
 		"title": "可用工具",

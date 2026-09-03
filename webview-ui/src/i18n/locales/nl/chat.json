@@ -172,9 +172,7 @@
 		},
 		"current": "Huidig"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator wil gedetailleerde instructies ophalen om te helpen met de huidige taak"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "AI Code Orchestrator wil dit bestand lezen",
 		"wantsToReadOutsideWorkspace": "AI Code Orchestrator wil dit bestand buiten de werkruimte lezen",
@@ -183,8 +181,6 @@
 		"wantsToEditOutsideWorkspace": "AI Code Orchestrator wil dit bestand buiten de werkruimte bewerken",
 		"wantsToEditProtected": "AI Code Orchestrator wil een beveiligd configuratiebestand bewerken",
 		"wantsToCreate": "AI Code Orchestrator wil een nieuw bestand aanmaken",
-		"wantsToSearchReplace": "AI Code Orchestrator wil zoeken en vervangen in dit bestand",
-		"didSearchReplace": "AI Code Orchestrator heeft zoeken en vervangen uitgevoerd op dit bestand",
 		"wantsToInsert": "AI Code Orchestrator wil inhoud invoegen in dit bestand",
 		"wantsToInsertWithLineNumber": "AI Code Orchestrator wil inhoud invoegen in dit bestand op regel {{lineNumber}}",
 		"wantsToInsertAtEnd": "AI Code Orchestrator wil inhoud toevoegen aan het einde van dit bestand",
@@ -250,7 +246,6 @@
 		"wantsToCreate": "AI Code Orchestrator wil een nieuwe subtaak aanmaken in {{mode}} modus",
 		"wantsToFinish": "AI Code Orchestrator wil deze subtaak voltooien",
 		"newTaskContent": "Subtaak-instructies",
-		"completionContent": "Subtaak voltooid",
 		"resultContent": "Subtaakresultaten",
 		"defaultResult": "Ga verder met de volgende taak.",
 		"completionInstructions": "Subtaak voltooid! Je kunt de resultaten bekijken en eventuele correcties of volgende stappen voorstellen. Als alles goed is, bevestig dan om het resultaat terug te sturen naar de hoofdtaak.",
@@ -287,7 +282,6 @@
 		"tooltipManage": "Beheer instellingen voor automatische goedkeuring",
 		"tooltipStatus": "Automatische goedkeuring ingeschakeld voor: {{toggles}}",
 		"title": "Automatisch goedkeuren",
-		"toggle": "Automatisch goedkeuren in-/uitschakelen",
 		"all": "Alles",
 		"none": "Geen",
 		"description": "Voer deze acties uit zonder om toestemming te vragen. Schakel dit alleen in voor acties die je volledig vertrouwt.",

@@ -994,5 +994,33 @@
 			"descriptionRequired": "La descripció és obligatòria",
 			"descriptionTooLong": "La descripció ha de tenir com a màxim 1024 caràcters"
 		}
+	},
+	"roles": {
+		"title": "General",
+		"alwaysOn": "L'orquestració sempre està activa",
+		"intro": "Comença amb el rol d'Orquestrador. Tria un perfil a dalt i assigna models especialitzats o hereta el model principal del perfil.",
+		"modelAssignments": "Assignacions de models per rol",
+		"modelHint": "Models disponibles del perfil actiu. Principal: {{model}}",
+		"notConfigured": "no configurat",
+		"inheritPrimary": "Hereta el model principal",
+		"save": "Desa la configuració del rol",
+		"fields": {
+			"maxParallelWorkers": "Màxim de treballadors simultanis",
+			"maxDepth": "Profunditat màxima",
+			"maxReworkAttempts": "Màxim d intents de revisió",
+			"timeoutMs": "Temps d espera (ms)",
+			"maxRunTokens": "Màxim de tokens d execució",
+			"maxRunCost": "Cost màxim d execució",
+			"maxChildTokens": "Màxim de tokens fills",
+			"maxChildCost": "Cost màxim dels fills",
+			"contextPolicy": "Context",
+			"conflictPolicy": "Gestió de conflictes",
+			"reviewPolicy": "Revisió",
+			"requirePlanApproval": "Requereix aprovació del pla",
+			"requireIntegrationApproval": "Requereix aprovació de la integració",
+			"allowWorkerCommands": "Permet ordres dels treballadors",
+			"allowWorkerMcp": "Permet MCP als treballadors",
+			"persistTranscripts": "Conserva les transcripcions"
+		}
 	}
 }

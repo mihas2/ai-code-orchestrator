@@ -177,9 +177,7 @@
 		},
 		"current": "当前"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator 想要获取详细指示以协助当前任务"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "需要读取文件",
 		"wantsToReadOutsideWorkspace": "请求访问外部文件",
@@ -188,8 +186,6 @@
 		"wantsToEditOutsideWorkspace": "需要编辑外部文件",
 		"wantsToEditProtected": "需要编辑受保护的配置文件",
 		"wantsToCreate": "需要新建文件",
-		"wantsToSearchReplace": "需要在此文件中搜索和替换",
-		"didSearchReplace": "已完成搜索和替换",
 		"wantsToInsert": "需要在此文件中插入内容",
 		"wantsToInsertWithLineNumber": "需要在第 {{lineNumber}} 行插入内容",
 		"wantsToInsertAtEnd": "需要在文件末尾添加内容",
@@ -223,7 +219,6 @@
 		"pid": "PID: {{pid}}",
 		"exitStatus": "已退出，状态码 {{exitCode}}",
 		"manageCommands": "管理命令权限",
-		"commandManagementDescription": "管理命令权限：点击 ✓ 允许自动执行，点击 ✗ 拒绝执行。可以打开/关闭模式或从列表中删除。<settingsLink>查看所有设置</settingsLink>",
 		"addToAllowed": "添加到允许列表",
 		"removeFromAllowed": "从允许列表中删除",
 		"addToDenied": "添加到拒绝列表",
@@ -256,7 +251,6 @@
 		"wantsToCreate": "AI Code Orchestrator想在<code>{{mode}}</code>模式下创建新子任务",
 		"wantsToFinish": "AI Code Orchestrator想完成此子任务",
 		"newTaskContent": "子任务说明",
-		"completionContent": "子任务已完成",
 		"resultContent": "子任务结果",
 		"defaultResult": "请继续下一个任务。",
 		"completionInstructions": "子任务已完成！您可以查看结果并提出修改或下一步建议。如果一切正常，请确认以将结果返回给主任务。",
@@ -288,7 +282,6 @@
 		"tooltipManage": "管理自动批准设置",
 		"tooltipStatus": "自动批准已启用：{{toggles}}",
 		"title": "自动批准",
-		"toggle": "切换自动批准",
 		"all": "全部",
 		"none": "无",
 		"description": "无需请求权限即可执行这些操作。仅对您完全信任的操作启用此功能。",

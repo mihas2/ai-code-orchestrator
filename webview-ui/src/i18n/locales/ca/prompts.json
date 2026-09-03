@@ -14,7 +14,9 @@
 	},
 	"apiConfiguration": {
 		"title": "Configuració d'API",
-		"select": "Seleccioneu quina configuració d'API utilitzar per a aquest mode"
+		"select": "Seleccioneu quina configuració d'API utilitzar per a aquest mode",
+		"inheritProfile": "Utilitza el perfil actiu",
+		"inheritModel": "Utilitza el model del perfil"
 	},
 	"tools": {
 		"title": "Eines disponibles",
@@ -54,7 +56,6 @@
 	"exportMode": {
 		"title": "Exportar mode",
 		"description": "Exporta aquest mode a un fitxer YAML amb totes les regles incloses per compartir fàcilment amb altres.",
-		"export": "Exportar mode",
 		"exporting": "Exportant..."
 	},
 	"importMode": {

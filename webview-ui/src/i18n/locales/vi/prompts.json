@@ -14,7 +14,9 @@
 	},
 	"apiConfiguration": {
 		"title": "Cấu hình API",
-		"select": "Chọn cấu hình API nào để sử dụng cho chế độ này"
+		"select": "Chọn cấu hình API nào để sử dụng cho chế độ này",
+		"inheritProfile": "Sử dụng hồ sơ đang hoạt động",
+		"inheritModel": "Sử dụng mô hình của hồ sơ"
 	},
 	"tools": {
 		"title": "Công cụ có sẵn",
@@ -54,7 +56,6 @@
 	"exportMode": {
 		"title": "Xuất chế độ",
 		"description": "Xuất chế độ này sang tệp YAML với tất cả các quy tắc được bao gồm để dễ dàng chia sẻ với người khác.",
-		"export": "Xuất chế độ",
 		"exporting": "Đang xuất..."
 	},
 	"globalCustomInstructions": {

@@ -172,9 +172,7 @@
 		},
 		"current": "Текущая"
 	},
-	"instructions": {
-		"wantsToFetch": "AI Code Orchestrator хочет получить подробные инструкции для помощи с текущей задачей"
-	},
+	"instructions": {},
 	"fileOperations": {
 		"wantsToRead": "AI Code Orchestrator хочет прочитать этот файл",
 		"wantsToReadOutsideWorkspace": "AI Code Orchestrator хочет прочитать этот файл вне рабочей области",
@@ -183,8 +181,6 @@
 		"wantsToEditOutsideWorkspace": "AI Code Orchestrator хочет отредактировать этот файл вне рабочей области",
 		"wantsToEditProtected": "AI Code Orchestrator хочет отредактировать защищённый файл конфигурации",
 		"wantsToCreate": "AI Code Orchestrator хочет создать новый файл",
-		"wantsToSearchReplace": "AI Code Orchestrator хочет выполнить поиск и замену в этом файле",
-		"didSearchReplace": "AI Code Orchestrator выполнил поиск и замену в этом файле",
 		"wantsToInsert": "AI Code Orchestrator хочет вставить содержимое в этот файл",
 		"wantsToInsertWithLineNumber": "AI Code Orchestrator хочет вставить содержимое в этот файл на строку {{lineNumber}}",
 		"wantsToInsertAtEnd": "AI Code Orchestrator хочет добавить содержимое в конец этого файла",
@@ -218,7 +214,6 @@
 		"pid": "PID: {{pid}}",
 		"exitStatus": "Завершено со статусом {{exitCode}}",
 		"manageCommands": "Управление разрешениями команд",
-		"commandManagementDescription": "Управляйте разрешениями команд: Нажмите ✓, чтобы разрешить автоматическое выполнение, ✗, чтобы запретить выполнение. Шаблоны можно включать/выключать или удалять из списков. <settingsLink>Просмотреть все настройки</settingsLink>",
 		"addToAllowed": "Добавить в список разрешенных",
 		"removeFromAllowed": "Удалить из списка разрешенных",
 		"addToDenied": "Добавить в список запрещенных",
@@ -251,7 +246,6 @@
 		"wantsToCreate": "AI Code Orchestrator хочет создать новую подзадачу в режиме {{mode}}",
 		"wantsToFinish": "AI Code Orchestrator хочет завершить эту подзадачу",
 		"newTaskContent": "Инструкции по подзадаче",
-		"completionContent": "Подзадача завершена",
 		"resultContent": "Результаты подзадачи",
 		"defaultResult": "Пожалуйста, переходите к следующей задаче.",
 		"completionInstructions": "Подзадача завершена! Вы можете просмотреть результаты и предложить исправления или следующие шаги. Если всё в порядке, подтвердите для возврата результата в родительскую задачу.",
@@ -288,7 +282,6 @@
 		"tooltipManage": "Управление настройками автоматического одобрения",
 		"tooltipStatus": "Авто-одобрение включено для: {{toggles}}",
 		"title": "Авто-одобрение",
-		"toggle": "Переключить авто-утверждение",
 		"all": "Все",
 		"none": "Ни одного",
 		"description": "Выполняйте эти действия, не спрашивая разрешения. Включайте это только для действий, которым вы полностью доверяете.",

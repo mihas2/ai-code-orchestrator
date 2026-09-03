@@ -14,7 +14,9 @@
 	},
 	"apiConfiguration": {
 		"title": "API Yapılandırması",
-		"select": "Bu mod için hangi API yapılandırmasının kullanılacağını seçin"
+		"select": "Bu mod için hangi API yapılandırmasının kullanılacağını seçin",
+		"inheritProfile": "Etkin profili kullan",
+		"inheritModel": "Profil modelini kullan"
 	},
 	"tools": {
 		"title": "Kullanılabilir Araçlar",
@@ -54,7 +56,6 @@
 	"exportMode": {
 		"title": "Modu Dışa Aktar",
 		"description": "Bu modu tüm kurallar dahil olarak bir YAML dosyasına dışa aktararak başkalarıyla kolayca paylaşın.",
-		"export": "Modu Dışa Aktar",
 		"exporting": "Dışa aktarılıyor..."
 	},
 	"globalCustomInstructions": {
