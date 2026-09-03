@@ -756,7 +756,7 @@ export class ClineProvider
 		}
 
 		webviewView.webview.html =
-			this.contextProxy.extensionMode === vscode.ExtensionMode.Development
+			this.contextProxy.extensionMode === vscode.ExtensionMode.Development && process.env.AICO_E2E !== "1"
 				? await this.getHMRHtmlContent(webviewView.webview)
 				: await this.getHtmlContent(webviewView.webview)
 
@@ -1220,6 +1220,7 @@ export class ClineProvider
 										}
 									})()
 								: undefined,
+						explicitRole: node.role,
 					})
 					node.taskId = child.taskId
 					const complete = async (_taskId: string, usage: TokenUsage) => {
@@ -2314,6 +2315,7 @@ export class ClineProvider
 			autoCondenseContextPercent: autoCondenseContextPercent ?? 100,
 			uriScheme: vscode.env.uriScheme,
 			currentTaskId: currentTask?.taskId,
+			currentTaskInstanceId: currentTask?.instanceId,
 			currentTaskItem: currentTask?.taskId ? this.taskHistoryStore.get(currentTask.taskId) : undefined,
 			clineMessages: currentTask?.clineMessages || [],
 			currentTaskTodos: currentTask?.todoList || [],
@@ -2838,6 +2840,7 @@ export class ClineProvider
 		parentTask?: Task,
 		options: CreateTaskOptions = {},
 		configuration: AiCodeOrchestratorSettings = {},
+		explicitRole?: string,
 	): Promise<Task> {
 		if (configuration) {
 			await this.setValues(configuration)
@@ -2885,17 +2888,40 @@ export class ClineProvider
 
 		// Task owns the immutable configuration used to build its API handler. Resolve the
 		// role route here, before construction, rather than only updating global UI state.
-		let effectiveApiConfiguration = apiConfiguration
+		let effectiveApiConfiguration = { ...apiConfiguration }
+		let isRoleSpecificConfig = false
 		const taskMode = configuration.mode ?? state.mode
 		const assignments = state.roleAssignments?.roles
 		// Assignments are persisted by mode slug, while orchestration may address a node
-		// by role. Preserve the same compatibility lookup used by orchestration routing.
-		const roleAssignment =
-			assignments?.[taskMode] ?? assignments?.[taskMode === "orchestrator" ? "orchestrator" : "worker"]
+		// by role. Keep the resolved role aligned with the assignment selected by fallback.
+		const requestedRole = explicitRole || taskMode
+		const fallbackRole = requestedRole === "orchestrator" ? "orchestrator" : "worker"
+		const roleToUse = assignments?.[requestedRole] ? requestedRole : fallbackRole
+		const assignment = assignments?.[roleToUse]
 
-		if (roleAssignment?.modelId || roleAssignment?.profileName) {
-			let profile = apiConfiguration
-			let profileName = activeProfileName
+		if (assignment) {
+			if (assignment?.profileName) {
+				const profile = await this.providerSettingsManager.getProfile({ name: assignment.profileName })
+				if (profile?.apiProvider) {
+					const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
+						profileId:
+							profile.id ??
+							this.getProviderProfileEntry(assignment.profileName)?.id ??
+							assignment.profileName,
+						provider: profile.apiProvider,
+						primaryModelId: getModelId(profile) ?? "",
+						role: roleToUse,
+						explicitModelId: assignment.modelId,
+						roleModels: profile.profileRoleModelSettings,
+					})
+					const modelKey =
+						modelIdKeysByProvider[profile.apiProvider as keyof typeof modelIdKeysByProvider] || "apiModelId"
+					effectiveApiConfiguration = { ...profile }
+					for (const key of modelIdKeys) delete effectiveApiConfiguration[key]
+					effectiveApiConfiguration = { ...effectiveApiConfiguration, [modelKey]: route.modelId }
+					isRoleSpecificConfig = true
+				}
+			}
 		} else {
 			this.log(
 				`[model-route:createTask] step=fallback mode=${taskMode} reason=no-role-assignment profile=${activeProfileName} provider=${apiConfiguration.apiProvider ?? "unset"} model=${getModelId(apiConfiguration) ?? "unset"}`,
@@ -2932,6 +2958,7 @@ export class ClineProvider
 			// Ensure this task is present in clineStack before startTask() emits
 			// its initial state update, so state.currentTaskId is available ASAP.
 			startTask: false,
+			isRoleSpecificConfig,
 			...options,
 		})
 
@@ -2945,8 +2972,27 @@ export class ClineProvider
 		return task
 	}
 
-	public async cancelTask(): Promise<void> {
+	public async cancelTask(taskId?: string, instanceId?: string, bypassValidation = false): Promise<void> {
 		const task = this.getCurrentTask()
+
+		console.log("[cancelTask] received:", {
+			messageTaskId: taskId,
+			messageInstanceId: instanceId,
+			currentTaskId: task?.taskId,
+			currentInstanceId: task?.instanceId,
+		})
+		console.log("[cancelTask] stack trace:", new Error().stack)
+
+		if (
+			!bypassValidation &&
+			(!taskId || !instanceId || taskId !== task?.taskId || instanceId !== task?.instanceId)
+		) {
+			console.log("[cancelTask] Ignoring cancel - task identity mismatch or missing", {
+				provided: { taskId, instanceId },
+				current: { currentTaskId: task?.taskId, currentInstanceId: task?.instanceId },
+			})
+			return
+		}
 
 		if (!task) {
 			return
@@ -3106,8 +3152,9 @@ export class ClineProvider
 		mode: string
 		workspacePath?: string
 		configuration?: AiCodeOrchestratorSettings
+		explicitRole?: string
 	}): Promise<Task> {
-		const { parentTaskId, message, initialTodos, mode, workspacePath, configuration } = params
+		const { parentTaskId, message, initialTodos, mode, workspacePath, configuration, explicitRole } = params
 
 		// Metadata-driven delegation is always enabled
 
@@ -3194,18 +3241,28 @@ export class ClineProvider
 		// Without this, the child's fire-and-forget startTask() races with step 5,
 		// and the last writer to globalState overwrites the other's changes—
 		// causing the parent's delegation fields to be lost.
-		const child = await this.createTask(
-			message,
-			undefined,
-			parent as any,
-			{
-				initialTodos,
-				initialStatus: "active",
-				startTask: false,
-				workspacePath,
-			},
-			configuration,
-		)
+		let child: Task
+		try {
+			child = await this.createTask(
+				message,
+				undefined,
+				parent as any,
+				{
+					initialTodos,
+					initialStatus: "active",
+					startTask: false,
+					workspacePath,
+				},
+				configuration,
+				explicitRole,
+			)
+		} catch (error) {
+			// Restore the parent when child creation fails so delegation is atomic.
+			if (this.clineStack.length === 0) {
+				this.clineStack.push(parent)
+			}
+			throw error
+		}
 
 		// 5) Persist parent delegation metadata BEFORE the child starts writing.
 		try {
