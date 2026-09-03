@@ -88,6 +88,13 @@ export interface ApiHandlerCreateMessageMetadata {
 	allowedFunctionNames?: string[]
 }
 
+export interface ProviderCapabilities {
+	promptCaching: boolean
+	contextCaching: boolean
+	structuredOutput: boolean
+	toolCalling: boolean
+}
+
 export interface ApiHandler {
 	/** Non-agentic completion used by bounded, machine-readable control-plane calls. */
 	completePrompt?(prompt: string): Promise<string>
@@ -99,6 +106,8 @@ export interface ApiHandler {
 	): ApiStream
 
 	getModel(): { id: string; info: ModelInfo }
+	/** Capabilities used by orchestration to select safe context optimizations. */
+	getCapabilities?(): ProviderCapabilities
 
 	/**
 	 * Counts tokens for content blocks
