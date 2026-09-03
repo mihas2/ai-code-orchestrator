@@ -85,6 +85,7 @@ import { Task } from "../task/Task"
 import { webviewMessageHandler } from "./webviewMessageHandler"
 import { OrchestrationService } from "../orchestration/service"
 import { GitIntegrationAdapter } from "../orchestration/integrationAdapter"
+import { OrchestrationSynthesisAdapter, ReviewerAdapter } from "../orchestration/reviewerAdapter"
 import { GlobalStateOrchestrationPersistence } from "../orchestration/persistence"
 import { GitWorkerWorkspaceRegistry } from "../orchestration/workerIsolation"
 import type { OrchestrationExecutor } from "../orchestration/types"
@@ -1281,6 +1282,8 @@ export class ClineProvider
 				},
 				{
 					integration: new GitIntegrationAdapter(this.cwd),
+					review: new ReviewerAdapter(),
+					synthesis: new OrchestrationSynthesisAdapter(),
 					route: { resolve: ({ node }) => this.resolveOrchestrationRoute(node) },
 				},
 			)

@@ -12,6 +12,17 @@
 		"createModeHelpText": "模式是AI Code Orchestrator的专属角色，用于定制其行为。<0>了解如何使用模式</0>或<1>自定义模式。</1>",
 		"selectMode": "搜索模式"
 	},
+	"reviewer": {
+		"name": "审查者",
+		"description": "对已完成工作的只读质量审查",
+		"readOnlyNotice": "审查者可以读取文件并运行诊断，但不能编辑文件或扩大已声明的范围。",
+		"findingSeverities": "发现严重程度：blocker、major、minor、note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator 是连接用户与专业代理并对结果负责的团队负责人。它负责目标、计划、依赖关系、工作分配、预算、质量关卡、集成和最终结果，并维护精简的汇总状态，而非完整实现记录。",
+		"whenToUse": "适用于需要分解并协调 architect、code、debug 和 reviewer、并行执行独立工作、显式规划依赖、评审、返工、受控集成和质量保证的复杂多步骤工作。",
+		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
+	},
 	"apiConfiguration": {
 		"title": "API配置",
 		"select": "选择要用于此模式的API配置",

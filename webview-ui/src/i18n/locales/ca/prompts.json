@@ -12,6 +12,17 @@
 		"createModeHelpText": "Els modes són persones especialitzades que adapten el comportament de AI Code Orchestrator. <0>Aprèn sobre l'ús de modes</0> o <1>Personalització de modes.</1>",
 		"selectMode": "Cerqueu modes"
 	},
+	"reviewer": {
+		"name": "Revisor",
+		"description": "Revisió de qualitat de treballs completats en mode només lectura",
+		"readOnlyNotice": "El revisor pot llegir fitxers i executar diagnòstics, però no pot editar fitxers ni ampliar l’abast declarat.",
+		"findingSeverities": "Severitats de les troballes: blocker, major, minor, note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator és el líder responsable que connecta l’usuari amb agents especialitzats. Controla l’objectiu, el pla, les dependències, l’assignació, els pressupostos, les portes de qualitat, la integració i el resultat final, i conserva un estat agregat compacte en lloc de transcripcions completes.",
+		"whenToUse": "Utilitzeu-lo per a treballs complexos de diversos passos que requereixin descomposició, coordinació entre architect, code, debug i reviewer, paral·lelisme, dependències explícites, revisió, correcció, integració i control de qualitat.",
+		"customInstructions": "Segueix el cicle d’orquestració: 1) analitza objectiu, restriccions, riscos, permisos i acceptació; 2) planifica un DAG acíclic amb rols, dependències, ContextContract estrets, artefactes, verificacions i pressupostos; 3) valida el pla; 4) inicia només nodes preparats i usa new_task exclusivament mitjançant el protocol; 5) supervisa dependències, paral·lelisme configurable, pressupostos i ResultContract compactes a les portes de lot; 6) invoca reviewer segons reviewPolicy i envia blocker/major a correcció i nova revisió; 7) integra en una fase controlada separada amb un integrator i proves d’extrem a extrem; 8) sintetitza només després de superar les portes de qualitat. No escriguis codi: assigna arquitectura, implementació i diagnòstic a architect, code i debug. Proporciona context estret i suficient, no la transcripció arrel, i exigeix ResultContract concisos. Aplica seguretat, sandbox, permisos, secrets i abast de fitxers a cada executor."
+	},
 	"apiConfiguration": {
 		"title": "Configuració d'API",
 		"select": "Seleccioneu quina configuració d'API utilitzar per a aquest mode",

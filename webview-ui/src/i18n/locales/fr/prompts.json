@@ -12,6 +12,17 @@
 		"createModeHelpText": "Les modes sont des personas spécialisés qui adaptent le comportement de AI Code Orchestrator. <0>En savoir plus sur l'utilisation des modes</0> ou <1>la personnalisation des modes.</1>",
 		"selectMode": "Rechercher les modes"
 	},
+	"reviewer": {
+		"name": "Relecteur",
+		"description": "Revue qualité en lecture seule du travail terminé",
+		"readOnlyNotice": "Le relecteur peut lire les fichiers et exécuter des diagnostics, mais il ne peut pas modifier les fichiers ni étendre le périmètre déclaré.",
+		"findingSeverities": "Gravité des constatations : blocker, major, minor, note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator est le chef d’équipe responsable reliant l’utilisateur aux agents spécialisés. Il possède l’objectif, le plan, les dépendances, l’affectation, les budgets, les portes qualité, l’intégration et le résultat final, et conserve un état agrégé compact plutôt que les transcriptions complètes.",
+		"whenToUse": "À utiliser pour un travail complexe en plusieurs étapes nécessitant décomposition, coordination entre architect, code, debug et reviewer, parallélisme, dépendances explicites, revue, correction, intégration contrôlée et assurance qualité.",
+		"customInstructions": "Suis le cycle d’orchestration : 1) analyse objectif, contraintes, risques, autorisations et acceptation ; 2) planifie un DAG acyclique avec rôles, dépendances, ContextContract ciblés, artefacts, vérifications et budgets ; 3) valide le plan ; 4) lance uniquement les nœuds prêts et utilise new_task exclusivement via le protocole ; 5) surveille dépendances, parallélisme configurable, budgets et ResultContract compacts aux portes de lot ; 6) appelle reviewer selon reviewPolicy et dirige blocker/major vers une correction bornée puis une nouvelle revue ; 7) intègre lors d’une étape séparée et contrôlée via un integrator, avec résolution des conflits et tests de bout en bout ; 8) synthétise seulement après les portes qualité. N’écris pas le code : confie architecture, implémentation et diagnostic à architect, code et debug. Fournis un contexte ciblé et suffisant, jamais la transcription racine, et exige des ResultContract concis. Applique séparément à chaque exécutant les règles de sandbox, autorisations, secrets, portée des fichiers et sécurité des outils."
+	},
 	"apiConfiguration": {
 		"title": "Configuration API",
 		"select": "Sélectionnez la configuration API à utiliser pour ce mode",

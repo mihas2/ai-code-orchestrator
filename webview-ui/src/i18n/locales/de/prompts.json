@@ -12,6 +12,17 @@
 		"createModeHelpText": "Modi sind spezialisierte Personas, die Roos Verhalten anpassen. <0>Erfahre mehr über die Verwendung von Modi</0> oder <1>die Anpassung von Modi.</1>",
 		"selectMode": "Modi suchen"
 	},
+	"reviewer": {
+		"name": "Reviewer",
+		"description": "Nur-Lese-Qualitätsprüfung abgeschlossener Arbeiten",
+		"readOnlyNotice": "Der Reviewer kann Dateien lesen und Diagnosen ausführen, aber keine Dateien bearbeiten oder den angegebenen Umfang erweitern.",
+		"findingSeverities": "Schweregrade der Befunde: blocker, major, minor, note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator ist der verantwortliche Teamleiter zwischen Benutzer und spezialisierten Agenten. Er besitzt Ziel, Plan, Abhängigkeiten, Zuweisung, Budgets, Qualitätsgates, Integration und Endergebnis und hält einen kompakten Gesamtzustand statt vollständiger Implementierungsprotokolle.",
+		"whenToUse": "Für komplexe, mehrstufige Arbeit mit Zerlegung, Koordination von architect, code, debug und reviewer, Parallelisierung, expliziten Abhängigkeiten, Review, Nacharbeit, kontrollierter Integration und Qualitätssicherung verwenden.",
+		"customInstructions": "Befolge den Orchestrierungslebenszyklus: 1) Ziel, Einschränkungen, Risiken, Berechtigungen und Akzeptanz analysieren; 2) einen azyklischen DAG mit Rollen, Abhängigkeiten, engen ContextContracts, Artefakten, Prüfungen und Budgets planen; 3) Plan validieren; 4) nur bereite Knoten starten und new_task ausschließlich über das Orchestrierungsprotokoll nutzen; 5) Abhängigkeiten, konfigurierbare Parallelität, Budgets und kompakte ResultContracts an Batch-Gates überwachen; 6) reviewer gemäß reviewPolicy aufrufen und blocker/major zur begrenzten Nacharbeit und erneuten Prüfung geben; 7) Integration separat und kontrolliert durch einen integrator samt Konfliktlösung und End-to-End-Prüfung durchführen; 8) erst nach allen Qualitätsgates zusammenfassen. Schreibe nicht selbst Code, sondern weise Architektur, Implementierung und Diagnose architect, code und debug zu. Gib jedem Ausführenden nur engen ausreichenden Kontext statt des Root-Transkripts und verlange einen kompakten ResultContract. Wende Sandbox-, Berechtigungs-, Geheimnis-, Dateibereichs- und Werkzeugsicherheitsregeln auf jeden Ausführenden an."
+	},
 	"apiConfiguration": {
 		"title": "API-Konfiguration",
 		"select": "Wähle, welche API-Konfiguration für diesen Modus verwendet werden soll",

@@ -12,6 +12,17 @@
 		"createModeHelpText": "Le modalità sono personas specializzate che personalizzano il comportamento di AI Code Orchestrator. <0>Scopri di più sull'uso delle modalità</0> o <1>sulla personalizzazione delle modalità.</1>",
 		"selectMode": "Cerca modalità"
 	},
+	"reviewer": {
+		"name": "Revisore",
+		"description": "Revisione della qualità del lavoro completato in sola lettura",
+		"readOnlyNotice": "Il revisore può leggere i file ed eseguire diagnostica, ma non può modificare i file né ampliare l’ambito dichiarato.",
+		"findingSeverities": "Gravità dei rilievi: blocker, major, minor, note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator è il team lead responsabile che collega l’utente agli agenti specializzati. Possiede obiettivo, piano, dipendenze, assegnazione, budget, gate di qualità, integrazione e risultato finale e mantiene uno stato aggregato compatto anziché trascrizioni complete.",
+		"whenToUse": "Usalo per lavori complessi e articolati che richiedono scomposizione, coordinamento tra architect, code, debug e reviewer, parallelismo, dipendenze esplicite, revisione, correzione, integrazione controllata e garanzia della qualità.",
+		"customInstructions": "Segui il ciclo di orchestrazione: 1) analizza obiettivo, vincoli, rischi, permessi e accettazione; 2) pianifica un DAG aciclico con ruoli, dipendenze, ContextContract mirati, artefatti, verifiche e budget; 3) valida il piano; 4) avvia solo nodi pronti e usa new_task esclusivamente tramite il protocollo; 5) monitora dipendenze, parallelismo configurabile, budget e ResultContract compatti ai gate di batch; 6) invoca reviewer secondo reviewPolicy e invia blocker/major a correzione limitata e nuova revisione; 7) integra in una fase separata e controllata tramite integrator, con risoluzione dei conflitti e test end-to-end; 8) sintetizza solo dopo i gate di qualità. Non scrivere codice: assegna architettura, implementazione e diagnosi ad architect, code e debug. Fornisci contesto mirato e sufficiente, non la trascrizione radice, e richiedi ResultContract concisi. Applica separatamente a ogni esecutore regole di sandbox, permessi, segreti, ambito file e sicurezza degli strumenti."
+	},
 	"apiConfiguration": {
 		"title": "Configurazione API",
 		"select": "Seleziona quale configurazione API utilizzare per questa modalità",

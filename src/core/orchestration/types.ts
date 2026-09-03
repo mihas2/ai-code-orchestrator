@@ -101,6 +101,8 @@ export interface OrchestrationNode {
 	maxAttempts: number
 	inputContract: ContextContract
 	outputContract?: ResultContract
+	/** Usage reported by the latest completed attempt. */
+	usage?: Partial<BudgetUsage>
 	route?: ModelRoute
 	artifactRefs: string[]
 	reviewRefs: string[]
@@ -225,14 +227,21 @@ export interface FindingProvenance {
 	detectedAt: number
 }
 export interface ReviewFinding {
+	/** Stable internal identifier; findingId and title mirror the orchestration specification. */
 	id: string
+	findingId?: string
 	severity: ReviewSeverity
 	message: string
+	title?: string
+	runId?: string
+	nodeId?: string
 	provenance: FindingProvenance
 	file?: string
+	filePath?: string
 	line?: number
 	evidence?: string
 	recommendation?: string
+	acceptanceCriterionRef?: string
 }
 export interface ReviewResult {
 	findings: ReviewFinding[]
