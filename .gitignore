@@ -27,6 +27,8 @@ AGENTS.local.md
 .vscode/aico-debug-extensions/
 
 # Docs
+# Documentation build artifacts
+/doc/
 docs/_site/
 
 # Dotenv
