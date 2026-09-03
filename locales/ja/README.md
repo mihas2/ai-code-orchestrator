@@ -1,72 +1,64 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=AicoVeterinaryInc.ai-code-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/AI Code Orchestrator"><img src="https://img.shields.io/badge/AI Code Orchestrator-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
+
 # AI Code Orchestrator
 
-> あなたのエディタの中に、AIで強化された開発チームを
+> AIを活用した開発チームを、あなたのエディターに。
 
-<details>
-  <summary>🌐 利用可能な言語</summary>
+AI Code Orchestratorは、設定可能なAIエージェントを使ってソフトウェアの計画、実装、レビュー、説明を行うVS Code拡張機能兼CLIです。チャット、コードアクション、ターミナルワークフロー、カスタムロール、MCP連携、マルチエージェントオーケストレーションを1つのワークスペースに統合します。
 
-- [English](../../README.md)
-- [Català](../ca/README.md)
-- [Deutsch](../de/README.md)
-- [Español](../es/README.md)
-- [Français](../fr/README.md)
-- [हिंदी](../hi/README.md)
-- [Bahasa Indonesia](../id/README.md)
-- [Italiano](../it/README.md)
-- [日本語](../ja/README.md)
-- [한국어](../ko/README.md)
-- [Nederlands](../nl/README.md)
-- [Polski](../pl/README.md)
-- [Português (BR)](../pt-BR/README.md)
-- [Русский](../ru/README.md)
-- [Türkçe](../tr/README.md)
-- [Tiếng Việt](../vi/README.md)
-- [简体中文](../zh-CN/README.md)
-- [繁體中文](../zh-TW/README.md)
-- ...
-      </details>
+## 機能
 
----
+- 自然言語の要件からコードを生成・変更
+- アーキテクチャを設計し、作業を連携されたタスクへ分割
+- 依存関係を考慮したDAG、並列実行エージェント、レビュー段階、予算、制御された統合による作業のオーケストレーション
+- **コンテキスト最適化** — インテリジェントなコンテキスト管理により、効果を維持しながらトークン使用量とコストを削減
+- 変更のレビュー、障害の診断、既存コードの改善
+- ファイル、ターミナル、画像、外部MCPツールの操作
+- Vercel AI GatewayやUnboundを含むプロバイダー、モデル、権限、カスタムロールの設定
+- 個々のロールへのモデル割り当てと、上書きがない場合のプライマリモデルからの自動継承
+- エディターまたはコマンドラインからタスクを継続
 
-## AI Code Orchestratorがあなたのためにできること
+## ロール
 
-- 自然言語の記述からコードを生成
-- モードで適応：コード、アーキテクト、質問、デバッグ、カスタムモード
-- 既存のコードのリファクタリングとデバッグ
-- ドキュメントの作成と更新
-- コードベースに関する質問への回答
-- 反復的なタスクの自動化
-- MCPサーバーの活用
+AI Code Orchestratorは作業内容に適応します：
 
-## モード
+- **Code** — 変更の実装とプロジェクトファイルの操作
+- **Architect** — システム、仕様、移行の設計
+- **Ask** — 質問への回答とコードの説明
+- **Debug** — 根本原因の特定と修正の検証
+- **Reviewer** — 変更を検証し、問題を特定して品質を確保
+- **Orchestrator** — 依存関係を考慮したタスクグラフと並列エージェントの調整（デフォルトロール）
+- **Custom** — チーム向けの専門的なワークフローを作成
 
-AI Code Orchestratorは、あなたの働き方に合わせるように適応します。
+各ロールには独自のモデル設定を使用できます。ロール固有のモデルが割り当てられていない場合はプライマリモデルを継承するため、ワークフロー全体の能力、速度、コストを簡単に調整できます。
 
-- コードモード：日常的なコーディング、編集、ファイル操作
-- アーキテクトモード：システム、仕様、移行の計画
-- 質問モード：迅速な回答、説明、ドキュメント
-- デバッグモード：問題の追跡、ログの追加、根本原因の特定
-- カスタムモード：チームやワークフローに特化したモードの構築
+## ドキュメント
 
-詳しくは: [モードの使い方](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [カスタムモード](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)
+オーケストレーション仕様を含むプロジェクトドキュメントは[`apps/docs`](../../apps/docs)を参照してください。
 
-## リソース
+## インストール
 
-- **[ドキュメント](https://aiorchestrator.github.io/ai-code-orchestrator/):** AI Code Orchestratorのインストール、設定、習熟のための公式ガイド。
-- **[GitHub Issues](https://github.com/AIOrchestrator/ai-code-orchestrator/issues):** バグを報告し、開発を追跡します。
+VS Code Marketplaceから**AI Code Orchestrator**拡張機能をインストールするか、ローカルでVSIXをビルドします：
 
----
+```bash
+pnpm install
+pnpm vsix
+```
 
-## 免責事項
+開発時にはモノレポからCLIを利用できます：
 
-**ご注意ください**：AI Code Orchestrator, Inc.は、AI Code Orchestrator、関連するサードパーティのツール、またはそれらから生じる出力に関連して提供または利用可能にされたコード、モデル、またはその他のツールに関して、いかなる表明も保証も行いません。お客様は、そのようなツール或いは出力の使用に関連する**すべてのリスク**を負うものとします。そのようなツールは**「現状のまま」**および**「利用可能な限り」**のベースで提供されます。そのようなリスクには、知的財産権の侵害、サイバー脆弱性または攻撃、バイアス、不正確さ、エラー、欠陥、ウイルス、ダウンタイム、財産の損失または損害、および/または人身傷害が含まれますが、これらに限定されません。お客様は、そのようなツールまたは出力の使用（合法性、適切性、およびその結果を含むがこれらに限定されない）について単独で責任を負います。
+```bash
+pnpm --filter @ai-code-orchestrator/cli dev
+```
 
----
+既存の連携との互換性を保つため、パッケージスコープと従来のコマンド識別子は維持されています。
+
+## 帰属
+
+AI Code Orchestratorは[Roo Code](https://github.com/RooCodeInc/Roo-Code)を基にしています。既存の連携が引き続き動作するよう、一部の互換APIと識別子を維持しています。
 
 ## ライセンス
 
-[Apache 2.0 © 2025 AI Code Orchestrator, Inc.](../../LICENSE)
+[Apache 2.0](../../LICENSE)

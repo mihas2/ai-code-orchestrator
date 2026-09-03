@@ -1,72 +1,64 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=AicoVeterinaryInc.ai-code-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/AI Code Orchestrator"><img src="https://img.shields.io/badge/AI Code Orchestrator-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
+
 # AI Code Orchestrator
 
-> 你的 AI 驱动开发团队，就在你的编辑器里
+> 你的 AI 驱动开发团队，就在你的编辑器里。
 
-<details>
-  <summary>🌐 可用语言</summary>
+AI Code Orchestrator 是一个 VS Code 扩展和 CLI，借助可配置的 AI 代理规划、实现、审查和解释软件。它将聊天、代码操作、终端工作流、自定义角色、MCP 集成和多代理编排整合到一个工作区中。
 
-- [English](../../README.md)
-- [Català](../ca/README.md)
-- [Deutsch](../de/README.md)
-- [Español](../es/README.md)
-- [Français](../fr/README.md)
-- [हिंदी](../hi/README.md)
-- [Bahasa Indonesia](../id/README.md)
-- [Italiano](../it/README.md)
-- [日本語](../ja/README.md)
-- [한국어](../ko/README.md)
-- [Nederlands](../nl/README.md)
-- [Polski](../pl/README.md)
-- [Português (BR)](../pt-BR/README.md)
-- [Русский](../ru/README.md)
-- [Türkçe](../tr/README.md)
-- [Tiếng Việt](../vi/README.md)
-- [简体中文](../zh-CN/README.md)
-- [繁體中文](../zh-TW/README.md)
-- ...
-      </details>
+## 功能
 
----
+- 根据自然语言需求生成和修改代码
+- 规划架构，并将工作拆分为协调任务
+- 以依赖感知的 DAG 编排工作，支持并行执行器、审查阶段、预算和受控集成
+- **上下文优化** — 智能上下文管理在保持效能的同时减少令牌用量和成本
+- 审查变更、诊断故障并改进现有代码
+- 使用文件、终端、图像和外部 MCP 工具
+- 配置包括 Vercel AI Gateway 和 Unbound 在内的提供商、模型、权限和自定义角色
+- 为各个角色分配模型；未配置覆盖时自动继承主模型
+- 从编辑器或命令行继续任务
 
-## AI Code Orchestrator 能为您做什么？
+## 角色
 
-- 从自然语言描述生成代码
-- 使用模式进行调整：代码、架构师、提问、调试和自定义模式
-- 重构和调试现有代码
-- 编写和更新文档
-- 回答关于您的代码库的问题
-- 自动化重复性任务
-- 使用 MCP 服务器
+AI Code Orchestrator 会适应当前工作：
 
-## 模式
+- **Code** — 实现变更并操作项目文件
+- **Architect** — 设计系统、规范和迁移方案
+- **Ask** — 回答问题并解释代码
+- **Debug** — 定位根本原因并验证修复
+- **Reviewer** — 验证变更、识别问题并确保质量
+- **Orchestrator** — 协调依赖感知的任务图和并行代理；这是默认角色
+- **Custom** — 为团队创建专用工作流
 
-AI Code Orchestrator 适应您的工作方式，而不是相反：
+每个角色都可以使用独立的模型配置。如果没有指定角色模型，就会继承主模型，便于在工作流中平衡能力、速度和成本。
 
-- 代码模式：日常编码、编辑和文件操作
-- 架构师模式：规划系统、规范和迁移
-- 提问模式：快速回答、解释和文档
-- 调试模式：跟踪问题、添加日志、隔离根本原因
-- 自定义模式：为您的团队或工作流程构建专门的模式
+## 文档
 
-了解更多：[使用模式](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [自定义模式](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)
+项目文档（包括编排规范）位于 [`apps/docs`](../../apps/docs)。
 
-## 资源
+## 安装
 
-- **[文档](https://aiorchestrator.github.io/ai-code-orchestrator/):** 安装、配置和掌握 AI Code Orchestrator 的官方指南。
-- **[GitHub 问题](https://github.com/AIOrchestrator/ai-code-orchestrator/issues):** 报告错误并跟踪开发。
+从 VS Code Marketplace 安装 **AI Code Orchestrator** 扩展，或在本地构建 VSIX：
 
----
+```bash
+pnpm install
+pnpm vsix
+```
 
-## 免责声明
+开发期间可从 monorepo 使用 CLI：
 
-**请注意**，AI Code Orchestrator, Inc. **不**对与 AI Code Orchestrator 相关的任何代码、模型或其他工具、任何相关的第三方工具或任何由此产生的输出作出任何陈述或保证。您承担使用任何此类工具或输出的**所有风险**；此类工具均按**“原样”**和**“可用”**的基础提供。此类风险可能包括但不限于知识产权侵权、网络漏洞或攻击、偏见、不准确、错误、缺陷、病毒、停机、财产损失或损害和/或人身伤害。您对自己使用任何此类工具或输出负全部责任（包括但不限于其合法性、适当性和结果）。
+```bash
+pnpm --filter @ai-code-orchestrator/cli dev
+```
 
----
+为兼容现有集成，包作用域和旧版命令标识符会继续保留。
+
+## 归属
+
+AI Code Orchestrator 基于 [Roo Code](https://github.com/RooCodeInc/Roo-Code) 构建。实现保留了部分兼容 API 和标识符，以确保现有集成继续运行。
 
 ## 许可证
 
-[Apache 2.0 © 2025 AI Code Orchestrator, Inc.](../../LICENSE)
+[Apache 2.0](../../LICENSE)

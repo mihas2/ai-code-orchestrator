@@ -1,6 +1,6 @@
 {
 	"extension.displayName": "AI Orchestrator",
-	"extension.description": "Een compleet ontwikkelteam van AI-agents in je editor.",
+	"extension.description": "VS Code-extensie en CLI met de modi Architect, Code, Ask, Debug en Orchestrator voor taakorkestratie.",
 	"views.contextMenu.label": "AI Orchestrator",
 	"views.terminalMenu.label": "AI Orchestrator",
 	"views.activitybar.title": "AI Orchestrator",

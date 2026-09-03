@@ -547,7 +547,7 @@
 			"maxTokensLabel": "Maximale Ausgabe-Tokens",
 			"maxTokensDescription": "Maximale Anzahl an Ausgabe-Tokens für Claude Code-Antworten. Standard ist 8000."
 		},
-		"retiredAicoProviderMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredAicoProviderMessage": "Der AI Code Orchestrator Router ist nicht mehr verfügbar. Bitte wählen Sie in den Einstellungen Ihres API-Profils einen anderen Anbieter aus."
 	},
 	"checkpoints": {
 		"timeout": {

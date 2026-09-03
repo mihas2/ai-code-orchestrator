@@ -547,7 +547,7 @@
 			"maxTokensLabel": "अधिकतम आउटपुट टोकन",
 			"maxTokensDescription": "Claude Code प्रतिक्रियाओं के लिए आउटपुट टोकन की अधिकतम संख्या। डिफ़ॉल्ट 8000 है।"
 		},
-		"retiredAicoProviderMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredAicoProviderMessage": "AI Code Orchestrator Router अब उपलब्ध नहीं है। कृपया अपनी API प्रोफ़ाइल सेटिंग में कोई अन्य प्रदाता चुनें।"
 	},
 	"checkpoints": {
 		"timeout": {
@@ -997,31 +997,31 @@
 		}
 	},
 	"roles": {
-		"title": "General",
-		"alwaysOn": "Orchestration is always on",
-		"intro": "Start in the Orchestrator role. Choose a profile above, then assign specialist models or keep them inherited from the profile primary model.",
-		"modelAssignments": "Role model assignments",
-		"modelHint": "Available models come from the active profile. Primary: {{model}}",
-		"notConfigured": "not configured",
-		"inheritPrimary": "Inherit primary model",
-		"save": "Save role settings",
+		"title": "सामान्य",
+		"alwaysOn": "ऑर्केस्ट्रेशन हमेशा चालू रहता है",
+		"intro": "ऑर्केस्ट्रेटर भूमिका में शुरू करें। ऊपर एक प्रोफ़ाइल चुनें, फिर विशेषज्ञ मॉडल असाइन करें या उन्हें प्रोफ़ाइल के प्राथमिक मॉडल से इनहेरिट होने दें।",
+		"modelAssignments": "भूमिका मॉडल असाइनमेंट",
+		"modelHint": "उपलब्ध मॉडल सक्रिय प्रोफ़ाइल से आते हैं। प्राथमिक: {{model}}",
+		"notConfigured": "कॉन्फ़िगर नहीं किया गया",
+		"inheritPrimary": "प्राथमिक मॉडल इनहेरिट करें",
+		"save": "भूमिका सेटिंग सहेजें",
 		"fields": {
-			"maxParallelWorkers": "Max parallel workers",
-			"maxDepth": "Max depth",
-			"maxReworkAttempts": "Max rework attempts",
-			"timeoutMs": "Timeout (ms)",
-			"maxRunTokens": "Max run tokens",
-			"maxRunCost": "Max run cost",
-			"maxChildTokens": "Max child tokens",
-			"maxChildCost": "Max child cost",
-			"contextPolicy": "Context",
-			"conflictPolicy": "Conflict handling",
-			"reviewPolicy": "Review",
-			"requirePlanApproval": "Require plan approval",
-			"requireIntegrationApproval": "Require integration approval",
-			"allowWorkerCommands": "Allow worker commands",
-			"allowWorkerMcp": "Allow worker MCP",
-			"persistTranscripts": "Persist transcripts"
+			"maxParallelWorkers": "अधिकतम समानांतर वर्कर",
+			"maxDepth": "अधिकतम गहराई",
+			"maxReworkAttempts": "पुनःकार्य के अधिकतम प्रयास",
+			"timeoutMs": "समय-सीमा (मि.से.)",
+			"maxRunTokens": "रन के अधिकतम टोकन",
+			"maxRunCost": "रन की अधिकतम लागत",
+			"maxChildTokens": "चाइल्ड के अधिकतम टोकन",
+			"maxChildCost": "चाइल्ड की अधिकतम लागत",
+			"contextPolicy": "संदर्भ",
+			"conflictPolicy": "विरोध प्रबंधन",
+			"reviewPolicy": "समीक्षा",
+			"requirePlanApproval": "योजना अनुमोदन आवश्यक",
+			"requireIntegrationApproval": "एकीकरण अनुमोदन आवश्यक",
+			"allowWorkerCommands": "वर्कर कमांड की अनुमति दें",
+			"allowWorkerMcp": "वर्कर MCP की अनुमति दें",
+			"persistTranscripts": "प्रतिलेख सहेजें"
 		}
 	}
 }

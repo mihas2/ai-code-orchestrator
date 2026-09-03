@@ -547,7 +547,7 @@
 			"maxTokensLabel": "最大输出 Token",
 			"maxTokensDescription": "Claude Code 响应的最大输出 Token 数量。默认为 8000。"
 		},
-		"retiredAicoProviderMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredAicoProviderMessage": "AI Code Orchestrator Router 已不再可用。请在 API 配置文件设置中选择其他提供商。"
 	},
 	"checkpoints": {
 		"timeout": {
@@ -997,31 +997,31 @@
 		}
 	},
 	"roles": {
-		"title": "General",
-		"alwaysOn": "Orchestration is always on",
-		"intro": "Start in the Orchestrator role. Choose a profile above, then assign specialist models or keep them inherited from the profile primary model.",
-		"modelAssignments": "Role model assignments",
-		"modelHint": "Available models come from the active profile. Primary: {{model}}",
-		"notConfigured": "not configured",
-		"inheritPrimary": "Inherit primary model",
-		"save": "Save role settings",
+		"title": "常规",
+		"alwaysOn": "编排始终开启",
+		"intro": "从编排器角色开始。请在上方选择配置文件，然后分配专用模型，或让其继承配置文件的主模型。",
+		"modelAssignments": "角色模型分配",
+		"modelHint": "可用模型来自当前配置文件。主模型：{{model}}",
+		"notConfigured": "未配置",
+		"inheritPrimary": "继承主模型",
+		"save": "保存角色设置",
 		"fields": {
-			"maxParallelWorkers": "Max parallel workers",
-			"maxDepth": "Max depth",
-			"maxReworkAttempts": "Max rework attempts",
-			"timeoutMs": "Timeout (ms)",
-			"maxRunTokens": "Max run tokens",
-			"maxRunCost": "Max run cost",
-			"maxChildTokens": "Max child tokens",
-			"maxChildCost": "Max child cost",
-			"contextPolicy": "Context",
-			"conflictPolicy": "Conflict handling",
-			"reviewPolicy": "Review",
-			"requirePlanApproval": "Require plan approval",
-			"requireIntegrationApproval": "Require integration approval",
-			"allowWorkerCommands": "Allow worker commands",
-			"allowWorkerMcp": "Allow worker MCP",
-			"persistTranscripts": "Persist transcripts"
+			"maxParallelWorkers": "最大并行工作器数",
+			"maxDepth": "最大深度",
+			"maxReworkAttempts": "最大返工次数",
+			"timeoutMs": "超时（毫秒）",
+			"maxRunTokens": "单次运行最大 Token 数",
+			"maxRunCost": "单次运行最大成本",
+			"maxChildTokens": "子任务最大 Token 数",
+			"maxChildCost": "子任务最大成本",
+			"contextPolicy": "上下文",
+			"conflictPolicy": "冲突处理",
+			"reviewPolicy": "审查",
+			"requirePlanApproval": "需要计划批准",
+			"requireIntegrationApproval": "需要集成批准",
+			"allowWorkerCommands": "允许工作器执行命令",
+			"allowWorkerMcp": "允许工作器使用 MCP",
+			"persistTranscripts": "保留记录"
 		}
 	}
 }

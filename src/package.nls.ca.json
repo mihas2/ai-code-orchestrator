@@ -1,6 +1,6 @@
 {
 	"extension.displayName": "AI Orchestrator",
-	"extension.description": "Un equip complet de desenvolupament d'agents d'IA al teu editor.",
+	"extension.description": "Extensio de VS Code i CLI amb els modes Architect, Code, Ask, Debug i Orchestrator per a l’orquestració de tasques.",
 	"command.newTask.title": "Nova Tasca",
 	"command.explainCode.title": "Explicar Codi",
 	"command.fixCode.title": "Corregir Codi",
@@ -34,7 +34,7 @@
 	"settings.vsCodeLmModelSelector.family.description": "La família del model de llenguatge (p. ex. gpt-4)",
 	"settings.customStoragePath.description": "Ruta d'emmagatzematge personalitzada. Deixeu-la buida per utilitzar la ubicació predeterminada. Admet rutes absolutes (p. ex. 'D:\\AIOrchestratorStorage')",
 	"settings.enableCodeActions.description": "Habilitar correccions ràpides de AI Orchestrator.",
-	"settings.autoImportSettingsPath.description": "Ruta a un fitxer de configuració de AiCodeOrchestrator per importar automàticament en iniciar l'extensió. Admet rutes absolutes i rutes relatives al directori d'inici (per exemple, '~/Documents/ai-code-orchestrator-settings.json'). Deixeu-ho en blanc per desactivar la importació automàtica.",
+	"settings.autoImportSettingsPath.description": "Ruta a un fitxer de configuració de AI Code Orchestrator per importar automàticament en iniciar l'extensió. Admet rutes absolutes i rutes relatives al directori d'inici (per exemple, '~/Documents/ai-code-orchestrator-settings.json'). Deixeu-ho en blanc per desactivar la importació automàtica.",
 	"settings.maximumIndexedFilesForFileSearch.description": "Nombre màxim de fitxers per indexar per a la funció de cerca de fitxers @. Valors més alts proporcionen millors resultats de cerca en projectes grans però poden utilitzar més memòria. Per defecte: 10.000.",
 	"settings.useAgentRules.description": "Activa la càrrega de fitxers AGENTS.md per a regles específiques de l'agent (vegeu https://agent-rules.org/)",
 	"settings.apiRequestTimeout.description": "Temps màxim en segons per esperar les respostes de l'API (0 = sense temps d'espera, 1-3600s, per defecte: 600s). Es recomanen valors més alts per a proveïdors locals com LM Studio i Ollama que poden necessitar més temps de processament.",

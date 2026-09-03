@@ -547,7 +547,7 @@
 			"maxTokensLabel": "최대 출력 토큰",
 			"maxTokensDescription": "Claude Code 응답의 최대 출력 토큰 수. 기본값은 8000입니다."
 		},
-		"retiredAicoProviderMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredAicoProviderMessage": "AI Code Orchestrator Router는 더 이상 사용할 수 없습니다. API 프로필 설정에서 다른 공급자를 선택하세요."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -997,31 +997,31 @@
 		}
 	},
 	"roles": {
-		"title": "General",
-		"alwaysOn": "Orchestration is always on",
-		"intro": "Start in the Orchestrator role. Choose a profile above, then assign specialist models or keep them inherited from the profile primary model.",
-		"modelAssignments": "Role model assignments",
-		"modelHint": "Available models come from the active profile. Primary: {{model}}",
-		"notConfigured": "not configured",
-		"inheritPrimary": "Inherit primary model",
-		"save": "Save role settings",
+		"title": "일반",
+		"alwaysOn": "오케스트레이션은 항상 켜져 있습니다",
+		"intro": "오케스트레이터 역할로 시작합니다. 위에서 프로필을 선택한 다음 전문 모델을 할당하거나 프로필의 기본 모델을 상속하도록 유지하세요.",
+		"modelAssignments": "역할별 모델 할당",
+		"modelHint": "사용 가능한 모델은 활성 프로필에서 가져옵니다. 기본: {{model}}",
+		"notConfigured": "구성되지 않음",
+		"inheritPrimary": "기본 모델 상속",
+		"save": "역할 설정 저장",
 		"fields": {
-			"maxParallelWorkers": "Max parallel workers",
-			"maxDepth": "Max depth",
-			"maxReworkAttempts": "Max rework attempts",
-			"timeoutMs": "Timeout (ms)",
-			"maxRunTokens": "Max run tokens",
-			"maxRunCost": "Max run cost",
-			"maxChildTokens": "Max child tokens",
-			"maxChildCost": "Max child cost",
-			"contextPolicy": "Context",
-			"conflictPolicy": "Conflict handling",
-			"reviewPolicy": "Review",
-			"requirePlanApproval": "Require plan approval",
-			"requireIntegrationApproval": "Require integration approval",
-			"allowWorkerCommands": "Allow worker commands",
-			"allowWorkerMcp": "Allow worker MCP",
-			"persistTranscripts": "Persist transcripts"
+			"maxParallelWorkers": "최대 병렬 워커 수",
+			"maxDepth": "최대 깊이",
+			"maxReworkAttempts": "최대 재작업 횟수",
+			"timeoutMs": "시간 제한(ms)",
+			"maxRunTokens": "실행당 최대 토큰",
+			"maxRunCost": "실행당 최대 비용",
+			"maxChildTokens": "하위 작업 최대 토큰",
+			"maxChildCost": "하위 작업 최대 비용",
+			"contextPolicy": "컨텍스트",
+			"conflictPolicy": "충돌 처리",
+			"reviewPolicy": "검토",
+			"requirePlanApproval": "계획 승인 필요",
+			"requireIntegrationApproval": "통합 승인 필요",
+			"allowWorkerCommands": "워커 명령 허용",
+			"allowWorkerMcp": "워커 MCP 허용",
+			"persistTranscripts": "대화 기록 유지"
 		}
 	}
 }

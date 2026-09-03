@@ -547,7 +547,7 @@
 			"maxTokensLabel": "Maksimum Çıktı Token sayısı",
 			"maxTokensDescription": "Claude Code yanıtları için maksimum çıktı token sayısı. Varsayılan 8000'dir."
 		},
-		"retiredAicoProviderMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredAicoProviderMessage": "AI Code Orchestrator Router artık kullanılamıyor. API profili ayarlarınızdan başka bir sağlayıcı seçin."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -997,31 +997,31 @@
 		}
 	},
 	"roles": {
-		"title": "General",
-		"alwaysOn": "Orchestration is always on",
-		"intro": "Start in the Orchestrator role. Choose a profile above, then assign specialist models or keep them inherited from the profile primary model.",
-		"modelAssignments": "Role model assignments",
-		"modelHint": "Available models come from the active profile. Primary: {{model}}",
-		"notConfigured": "not configured",
-		"inheritPrimary": "Inherit primary model",
-		"save": "Save role settings",
+		"title": "Genel",
+		"alwaysOn": "Orkestrasyon her zaman açıktır",
+		"intro": "Orkestratör rolünde başlayın. Yukarıdan bir profil seçin, ardından uzman modeller atayın veya profilin birincil modelini devralmalarını sağlayın.",
+		"modelAssignments": "Rol modeli atamaları",
+		"modelHint": "Kullanılabilir modeller etkin profilden gelir. Birincil: {{model}}",
+		"notConfigured": "yapılandırılmadı",
+		"inheritPrimary": "Birincil modeli devral",
+		"save": "Rol ayarlarını kaydet",
 		"fields": {
-			"maxParallelWorkers": "Max parallel workers",
-			"maxDepth": "Max depth",
-			"maxReworkAttempts": "Max rework attempts",
-			"timeoutMs": "Timeout (ms)",
-			"maxRunTokens": "Max run tokens",
-			"maxRunCost": "Max run cost",
-			"maxChildTokens": "Max child tokens",
-			"maxChildCost": "Max child cost",
-			"contextPolicy": "Context",
-			"conflictPolicy": "Conflict handling",
-			"reviewPolicy": "Review",
-			"requirePlanApproval": "Require plan approval",
-			"requireIntegrationApproval": "Require integration approval",
-			"allowWorkerCommands": "Allow worker commands",
-			"allowWorkerMcp": "Allow worker MCP",
-			"persistTranscripts": "Persist transcripts"
+			"maxParallelWorkers": "Maksimum paralel çalışan",
+			"maxDepth": "Maksimum derinlik",
+			"maxReworkAttempts": "Maksimum yeniden çalışma denemesi",
+			"timeoutMs": "Zaman aşımı (ms)",
+			"maxRunTokens": "Maksimum çalıştırma tokenı",
+			"maxRunCost": "Maksimum çalıştırma maliyeti",
+			"maxChildTokens": "Maksimum alt görev tokenı",
+			"maxChildCost": "Maksimum alt görev maliyeti",
+			"contextPolicy": "Bağlam",
+			"conflictPolicy": "Çakışma yönetimi",
+			"reviewPolicy": "İnceleme",
+			"requirePlanApproval": "Plan onayı gerektir",
+			"requireIntegrationApproval": "Entegrasyon onayı gerektir",
+			"allowWorkerCommands": "Çalışan komutlarına izin ver",
+			"allowWorkerMcp": "Çalışan MCP kullanımına izin ver",
+			"persistTranscripts": "Transkriptleri sakla"
 		}
 	}
 }

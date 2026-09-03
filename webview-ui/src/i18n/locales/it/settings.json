@@ -547,7 +547,7 @@
 			"maxTokensLabel": "Token di output massimi",
 			"maxTokensDescription": "Numero massimo di token di output per le risposte di Claude Code. Il valore predefinito è 8000."
 		},
-		"retiredAicoProviderMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredAicoProviderMessage": "AI Code Orchestrator Router non è più disponibile. Seleziona un altro provider nelle impostazioni del profilo API."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -997,31 +997,31 @@
 		}
 	},
 	"roles": {
-		"title": "General",
-		"alwaysOn": "Orchestration is always on",
-		"intro": "Start in the Orchestrator role. Choose a profile above, then assign specialist models or keep them inherited from the profile primary model.",
-		"modelAssignments": "Role model assignments",
-		"modelHint": "Available models come from the active profile. Primary: {{model}}",
-		"notConfigured": "not configured",
-		"inheritPrimary": "Inherit primary model",
-		"save": "Save role settings",
+		"title": "Generale",
+		"alwaysOn": "L'orchestrazione è sempre attiva",
+		"intro": "Inizia nel ruolo di Orchestratore. Scegli un profilo qui sopra, quindi assegna modelli specialistici oppure mantieni l'ereditarietà dal modello principale del profilo.",
+		"modelAssignments": "Assegnazioni dei modelli ai ruoli",
+		"modelHint": "I modelli disponibili provengono dal profilo attivo. Principale: {{model}}",
+		"notConfigured": "non configurato",
+		"inheritPrimary": "Eredita il modello principale",
+		"save": "Salva le impostazioni dei ruoli",
 		"fields": {
-			"maxParallelWorkers": "Max parallel workers",
-			"maxDepth": "Max depth",
-			"maxReworkAttempts": "Max rework attempts",
+			"maxParallelWorkers": "Numero massimo di worker paralleli",
+			"maxDepth": "Profondità massima",
+			"maxReworkAttempts": "Tentativi massimi di rielaborazione",
 			"timeoutMs": "Timeout (ms)",
-			"maxRunTokens": "Max run tokens",
-			"maxRunCost": "Max run cost",
-			"maxChildTokens": "Max child tokens",
-			"maxChildCost": "Max child cost",
-			"contextPolicy": "Context",
-			"conflictPolicy": "Conflict handling",
-			"reviewPolicy": "Review",
-			"requirePlanApproval": "Require plan approval",
-			"requireIntegrationApproval": "Require integration approval",
-			"allowWorkerCommands": "Allow worker commands",
-			"allowWorkerMcp": "Allow worker MCP",
-			"persistTranscripts": "Persist transcripts"
+			"maxRunTokens": "Token massimi dell'esecuzione",
+			"maxRunCost": "Costo massimo dell'esecuzione",
+			"maxChildTokens": "Token massimi delle attività secondarie",
+			"maxChildCost": "Costo massimo delle attività secondarie",
+			"contextPolicy": "Contesto",
+			"conflictPolicy": "Gestione dei conflitti",
+			"reviewPolicy": "Revisione",
+			"requirePlanApproval": "Richiedi l'approvazione del piano",
+			"requireIntegrationApproval": "Richiedi l'approvazione dell'integrazione",
+			"allowWorkerCommands": "Consenti comandi ai worker",
+			"allowWorkerMcp": "Consenti MCP ai worker",
+			"persistTranscripts": "Conserva le trascrizioni"
 		}
 	}
 }

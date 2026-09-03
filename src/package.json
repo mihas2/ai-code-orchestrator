@@ -30,7 +30,6 @@
 		"Testing"
 	],
 	"keywords": [
-		"cline",
 		"claude",
 		"dev",
 		"mcp",
@@ -42,8 +41,11 @@
 		"sonnet",
 		"ai",
 		"llama",
-		"aico code",
-		"aicodeorchestrator"
+		"orchestration",
+		"multi-agent",
+		"delegation",
+		"task-decomposition",
+		"parallel-execution"
 	],
 	"activationEvents": [
 		"onLanguage",

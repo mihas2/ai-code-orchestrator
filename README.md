@@ -2,38 +2,45 @@
   <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
 
-# AI Orchestrator
+# AI Code Orchestrator
 
 > Your AI-powered development team, right in your editor.
 
-AI Orchestrator is a VS Code extension and CLI for planning, implementing, reviewing, and explaining software with configurable AI agents. It combines chat, code actions, terminal workflows, custom modes, MCP integrations, and multi-agent orchestration in one workspace.
+AI Code Orchestrator is a VS Code extension and CLI for planning, implementing, reviewing, and explaining software with configurable AI agents. It combines chat, code actions, terminal workflows, custom roles, MCP integrations, and multi-agent orchestration in one workspace.
 
 ## Capabilities
 
 - Generate and modify code from natural-language requirements
 - Plan architecture and break work into coordinated tasks
+- Orchestrate work as a dependency-aware DAG with parallel executors, review stages, budgets, and controlled integration
+- **Context optimization** - intelligent context management reduces token usage and costs while maintaining effectiveness
 - Review changes, diagnose failures, and improve existing code
 - Work with files, terminals, images, and external MCP tools
-- Configure providers, models, permissions, and custom modes
+- Configure providers including Vercel AI Gateway and Unbound, models, permissions, and custom roles
+- Assign models to individual roles, with automatic inheritance from the primary model when no override is configured
 - Continue tasks from the editor or the command line
 
-## Modes
+## Roles
 
-AI Orchestrator adapts to the work at hand:
+AI Code Orchestrator adapts to the work at hand:
 
 - **Code** - implement changes and operate on project files
 - **Architect** - design systems, specifications, and migrations
 - **Ask** - answer questions and explain code
 - **Debug** - isolate root causes and validate fixes
+- **Reviewer** - validate changes, identify issues, and ensure quality
+- **Orchestrator** - coordinate dependency-aware task graphs and parallel agents; this is the default role
 - **Custom** - create specialized workflows for a team
+
+Each role can use its own model configuration. When no role-specific model is assigned, it inherits the primary model, making it easy to balance capability, speed, and cost across a workflow.
 
 ## Documentation
 
-See the project documentation in `apps/docs` and the orchestration specification in `docs/`.
+See the project documentation, including the orchestration specification, in [`apps/docs`](./apps/docs).
 
 ## Installation
 
-Install the **AI Orchestrator** extension from the VS Code Marketplace, or build a VSIX locally:
+Install the **AI Code Orchestrator** extension from the VS Code Marketplace, or build a VSIX locally:
 
 ```bash
 pnpm install
@@ -43,14 +50,14 @@ pnpm vsix
 The CLI is available from the monorepo during development:
 
 ```bash
-pnpm --filter @AI Orchestrator/cli dev
+pnpm --filter @ai-code-orchestrator/cli dev
 ```
 
 The package scope and legacy command identifiers are retained for compatibility with existing integrations.
 
 ## Attribution
 
-AI Orchestrator was created based on AI Orchestrator Code. The implementation retains selected compatible APIs and identifiers so existing integrations can continue to work.
+AI Code Orchestrator is based on [Roo Code](https://github.com/RooCodeInc/Roo-Code). The implementation retains selected compatible APIs and identifiers so existing integrations can continue to work.
 
 ## License
 

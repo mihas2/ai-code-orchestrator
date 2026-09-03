@@ -547,7 +547,7 @@
 			"maxTokensLabel": "Số token đầu ra tối đa",
 			"maxTokensDescription": "Số lượng token đầu ra tối đa cho các phản hồi của Claude Code. Mặc định là 8000."
 		},
-		"retiredAicoProviderMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredAicoProviderMessage": "AI Code Orchestrator Router không còn khả dụng. Vui lòng chọn nhà cung cấp khác trong phần cài đặt hồ sơ API."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -997,31 +997,31 @@
 		}
 	},
 	"roles": {
-		"title": "General",
-		"alwaysOn": "Orchestration is always on",
-		"intro": "Start in the Orchestrator role. Choose a profile above, then assign specialist models or keep them inherited from the profile primary model.",
-		"modelAssignments": "Role model assignments",
-		"modelHint": "Available models come from the active profile. Primary: {{model}}",
-		"notConfigured": "not configured",
-		"inheritPrimary": "Inherit primary model",
-		"save": "Save role settings",
+		"title": "Chung",
+		"alwaysOn": "Điều phối luôn được bật",
+		"intro": "Bắt đầu với vai trò Điều phối viên. Chọn một hồ sơ ở trên, sau đó gán các mô hình chuyên biệt hoặc để chúng kế thừa mô hình chính của hồ sơ.",
+		"modelAssignments": "Gán mô hình cho vai trò",
+		"modelHint": "Các mô hình khả dụng đến từ hồ sơ đang hoạt động. Chính: {{model}}",
+		"notConfigured": "chưa cấu hình",
+		"inheritPrimary": "Kế thừa mô hình chính",
+		"save": "Lưu cài đặt vai trò",
 		"fields": {
-			"maxParallelWorkers": "Max parallel workers",
-			"maxDepth": "Max depth",
-			"maxReworkAttempts": "Max rework attempts",
-			"timeoutMs": "Timeout (ms)",
-			"maxRunTokens": "Max run tokens",
-			"maxRunCost": "Max run cost",
-			"maxChildTokens": "Max child tokens",
-			"maxChildCost": "Max child cost",
-			"contextPolicy": "Context",
-			"conflictPolicy": "Conflict handling",
-			"reviewPolicy": "Review",
-			"requirePlanApproval": "Require plan approval",
-			"requireIntegrationApproval": "Require integration approval",
-			"allowWorkerCommands": "Allow worker commands",
-			"allowWorkerMcp": "Allow worker MCP",
-			"persistTranscripts": "Persist transcripts"
+			"maxParallelWorkers": "Số worker song song tối đa",
+			"maxDepth": "Độ sâu tối đa",
+			"maxReworkAttempts": "Số lần làm lại tối đa",
+			"timeoutMs": "Thời gian chờ (ms)",
+			"maxRunTokens": "Số token tối đa mỗi lần chạy",
+			"maxRunCost": "Chi phí tối đa mỗi lần chạy",
+			"maxChildTokens": "Số token tối đa cho tác vụ con",
+			"maxChildCost": "Chi phí tối đa cho tác vụ con",
+			"contextPolicy": "Ngữ cảnh",
+			"conflictPolicy": "Xử lý xung đột",
+			"reviewPolicy": "Đánh giá",
+			"requirePlanApproval": "Yêu cầu phê duyệt kế hoạch",
+			"requireIntegrationApproval": "Yêu cầu phê duyệt tích hợp",
+			"allowWorkerCommands": "Cho phép lệnh của worker",
+			"allowWorkerMcp": "Cho phép MCP của worker",
+			"persistTranscripts": "Lưu bản ghi"
 		}
 	}
 }

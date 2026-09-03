@@ -547,7 +547,7 @@
 			"maxTokensLabel": "Tokens máximos de salida",
 			"maxTokensDescription": "Número máximo de tokens de salida para las respuestas de Claude Code. El valor predeterminado es 8000."
 		},
-		"retiredAicoProviderMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
+		"retiredAicoProviderMessage": "AI Code Orchestrator Router ya no está disponible. Selecciona otro proveedor en la configuración de tu perfil de API."
 	},
 	"checkpoints": {
 		"timeout": {
@@ -997,7 +997,7 @@
 		}
 	},
 	"roles": {
-		"title": "General",
+		"title": "Configuración general",
 		"alwaysOn": "La orquestación siempre está activa",
 		"intro": "Comienza en el rol de Orquestador. Elige un perfil arriba y asigna modelos especializados o hereda el modelo principal del perfil.",
 		"modelAssignments": "Asignaciones de modelos por rol",
