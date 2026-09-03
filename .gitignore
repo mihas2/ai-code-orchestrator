@@ -59,3 +59,7 @@ qdrant_storage/
 plans/
 
 aico-cli-*.tar.gz*
+
+# pnpm local artifacts
+/global/
+/package-manager-store/
