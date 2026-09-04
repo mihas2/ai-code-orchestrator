@@ -2905,7 +2905,7 @@ export class ClineProvider
 		const assignments = state.roleAssignments?.roles
 		// Assignments are persisted by mode slug, while orchestration may address a node
 		// by role. Keep the resolved role aligned with the assignment selected by fallback.
-		const requestedRole = explicitRole || taskMode
+		const requestedRole = explicitRole ?? taskMode ?? defaultModeSlug
 		const fallbackRole = requestedRole === "orchestrator" ? "orchestrator" : "worker"
 		const roleToUse = assignments?.[requestedRole] ? requestedRole : fallbackRole
 		const assignment = assignments?.[roleToUse]
