@@ -15,6 +15,7 @@
 		"test": "turbo test --log-order grouped --output-logs new-only",
 		"format": "turbo format --log-order grouped --output-logs new-only",
 		"build": "turbo build --log-order grouped --output-logs new-only",
+		"build:install": "bash scripts/build-and-install.sh",
 		"bundle": "turbo bundle --log-order grouped --output-logs new-only",
 		"bundle:nightly": "turbo bundle:nightly --log-order grouped --output-logs new-only",
 		"vsix": "turbo vsix --log-order grouped --output-logs new-only",

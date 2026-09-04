@@ -99,11 +99,13 @@ export default defineConfig(({ mode }) => {
 	return {
 		plugins,
 		resolve: {
-			alias: {
-				"@": resolve(__dirname, "./src"),
-				"@src": resolve(__dirname, "./src"),
-				"@aico": resolve(__dirname, "../src/shared"),
-			},
+			alias: [
+				// The generic shared modes module also exposes extension-host helpers.
+				{ find: /^@aico\/modes$/, replacement: resolve(__dirname, "../src/shared/modes-browser.ts") },
+				{ find: "@", replacement: resolve(__dirname, "./src") },
+				{ find: "@src", replacement: resolve(__dirname, "./src") },
+				{ find: "@aico", replacement: resolve(__dirname, "../src/shared") },
+			],
 		},
 		build: {
 			outDir,
@@ -116,9 +118,9 @@ export default defineConfig(({ mode }) => {
 			// Use a single combined CSS bundle so all webviews share styles
 			cssCodeSplit: false,
 			rollupOptions: {
-				// Keep extension-host-only modules out of the browser bundle. These are
-				// reached through shared prompt/mode code but are unavailable in a webview.
-				external: ["vscode", "fs", "fs/promises", "path", "os", "module", "child_process", "readline"],
+				// Only the VS Code API is supplied by the webview host. Node core modules
+				// must never be externalized: bare Node imports are not resolvable in a webview.
+				external: ["vscode"],
 				input: {
 					index: resolve(__dirname, "index.html"),
 				},
