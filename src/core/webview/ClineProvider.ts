@@ -845,6 +845,8 @@ export class ClineProvider
 		// runtime settings with stale/incomplete persisted profiles.
 		const skipProfileRestoreFromHistory = isCliRuntime
 
+		let restoredApiConfiguration: ProviderSettings | undefined
+
 		// Check if we're rehydrating the current task to avoid flicker
 		const currentTask = this.getCurrentTask()
 		const isRehydratingCurrentTask = currentTask && currentTask.taskId === historyItem.id
@@ -891,11 +893,17 @@ export class ClineProvider
 							// In CLI mode, the ProviderSettingsManager may return empty default profiles
 							// that only contain 'id' and 'name' fields. Activating such a profile would
 							// overwrite the CLI's working API configuration with empty settings.
-							const fullProfile = await this.providerSettingsManager.getProfile({ name: profile.name })
+							const {
+								name: _name,
+								id: _id,
+								...fullProfile
+							} = await this.providerSettingsManager.getProfile({
+								name: profile.name,
+							})
 							const hasActualSettings = !!fullProfile.apiProvider
 
 							if (hasActualSettings) {
-								await this.activateProviderProfile({ name: profile.name })
+								restoredApiConfiguration = fullProfile
 							} else {
 								// The task will continue with the current/default configuration.
 							}
@@ -924,10 +932,14 @@ export class ClineProvider
 
 			if (profile?.name) {
 				try {
-					await this.activateProviderProfile(
-						{ name: profile.name },
-						{ persistModeConfig: false, persistTaskHistory: false },
-					)
+					const {
+						name: _name,
+						id: _id,
+						...taskProfile
+					} = await this.providerSettingsManager.getProfile({
+						name: profile.name,
+					})
+					restoredApiConfiguration = taskProfile
 				} catch (error) {
 					// Log the error but continue with task restoration.
 					this.log(
@@ -952,7 +964,7 @@ export class ClineProvider
 		const { apiConfiguration, enableCheckpoints, checkpointTimeout, experiments } = state
 		const { effectiveApiConfiguration, isRoleSpecificConfig } = await this.resolveEffectiveApiConfiguration({
 			mode: historyItem.mode,
-			baseApiConfiguration: apiConfiguration,
+			baseApiConfiguration: restoredApiConfiguration ?? apiConfiguration,
 			state,
 		})
 
@@ -1850,19 +1862,24 @@ export class ClineProvider
 
 	async activateProviderProfile(
 		args: { name: string } | { id: string },
-		options?: { persistModeConfig?: boolean; persistTaskHistory?: boolean },
+		options?: { persistModeConfig?: boolean; persistTaskHistory?: boolean; syncGlobalProviderState?: boolean },
 	) {
-		const { name, id, ...providerSettings } = await this.providerSettingsManager.activateProfile(args)
+		const syncGlobalProviderState = options?.syncGlobalProviderState ?? true
+		const { name, id, ...providerSettings } = syncGlobalProviderState
+			? await this.providerSettingsManager.activateProfile(args)
+			: await this.providerSettingsManager.getProfile(args)
 
 		const persistModeConfig = options?.persistModeConfig ?? true
 		const persistTaskHistory = options?.persistTaskHistory ?? true
 
-		// See `upsertProviderProfile` for a description of what this is doing.
-		await Promise.all([
-			this.contextProxy.setValue("listApiConfigMeta", await this.providerSettingsManager.listConfig()),
-			this.contextProxy.setValue("currentApiConfigName", name),
-			this.contextProxy.setProviderSettings(providerSettings),
-		])
+		// Task restoration reads a profile without changing the global Settings profile.
+		if (syncGlobalProviderState) {
+			await Promise.all([
+				this.contextProxy.setValue("listApiConfigMeta", await this.providerSettingsManager.listConfig()),
+				this.contextProxy.setValue("currentApiConfigName", name),
+				this.contextProxy.setProviderSettings(providerSettings),
+			])
+		}
 
 		const { mode } = await this.getState()
 
@@ -2380,13 +2397,11 @@ export class ClineProvider
 		const cwd = this.cwd
 		const currentTask = this.getCurrentTask()
 
-		// Keep state serialization independent from profile storage. Profile/model routing
-		// is applied when a task is created; loading profiles here can block webview startup.
-		const displayedApiConfiguration = currentTask?.apiConfiguration ?? apiConfiguration
-
+		// Settings always shows the global profile. Task routing remains available through
+		// currentTaskItem/task history for chat-specific model indicators.
 		return {
 			version: this.context.extension?.packageJSON?.version ?? "",
-			apiConfiguration: displayedApiConfiguration,
+			apiConfiguration,
 			customInstructions,
 			alwaysAllowReadOnly: alwaysAllowReadOnly ?? false,
 			alwaysAllowReadOnlyOutsideWorkspace: alwaysAllowReadOnlyOutsideWorkspace ?? false,

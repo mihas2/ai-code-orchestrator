@@ -454,10 +454,13 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 				apiConfigName: "saved-profile", // Saved provider profile
 			}
 
-			// Mock activateProviderProfile to track calls
-			const activateProviderProfileSpy = vi
-				.spyOn(provider, "activateProviderProfile")
-				.mockResolvedValue(undefined)
+			// Restoring a task reads its profile without activating it globally.
+			const activateProviderProfileSpy = vi.spyOn(provider, "activateProviderProfile")
+			const getProfileSpy = vi.spyOn(provider.providerSettingsManager, "getProfile").mockResolvedValue({
+				name: "saved-profile",
+				id: "saved-profile-id",
+				apiProvider: "anthropic",
+			})
 
 			// Mock providerSettingsManager.listConfig
 			vi.spyOn(provider.providerSettingsManager, "listConfig").mockResolvedValue([
@@ -467,11 +470,9 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			// Initialize task with history item
 			await provider.createTaskWithHistoryItem(historyItem)
 
-			// Verify provider profile was restored via activateProviderProfile (restore-only: don't persist mode config)
-			expect(activateProviderProfileSpy).toHaveBeenCalledWith(
-				{ name: "saved-profile" },
-				{ persistModeConfig: false, persistTaskHistory: false },
-			)
+			// Restoring a task must not activate or mutate the global provider profile.
+			expect(activateProviderProfileSpy).not.toHaveBeenCalled()
+			expect(getProfileSpy).toHaveBeenCalledWith({ name: "saved-profile" })
 		})
 
 		it("should skip restoring task apiConfigName from history in CLI runtime", async () => {
@@ -599,6 +600,14 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			})
 
 			// Mock providerSettingsManager methods
+			vi.spyOn(provider.providerSettingsManager, "getProfile").mockImplementation(async (args) => {
+				const name = "name" in args ? args.name : "task-specific-profile"
+				return {
+					name,
+					id: name === "task-specific-profile" ? "task-profile-id" : "mode-config-id",
+					apiProvider: name === "task-specific-profile" ? "openai" : "anthropic",
+				}
+			})
 			vi.spyOn(provider.providerSettingsManager, "getModeConfigId").mockResolvedValue("mode-config-id")
 			vi.spyOn(provider.providerSettingsManager, "listConfig").mockResolvedValue([
 				{ name: "mode-preferred-profile", id: "mode-config-id", apiProvider: "anthropic" },
@@ -608,8 +617,8 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			// Initialize task with history item
 			await provider.createTaskWithHistoryItem(historyItem)
 
-			// Verify task's apiConfigName was activated LAST (overriding mode-based config)
-			expect(activateCalls[activateCalls.length - 1]).toBe("task-specific-profile")
+			// Verify task profile was read without changing the global activation.
+			expect(activateCalls).toHaveLength(0)
 		})
 
 		it("should handle missing provider profile gracefully", async () => {
