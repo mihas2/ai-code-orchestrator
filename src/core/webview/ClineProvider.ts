@@ -1208,9 +1208,11 @@ export class ClineProvider
 							selectedProfile && route
 								? (() => {
 										const modelKey =
-											modelIdKeysByProvider[
-												selectedProfile.apiProvider as keyof typeof modelIdKeysByProvider
-											] || "apiModelId"
+											selectedProfile.apiProvider === "openai"
+												? "openAiModelId"
+												: modelIdKeysByProvider[
+														selectedProfile.apiProvider as keyof typeof modelIdKeysByProvider
+													] || "apiModelId"
 										const configuration = { ...selectedProfile }
 										for (const key of modelIdKeys) delete configuration[key]
 										return {
@@ -2891,6 +2893,15 @@ export class ClineProvider
 		let effectiveApiConfiguration = { ...apiConfiguration }
 		let isRoleSpecificConfig = false
 		const taskMode = configuration.mode ?? state.mode
+		// Orchestration passes a complete profile configuration to the child. Do not
+		// resolve the assignment again: that would replace the executor's route.
+		const hasProvidedModelConfiguration = modelIdKeys.some((key) => configuration[key] != null)
+		if (explicitRole && hasProvidedModelConfiguration) {
+			effectiveApiConfiguration = { ...apiConfiguration }
+			for (const key of modelIdKeys) delete effectiveApiConfiguration[key]
+			effectiveApiConfiguration = { ...effectiveApiConfiguration, ...configuration }
+			isRoleSpecificConfig = true
+		}
 		const assignments = state.roleAssignments?.roles
 		// Assignments are persisted by mode slug, while orchestration may address a node
 		// by role. Keep the resolved role aligned with the assignment selected by fallback.
@@ -2899,7 +2910,7 @@ export class ClineProvider
 		const roleToUse = assignments?.[requestedRole] ? requestedRole : fallbackRole
 		const assignment = assignments?.[roleToUse]
 
-		if (assignment) {
+		if (assignment && !(explicitRole && hasProvidedModelConfiguration)) {
 			if (assignment?.profileName) {
 				const profile = await this.providerSettingsManager.getProfile({ name: assignment.profileName })
 				if (profile?.apiProvider) {
@@ -2915,7 +2926,10 @@ export class ClineProvider
 						roleModels: profile.profileRoleModelSettings,
 					})
 					const modelKey =
-						modelIdKeysByProvider[profile.apiProvider as keyof typeof modelIdKeysByProvider] || "apiModelId"
+						profile.apiProvider === "openai"
+							? "openAiModelId"
+							: modelIdKeysByProvider[profile.apiProvider as keyof typeof modelIdKeysByProvider] ||
+								"apiModelId"
 					effectiveApiConfiguration = { ...profile }
 					for (const key of modelIdKeys) delete effectiveApiConfiguration[key]
 					effectiveApiConfiguration = { ...effectiveApiConfiguration, [modelKey]: route.modelId }

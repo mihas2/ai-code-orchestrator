@@ -104,15 +104,13 @@ function makeProvider(state: any = {}) {
 		"sidebar",
 		new ContextProxy(extensionContext()),
 	) as any
-	provider.getState = vi
-		.fn()
-		.mockResolvedValue({
-			apiConfiguration: globalConfig,
-			mode: "code",
-			organizationAllowList: { allowAll: true },
-			roleAssignments: { roles: {} },
-			...state,
-		})
+	provider.getState = vi.fn().mockResolvedValue({
+		apiConfiguration: globalConfig,
+		mode: "code",
+		organizationAllowList: { allowAll: true },
+		roleAssignments: { roles: {} },
+		...state,
+	})
 	provider.setValues = vi.fn().mockResolvedValue(undefined)
 	provider.removeClineFromStack = vi.fn().mockResolvedValue(undefined)
 	provider.addClineToStack = vi.fn().mockResolvedValue(undefined)
@@ -181,6 +179,26 @@ describe("ClineProvider.createTask role assignment", () => {
 				isRoleSpecificConfig: true,
 			}),
 		)
+	})
+
+	it("preserves executor-provided orchestration configuration over persisted assignments", async () => {
+		const provider = makeProvider({
+			roleAssignments: { roles: { worker: { profileName: "persisted", modelId: "persisted-model" } } },
+		})
+		provider.providerSettingsManager.getProfile.mockResolvedValue(profile({ apiProvider: "openrouter" }))
+		await provider.createTask(
+			"text",
+			[],
+			undefined,
+			{},
+			{ apiProvider: "openai", openAiModelId: "executor-model", apiKey: "key" } as any,
+			"worker",
+		)
+		const config = taskConstructor.mock.calls.at(-1)![0]
+		expect(config.apiConfiguration.openAiModelId).toBe("executor-model")
+		expect(config.apiConfiguration.openRouterModelId).toBeUndefined()
+		expect(config.isRoleSpecificConfig).toBe(true)
+		expect(resolveModelRoute).not.toHaveBeenCalled()
 	})
 
 	it("clears every legacy provider model key", async () => {
