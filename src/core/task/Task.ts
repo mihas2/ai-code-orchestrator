@@ -483,9 +483,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		})
 
 		this.isRoleSpecificConfig = isRoleSpecificConfig
-		provider.log(
-			`[model-debug:Task] constructor isRoleSpecificConfig=${isRoleSpecificConfig} model=${getModelId(apiConfiguration) ?? "unset"} provider=${apiConfiguration.apiProvider ?? "unset"}`,
-		)
 		this.apiConfiguration = apiConfiguration
 		this.api = buildApiHandler(this.apiConfiguration)
 		this.autoApprovalHandler = new AutoApprovalHandler()
@@ -664,9 +661,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		this.providerProfileChangeListener = async () => {
 			try {
-				provider.log(
-					`[model-debug:Task] profile-change isRoleSpecificConfig=${this.isRoleSpecificConfig} decision=${this.isRoleSpecificConfig ? "ignore-global" : "apply-global"}`,
-				)
 				if (this.isRoleSpecificConfig) {
 					return
 				}

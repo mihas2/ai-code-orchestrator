@@ -87,6 +87,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			openedTabs,
 			currentApiConfigName,
 			listApiConfigMeta,
+			roleAssignments,
 			customModes,
 			customModePrompts,
 			cwd,
@@ -99,14 +100,15 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			lockApiConfigAcrossModes,
 		} = useExtensionState()
 
-		// Find the ID and display text for the currently selected API configuration.
+		// Role model assignments are independent from the active profile.
 		const { currentConfigId, displayName } = useMemo(() => {
 			const currentConfig = listApiConfigMeta?.find((config) => config.name === currentApiConfigName)
+			const assignedModel = roleAssignments?.roles?.[mode]?.modelId
 			return {
 				currentConfigId: currentConfig?.id || "",
-				displayName: `${currentApiConfigName || ""} ${currentConfig?.modelId || ""}`.trim(),
+				displayName: `${currentApiConfigName || ""} ${assignedModel || currentConfig?.modelId || ""}`.trim(),
 			}
-		}, [listApiConfigMeta, currentApiConfigName])
+		}, [listApiConfigMeta, currentApiConfigName, roleAssignments, mode])
 
 		const [gitCommits, setGitCommits] = useState<any[]>([])
 		const [showDropdown, setShowDropdown] = useState(false)

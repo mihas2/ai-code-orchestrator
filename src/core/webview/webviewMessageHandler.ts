@@ -527,9 +527,6 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 	switch (message.type) {
 		case "updateRoleAssignment": {
 			if (!message.role || !message.roleAssignment) throw new Error("Role assignment is required")
-			provider.log(
-				`[model-debug:handler] incoming roleAssignment role=${message.role} profileName=${message.roleAssignment.profileName ?? "unset"} modelId=${message.roleAssignment.modelId ?? "unset"}`,
-			)
 			const { roleAssignmentsSchema } = await import("@ai-code-orchestrator/types")
 			const current = getGlobalState("roleAssignments") ?? { schemaVersion: 1, roles: {} }
 			const parsed = roleAssignmentsSchema.safeParse({
@@ -538,9 +535,6 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			})
 			if (!parsed.success) throw new Error("Invalid role assignment")
 			await updateGlobalState("roleAssignments", parsed.data)
-			provider.log(
-				`[model-debug:handler] saved roleAssignment=${JSON.stringify(parsed.data.roles[message.role])} merged=${JSON.stringify(parsed.data)} reread=${JSON.stringify(getGlobalState("roleAssignments"))}`,
-			)
 			await provider.postStateToWebview()
 			break
 		}
@@ -689,15 +683,9 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 		case "newTask":
 			{
-				provider.log(
-					`[model-debug:webview.newTask] messageMode=${message.taskConfiguration?.mode ?? "unset"} messageConfig=${JSON.stringify(message.taskConfiguration ?? null)}`,
-				)
 				const orchestrationSettings = await getGlobalState("orchestrationSettings")
 				const currentMode = await getCurrentMode()
 				if (currentMode === (orchestrationSettings?.orchestratorModeSlug ?? "orchestrator")) {
-					provider.log(
-						`[model-debug:webview.newTask] orchestrator-path currentMode=${currentMode} settings=${JSON.stringify(orchestrationSettings ?? null)}`,
-					)
 					const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
 					const root = await provider.createTask(resolved.text, resolved.images, undefined, {
 						taskId: message.taskId,

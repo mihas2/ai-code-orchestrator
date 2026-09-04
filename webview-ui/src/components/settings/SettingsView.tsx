@@ -35,6 +35,7 @@ import {
 	type ProviderSettings,
 	type ExperimentId,
 	DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
+	DEFAULT_ORCHESTRATION_SETTINGS,
 	ImageGenerationProvider,
 } from "@ai-code-orchestrator/types"
 
@@ -860,6 +861,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 							<>
 								<ModesView />
 								<OrchestrationSettings
+									value={orchestrationSettings ?? DEFAULT_ORCHESTRATION_SETTINGS}
 									onChange={(next) => setCachedStateField("orchestrationSettings", next)}
 								/>
 							</>

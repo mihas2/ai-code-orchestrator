@@ -1,24 +1,18 @@
-import { useEffect, useState } from "react"
 import { DEFAULT_ORCHESTRATION_SETTINGS, type OrchestrationSettings } from "@ai-code-orchestrator/types"
-import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { SectionHeader } from "./SectionHeader"
 import { Section } from "./Section"
 import { Checkbox, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@src/components/ui"
 
-export function OrchestrationSettings({ onChange }: { onChange?: (value: OrchestrationSettings) => void }) {
+export function OrchestrationSettings({
+	value = DEFAULT_ORCHESTRATION_SETTINGS,
+	onChange,
+}: {
+	value?: OrchestrationSettings
+	onChange?: (value: OrchestrationSettings) => void
+}) {
 	const { t } = useAppTranslation()
-	const { orchestrationSettings } = useExtensionState()
-	const [value, setValue] = useState<OrchestrationSettings>(orchestrationSettings ?? DEFAULT_ORCHESTRATION_SETTINGS)
-	useEffect(() => {
-		if (orchestrationSettings) setValue(orchestrationSettings)
-	}, [orchestrationSettings])
-	const set = (key: keyof OrchestrationSettings, next: unknown) =>
-		setValue((current) => {
-			const updated = { ...current, [key]: next }
-			onChange?.(updated)
-			return updated
-		})
+	const set = (key: keyof OrchestrationSettings, next: unknown) => onChange?.({ ...value, [key]: next })
 	return (
 		<div className="flex flex-col gap-2">
 			<SectionHeader>{t("settings:roles.title")}</SectionHeader>

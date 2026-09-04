@@ -87,6 +87,8 @@ const mockCheckpointSave = vi.fn()
 // Mock the Cline instance and its methods/properties
 const mockCline = {
 	ask: vi.fn(),
+	say: vi.fn().mockResolvedValue(undefined),
+	postStateToWebview: vi.fn().mockResolvedValue(undefined),
 	sayAndCreateMissingParamError: mockSayAndCreateMissingParamError,
 	emit: mockEmit,
 	recordToolError: mockRecordToolError,
@@ -100,6 +102,7 @@ const mockCline = {
 	providerRef: {
 		deref: vi.fn(() => ({
 			getState: vi.fn(() => ({ customModes: [], mode: "ask" })),
+			postStateToWebview: vi.fn().mockResolvedValue(undefined),
 			handleModeSwitch: vi.fn(),
 			delegateParentAndOpenChild: mockDelegateParentAndOpenChild,
 		})),
@@ -612,6 +615,7 @@ describe("newTaskTool delegation flow", () => {
 				mode: "ask",
 				experiments: {},
 			}),
+			postStateToWebview: vi.fn().mockResolvedValue(undefined),
 			delegateParentAndOpenChild: vi.fn().mockResolvedValue({ taskId: "child-1" }),
 			handleModeSwitch: vi.fn(),
 		} as any
@@ -621,6 +625,8 @@ describe("newTaskTool delegation flow", () => {
 		const localEmit = vi.fn()
 		const localCline = {
 			ask: vi.fn(),
+			say: vi.fn().mockResolvedValue(undefined),
+			postStateToWebview: vi.fn().mockResolvedValue(undefined),
 			sayAndCreateMissingParamError: mockSayAndCreateMissingParamError,
 			emit: localEmit,
 			recordToolError: mockRecordToolError,

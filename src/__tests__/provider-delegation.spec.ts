@@ -72,7 +72,9 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 				initialTodos: [],
 				initialStatus: "active",
 				startTask: false,
+				workspacePath: undefined,
 			}),
+			undefined,
 			undefined,
 		)
 

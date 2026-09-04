@@ -78,7 +78,6 @@ export const RoleModelSelector = ({
 	const [localProfileName, setLocalProfileName] = useState(profileName)
 
 	useEffect(() => {
-		console.debug(`[model-debug:UI] RoleModelSelector localProfileName changed: ${profileName ?? "unset"}`)
 		setLocalProfileName(profileName)
 	}, [profileName])
 	const routerProviders = [
@@ -194,9 +193,6 @@ export const RoleModelSelector = ({
 					? `${(value as { vendor?: string }).vendor}/${(value as { family?: string }).family}`
 					: (value as string)
 				const nextModelId = modelId === primaryModel ? undefined : modelId
-				console.debug(
-					`[model-debug:UI] RoleModelSelector onModelChange localProfileName=${localProfileName ?? "unset"} modelId=${nextModelId ?? "unset"}`,
-				)
 				onModelChange(localProfileName, nextModelId)
 			}}
 			defaultModelId={primaryModel}

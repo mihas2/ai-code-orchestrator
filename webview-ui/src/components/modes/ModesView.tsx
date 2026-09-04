@@ -135,9 +135,6 @@ const ModesView = () => {
 
 	const updateRoleAssignment = useCallback(
 		(profileName: string | undefined, modelId: string | undefined) => {
-			console.debug(
-				`[model-debug:UI] ModesView.updateRoleAssignment role=${visualMode} profileName=${profileName ?? "unset"} modelId=${modelId ?? "unset"}`,
-			)
 			vscode.postMessage(createRoleAssignmentMessage(visualMode, profileName, modelId))
 		},
 		[visualMode],

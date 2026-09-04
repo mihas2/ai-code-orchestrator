@@ -2975,30 +2975,33 @@ export class ClineProvider
 		const assignment = assignments?.[roleToUse]
 
 		if (assignment && !(explicitRole && hasProvidedModelConfiguration)) {
-			if (assignment?.profileName) {
-				const profile = await this.providerSettingsManager.getProfile({ name: assignment.profileName })
-				if (profile?.apiProvider) {
-					const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
-						profileId:
-							profile.id ??
-							this.getProviderProfileEntry(assignment.profileName)?.id ??
-							assignment.profileName,
-						provider: profile.apiProvider,
-						primaryModelId: getModelId(profile) ?? "",
-						role: roleToUse,
-						explicitModelId: assignment.modelId,
-						roleModels: profile.profileRoleModelSettings,
-					})
-					const modelKey =
-						profile.apiProvider === "openai"
-							? "openAiModelId"
-							: modelIdKeysByProvider[profile.apiProvider as keyof typeof modelIdKeysByProvider] ||
-								"apiModelId"
-					effectiveApiConfiguration = { ...profile }
-					for (const key of modelIdKeys) delete effectiveApiConfiguration[key]
-					effectiveApiConfiguration = { ...effectiveApiConfiguration, [modelKey]: route.modelId }
-					isRoleSpecificConfig = true
-				}
+			const profile: ProviderSettings & { id?: string; name?: string } = assignment.profileName
+				? await this.providerSettingsManager.getProfile({ name: assignment.profileName })
+				: apiConfiguration
+			if (profile?.apiProvider) {
+				const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
+					profileId:
+						profile.id ??
+						(assignment.profileName
+							? this.getProviderProfileEntry(assignment.profileName)?.id
+							: undefined) ??
+						assignment.profileName ??
+						activeProfileName,
+					provider: profile.apiProvider,
+					primaryModelId: getModelId(profile) ?? "",
+					role: roleToUse,
+					explicitModelId: assignment.modelId,
+					roleModels: profile.profileRoleModelSettings,
+				})
+				const modelKey =
+					profile.apiProvider === "openai"
+						? "openAiModelId"
+						: modelIdKeysByProvider[profile.apiProvider as keyof typeof modelIdKeysByProvider] ||
+							"apiModelId"
+				effectiveApiConfiguration = { ...profile }
+				for (const key of modelIdKeys) delete effectiveApiConfiguration[key]
+				effectiveApiConfiguration = { ...effectiveApiConfiguration, [modelKey]: route.modelId }
+				isRoleSpecificConfig = true
 			}
 		} else {
 			this.log(
