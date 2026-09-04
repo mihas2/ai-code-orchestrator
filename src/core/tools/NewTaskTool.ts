@@ -144,8 +144,12 @@ export class NewTaskTool extends BaseTool<"new_task"> {
 			content: message ?? "",
 			todos: todos,
 		})
+		const toolProgressStatus = {
+			icon: "pencil",
+			text: message ? `Writing task brief (${message.length} chars)` : "Writing task brief",
+		}
 
-		await task.ask("tool", partialMessage, block.partial).catch(() => {})
+		await task.ask("tool", partialMessage, block.partial, toolProgressStatus).catch(() => {})
 	}
 }
 

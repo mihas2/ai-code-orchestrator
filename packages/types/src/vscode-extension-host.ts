@@ -290,6 +290,9 @@ export type ExtensionState = Pick<
 	| "orchestrationSettings"
 	| "roleAssignments"
 > & {
+	defaultMode?: string
+	runtimeMode?: string
+	runtimeApiConfigName?: string
 	lockApiConfigAcrossModes?: boolean
 	version: string
 	clineMessages: ClineMessage[]
@@ -537,7 +540,6 @@ export interface WebviewMessage {
 		| "orchestrationApprovePlan"
 		| "orchestrationApproveIntegration"
 		| "updateOrchestrationSettings"
-		| "updateRoleAssignment"
 	text?: string
 	/** Orchestration run identifier, with nodeId required for retry. */
 	orchestrationSettings?: import("./orchestration.js").OrchestrationSettings

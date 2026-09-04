@@ -34,7 +34,8 @@ import { TOOL_GROUPS } from "@aico/tools"
 import { vscode } from "@src/utils/vscode"
 import { buildDocLink } from "@src/utils/docLinks"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
-import { useExtensionState } from "@src/context/ExtensionStateContext"
+import { ExtensionStateContextType, useExtensionState } from "@src/context/ExtensionStateContext"
+import { SetCachedStateField } from "@src/components/settings/types"
 import { cn } from "@src/lib/utils"
 import { getStaticModelsForProvider } from "@src/components/settings/utils/providerModelConfig"
 import { Section } from "@src/components/settings/Section"
@@ -90,19 +91,12 @@ export function getRoleModelOptions(
 	).sort()
 }
 
-export function createRoleAssignmentMessage(
-	role: string,
-	profileName: string | undefined,
-	modelId: string | undefined,
-) {
-	return {
-		type: "updateRoleAssignment" as const,
-		role,
-		roleAssignment: { profileName, modelId, inheritPrimary: !modelId },
-	}
+type ModesViewProps = {
+	roleAssignments?: ExtensionStateContextType["roleAssignments"]
+	setCachedStateField?: SetCachedStateField<"roleAssignments">
 }
 
-const ModesView = () => {
+const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField }: ModesViewProps = {}) => {
 	const { t } = useAppTranslation()
 
 	const {
@@ -110,7 +104,7 @@ const ModesView = () => {
 		listApiConfigMeta,
 		currentApiConfigName,
 		apiConfiguration,
-		roleAssignments,
+		roleAssignments: extensionRoleAssignments,
 		mode,
 		customInstructions,
 		setCustomInstructions,
@@ -122,10 +116,9 @@ const ModesView = () => {
 	// 1. Updating the UI immediately when a mode is clicked
 	// 2. Not syncing with the backend mode state (which would cause flickering)
 	// 3. Still sending the mode change to the backend for persistence
-	const [editingRole, setEditingRole] = useState(mode || defaultModeSlug)
-	const [cachedRoleAssignments, setCachedRoleAssignments] = useState(roleAssignments)
-
-	const roleAssignment = cachedRoleAssignments?.roles[editingRole]
+	const [editingRole, setEditingRole] = useState(mode)
+	const roleAssignments = cachedRoleAssignments ?? extensionRoleAssignments
+	const roleAssignment = roleAssignments?.roles[editingRole]
 	const activeProfile = listApiConfigMeta?.find((profile) => profile.name === currentApiConfigName)
 	// A role may point at a different profile than the globally active profile.
 	const selectedProfile =
@@ -136,23 +129,17 @@ const ModesView = () => {
 
 	const updateRoleAssignment = useCallback(
 		(profileName: string | undefined, modelId: string | undefined) => {
-			setCachedRoleAssignments((current) => ({
+			if (!setCachedStateField) return
+			setCachedStateField("roleAssignments", {
 				schemaVersion: 1,
-				roles: { ...(current?.roles ?? {}), [editingRole]: { profileName, modelId, inheritPrimary: !modelId } },
-			}))
+				roles: {
+					...(roleAssignments?.roles ?? {}),
+					[editingRole]: { profileName, modelId, inheritPrimary: !modelId },
+				},
+			})
 		},
-		[editingRole],
+		[editingRole, roleAssignments, setCachedStateField],
 	)
-
-	const saveRoleAssignment = useCallback(() => {
-		const assignment = cachedRoleAssignments?.roles[editingRole]
-		if (assignment)
-			vscode.postMessage(createRoleAssignmentMessage(editingRole, assignment.profileName, assignment.modelId))
-	}, [cachedRoleAssignments, editingRole])
-
-	useEffect(() => {
-		setCachedRoleAssignments(roleAssignments)
-	}, [roleAssignments])
 
 	// Build modes fresh each render so search reflects inline rename updates immediately
 	const modes = getAllModes(customModes)
@@ -989,17 +976,12 @@ const ModesView = () => {
 								profileName={selectedProfileName}
 								onModelChange={updateRoleAssignment}
 							/>
-							<div className="flex items-center gap-2">
-								<div
-									className="text-xs text-vscode-descriptionForeground"
-									data-testid="effective-role-model">
-									{profileProvider
-										? `${selectedProfileName ?? "default"} (${profileProvider}) / ${roleAssignment?.modelId ?? primaryModel}`
-										: ""}
-								</div>
-								<Button onClick={saveRoleAssignment} data-testid="save-role-assignment">
-									{t("settings:common.save")}
-								</Button>
+							<div
+								className="text-xs text-vscode-descriptionForeground"
+								data-testid="effective-role-model">
+								{profileProvider
+									? `${selectedProfileName ?? "default"} (${profileProvider}) / ${roleAssignment?.modelId ?? primaryModel}`
+									: ""}
 							</div>
 						</div>
 					</div>

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@/utils/test-utils"
+import { fireEvent, render, screen } from "@/utils/test-utils"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ExtensionStateContext } from "@src/context/ExtensionStateContext"
@@ -22,23 +22,21 @@ const state = {
 describe("ModesView role model cached state", () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it("buffers model changes until Save", async () => {
+	it("updates SettingsView's cached role assignments without posting or rendering a second Save", async () => {
+		const setCachedStateField = vi.fn()
 		render(
 			<ExtensionStateContext.Provider value={state as any}>
-				<ModesView />
+				<ModesView setCachedStateField={setCachedStateField as any} />
 			</ExtensionStateContext.Provider>,
 		)
 		fireEvent.click(await screen.findByTestId("model-picker-button"))
 		fireEvent.click(await screen.findByText("primary"))
+
+		expect(setCachedStateField).toHaveBeenCalledWith("roleAssignments", {
+			schemaVersion: 1,
+			roles: { code: { profileName: "Primary", modelId: undefined, inheritPrimary: true } },
+		})
 		expect(vscode.postMessage).not.toHaveBeenCalledWith(expect.objectContaining({ type: "updateRoleAssignment" }))
-		fireEvent.click(screen.getByTestId("save-role-assignment"))
-		await waitFor(() =>
-			expect(vscode.postMessage).toHaveBeenCalledWith(
-				expect.objectContaining({
-					type: "updateRoleAssignment",
-					role: "code",
-				}),
-			),
-		)
+		expect(screen.queryByTestId("save-role-assignment")).not.toBeInTheDocument()
 	})
 })

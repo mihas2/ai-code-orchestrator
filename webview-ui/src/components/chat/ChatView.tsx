@@ -18,7 +18,7 @@ import { SuggestionItem } from "@ai-code-orchestrator/types"
 import { combineApiRequests } from "@aico/combineApiRequests"
 import { combineCommandSequences } from "@aico/combineCommandSequences"
 import { getApiMetrics } from "@aico/getApiMetrics"
-import { getAllModes } from "@aico/modes"
+import { defaultModeSlug, getAllModes } from "@aico/modes"
 import { ProfileValidator } from "@aico/ProfileValidator"
 import { getLatestTodo } from "@aico/todo"
 
@@ -78,7 +78,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		taskHistory,
 		apiConfiguration,
 		organizationAllowList,
-		mode,
+		runtimeMode: mode = defaultModeSlug,
 		setMode,
 		alwaysAllowModeSwitch,
 		customModes,

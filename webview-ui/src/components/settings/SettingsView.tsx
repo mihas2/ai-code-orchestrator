@@ -204,6 +204,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		includeCurrentCost,
 		maxGitStatusFiles,
 		orchestrationSettings,
+		roleAssignments,
 	} = cachedState
 
 	const apiConfiguration = useMemo(() => cachedState.apiConfiguration ?? {}, [cachedState.apiConfiguration])
@@ -413,6 +414,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					experiments,
 					customSupportPrompts,
 					orchestrationSettings,
+					roleAssignments,
 				},
 			})
 
@@ -859,7 +861,10 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 						{/* Roles Section */}
 						{renderTab === "modes" && (
 							<>
-								<ModesView />
+								<ModesView
+									roleAssignments={roleAssignments}
+									setCachedStateField={setCachedStateField}
+								/>
 								<OrchestrationSettings
 									value={orchestrationSettings ?? DEFAULT_ORCHESTRATION_SETTINGS}
 									onChange={(next) => setCachedStateField("orchestrationSettings", next)}

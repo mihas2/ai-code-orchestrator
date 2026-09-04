@@ -860,10 +860,11 @@ describe("ClineProvider", () => {
 		// Switch to architect mode
 		await messageHandler({ type: "mode", text: "architect" })
 
-		// Should load the saved config for architect mode
+		// Runtime mode switching reads and applies the saved config without activating it globally.
 		expect(provider.providerSettingsManager.getModeConfigId).toHaveBeenCalledWith("architect")
-		expect(provider.providerSettingsManager.activateProfile).toHaveBeenCalledWith({ name: "test-config" })
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("currentApiConfigName", "test-config")
+		expect(provider.providerSettingsManager.getProfile).toHaveBeenCalledWith({ name: "test-config" })
+		expect(provider.providerSettingsManager.activateProfile).not.toHaveBeenCalled()
+		expect(mockContext.globalState.update).not.toHaveBeenCalledWith("currentApiConfigName", "test-config")
 	})
 
 	it("saves current config when switching to mode without config", async () => {
@@ -1450,10 +1451,11 @@ describe("ClineProvider", () => {
 			// Verify mode was updated
 			expect(mockContext.globalState.update).toHaveBeenCalledWith("mode", "architect")
 
-			// Verify saved config was loaded
+			// Runtime mode switching reads and applies the saved config without activating it globally.
 			expect(provider.providerSettingsManager.getModeConfigId).toHaveBeenCalledWith("architect")
-			expect(provider.providerSettingsManager.activateProfile).toHaveBeenCalledWith({ name: "saved-config" })
-			expect(mockContext.globalState.update).toHaveBeenCalledWith("currentApiConfigName", "saved-config")
+			expect(provider.providerSettingsManager.getProfile).toHaveBeenCalledWith({ name: "saved-config" })
+			expect(provider.providerSettingsManager.activateProfile).not.toHaveBeenCalled()
+			expect(mockContext.globalState.update).not.toHaveBeenCalledWith("currentApiConfigName", "saved-config")
 
 			// Verify state was posted to webview
 			expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "state" }))

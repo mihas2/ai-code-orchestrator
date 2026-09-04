@@ -569,7 +569,7 @@ export class API extends EventEmitter<AiCodeOrchestratorEvents> implements AiCod
 			throw new Error(`Profile with name "${name}" does not exist`)
 		}
 
-		await this.sidebarProvider.activateProviderProfile({ name })
+		await this.sidebarProvider.activateProviderProfile({ name }, { syncGlobalProviderState: true })
 		return this.getActiveProfile()
 	}
 }

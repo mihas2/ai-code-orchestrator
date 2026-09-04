@@ -197,8 +197,7 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 		const relPath: string | undefined = block.params.path
 		let newContent: string | undefined = block.params.content
 
-		// Wait for path to stabilize before showing UI (prevents truncated paths)
-		if (!this.hasPathStabilized(relPath) || newContent === undefined) {
+		if (!relPath || newContent === undefined) {
 			return
 		}
 
@@ -208,10 +207,6 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 			state?.experiments ?? {},
 			EXPERIMENT_IDS.PREVENT_FOCUS_DISRUPTION,
 		)
-
-		if (isPreventFocusDisruptionEnabled) {
-			return
-		}
 
 		// relPath is guaranteed non-null after hasPathStabilized
 		let fileExists: boolean
@@ -241,10 +236,14 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 			isProtected: isWriteProtected,
 		}
 
+		const toolProgressStatus = {
+			icon: "pencil",
+			text: `Writing ${newContent.length} chars`,
+		}
 		const partialMessage = JSON.stringify(sharedMessageProps)
-		await task.ask("tool", partialMessage, block.partial).catch(() => {})
+		await task.ask("tool", partialMessage, block.partial, toolProgressStatus).catch(() => {})
 
-		if (newContent) {
+		if (newContent && !isPreventFocusDisruptionEnabled) {
 			if (!task.diffViewProvider.isEditing) {
 				await task.diffViewProvider.open(relPath!)
 			}

@@ -22,6 +22,7 @@ describe("ClineProvider mode persistence", () => {
 		testProvider.contextProxy = contextProxy
 		testProvider.context = { workspaceState: { get: vi.fn(() => false) } }
 		testProvider.clineStack = []
+		testProvider.postMessageToWebview = vi.fn().mockResolvedValue(undefined)
 		testProvider.taskHistoryStore = { get: vi.fn(), getAll: vi.fn(() => []) }
 		testProvider.emit = vi.fn()
 		testProvider.postStateToWebview = vi.fn().mockResolvedValue(undefined)
@@ -72,5 +73,19 @@ describe("ClineProvider mode persistence", () => {
 
 		expect(contextProxy.setValue).toHaveBeenCalledWith("mode", value)
 		expect(state.mode).toBe(value)
+	})
+
+	it("publishes a runtime-only mode update without changing the Settings mode", async () => {
+		const { provider, contextProxy, state } = createProvider("code")
+		const task = { taskId: "task-1", taskMode: "code", emit: vi.fn() } as any
+
+		await provider.switchRuntimeMode(task, "architect")
+
+		expect(state.mode).toBe("code")
+		expect(contextProxy.setValue).not.toHaveBeenCalledWith("mode", expect.anything())
+		expect(provider.postMessageToWebview).toHaveBeenCalledWith({
+			type: "state",
+			state: { runtimeMode: "architect" },
+		})
 	})
 })

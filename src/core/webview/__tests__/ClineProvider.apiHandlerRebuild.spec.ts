@@ -403,7 +403,7 @@ describe("ClineProvider - API Handler Rebuild Guard", () => {
 				rateLimitSeconds: 7,
 			})
 
-			await provider.activateProviderProfile({ name: "test-config" })
+			await provider.activateProviderProfile({ name: "test-config" }, { syncGlobalProviderState: true })
 
 			// Verify updateApiConfiguration was called due to forced rebuild on explicit switch
 			expect(mockTask.updateApiConfiguration).toHaveBeenCalledWith(
@@ -443,7 +443,7 @@ describe("ClineProvider - API Handler Rebuild Guard", () => {
 				apiModelId: "claude-3-5-sonnet-20241022",
 			})
 
-			await provider.activateProviderProfile({ name: "anthropic-config" })
+			await provider.activateProviderProfile({ name: "anthropic-config" }, { syncGlobalProviderState: true })
 
 			// Verify updateApiConfiguration was called
 			expect(mockTask.updateApiConfiguration).toHaveBeenCalledWith(
@@ -482,7 +482,7 @@ describe("ClineProvider - API Handler Rebuild Guard", () => {
 				openRouterModelId: "anthropic/claude-3-5-sonnet-20241022",
 			})
 
-			await provider.activateProviderProfile({ name: "test-config" })
+			await provider.activateProviderProfile({ name: "test-config" }, { syncGlobalProviderState: true })
 
 			// Verify updateApiConfiguration was called
 			expect(mockTask.updateApiConfiguration).toHaveBeenCalledWith(
@@ -522,7 +522,7 @@ describe("ClineProvider - API Handler Rebuild Guard", () => {
 				apiProvider: "anthropic",
 				apiModelId: "claude-3-5-sonnet-20241022",
 			})
-			await provider.activateProviderProfile({ name: "anthropic-config" })
+			await provider.activateProviderProfile({ name: "anthropic-config" }, { syncGlobalProviderState: true })
 
 			expect(mockTask.updateApiConfiguration).toHaveBeenCalled()
 			expect((mockTask as any).apiConfiguration.apiProvider).toBe("anthropic")
@@ -536,7 +536,7 @@ describe("ClineProvider - API Handler Rebuild Guard", () => {
 				apiProvider: "openrouter",
 				openRouterModelId: "openai/gpt-4",
 			})
-			await provider.activateProviderProfile({ name: "test-config" })
+			await provider.activateProviderProfile({ name: "test-config" }, { syncGlobalProviderState: true })
 
 			// updateApiConfiguration called again, and apiConfiguration must be updated
 			expect(mockTask.updateApiConfiguration).toHaveBeenCalled()

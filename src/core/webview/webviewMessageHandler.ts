@@ -525,19 +525,6 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 	}
 
 	switch (message.type) {
-		case "updateRoleAssignment": {
-			if (!message.role || !message.roleAssignment) throw new Error("Role assignment is required")
-			const { roleAssignmentsSchema } = await import("@ai-code-orchestrator/types")
-			const current = getGlobalState("roleAssignments") ?? { schemaVersion: 1, roles: {} }
-			const parsed = roleAssignmentsSchema.safeParse({
-				...current,
-				roles: { ...current.roles, [message.role]: message.roleAssignment },
-			})
-			if (!parsed.success) throw new Error("Invalid role assignment")
-			await updateGlobalState("roleAssignments", parsed.data)
-			await provider.postStateToWebview()
-			break
-		}
 		case "updateOrchestrationSettings": {
 			if (!message.orchestrationSettings) throw new Error("Orchestration settings are required")
 			const { orchestrationSettingsSchema } = await import("@ai-code-orchestrator/types")
@@ -662,7 +649,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 							await updateGlobalState("currentApiConfigName", name)
 
 							if (name) {
-								await provider.activateProviderProfile({ name })
+								await provider.activateProviderProfile({ name }, { syncGlobalProviderState: true })
 								return
 							}
 						}
@@ -1562,7 +1549,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 		case "mode":
 			console.log("[ClineProvider] Received mode switch:", message.text)
-			await provider.handleModeSwitch(message.text as Mode)
+			await provider.setDefaultMode(message.text as Mode)
 			console.log("[webviewMessageHandler] About to postStateToWebview after mode switch")
 			await provider.postStateToWebview()
 			console.log("[webviewMessageHandler] postStateToWebview completed")
@@ -1870,7 +1857,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 					// Re-activate to update the global settings related to the
 					// currently activated provider profile.
-					await provider.activateProviderProfile({ name: newName })
+					await provider.activateProviderProfile({ name: newName }, { syncGlobalProviderState: true })
 				} catch (error) {
 					provider.log(
 						`Error rename api configuration: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
@@ -1883,7 +1870,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "loadApiConfiguration":
 			if (message.text) {
 				try {
-					await provider.activateProviderProfile({ name: message.text })
+					await provider.activateProviderProfile({ name: message.text }, { syncGlobalProviderState: true })
 				} catch (error) {
 					provider.log(
 						`Error load api configuration: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
@@ -1895,7 +1882,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "loadApiConfigurationById":
 			if (message.text) {
 				try {
-					await provider.activateProviderProfile({ id: message.text })
+					await provider.activateProviderProfile({ id: message.text }, { syncGlobalProviderState: true })
 				} catch (error) {
 					provider.log(
 						`Error load api configuration by ID: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
@@ -1929,7 +1916,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 				try {
 					await provider.providerSettingsManager.deleteConfig(oldName)
-					await provider.activateProviderProfile({ name: newName })
+					await provider.activateProviderProfile({ name: newName }, { syncGlobalProviderState: true })
 				} catch (error) {
 					provider.log(
 						`Error delete api configuration: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,

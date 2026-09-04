@@ -1607,46 +1607,44 @@ export class ClineProvider
 		this.webviewDisposables.push(messageDisposable)
 	}
 
-	/**
-	 * Handle switching to a new mode, including updating the associated API configuration
-	 * @param newMode The mode to switch to
-	 */
-	public async handleModeSwitch(newMode: Mode) {
-		console.log("[ClineProvider] Received mode switch:", newMode)
-		console.log("[handleModeSwitch] Before:", this.getGlobalState("mode"))
-		const task = this.getCurrentTask()
+	/** Apply a mode change to a task without changing Settings state. */
+	public async switchRuntimeMode(task: Task, newMode: string) {
+		task.emit(AiCodeOrchestratorEventName.TaskModeSwitched, task.taskId, newMode)
 
-		if (task) {
-			task.emit(AiCodeOrchestratorEventName.TaskModeSwitched, task.taskId, newMode)
+		try {
+			const taskHistoryItem =
+				this.taskHistoryStore.get(task.taskId) ??
+				(this.getGlobalState("taskHistory") ?? []).find((item) => item.id === task.taskId)
 
-			try {
-				// Update the task history with the new mode first.
-				const taskHistoryItem =
-					this.taskHistoryStore.get(task.taskId) ??
-					(this.getGlobalState("taskHistory") ?? []).find((item) => item.id === task.taskId)
-
-				if (taskHistoryItem) {
-					await this.updateTaskHistory({ ...taskHistoryItem, mode: newMode })
-				}
-
-				// Only update the task's mode after successful persistence.
-				;(task as any)._taskMode = newMode
-				console.log("[ClineProvider] Applied mode to task:", { taskId: task.taskId, mode: task.taskMode })
-			} catch (error) {
-				// If persistence fails, log the error but don't update the in-memory state.
-				this.log(
-					`Failed to persist mode switch for task ${task.taskId}: ${error instanceof Error ? error.message : String(error)}`,
-				)
-
-				// This ensures the in-memory state remains consistent with persisted state.
-				throw error
+			if (taskHistoryItem) {
+				await this.updateTaskHistory({ ...taskHistoryItem, mode: newMode })
 			}
+
+			;(task as any)._taskMode = newMode
+			console.log("[ClineProvider] Applied mode to task:", { taskId: task.taskId, mode: task.taskMode })
+			await this.postMessageToWebview({ type: "state", state: { runtimeMode: newMode } })
+		} catch (error) {
+			this.log(
+				`Failed to persist mode switch for task ${task.taskId}: ${error instanceof Error ? error.message : String(error)}`,
+			)
+			throw error
+		}
+	}
+
+	/** Persist the user's default mode and reset the active runtime mode to it. */
+	public async setDefaultMode(newMode: string) {
+		console.log("[ClineProvider] Received default mode change:", newMode)
+		const task = this.getCurrentTask()
+		if (task) {
+			await this.switchRuntimeMode(task, newMode)
 		}
 
 		await this.updateGlobalState("mode", newMode)
-		console.log("[handleModeSwitch] After:", this.getGlobalState("mode"))
-
 		this.emit(AiCodeOrchestratorEventName.ModeChanged, newMode)
+		await this.postMessageToWebview({
+			type: "state",
+			state: { defaultMode: newMode, mode: newMode, runtimeMode: newMode },
+		})
 
 		// If workspace lock is on, keep the current API config — don't load mode-specific config
 		const lockApiConfigAcrossModes = this.context.workspaceState.get("lockApiConfigAcrossModes", false)
@@ -1698,6 +1696,11 @@ export class ClineProvider
 		}
 
 		await this.postStateToWebview()
+	}
+
+	/** @deprecated Use setDefaultMode for Settings actions. */
+	public async handleModeSwitch(newMode: Mode) {
+		return this.setDefaultMode(newMode)
 	}
 
 	// Provider Profile Management
@@ -1864,7 +1867,7 @@ export class ClineProvider
 		args: { name: string } | { id: string },
 		options?: { persistModeConfig?: boolean; persistTaskHistory?: boolean; syncGlobalProviderState?: boolean },
 	) {
-		const syncGlobalProviderState = options?.syncGlobalProviderState ?? true
+		const syncGlobalProviderState = options?.syncGlobalProviderState ?? false
 		const { name, id, ...providerSettings } = syncGlobalProviderState
 			? await this.providerSettingsManager.activateProfile(args)
 			: await this.providerSettingsManager.getProfile(args)
@@ -1883,7 +1886,7 @@ export class ClineProvider
 
 		const { mode } = await this.getState()
 
-		if (id && persistModeConfig) {
+		if (syncGlobalProviderState && id && persistModeConfig) {
 			await this.providerSettingsManager.setModeConfig(mode, id)
 		}
 
@@ -2447,9 +2450,12 @@ export class ClineProvider
 			terminalZdotdir: terminalZdotdir ?? false,
 			mcpEnabled: mcpEnabled ?? true,
 			currentApiConfigName: currentApiConfigName ?? "default",
+			runtimeApiConfigName: currentTask?.taskApiConfigName ?? currentApiConfigName ?? "default",
 			listApiConfigMeta: listApiConfigMeta ?? [],
 			pinnedApiConfigs: pinnedApiConfigs ?? {},
+			defaultMode: mode ?? defaultModeSlug,
 			mode: mode ?? defaultModeSlug,
+			runtimeMode: currentTask?.taskMode ?? mode ?? defaultModeSlug,
 			customModePrompts: customModePrompts ?? {},
 			customSupportPrompts: customSupportPrompts ?? {},
 			enhancementApiConfigId,
@@ -3291,7 +3297,7 @@ export class ClineProvider
 	}
 
 	public async setProviderProfile(name: string): Promise<void> {
-		await this.activateProviderProfile({ name })
+		await this.activateProviderProfile({ name }, { syncGlobalProviderState: true })
 	}
 
 	public get cwd() {

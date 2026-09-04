@@ -322,7 +322,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			])
 
 			// Switch provider profile
-			await provider.activateProviderProfile({ name: "new-profile" })
+			await provider.activateProviderProfile({ name: "new-profile" }, { syncGlobalProviderState: true })
 
 			// Verify task history was updated with new provider profile
 			expect(updateTaskHistorySpy).toHaveBeenCalledWith(
@@ -385,7 +385,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			])
 
 			// Switch provider profile
-			await provider.activateProviderProfile({ name: "new-profile" })
+			await provider.activateProviderProfile({ name: "new-profile" }, { syncGlobalProviderState: true })
 
 			// Verify task's _taskApiConfigName property was updated
 			expect(mockTask._taskApiConfigName).toBe("new-profile")
@@ -426,7 +426,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 				{ name: "new-profile", id: "new-profile-id", apiProvider: "openrouter" },
 			])
 
-			await provider.activateProviderProfile({ name: "new-profile" })
+			await provider.activateProviderProfile({ name: "new-profile" }, { syncGlobalProviderState: true })
 
 			// In-memory should still update, even without a history item.
 			expect(mockTask._taskApiConfigName).toBe("new-profile")
@@ -704,7 +704,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			])
 
 			// Trigger a profile switch
-			await provider.activateProviderProfile({ name: "new-profile" })
+			await provider.activateProviderProfile({ name: "new-profile" }, { syncGlobalProviderState: true })
 
 			// Verify apiConfigName was included in the updated history item
 			expect(updatedHistoryItem).toBeDefined()
@@ -807,7 +807,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			])
 
 			// Switch task 1's profile to profile C
-			await provider.activateProviderProfile({ name: "profile-c" })
+			await provider.activateProviderProfile({ name: "profile-c" }, { syncGlobalProviderState: true })
 
 			// Verify task 1's profile was updated
 			expect(task1._taskApiConfigName).toBe("profile-c")
@@ -867,7 +867,9 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			const logSpy = vi.spyOn(provider, "log")
 
 			// Switch provider profile - should not throw
-			await expect(provider.activateProviderProfile({ name: "new-profile" })).resolves.not.toThrow()
+			await expect(
+				provider.activateProviderProfile({ name: "new-profile" }, { syncGlobalProviderState: true }),
+			).resolves.not.toThrow()
 
 			// Verify error was logged
 			expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to persist provider profile switch"))

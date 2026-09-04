@@ -711,8 +711,8 @@ describe("ClineProvider - Sticky Mode", () => {
 			const state = await provider.getState()
 			expect(state.mode).toBe("architect")
 
-			// Task restoration keeps the global profile unchanged; the task owns its effective config.
-			expect(state.currentApiConfigName).toBe("code-config")
+			// Runtime mode switches and task restoration keep the last Settings-selected profile unchanged.
+			expect(state.currentApiConfigName).toBe("architect-config")
 		})
 
 		it("should handle mode deletion between sessions", async () => {

@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@/utils/test-utils"
 import { describe, expect, it, vi } from "vitest"
 
 import { ExtensionStateContextProvider } from "@src/context/ExtensionStateContext"
-import { createRoleAssignmentMessage, getRoleModelOptions, RoleModelPicker, default as ModesView } from "../ModesView"
+import { getRoleModelOptions, RoleModelPicker, default as ModesView } from "../ModesView"
 
 describe("role model options", () => {
 	it("includes every provider model and the profile primary model without duplicates", () => {
@@ -82,14 +82,5 @@ describe("role model options", () => {
 		fireEvent.click(screen.getByText("alternative"))
 
 		expect(onChange).toHaveBeenCalledWith("alternative")
-		expect(createRoleAssignmentMessage("code", "OpenRouter", "alternative")).toEqual({
-			type: "updateRoleAssignment",
-			role: "code",
-			roleAssignment: {
-				profileName: "OpenRouter",
-				modelId: "alternative",
-				inheritPrimary: false,
-			},
-		})
 	})
 })

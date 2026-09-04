@@ -86,7 +86,7 @@ const mockCheckpointSave = vi.fn()
 
 // Mock the Cline instance and its methods/properties
 const mockCline = {
-	ask: vi.fn(),
+	ask: vi.fn().mockResolvedValue(undefined),
 	say: vi.fn().mockResolvedValue(undefined),
 	postStateToWebview: vi.fn().mockResolvedValue(undefined),
 	sayAndCreateMissingParamError: mockSayAndCreateMissingParamError,
@@ -624,7 +624,7 @@ describe("newTaskTool delegation flow", () => {
 		const localStartSubtask = vi.fn()
 		const localEmit = vi.fn()
 		const localCline = {
-			ask: vi.fn(),
+			ask: vi.fn().mockResolvedValue(undefined),
 			say: vi.fn().mockResolvedValue(undefined),
 			postStateToWebview: vi.fn().mockResolvedValue(undefined),
 			sayAndCreateMissingParamError: mockSayAndCreateMissingParamError,
@@ -680,5 +680,22 @@ describe("newTaskTool delegation flow", () => {
 
 		// Assert: tool result reflects delegation
 		expect(mockPushToolResult).toHaveBeenCalledWith(expect.stringContaining("Delegated to child task child-1"))
+	})
+	describe("handlePartial streaming feedback", () => {
+		it("emits growing content and progress status", async () => {
+			const first: ToolUse<"new_task"> = {
+				type: "tool_use",
+				name: "new_task",
+				params: { mode: "code", message: "Write the" },
+				partial: true,
+			}
+			const second = { ...first, params: { ...first.params, message: "Write the feature" } }
+			await newTaskTool.handlePartial(mockCline as any, first)
+			await newTaskTool.handlePartial(mockCline as any, second)
+			expect(mockCline.ask).toHaveBeenCalledTimes(2)
+			expect(JSON.parse(mockCline.ask.mock.calls[0][1]).content).toBe("Write the")
+			expect(JSON.parse(mockCline.ask.mock.calls[1][1]).content).toBe("Write the feature")
+			expect(mockCline.ask.mock.calls[0][3]).toEqual(expect.objectContaining({ text: expect.any(String) }))
+		})
 	})
 })

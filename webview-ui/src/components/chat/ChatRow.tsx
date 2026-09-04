@@ -868,7 +868,7 @@ export const ChatRowContent = ({
 							</span>
 						</div>
 						<div className="border-l border-muted-foreground/80 ml-2 pl-4 pb-1">
-							<MarkdownBlock markdown={tool.content} />
+							<Markdown markdown={tool.content} partial={message.partial} />
 							<div>
 								{childTaskId && !isFollowedBySubtaskResult && (
 									<button

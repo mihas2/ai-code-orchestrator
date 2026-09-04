@@ -85,7 +85,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		const {
 			filePaths,
 			openedTabs,
-			currentApiConfigName,
+			runtimeApiConfigName: currentApiConfigName,
 			listApiConfigMeta,
 			roleAssignments,
 			customModes,
