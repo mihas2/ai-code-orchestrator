@@ -3905,11 +3905,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			apiConfiguration,
 			autoApprovalEnabled,
 			requestDelaySeconds,
-			mode,
 			autoCondenseContext = true,
 			autoCondenseContextPercent = 100,
 			profileThresholds = {},
 		} = state ?? {}
+		const mode = this._taskMode ?? defaultModeSlug
 
 		// Get condensing configuration for automatic triggers.
 		const customCondensingPrompt = state?.customSupportPrompts?.CONDENSE
@@ -4162,9 +4162,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		const shouldIncludeTools = allTools.length > 0
 
-		console.log("[Task] Making API request with mode:", mode)
+		console.log("[Task] Making API request with mode:", this._taskMode)
 		const metadata: ApiHandlerCreateMessageMetadata = {
-			mode: mode,
+			mode: this._taskMode ?? defaultModeSlug,
 			taskId: this.taskId,
 			suppressPreviousResponseId: this.skipPrevResponseIdOnce,
 			// Include tools whenever they are present.
@@ -4182,7 +4182,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				: {}),
 		}
 
-		console.log("[Task] Making API request with mode:", mode)
+		console.log("[Task] Making API request with mode:", this._taskMode)
 
 		// Create an AbortController to allow cancelling the request mid-stream
 		this.currentRequestAbortController = new AbortController()
@@ -4191,6 +4191,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.skipPrevResponseIdOnce = false
 
 		// The provider accepts reasoning items alongside standard messages; cast to the expected parameter type.
+		console.log("[Task] API handler being called with:", {
+			taskMode: this._taskMode,
+			stateMode: state?.mode,
+			metadata,
+		})
 		const stream = this.api.createMessage(
 			systemPrompt,
 			cleanConversationHistory as unknown as Anthropic.Messages.MessageParam[],
