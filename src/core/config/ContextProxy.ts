@@ -464,6 +464,8 @@ export class ContextProxy {
 	}
 
 	public async setProviderSettings(values: ProviderSettings) {
+		// Provider settings are global state; never mutate the caller's task snapshot.
+		values = structuredClone(values)
 		// Explicitly clear out any old API configuration values before that
 		// might not be present in the new configuration.
 		// If a value is not present in the new configuration, then it is assumed

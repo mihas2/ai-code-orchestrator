@@ -46,7 +46,7 @@ vi.mock("@ai-code-orchestrator/types", async () => {
 vi.mock("../../task/Task", () => ({
 	Task: vi.fn().mockImplementation((args) => {
 		taskConstructor(args)
-		return { ...args, taskId: "task", instanceId: "instance", start: vi.fn() }
+		return { ...args, taskId: "task", instanceId: "instance", start: vi.fn(), emit: vi.fn() }
 	}),
 }))
 vi.mock("fs/promises", () => ({
@@ -114,7 +114,14 @@ function makeProvider(state: any = {}) {
 	provider.setValues = vi.fn().mockResolvedValue(undefined)
 	provider.removeClineFromStack = vi.fn().mockResolvedValue(undefined)
 	provider.addClineToStack = vi.fn().mockResolvedValue(undefined)
-	provider.providerSettingsManager = { getProfile: vi.fn() }
+	provider.providerSettingsManager = {
+		getProfile: vi.fn(),
+		getModeConfigId: vi.fn().mockResolvedValue(undefined),
+		listConfig: vi.fn().mockResolvedValue([]),
+	}
+	provider.customModesManager = { getCustomModes: vi.fn().mockResolvedValue([]) }
+	provider.updateGlobalState = vi.fn().mockResolvedValue(undefined)
+	provider.performPreparationTasks = vi.fn().mockResolvedValue(undefined)
 	provider.clineStack = []
 	return provider
 }
@@ -246,5 +253,81 @@ describe("ClineProvider.createTask role assignment", () => {
 		expect(taskConstructor).toHaveBeenLastCalledWith(
 			expect.objectContaining({ isRoleSpecificConfig: false, apiConfiguration: globalConfig }),
 		)
+	})
+})
+
+describe("ClineProvider task restoration role assignment", () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+		resolveModelRoute.mockImplementation(({ explicitModelId, primaryModelId }) => ({
+			provider: "openrouter",
+			modelId: explicitModelId ?? primaryModelId,
+		}))
+	})
+
+	const historyItem = { id: "history", task: "restored", mode: "code", ts: 1 } as any
+
+	it("A1 restores the explicit role model and marks the task role-specific", async () => {
+		const provider = makeProvider({
+			roleAssignments: { roles: { code: { profileName: "custom", modelId: "role-model" } } },
+		})
+		provider.providerSettingsManager.getProfile.mockResolvedValue(profile({ openRouterModelId: "profile-model" }))
+		await provider.createTaskWithHistoryItem({ ...historyItem }, { startTask: false })
+		expect(taskConstructor).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				apiConfiguration: expect.objectContaining({ openRouterModelId: "role-model" }),
+				isRoleSpecificConfig: true,
+			}),
+		)
+	})
+
+	it("A2 uses an isolated profile snapshot when the role has no assignment", async () => {
+		const provider = makeProvider()
+		await provider.createTaskWithHistoryItem({ ...historyItem }, { startTask: false })
+		const args = taskConstructor.mock.calls.at(-1)![0]
+		expect(args.isRoleSpecificConfig).toBe(false)
+		expect(args.apiConfiguration).toEqual(globalConfig)
+		expect(args.apiConfiguration).not.toBe(globalConfig)
+	})
+
+	it("A3 resolves create and restore symmetrically", async () => {
+		const provider = makeProvider({
+			roleAssignments: { roles: { code: { profileName: "custom", modelId: "same-model" } } },
+		})
+		provider.providerSettingsManager.getProfile.mockResolvedValue(profile({ openRouterModelId: "profile-model" }))
+		await provider.createTask("new", [], undefined, {}, { mode: "code" })
+		const created = taskConstructor.mock.calls.at(-1)![0]
+		await provider.createTaskWithHistoryItem({ ...historyItem }, { startTask: false })
+		const restored = taskConstructor.mock.calls.at(-1)![0]
+		expect(restored.apiConfiguration.openRouterModelId).toBe(created.apiConfiguration.openRouterModelId)
+		expect(restored.isRoleSpecificConfig).toBe(created.isRoleSpecificConfig)
+	})
+
+	it("C2 gives roleAssignments.modelId priority over stale profile role settings", async () => {
+		const provider = makeProvider({
+			roleAssignments: { roles: { code: { profileName: "custom", modelId: "M1" } } },
+		})
+		provider.providerSettingsManager.getProfile.mockResolvedValue(
+			profile({
+				profileRoleModelSettings: {
+					schemaVersion: 1,
+					roleModels: { code: { modelId: "M2", inheritPrimary: false } },
+				},
+			}),
+		)
+		await provider.createTaskWithHistoryItem({ ...historyItem }, { startTask: false })
+		expect(resolveModelRoute).toHaveBeenCalledWith(expect.objectContaining({ explicitModelId: "M1" }))
+		expect(taskConstructor.mock.calls.at(-1)![0].apiConfiguration.openRouterModelId).toBe("M1")
+	})
+
+	it("C3 does not share task configuration references with global state", async () => {
+		const provider = makeProvider()
+		await provider.createTaskWithHistoryItem({ ...historyItem }, { startTask: false })
+		const first = taskConstructor.mock.calls.at(-1)![0].apiConfiguration
+		await provider.createTaskWithHistoryItem({ ...historyItem, id: "history-2" }, { startTask: false })
+		const second = taskConstructor.mock.calls.at(-1)![0].apiConfiguration
+		first.apiModelId = "mutated"
+		expect(second.apiModelId).toBe("global-model")
+		expect(globalConfig.apiModelId).toBe("global-model")
 	})
 })

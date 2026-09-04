@@ -156,6 +156,8 @@ export class ClineProvider
 	 * Used by the frontend to reject stale state that arrives out-of-order.
 	 */
 	private clineMessagesSeq = 0
+	private static readonly STATE_POST_DEBOUNCE_MS = 32
+	private pendingStatePost?: Promise<void>
 
 	public isViewLaunched = false
 	public settingsImportedAt?: number
@@ -946,11 +948,18 @@ export class ClineProvider
 			)
 		}
 
-		const { apiConfiguration, enableCheckpoints, checkpointTimeout, experiments } = await this.getState()
+		const state = await this.getState()
+		const { apiConfiguration, enableCheckpoints, checkpointTimeout, experiments } = state
+		const { effectiveApiConfiguration, isRoleSpecificConfig } = await this.resolveEffectiveApiConfiguration({
+			mode: historyItem.mode,
+			baseApiConfiguration: apiConfiguration,
+			state,
+		})
 
 		const task = new Task({
 			provider: this,
-			apiConfiguration,
+			apiConfiguration: effectiveApiConfiguration,
+			isRoleSpecificConfig,
 			enableCheckpoints,
 			checkpointTimeout,
 			consecutiveMistakeLimit: apiConfiguration.consecutiveMistakeLimit,
@@ -1699,6 +1708,8 @@ export class ClineProvider
 
 		const { forceRebuild = false } = options
 
+		if ((task as any).hasRoleSpecificApiConfiguration?.()) return
+
 		// Determine if we need to rebuild using the previous configuration snapshot
 		const prevConfig = task.apiConfiguration
 		const prevProvider = prevConfig?.apiProvider
@@ -1714,8 +1725,8 @@ export class ClineProvider
 			// so we can safely call it without awaiting.
 			task.updateApiConfiguration(providerSettings)
 		} else {
-			// No rebuild needed, just sync apiConfiguration
-			;(task as any).apiConfiguration = providerSettings
+			// No rebuild needed, just sync an isolated configuration snapshot.
+			;(task as any).apiConfiguration = structuredClone(providerSettings)
 		}
 	}
 
@@ -2171,7 +2182,19 @@ export class ClineProvider
 	}
 
 	async postStateToWebview() {
-		console.log("[postStateToWebview] Sending state to webview:", { mode: this.getGlobalState("mode") })
+		if (!this.pendingStatePost) {
+			this.pendingStatePost = new Promise<void>((resolve, reject) => {
+				setTimeout(() => {
+					this.pendingStatePost = undefined
+					this.sendStateToWebview().then(resolve, reject)
+				}, ClineProvider.STATE_POST_DEBOUNCE_MS)
+			})
+		}
+
+		return this.pendingStatePost
+	}
+
+	private async sendStateToWebview() {
 		const state = await this.getStateToPostToWebview()
 		this.clineMessagesSeq++
 		state.clineMessagesSeq = this.clineMessagesSeq
@@ -2187,7 +2210,7 @@ export class ClineProvider
 	 *   `taskHistoryUpdated` / `taskHistoryItemUpdated`.
 	 */
 	async postStateToWebviewWithoutTaskHistory(): Promise<void> {
-		const state = await this.getStateToPostToWebview()
+		const state = await this.getStateToPostToWebview({ includeTaskHistory: false })
 		this.clineMessagesSeq++
 		state.clineMessagesSeq = this.clineMessagesSeq
 		const { taskHistory: _omit, ...rest } = state
@@ -2206,7 +2229,7 @@ export class ClineProvider
 	 *   without interfering with task message streaming.
 	 */
 	async postStateToWebviewWithoutClineMessages(): Promise<void> {
-		const state = await this.getStateToPostToWebview()
+		const state = await this.getStateToPostToWebview({ includeTaskHistory: false, includeClineMessages: false })
 		const { clineMessages: _omitMessages, taskHistory: _omitHistory, ...rest } = state
 		this.postMessageToWebview({ type: "state", state: rest })
 	}
@@ -2267,9 +2290,14 @@ export class ClineProvider
 		}
 	}
 
-	async getStateToPostToWebview(): Promise<ExtensionState> {
-		// Ensure the store is initialized before reading task history
-		await this.taskHistoryStore.initialized
+	async getStateToPostToWebview({
+		includeTaskHistory = true,
+		includeClineMessages = true,
+	}: { includeTaskHistory?: boolean; includeClineMessages?: boolean } = {}): Promise<ExtensionState> {
+		// Avoid initializing/reading the history store for incremental state pushes.
+		if (includeTaskHistory) {
+			await this.taskHistoryStore.initialized
+		}
 
 		const {
 			apiConfiguration,
@@ -2295,7 +2323,6 @@ export class ClineProvider
 			ttsSpeed,
 			enableCheckpoints,
 			checkpointTimeout,
-			taskHistory,
 			soundVolume,
 			writeDelayMs,
 			terminalShellIntegrationTimeout,
@@ -2377,11 +2404,14 @@ export class ClineProvider
 			uriScheme: vscode.env.uriScheme,
 			currentTaskId: currentTask?.taskId,
 			currentTaskInstanceId: currentTask?.instanceId,
-			currentTaskItem: currentTask?.taskId ? this.taskHistoryStore.get(currentTask.taskId) : undefined,
-			clineMessages: currentTask?.clineMessages || [],
+			currentTaskItem:
+				includeTaskHistory && currentTask?.taskId ? this.taskHistoryStore.get(currentTask.taskId) : undefined,
+			clineMessages: includeClineMessages ? currentTask?.clineMessages || [] : [],
 			currentTaskTodos: currentTask?.todoList || [],
 			messageQueue: currentTask?.messageQueueService?.messages,
-			taskHistory: this.taskHistoryStore.getAll().filter((item: HistoryItem) => item.ts && item.task),
+			taskHistory: includeTaskHistory
+				? this.taskHistoryStore.getAll().filter((item: HistoryItem) => item.ts && item.task)
+				: [],
 			soundEnabled: soundEnabled ?? false,
 			ttsEnabled: ttsEnabled ?? false,
 			ttsSpeed: ttsSpeed ?? 1.0,
@@ -2751,7 +2781,6 @@ export class ClineProvider
 
 	public log(message: string) {
 		this.outputChannel.appendLine(message)
-		console.log(message)
 	}
 
 	// getters
@@ -2888,6 +2917,65 @@ export class ClineProvider
 		return this.recentTasksCache
 	}
 
+	private async resolveEffectiveApiConfiguration({
+		mode,
+		baseApiConfiguration,
+		state,
+		providedConfiguration = {},
+		explicitRole,
+	}: {
+		mode?: string
+		baseApiConfiguration: ProviderSettings
+		state?: Awaited<ReturnType<ClineProvider["getState"]>>
+		providedConfiguration?: AiCodeOrchestratorSettings
+		explicitRole?: string
+	}): Promise<{ effectiveApiConfiguration: ProviderSettings; isRoleSpecificConfig: boolean }> {
+		const snapshot = structuredClone(baseApiConfiguration)
+		const hasProvidedModelConfiguration = modelIdKeys.some((key) => providedConfiguration[key] != null)
+		if (explicitRole && hasProvidedModelConfiguration) {
+			for (const key of modelIdKeys) delete snapshot[key]
+			return {
+				effectiveApiConfiguration: { ...snapshot, ...structuredClone(providedConfiguration) },
+				isRoleSpecificConfig: true,
+			}
+		}
+
+		const currentState = state ?? (await this.getState())
+		const assignments = currentState.roleAssignments?.roles
+		const requestedRole = explicitRole ?? mode ?? defaultModeSlug
+		const fallbackRole = requestedRole === "orchestrator" ? "orchestrator" : "worker"
+		const roleToUse = assignments?.[requestedRole] ? requestedRole : fallbackRole
+		const assignment = assignments?.[roleToUse]
+		if (!assignment) return { effectiveApiConfiguration: snapshot, isRoleSpecificConfig: false }
+
+		const profile: ProviderSettings & { id?: string; name?: string } = assignment.profileName
+			? await this.providerSettingsManager.getProfile({ name: assignment.profileName })
+			: baseApiConfiguration
+		if (!profile?.apiProvider) return { effectiveApiConfiguration: snapshot, isRoleSpecificConfig: false }
+
+		const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
+			profileId:
+				profile.id ??
+				(assignment.profileName ? this.getProviderProfileEntry(assignment.profileName)?.id : undefined) ??
+				assignment.profileName ??
+				currentState.currentApiConfigName ??
+				"default",
+			provider: profile.apiProvider,
+			primaryModelId: getModelId(profile) ?? "",
+			role: roleToUse,
+			explicitModelId: assignment.modelId,
+			roleModels: profile.profileRoleModelSettings,
+		})
+		const modelKey =
+			profile.apiProvider === "openai"
+				? "openAiModelId"
+				: modelIdKeysByProvider[profile.apiProvider as keyof typeof modelIdKeysByProvider] || "apiModelId"
+		const effectiveApiConfiguration = structuredClone(profile)
+		for (const key of modelIdKeys) delete effectiveApiConfiguration[key]
+		effectiveApiConfiguration[modelKey] = route.modelId
+		return { effectiveApiConfiguration, isRoleSpecificConfig: true }
+	}
+
 	// When initializing a new task, (not from history but from a tool command
 	// new_task) there is no need to remove the previous task since the new
 	// task is a subtask of the previous one, and when it finishes it is removed
@@ -2944,12 +3032,6 @@ export class ClineProvider
 
 		const state = await this.getState()
 		const { apiConfiguration, organizationAllowList, enableCheckpoints, checkpointTimeout, experiments } = state
-		const activeProfileName = state.currentApiConfigName ?? "default"
-
-		// Task owns the immutable configuration used to build its API handler. Resolve the
-		// role route here, before construction, rather than only updating global UI state.
-		let effectiveApiConfiguration = { ...apiConfiguration }
-		let isRoleSpecificConfig = false
 		// Delegated tasks use their explicit role instead of inheriting provider state.
 		// The worker fallback prevents an orchestrator parent from recursively spawning itself.
 		const requestedTaskMode = parentTask ? (explicitRole ?? configuration.mode) : configuration.mode
@@ -2957,57 +3039,13 @@ export class ClineProvider
 			parentTask && (!requestedTaskMode || requestedTaskMode === "orchestrator")
 				? "worker"
 				: (requestedTaskMode ?? state.mode)
-		// Orchestration passes a complete profile configuration to the child. Do not
-		// resolve the assignment again: that would replace the executor's route.
-		const hasProvidedModelConfiguration = modelIdKeys.some((key) => configuration[key] != null)
-		if (explicitRole && hasProvidedModelConfiguration) {
-			effectiveApiConfiguration = { ...apiConfiguration }
-			for (const key of modelIdKeys) delete effectiveApiConfiguration[key]
-			effectiveApiConfiguration = { ...effectiveApiConfiguration, ...configuration }
-			isRoleSpecificConfig = true
-		}
-		const assignments = state.roleAssignments?.roles
-		// Assignments are persisted by mode slug, while orchestration may address a node
-		// by role. Keep the resolved role aligned with the assignment selected by fallback.
-		const requestedRole = explicitRole ?? taskMode ?? defaultModeSlug
-		const fallbackRole = requestedRole === "orchestrator" ? "orchestrator" : "worker"
-		const roleToUse = assignments?.[requestedRole] ? requestedRole : fallbackRole
-		const assignment = assignments?.[roleToUse]
-
-		if (assignment && !(explicitRole && hasProvidedModelConfiguration)) {
-			const profile: ProviderSettings & { id?: string; name?: string } = assignment.profileName
-				? await this.providerSettingsManager.getProfile({ name: assignment.profileName })
-				: apiConfiguration
-			if (profile?.apiProvider) {
-				const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
-					profileId:
-						profile.id ??
-						(assignment.profileName
-							? this.getProviderProfileEntry(assignment.profileName)?.id
-							: undefined) ??
-						assignment.profileName ??
-						activeProfileName,
-					provider: profile.apiProvider,
-					primaryModelId: getModelId(profile) ?? "",
-					role: roleToUse,
-					explicitModelId: assignment.modelId,
-					roleModels: profile.profileRoleModelSettings,
-				})
-				const modelKey =
-					profile.apiProvider === "openai"
-						? "openAiModelId"
-						: modelIdKeysByProvider[profile.apiProvider as keyof typeof modelIdKeysByProvider] ||
-							"apiModelId"
-				effectiveApiConfiguration = { ...profile }
-				for (const key of modelIdKeys) delete effectiveApiConfiguration[key]
-				effectiveApiConfiguration = { ...effectiveApiConfiguration, [modelKey]: route.modelId }
-				isRoleSpecificConfig = true
-			}
-		} else {
-			this.log(
-				`[model-route:createTask] step=fallback mode=${taskMode} reason=no-role-assignment profile=${activeProfileName} provider=${apiConfiguration.apiProvider ?? "unset"} model=${getModelId(apiConfiguration) ?? "unset"}`,
-			)
-		}
+		const { effectiveApiConfiguration, isRoleSpecificConfig } = await this.resolveEffectiveApiConfiguration({
+			mode: taskMode,
+			baseApiConfiguration: apiConfiguration,
+			state,
+			providedConfiguration: configuration,
+			explicitRole,
+		})
 
 		// Single-open-task invariant: always enforce for user-initiated top-level tasks
 		if (!parentTask) {

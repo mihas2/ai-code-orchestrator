@@ -483,7 +483,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		})
 
 		this.isRoleSpecificConfig = isRoleSpecificConfig
-		this.apiConfiguration = apiConfiguration
+		this.apiConfiguration = structuredClone(apiConfiguration)
 		this.api = buildApiHandler(this.apiConfiguration)
 		this.autoApprovalHandler = new AutoApprovalHandler()
 
@@ -1541,9 +1541,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 *
 	 * @param newApiConfiguration - The new API configuration to use
 	 */
+	public hasRoleSpecificApiConfiguration(): boolean {
+		return this.isRoleSpecificConfig
+	}
+
 	public updateApiConfiguration(newApiConfiguration: ProviderSettings): void {
 		// Update the configuration and rebuild the API handler
-		this.apiConfiguration = newApiConfiguration
+		this.apiConfiguration = structuredClone(newApiConfiguration)
 		this.api = buildApiHandler(this.apiConfiguration)
 	}
 
@@ -4176,8 +4180,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				: {}),
 		}
 
-		console.log("[Task] Making API request with mode:", this._taskMode)
-
 		// Create an AbortController to allow cancelling the request mid-stream
 		this.currentRequestAbortController = new AbortController()
 		const abortSignal = this.currentRequestAbortController.signal
@@ -4218,6 +4220,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					})
 				}
 			})
+			abortPromise.catch(() => undefined)
 
 			const firstChunk = await Promise.race([firstChunkPromise, abortPromise])
 			yield firstChunk.value

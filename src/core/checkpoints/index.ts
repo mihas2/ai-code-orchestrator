@@ -39,8 +39,6 @@ export async function getCheckpointService(task: Task, { interval = 250 }: { int
 	const checkpointTimeoutMs = task.checkpointTimeout * 1000
 
 	const log = (message: string) => {
-		console.log(message)
-
 		try {
 			provider?.log(message)
 		} catch (err) {
