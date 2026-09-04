@@ -274,6 +274,7 @@ const ModesView = () => {
 
 	// Sync visualMode with backend mode changes to prevent desync
 	useEffect(() => {
+		console.log("[UI] Mode state updated:", mode)
 		setVisualMode(mode)
 	}, [mode])
 
