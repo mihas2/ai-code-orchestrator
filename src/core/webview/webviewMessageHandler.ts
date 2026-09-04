@@ -1575,7 +1575,9 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "mode":
 			console.log("[ClineProvider] Received mode switch:", message.text)
 			await provider.handleModeSwitch(message.text as Mode)
+			console.log("[webviewMessageHandler] About to postStateToWebview after mode switch")
 			await provider.postStateToWebview()
+			console.log("[webviewMessageHandler] postStateToWebview completed")
 			break
 		case "updatePrompt":
 			if (message.promptMode && message.customPrompt !== undefined) {

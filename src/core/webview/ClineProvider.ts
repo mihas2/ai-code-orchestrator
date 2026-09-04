@@ -1592,6 +1592,7 @@ export class ClineProvider
 	 */
 	public async handleModeSwitch(newMode: Mode) {
 		console.log("[ClineProvider] Received mode switch:", newMode)
+		console.log("[handleModeSwitch] Before:", this.getGlobalState("mode"))
 		const task = this.getCurrentTask()
 
 		if (task) {
@@ -1622,6 +1623,7 @@ export class ClineProvider
 		}
 
 		await this.updateGlobalState("mode", newMode)
+		console.log("[handleModeSwitch] After:", this.getGlobalState("mode"))
 
 		this.emit(AiCodeOrchestratorEventName.ModeChanged, newMode)
 
@@ -2169,6 +2171,7 @@ export class ClineProvider
 	}
 
 	async postStateToWebview() {
+		console.log("[postStateToWebview] Sending state to webview:", { mode: this.getGlobalState("mode") })
 		const state = await this.getStateToPostToWebview()
 		this.clineMessagesSeq++
 		state.clineMessagesSeq = this.clineMessagesSeq
@@ -2699,8 +2702,7 @@ export class ClineProvider
 
 	// @deprecated - Use `ContextProxy#setValue` instead.
 	private async updateGlobalState<K extends keyof GlobalState>(key: K, value: GlobalState[K]) {
-		if (key === "roleAssignments") {
-		}
+		await this.contextProxy.setValue(key, value)
 	}
 
 	// @deprecated - Use `ContextProxy#getValue` instead.
