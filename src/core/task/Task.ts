@@ -145,6 +145,8 @@ export interface TaskOptions extends CreateTaskOptions {
 	historyItem?: HistoryItem
 	experiments?: Record<string, boolean>
 	startTask?: boolean
+	/** Immutable mode selected for this task at creation time. */
+	taskMode?: string
 	rootTask?: Task
 	parentTask?: Task
 	taskNumber?: number
@@ -424,6 +426,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		historyItem,
 		experiments: experimentsConfig,
 		startTask = true,
+		taskMode,
 		rootTask,
 		parentTask,
 		taskNumber = -1,
@@ -551,9 +554,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this.taskModeReady = Promise.resolve()
 			this.taskApiConfigReady = Promise.resolve()
 		} else {
-			this._taskMode = undefined
+			this._taskMode = taskMode
 			this._taskApiConfigName = undefined
-			this.taskModeReady = this.initializeTaskMode(provider)
+			this.taskModeReady = taskMode ? Promise.resolve() : this.initializeTaskMode(provider)
 			this.taskApiConfigReady = this.initializeTaskApiConfigName(provider)
 		}
 
@@ -596,6 +599,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		try {
 			const state = await provider.getState()
 			this._taskMode = state?.mode || defaultModeSlug
+			console.log("[Task] Initialized with mode:", this._taskMode)
 		} catch (error) {
 			// If there's an error getting state, use the default mode
 			this._taskMode = defaultModeSlug
@@ -1623,7 +1627,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// Get condensing configuration
 		const state = await this.providerRef.deref()?.getState()
 		const customCondensingPrompt = state?.customSupportPrompts?.CONDENSE
-		const { mode, apiConfiguration } = state ?? {}
+		const mode = this._taskMode ?? defaultModeSlug
+		const apiConfiguration = state?.apiConfiguration
 
 		const { contextTokens: prevContextTokens } = this.getTokenUsage()
 
@@ -3671,9 +3676,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		const aicoIgnoreInstructions = this.aicoIgnoreController?.getInstructions()
 
 		const state = await this.providerRef.deref()?.getState()
+		const mode = this._taskMode ?? defaultModeSlug
+		console.log("[Task] Building system prompt with mode:", mode)
 
 		const {
-			mode,
 			customModes,
 			customModePrompts,
 			customInstructions,
@@ -3731,7 +3737,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	private async handleContextWindowExceededError(): Promise<void> {
 		const state = await this.providerRef.deref()?.getState()
-		const { profileThresholds = {}, mode, apiConfiguration } = state ?? {}
+		const { profileThresholds = {}, apiConfiguration } = state ?? {}
+		const mode = this._taskMode ?? defaultModeSlug
 
 		const { contextTokens } = this.getTokenUsage()
 		const modelInfo = this.api.getModel().info
@@ -4155,6 +4162,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		const shouldIncludeTools = allTools.length > 0
 
+		console.log("[Task] Making API request with mode:", mode)
 		const metadata: ApiHandlerCreateMessageMetadata = {
 			mode: mode,
 			taskId: this.taskId,
@@ -4173,6 +4181,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					}
 				: {}),
 		}
+
+		console.log("[Task] Making API request with mode:", mode)
 
 		// Create an AbortController to allow cancelling the request mid-stream
 		this.currentRequestAbortController = new AbortController()

@@ -1573,6 +1573,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 
 		case "mode":
+			console.log("[ClineProvider] Received mode switch:", message.text)
 			await provider.handleModeSwitch(message.text as Mode)
 			break
 		case "updatePrompt":

@@ -505,7 +505,17 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		}
 	}, [])
 
+	const taskIdentity =
+		currentTaskId && currentTaskInstanceId ? `${currentTaskId}.${currentTaskInstanceId}` : undefined
+	const streamingTaskIdentityRef = useRef<string | undefined>(undefined)
 	const isStreaming = useMemo(() => {
+		// Do not reuse message-derived streaming state while switching tasks. The
+		// old task's messages can remain in state for one render after identity changes.
+		if (streamingTaskIdentityRef.current !== taskIdentity) {
+			streamingTaskIdentityRef.current = taskIdentity
+			return false
+		}
+
 		// Checking clineAsk isn't enough since messages effect may be called
 		// again for a tool for example, set clineAsk to its value, and if the
 		// next message is not an ask then it doesn't reset. This is likely due
@@ -547,7 +557,27 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		}
 
 		return false
-	}, [modifiedMessages, clineAsk, enableButtons, primaryButtonText])
+	}, [modifiedMessages, clineAsk, enableButtons, primaryButtonText, taskIdentity])
+
+	const loggedTaskIdentityRef = useRef<string | undefined>(taskIdentity)
+	useEffect(() => {
+		const oldId = loggedTaskIdentityRef.current
+		if (oldId !== taskIdentity) {
+			// Identity changes never initiate cancellation. This log makes regressions explicit.
+			const shouldSendCancel = false
+			console.log(
+				"[ChatView] taskId changed:",
+				oldId,
+				"->",
+				taskIdentity,
+				"isStreaming:",
+				isStreaming,
+				"sending cancel:",
+				shouldSendCancel,
+			)
+			loggedTaskIdentityRef.current = taskIdentity
+		}
+	}, [taskIdentity, isStreaming])
 
 	const markFollowUpAsAnswered = useCallback(() => {
 		const lastFollowUpMessage = messagesRef.current.findLast((msg: ClineMessage) => msg.ask === "followup")
@@ -708,7 +738,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			return
 		}
 
-		console.log("[ChatView] sending cancelTask, stack:", new Error().stack)
+		console.log("[ChatView] sending cancelTask from ChatTextArea stop click, stack:", new Error().stack)
 		console.log("[ChatView] sending cancelTask with:", {
 			type: "cancelTask",
 			taskId: currentTaskId,
@@ -845,30 +875,12 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	const handleSecondaryButtonClick = useCallback(
 		(text?: string, images?: string[]) => {
-			// Mark that user has responded
+			// Mark that the user responded. Streaming state alone must not turn an
+			// invoke/secondary-button event into cancelTask: stale button state can
+			// survive task delegation and invokes are also used programmatically.
 			userRespondedRef.current = true
 
 			const trimmedInput = text?.trim()
-
-			if (isStreaming) {
-				const latestTaskId = currentTaskId
-				if (!latestTaskId || latestTaskId !== currentTaskId) {
-					console.warn(
-						`[ChatView] Race condition prevented: UI taskId=${currentTaskId}, State taskId=${latestTaskId}`,
-					)
-					return
-				}
-
-				console.log("[ChatView] sending cancelTask, stack:", new Error().stack)
-				console.log("[ChatView] sending cancelTask with:", {
-					type: "cancelTask",
-					taskId: currentTaskId,
-					instanceId: currentTaskInstanceId,
-				})
-				vscode.postMessage({ type: "cancelTask", taskId: currentTaskId, instanceId: currentTaskInstanceId })
-				setDidClickCancel(true)
-				return
-			}
 
 			switch (clineAsk) {
 				case "api_req_failed":
@@ -910,7 +922,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			setClineAsk(undefined)
 			setEnableButtons(false)
 		},
-		[clineAsk, startNewTask, isStreaming, currentTaskId, currentTaskInstanceId, setDidClickCancel],
+		[clineAsk, startNewTask, currentTaskId, currentTaskInstanceId],
 	)
 
 	const { info: model } = useSelectedModel(apiConfiguration)
@@ -1417,6 +1429,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	const switchToMode = useCallback(
 		(modeSlug: string): void => {
+			console.log("[UI] Switching mode to:", modeSlug)
 			// Update local state and notify extension to sync mode change.
 			setMode(modeSlug)
 

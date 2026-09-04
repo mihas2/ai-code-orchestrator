@@ -114,12 +114,14 @@ export class NewTaskTool extends BaseTool<"new_task"> {
 			await provider.postStateToWebview()
 			await new Promise((resolve) => setTimeout(resolve, 50))
 
-			// Delegate parent and open child as sole active task
+			// Delegate parent and open child as sole active task. The selected mode is
+			// also the role key used by model routing.
 			const child = await (provider as any).delegateParentAndOpenChild({
 				parentTaskId: task.taskId,
 				message: unescapedMessage,
 				initialTodos: todoItems,
 				mode,
+				explicitRole: mode,
 			})
 
 			// Reflect delegation in tool result (no pause/unpause, no wait)

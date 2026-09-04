@@ -1108,6 +1108,10 @@ export class ClineProvider
 		nodeId?: string
 	}): Promise<import("@ai-code-orchestrator/types").ModelRoute> {
 		const state = await this.getState()
+		this.log(
+			`[Orchestration route] Resolving role='${node.role}' mode='${node.mode ?? "unset"}' nodeId='${node.nodeId ?? "unset"}' ` +
+				`activeProfile='${state.currentApiConfigName ?? "default"}' assignments=${JSON.stringify(Object.keys(state.roleAssignments?.roles ?? {}))}`,
+		)
 		// The UI persists assignments under the selected mode slug (visualMode), while
 		// orchestration plans identify nodes by role. Check both canonical and legacy
 		// keys before falling back to the built-in orchestration roles.
@@ -1122,6 +1126,11 @@ export class ClineProvider
 		const [assignmentKey, assignmentLookupKey, assignment] = assignmentEntries.find(
 			([, , value]) => value != null,
 		) ?? ["none", undefined, undefined]
+		this.log(
+			`[Orchestration route] Assignment lookup role='${node.role}' fallback='${fallbackRole}' ` +
+				`selected=${assignmentKey}:${assignmentLookupKey ?? "none"} ` +
+				`profile='${assignment?.profileName ?? "active"}' model='${assignment?.modelId ?? "primary"}'`,
+		)
 		const activeProfileName: string = state.currentApiConfigName ?? "default"
 		const assignedProfileId = state.modeApiConfigs?.[node.mode ?? node.role]
 		const profileRef = assignment?.profileName
@@ -1140,6 +1149,11 @@ export class ClineProvider
 			profile = await this.providerSettingsManager.getProfile({ name: activeProfileName })
 		}
 		const profileName = profile.name ?? activeProfileName
+		this.log(
+			`[Orchestration route] Loaded profile='${profileName}' id='${profile.id ?? "unset"}' ` +
+				`provider='${profile.apiProvider ?? "unset"}' primaryModel='${getModelId(profile) ?? "unset"}' ` +
+				`roleModelKeys=${JSON.stringify(Object.keys(profile.profileRoleModelSettings?.roleModels ?? {}))}`,
+		)
 		if (!profileRef && !assignedProfileId) {
 			this.log(
 				`[Orchestration route] Role '${node.role}' has no assigned profile; using active profile '${activeProfileName}'.`,
@@ -1161,6 +1175,10 @@ export class ClineProvider
 			explicitModelId: assignment?.modelId,
 			roleModels: profile.profileRoleModelSettings,
 		})
+		this.log(
+			`[Orchestration route] Resolved role='${node.role}' profile='${route.profileId}' ` +
+				`provider='${route.provider}' model='${route.modelId}' source='${route.source}'`,
+		)
 		return route
 	}
 
@@ -1189,9 +1207,38 @@ export class ClineProvider
 					if (!parent) throw new Error("Orchestration has no safe Task adapter: parent task is not active")
 					const workspace = await workerRegistry.allocate(run.runId, node.nodeId, node.attempt)
 					const route = node.route
-					const selectedProfile = route
-						? await this.providerSettingsManager.getProfile({ id: route.profileId })
-						: undefined
+					let selectedProfile: (ProviderSettings & { id?: string; name?: string }) | undefined
+					if (route) {
+						try {
+							selectedProfile = await this.providerSettingsManager.getProfile({ id: route.profileId })
+							if (!selectedProfile) throw new Error(`Profile '${route.profileId}' was not found by id`)
+						} catch (error) {
+							// Routes may use the profile name as a stable fallback when no id is persisted.
+							this.log(
+								`[Orchestration executor] Profile id '${route.profileId}' lookup failed; retrying by name: ${error instanceof Error ? error.message : String(error)}`,
+							)
+							try {
+								selectedProfile = await this.providerSettingsManager.getProfile({
+									name: route.profileId,
+								})
+								if (!selectedProfile)
+									throw new Error(`Profile '${route.profileId}' was not found by name`)
+							} catch (nameError) {
+								const activeProfileName = (await this.getState()).currentApiConfigName ?? "default"
+								this.log(
+									`[Orchestration executor] Profile '${route.profileId}' unavailable; using active profile '${activeProfileName}': ${nameError instanceof Error ? nameError.message : String(nameError)}`,
+								)
+								selectedProfile = await this.providerSettingsManager.getProfile({
+									name: activeProfileName,
+								})
+							}
+						}
+						if (!selectedProfile?.apiProvider) {
+							throw new Error(
+								`Resolved orchestration route '${route.profileId}' has no usable provider profile`,
+							)
+						}
+					}
 					const child = await this.delegateParentAndOpenChild({
 						parentTaskId: parent.taskId,
 						message: [
@@ -1221,7 +1268,14 @@ export class ClineProvider
 											currentApiConfigName: selectedProfile.name,
 										}
 									})()
-								: undefined,
+								: (() => {
+										this.log(
+											`[Orchestration executor] Missing resolved configuration for node '${node.nodeId}', role '${node.role}', route=${JSON.stringify(route)}`,
+										)
+										throw new Error(
+											`Unable to create configuration for orchestration node '${node.nodeId}'`,
+										)
+									})(),
 						explicitRole: node.role,
 					})
 					node.taskId = child.taskId
@@ -1537,6 +1591,7 @@ export class ClineProvider
 	 * @param newMode The mode to switch to
 	 */
 	public async handleModeSwitch(newMode: Mode) {
+		console.log("[ClineProvider] Received mode switch:", newMode)
 		const task = this.getCurrentTask()
 
 		if (task) {
@@ -1554,6 +1609,7 @@ export class ClineProvider
 
 				// Only update the task's mode after successful persistence.
 				;(task as any)._taskMode = newMode
+				console.log("[ClineProvider] Applied mode to task:", { taskId: task.taskId, mode: task.taskMode })
 			} catch (error) {
 				// If persistence fails, log the error but don't update the in-memory state.
 				this.log(
@@ -2892,7 +2948,13 @@ export class ClineProvider
 		// role route here, before construction, rather than only updating global UI state.
 		let effectiveApiConfiguration = { ...apiConfiguration }
 		let isRoleSpecificConfig = false
-		const taskMode = configuration.mode ?? state.mode
+		// Delegated tasks use their explicit role instead of inheriting provider state.
+		// The worker fallback prevents an orchestrator parent from recursively spawning itself.
+		const requestedTaskMode = parentTask ? (explicitRole ?? configuration.mode) : configuration.mode
+		const taskMode =
+			parentTask && (!requestedTaskMode || requestedTaskMode === "orchestrator")
+				? "worker"
+				: (requestedTaskMode ?? state.mode)
 		// Orchestration passes a complete profile configuration to the child. Do not
 		// resolve the assignment again: that would replace the executor's route.
 		const hasProvidedModelConfiguration = modelIdKeys.some((key) => configuration[key] != null)
@@ -2955,6 +3017,14 @@ export class ClineProvider
 			throw new OrganizationAllowListViolationError(t("common:errors.violated_organization_allowlist"))
 		}
 
+		const willBeOrchestrator = taskMode === "orchestrator"
+		console.log("[createTask] Creating task with:", {
+			explicitRole,
+			taskMode,
+			parentTaskId: parentTask?.taskId,
+			willBeOrchestrator,
+		})
+
 		const task = new Task({
 			provider: this,
 			apiConfiguration: effectiveApiConfiguration,
@@ -2972,6 +3042,7 @@ export class ClineProvider
 			// Ensure this task is present in clineStack before startTask() emits
 			// its initial state update, so state.currentTaskId is available ASAP.
 			startTask: false,
+			taskMode,
 			isRoleSpecificConfig,
 			...options,
 		})
@@ -3009,6 +3080,24 @@ export class ClineProvider
 		}
 
 		if (!task) {
+			return
+		}
+
+		// isStreaming is set before the lazy API iterator is advanced, so it can be
+		// true during checkpoint/setup work even though no HTTP request exists yet.
+		const hasActiveRequest = task.isWaitingForFirstChunk || task.currentRequestAbortController !== undefined
+		const guardState = hasActiveRequest ? "active-request" : "initializing-before-first-request"
+		console.log(
+			`[cancelTask] guard check: isStreaming=${task.isStreaming}, ` +
+				`isWaitingForFirstChunk=${task.isWaitingForFirstChunk}, ` +
+				`hasAbortController=${task.currentRequestAbortController !== undefined}, state=${guardState}`,
+		)
+
+		// Ignore stale UI cancellation during task initialization. Once a request
+		// is waiting for its first chunk or has an abort controller, it is genuinely
+		// active and must remain cancellable.
+		if (!bypassValidation && !hasActiveRequest) {
+			console.log(`[cancelTask] ignoring cancel before first API request for ${task.taskId}.${task.instanceId}`)
 			return
 		}
 
@@ -3169,6 +3258,14 @@ export class ClineProvider
 		explicitRole?: string
 	}): Promise<Task> {
 		const { parentTaskId, message, initialTodos, mode, workspacePath, configuration, explicitRole } = params
+		console.log(
+			"[orchestrator-delegation] explicitRole:",
+			explicitRole,
+			"taskMode:",
+			mode,
+			"resolvedConfig:",
+			configuration ?? {},
+		)
 
 		// Metadata-driven delegation is always enabled
 

@@ -44,7 +44,7 @@ vi.mock("fs/promises", () => ({
 	readdir: vi.fn().mockResolvedValue([]),
 	stat: vi.fn().mockRejectedValue({ code: "ENOENT" }),
 }))
-vi.mock("p-wait-for", () => ({ default: vi.fn().mockResolvedValue(undefined) }))
+vi.mock("p-wait-for", () => ({ default: vi.fn(() => Promise.resolve()) }))
 vi.mock("delay", () => ({ default: vi.fn().mockResolvedValue(undefined) }))
 vi.mock("../../../utils/storage", () => ({
 	getTaskDirectoryPath: vi.fn().mockResolvedValue("/workspace/tasks/task"),
@@ -114,6 +114,7 @@ function task(provider: any, id: string, options: any = {}) {
 	Object.defineProperty(value, "taskId", { value: id, configurable: true })
 	Object.defineProperty(value, "instanceId", { value: `${id}-instance`, configurable: true })
 	vi.spyOn(value, "abortTask").mockResolvedValue(undefined)
+	vi.spyOn(value, "cancelCurrentRequest").mockImplementation(() => {})
 	vi.spyOn(value, "flushPendingToolResultsToHistory").mockResolvedValue(true)
 	vi.spyOn(value, "retrySaveApiConversationHistory").mockResolvedValue(true)
 	vi.spyOn(value, "start").mockImplementation(() => {})
@@ -241,6 +242,108 @@ describe("ClineProvider delegation flow", () => {
 		await provider.cancelTask("parent", "parent-instance")
 		expect(child.abortTask).not.toHaveBeenCalled()
 		expect(provider.getCurrentTask()).toBe(child)
+	})
+
+	it("ignores a matching cancel while a delegated child has not started its API request", async () => {
+		const provider = makeProvider()
+		const child = task(provider, "child")
+		provider.clineStack = [child]
+
+		await provider.cancelTask("child", "child-instance")
+
+		expect(child.abortTask).not.toHaveBeenCalled()
+		expect(child.cancelCurrentRequest).not.toHaveBeenCalled()
+		expect(provider.getCurrentTask()).toBe(child)
+	})
+
+	it("blocks cancellation during streaming setup before the first API request", async () => {
+		const provider = makeProvider()
+		const child = task(provider, "child")
+		child.isStreaming = true
+		child.isWaitingForFirstChunk = false
+		child.currentRequestAbortController = undefined
+		provider.clineStack = [child]
+		const logSpy = vi.spyOn(console, "log")
+
+		await provider.cancelTask("child", "child-instance")
+
+		expect(child.abortTask).not.toHaveBeenCalled()
+		expect(child.cancelCurrentRequest).not.toHaveBeenCalled()
+		expect(logSpy).toHaveBeenCalledWith(
+			"[cancelTask] guard check: isStreaming=true, isWaitingForFirstChunk=false, hasAbortController=false, state=initializing-before-first-request",
+		)
+	})
+
+	it("allows cancellation while waiting for the first API chunk", async () => {
+		const provider = makeProvider()
+		const child = task(provider, "child")
+		child.isStreaming = true
+		child.isWaitingForFirstChunk = true
+		child.currentRequestAbortController = undefined
+		provider.clineStack = [child]
+		provider.getTaskWithId.mockRejectedValueOnce(new Error("Task not found"))
+		const logSpy = vi.spyOn(console, "log")
+
+		await provider.cancelTask("child", "child-instance")
+
+		expect(child.abortTask).toHaveBeenCalledOnce()
+		expect(child.cancelCurrentRequest).toHaveBeenCalledOnce()
+		expect(logSpy).toHaveBeenCalledWith(
+			"[cancelTask] guard check: isStreaming=true, isWaitingForFirstChunk=true, hasAbortController=false, state=active-request",
+		)
+	})
+
+	it("allows cancellation when an active request has an AbortController", async () => {
+		const provider = makeProvider()
+		const child = task(provider, "child")
+		child.isStreaming = true
+		child.isWaitingForFirstChunk = false
+		child.currentRequestAbortController = new AbortController()
+		provider.clineStack = [child]
+		provider.getTaskWithId.mockRejectedValueOnce(new Error("Task not found"))
+		const logSpy = vi.spyOn(console, "log")
+
+		await provider.cancelTask("child", "child-instance")
+
+		expect(child.abortTask).toHaveBeenCalledOnce()
+		expect(child.cancelCurrentRequest).toHaveBeenCalledOnce()
+		expect(logSpy).toHaveBeenCalledWith(
+			"[cancelTask] guard check: isStreaming=true, isWaitingForFirstChunk=false, hasAbortController=true, state=active-request",
+		)
+	})
+
+	it("allows cancellation with bypassValidation before an API request exists", async () => {
+		const provider = makeProvider()
+		const child = task(provider, "child")
+		child.isStreaming = true
+		child.isWaitingForFirstChunk = false
+		child.currentRequestAbortController = undefined
+		provider.clineStack = [child]
+		provider.getTaskWithId.mockRejectedValueOnce(new Error("Task not found"))
+		const logSpy = vi.spyOn(console, "log")
+
+		await provider.cancelTask("child", "child-instance", true)
+
+		expect(child.abortTask).toHaveBeenCalledOnce()
+		expect(child.cancelCurrentRequest).toHaveBeenCalledOnce()
+		expect(logSpy).toHaveBeenCalledWith(
+			"[cancelTask] guard check: isStreaming=true, isWaitingForFirstChunk=false, hasAbortController=false, state=initializing-before-first-request",
+		)
+	})
+
+	it("cancels a task once its API request is actively streaming", async () => {
+		vi.useFakeTimers()
+		const provider = makeProvider()
+		const child = task(provider, "child")
+		child.isStreaming = true
+		child.isWaitingForFirstChunk = true
+		provider.clineStack = [child]
+		provider.getTaskWithId.mockRejectedValueOnce(new Error("Task not found"))
+
+		await provider.cancelTask("child", "child-instance")
+
+		expect(child.cancelCurrentRequest).toHaveBeenCalled()
+		expect(child.abortTask).toHaveBeenCalled()
 	})
 
 	it("handles an invalid child configuration without corrupting the parent", async () => {

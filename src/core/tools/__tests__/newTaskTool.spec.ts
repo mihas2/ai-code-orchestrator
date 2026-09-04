@@ -654,12 +654,13 @@ describe("newTaskTool delegation flow", () => {
 			pushToolResult: mockPushToolResult,
 		})
 
-		// Assert: provider method called with correct params
+		// Assert: the tool mode is forwarded both as task mode and role-routing key.
 		expect(providerSpy.delegateParentAndOpenChild).toHaveBeenCalledWith({
 			parentTaskId: "mock-parent-task-id",
 			message: "Do something",
 			initialTodos: [],
 			mode: "code",
+			explicitRole: "code",
 		})
 
 		// Assert: legacy path not used
