@@ -1,6 +1,6 @@
 {
 	"name": "@ai-code-orchestrator/cli",
-	"version": "1.0.0",
+	"version": "1.1.4",
 	"description": "AI Code Orchestrator CLI - Run the AI Code Orchestrator agent from the command line",
 	"private": true,
 	"type": "module",

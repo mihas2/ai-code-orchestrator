@@ -1,5 +1,12 @@
 # AI Code Orchestrator
 
+## 1.1.4
+
+### Patch Changes
+
+- Fixed: ошибка Could not find ripgrep binary — бинарник ripgrep теперь копируется в dist при сборке
+- Chore: синхронизация версий во всех манифестах монорепо
+
 ## 1.1.2
 
 ### Patch Changes

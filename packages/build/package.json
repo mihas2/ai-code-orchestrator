@@ -1,6 +1,6 @@
 {
 	"name": "@ai-code-orchestrator/build",
-	"version": "1.0.0",
+	"version": "1.1.4",
 	"description": "ESBuild utilities for AI Code Orchestrator.",
 	"private": true,
 	"type": "module",

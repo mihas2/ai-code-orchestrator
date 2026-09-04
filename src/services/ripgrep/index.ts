@@ -97,6 +97,11 @@ export async function getBinPath(
 		return pathExists(candidate) ? candidate : undefined
 	}
 
+	// Packaged VSIX files do not include dependencies (--no-dependencies), so the
+	// build copies ripgrep next to the extension bundle.
+	const bundled = check(path.join(__dirname, "ripgrep", binName))
+	if (bundled) return bundled
+
 	// Resolve from the bundled extension's runtime module location first. This
 	// lets Node follow pnpm links instead of assuming a particular store path.
 	try {

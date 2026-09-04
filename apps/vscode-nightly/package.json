@@ -1,6 +1,6 @@
 {
 	"name": "@ai-code-orchestrator/vscode-nightly",
-	"version": "1.0.0",
+	"version": "1.1.4",
 	"description": "Nightly build for the AI Code Orchestrator VSCode extension.",
 	"private": true,
 	"packageManager": "pnpm@10.8.1",

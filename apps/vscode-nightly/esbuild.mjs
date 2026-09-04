@@ -67,6 +67,7 @@ async function main() {
 							["../CHANGELOG.md", "CHANGELOG.md"],
 							["../LICENSE", "LICENSE"],
 							["../.env", ".env", { optional: true }],
+							["node_modules/@vscode/ripgrep/bin", "dist/ripgrep"],
 							[".vscodeignore", ".vscodeignore"],
 							["assets", "assets"],
 							["integrations", "integrations"],
