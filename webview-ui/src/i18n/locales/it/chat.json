@@ -326,11 +326,11 @@
 		"title": "Rilasciato AI Code Orchestrator {{version}}",
 		"support": "Sostieni AI Code Orchestrator lasciandoci una stella su <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
-			"title": "L'ultima release di AI Code Orchestrator",
-			"intro": "Questa è l'ultima release di AI Code Orchestrator. <announcementLink>Come abbiamo annunciato qualche settimana fa</announcementLink>, abbiamo deciso di spostare il nostro focus su <remoteLink>remote</remoteLink>, la nostra piattaforma di agenti cloud, che riteniamo essere il futuro dello sviluppo software. Grazie di cuore per il tuo supporto durante questo ultimo anno circa.",
-			"continuity": "Questa estensione dovrebbe continuare a funzionare indefinitamente, ma non riceverà correzioni di bug, nuove funzionalità o aggiornamenti dei modelli.",
-			"alternatives": "Se vuoi usare un'estensione, ti consigliamo di dare un'occhiata a <zooCodeLink>ZooCode</zooCodeLink> (un fork di AI Code Orchestrator creato dalla community) e a <clineLink>Cline</clineLink> (da cui AI Code Orchestrator è nato originariamente).",
-			"signoff": "Buon coding!"
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} migliora la selezione dei modelli per ruolo. I modelli assegnati ai ruoli hanno ora la precedenza in modo coerente sia nell’interfaccia della chat sia durante l’esecuzione delle attività, mentre i ruoli senza un modello assegnato ereditano il modello principale.",
+			"continuity": "Questa versione corregge inoltre la selezione del modello quando un’assegnazione di ruolo è configurata senza nome del profilo.",
+			"alternatives": "La selezione dei modelli per ruolo è ora coerente dalla configurazione all’esecuzione.",
+			"signoff": "Buon lavoro!"
 		},
 		"release": {
 			"heading": "Novità:",

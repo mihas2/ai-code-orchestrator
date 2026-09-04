@@ -326,11 +326,11 @@
 		"title": "AI Code Orchestrator {{version}} रिलीज़ हुआ",
 		"support": "कृपया <githubLink>GitHub</githubLink> पर हमें स्टार देकर AI Code Orchestrator का समर्थन करें।",
 		"finalRelease": {
-			"title": "AI Code Orchestrator की आखिरी रिलीज़",
-			"intro": "यह AI Code Orchestrator की आखिरी रिलीज़ है। <announcementLink>जैसा कि हमने कुछ हफ्ते पहले घोषणा की थी</announcementLink>, हमने अपना ध्यान <remoteLink>remote</remoteLink> पर केंद्रित करने का निर्णय लिया है, जो हमारा क्लाउड एजेंट प्लेटफ़ॉर्म है और जिसे हम सॉफ़्टवेयर डेवलपमेंट का भविष्य मानते हैं। पिछले लगभग एक साल में आपके समर्थन के लिए बहुत धन्यवाद।",
-			"continuity": "यह एक्सटेंशन अनिश्चित समय तक काम करता रहना चाहिए, लेकिन इसे बग फ़िक्स, नई सुविधाएँ या मॉडल अपडेट नहीं मिलेंगे।",
-			"alternatives": "यदि आप कोई एक्सटेंशन उपयोग करना चाहते हैं, तो हम <zooCodeLink>ZooCode</zooCodeLink> (समुदाय द्वारा बनाया गया AI Code Orchestrator fork) और <clineLink>Cline</clineLink> (जहाँ से AI Code Orchestrator मूल रूप से शुरू हुआ था) देखने की सलाह देते हैं।",
-			"signoff": "हैप्पी कोडिंग!"
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} में भूमिका के अनुसार मॉडल चुनने की सुविधा बेहतर की गई है। भूमिकाओं को दिए गए मॉडल अब चैट UI और टास्क निष्पादन दोनों में लगातार प्राथमिकता पाते हैं, जबकि बिना मॉडल वाली भूमिकाएँ मुख्य मॉडल को अपनाती हैं।",
+			"continuity": "इस रिलीज़ में प्रोफ़ाइल नाम के बिना भूमिका मॉडल असाइन करने पर मॉडल चयन की समस्या भी ठीक की गई है।",
+			"alternatives": "भूमिका मॉडल चयन अब कॉन्फ़िगरेशन से निष्पादन तक एक जैसा काम करता है।",
+			"signoff": "कोडिंग का आनंद लें!"
 		},
 		"release": {
 			"heading": "नया क्या है:",

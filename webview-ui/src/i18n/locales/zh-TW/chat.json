@@ -352,11 +352,11 @@
 		"title": "AI Code Orchestrator {{version}} 已發布",
 		"support": "請在 <githubLink>GitHub</githubLink> 上給 AI Code Orchestrator 星星支持我們。",
 		"finalRelease": {
-			"title": "AI Code Orchestrator 的最後一個版本",
-			"intro": "這是 AI Code Orchestrator 的最後一個版本。<announcementLink>正如我們幾週前宣布的那樣</announcementLink>，我們決定將重心轉向 <remoteLink>remote</remoteLink>，這是我們的雲端代理平台，我們相信它是軟體開發的未來。非常感謝你在過去一年左右的支持。",
-			"continuity": "這個擴充功能應該會繼續無限期運作，但不會再收到錯誤修正、新功能或模型更新。",
-			"alternatives": "如果你想使用擴充功能，我們建議看看 <zooCodeLink>ZooCode</zooCodeLink>（由社群維護的 AI Code Orchestrator fork）和 <clineLink>Cline</clineLink>（AI Code Orchestrator 最初起源的專案）。",
-			"signoff": "Happy coding!"
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} 改善了角色模型選擇。指派給角色的模型現在會在聊天介面和任務執行中一致地優先使用；未指派模型的角色則會繼承主要模型。",
+			"continuity": "此版本也修正了未設定設定檔名稱時的角色模型指派選擇問題。",
+			"alternatives": "角色模型選擇現在從設定到執行都保持一致。",
+			"signoff": "祝你編碼愉快！"
 		},
 		"release": {
 			"heading": "新增功能：",

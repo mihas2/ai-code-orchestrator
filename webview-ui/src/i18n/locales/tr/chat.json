@@ -326,11 +326,11 @@
 		"title": "AI Code Orchestrator {{version}} Yayınlandı",
 		"support": "<githubLink>GitHub</githubLink>'da yıldız vererek AI Code Orchestrator'u destekle.",
 		"finalRelease": {
-			"title": "Son AI Code Orchestrator sürümü",
-			"intro": "Bu, AI Code Orchestrator'un son sürümüdür. <announcementLink>Birkaç hafta önce duyurduğumuz gibi</announcementLink>, odağımızı yazılım geliştirmenin geleceği olduğuna inandığımız bulut ajan platformumuz <remoteLink>remote</remoteLink>'a kaydırmaya karar verdik. Geçtiğimiz yaklaşık bir yıl boyunca verdiğiniz destek için çok teşekkür ederiz.",
-			"continuity": "Bu eklenti süresiz olarak çalışmaya devam etmelidir, ancak hata düzeltmeleri, yeni özellikler veya model güncellemeleri almayacaktır.",
-			"alternatives": "Bir eklenti kullanmak istiyorsanız, topluluk tarafından geliştirilen bir AI Code Orchestrator fork'u olan <zooCodeLink>ZooCode</zooCodeLink>'a ve AI Code Orchestrator'un başlangıç noktası olan <clineLink>Cline</clineLink>'a göz atmanızı öneririz.",
-			"signoff": "Mutlu kodlamalar!"
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} rol modeli seçimini geliştiriyor. Rollere atanan modeller artık hem sohbet arayüzünde hem de görev yürütme sırasında tutarlı biçimde önceliklendiriliyor; model atanmamış roller ise ana modeli devralıyor.",
+			"continuity": "Bu sürüm ayrıca profil adı olmadan rol modeli atandığında yaşanan model seçimi sorununu düzeltiyor.",
+			"alternatives": "Rol modeli seçimi artık yapılandırmadan yürütmeye kadar tutarlı çalışıyor.",
+			"signoff": "İyi kodlamalar!"
 		},
 		"release": {
 			"heading": "Yenilikler:",

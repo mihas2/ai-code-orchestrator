@@ -351,11 +351,11 @@
 		"title": "AI Code Orchestrator {{version}} Dirilis",
 		"support": "Dukung AI Code Orchestrator dengan memberi kami bintang di <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
-			"title": "Rilis AI Code Orchestrator terakhir",
-			"intro": "Ini adalah rilis AI Code Orchestrator terakhir. <announcementLink>Seperti yang kami umumkan beberapa minggu lalu</announcementLink>, kami memutuskan untuk mengalihkan fokus ke <remoteLink>remote</remoteLink>, platform agen cloud kami, yang kami yakini sebagai masa depan pengembangan perangkat lunak. Terima kasih banyak atas dukunganmu selama kira-kira setahun terakhir.",
-			"continuity": "Ekstensi ini seharusnya tetap berfungsi tanpa batas waktu, tetapi tidak akan menerima perbaikan bug, fitur baru, atau pembaruan model.",
-			"alternatives": "Jika kamu ingin menggunakan ekstensi, kami merekomendasikan <zooCodeLink>ZooCode</zooCodeLink> (fork AI Code Orchestrator oleh komunitas) dan <clineLink>Cline</clineLink> (tempat AI Code Orchestrator awalnya bermula).",
-			"signoff": "Selamat coding!"
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} meningkatkan pemilihan model berdasarkan peran. Model yang ditetapkan ke peran kini selalu diprioritaskan di UI chat dan saat menjalankan tugas, sedangkan peran tanpa model khusus mewarisi model utama.",
+			"continuity": "Rilis ini juga memperbaiki pemilihan model ketika penetapan model peran dikonfigurasi tanpa nama profil.",
+			"alternatives": "Pemilihan model berdasarkan peran kini konsisten dari konfigurasi hingga eksekusi.",
+			"signoff": "Selamat melakukan coding!"
 		},
 		"release": {
 			"heading": "Yang Baru:",

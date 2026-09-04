@@ -299,11 +299,11 @@
 		"title": "AI Code Orchestrator {{version}} uitgebracht",
 		"support": "Steun AI Code Orchestrator door ons een ster te geven op <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
-			"title": "De laatste AI Code Orchestrator-release",
-			"intro": "Dit is de laatste AI Code Orchestrator-release. <announcementLink>Zoals we een paar weken geleden hebben aangekondigd</announcementLink>, hebben we besloten onze focus te verleggen naar <remoteLink>remote</remoteLink>, ons cloud-agentplatform, waarvan we geloven dat het de toekomst van softwareontwikkeling is. Heel erg bedankt voor je steun in het afgelopen jaar of daaromtrent.",
-			"continuity": "Deze extensie zou voor onbepaalde tijd moeten blijven werken, maar ontvangt geen bugfixes, nieuwe functies of modelupdates meer.",
-			"alternatives": "Als je een extensie wilt gebruiken, raden we aan om <zooCodeLink>ZooCode</zooCodeLink> (een AI Code Orchestrator-fork door de community) en <clineLink>Cline</clineLink> (waar AI Code Orchestrator oorspronkelijk begon) te bekijken.",
-			"signoff": "Veel codeerplezier!"
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} verbetert de modelselectie per rol. Aan rollen toegewezen modellen krijgen nu consistent voorrang in zowel de chatinterface als tijdens de uitvoering van taken; rollen zonder toegewezen model nemen het primaire model over.",
+			"continuity": "Deze release verhelpt ook de modelselectie wanneer een roltoewijzing zonder profielnaam is geconfigureerd.",
+			"alternatives": "Modelselectie per rol werkt nu consistent van configuratie tot uitvoering.",
+			"signoff": "Veel programmeerplezier!"
 		},
 		"release": {
 			"heading": "Wat is er nieuw:",

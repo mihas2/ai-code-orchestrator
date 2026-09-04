@@ -4,51 +4,20 @@ import { render, screen } from "@/utils/test-utils"
 
 import Announcement from "../Announcement"
 
-vi.mock("@src/utils/vscode", () => ({
-	vscode: {
-		postMessage: vi.fn(),
-	},
-}))
-
 vi.mock("@aico/package", () => ({
 	Package: {
-		version: "1.0.0",
+		version: "1.1.2",
 	},
-}))
-
-vi.mock("@vscode/webview-ui-toolkit/react", () => ({
-	VSCodeLink: ({ children, href, onClick, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-		<a href={href} onClick={onClick} {...props}>
-			{children}
-		</a>
-	),
 }))
 
 vi.mock("react-i18next", () => ({
-	Trans: ({ i18nKey, components }: { i18nKey: string; components?: Record<string, React.ReactElement> }) => {
+	Trans: ({ i18nKey }: { i18nKey: string; components?: Record<string, React.ReactElement> }) => {
 		if (i18nKey === "chat:announcement.finalRelease.intro") {
-			return (
-				<span>
-					This is the last AI Code Orchestrator release.{" "}
-					{components?.announcementLink &&
-						React.cloneElement(components.announcementLink, {}, "As we announced a few weeks ago")}
-					, we{"'"}ve decided to shift our focus to{" "}
-					{components?.remoteLink && React.cloneElement(components.remoteLink, {}, "remote")}, our cloud agent
-					platform, which we believe to be the future of software development. Thank you so much for your
-					support throughout the past year or so.
-				</span>
-			)
+			return <span>AI Code Orchestrator 1.1.2 includes improved role model selection.</span>
 		}
 
 		if (i18nKey === "chat:announcement.finalRelease.alternatives") {
-			return (
-				<span>
-					If you want to use an extension, we recommend checking out{" "}
-					{components?.zooCodeLink && React.cloneElement(components.zooCodeLink, {}, "ZooCode")} and{" "}
-					{components?.clineLink && React.cloneElement(components.clineLink, {}, "Cline")} (where AI Code
-					Orchestrator originally started).
-				</span>
-			)
+			return <span>Role model selection is now consistent from configuration to execution.</span>
 		}
 
 		return <span>{i18nKey}</span>
@@ -59,14 +28,14 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 	useAppTranslation: () => ({
 		t: (key: string, options?: { version?: string }) => {
 			const translations: Record<string, string> = {
-				"chat:announcement.finalRelease.title": "The last AI Code Orchestrator release",
+				"chat:announcement.finalRelease.title": "AI Code Orchestrator {{version}}",
 				"chat:announcement.finalRelease.continuity":
-					"This extension should continue to work indefinitely, but it won't receive bug fixes, new features, or model updates.",
+					"This release also fixes model selection when a role assignment is configured without a profile name.",
 				"chat:announcement.finalRelease.signoff": "Happy coding!",
 			}
 
 			if (key === "chat:announcement.finalRelease.title") {
-				return `${translations[key]}${options?.version ? "" : ""}`
+				return translations[key].replace("{{version}}", options?.version ?? "")
 			}
 
 			return translations[key] ?? key
@@ -78,28 +47,22 @@ describe("Announcement", () => {
 	it("renders the final release announcement", () => {
 		render(<Announcement hideAnnouncement={vi.fn()} />)
 
-		expect(screen.getByText("The last AI Code Orchestrator release")).toBeInTheDocument()
-		expect(screen.getByText(/This is the last AI Code Orchestrator release/)).toBeInTheDocument()
+		expect(screen.getByText("AI Code Orchestrator 1.1.2")).toBeInTheDocument()
+		expect(
+			screen.getByText(/AI Code Orchestrator 1.1.2 includes improved role model selection/),
+		).toBeInTheDocument()
 		expect(
 			screen.getByText(
-				"This extension should continue to work indefinitely, but it won't receive bug fixes, new features, or model updates.",
+				"This release also fixes model selection when a role assignment is configured without a profile name.",
 			),
 		).toBeInTheDocument()
 		expect(screen.getByText("Happy coding!")).toBeInTheDocument()
 	})
 
-	it("renders the external links", () => {
+	it("does not render legacy release links", () => {
 		render(<Announcement hideAnnouncement={vi.fn()} />)
 
-		expect(screen.getByRole("link", { name: "As we announced a few weeks ago" })).toHaveAttribute(
-			"href",
-			"https://x.com/mattrubens/status/2046636598859559114",
-		)
-		expect(screen.getByRole("link", { name: "ZooCode" })).toHaveAttribute(
-			"href",
-			"https://github.com/Zoo-Code-Org/Zoo-Code/",
-		)
-		expect(screen.getByRole("link", { name: "Cline" })).toHaveAttribute("href", "https://cline.bot/")
+		expect(screen.queryByRole("link")).not.toBeInTheDocument()
 	})
 
 	it("does not render corporate handoff links", () => {

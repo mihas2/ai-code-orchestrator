@@ -326,11 +326,11 @@
 		"title": "AI Code Orchestrator {{version}} Đã phát hành",
 		"support": "Hãy ủng hộ AI Code Orchestrator bằng cách gắn sao cho chúng tôi trên <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
-			"title": "Bản phát hành AI Code Orchestrator cuối cùng",
-			"intro": "Đây là bản phát hành AI Code Orchestrator cuối cùng. <announcementLink>Như chúng tôi đã thông báo vài tuần trước</announcementLink>, chúng tôi đã quyết định chuyển trọng tâm sang <remoteLink>remote</remoteLink>, nền tảng tác nhân đám mây của chúng tôi, thứ mà chúng tôi tin là tương lai của phát triển phần mềm. Cảm ơn bạn rất nhiều vì đã ủng hộ trong khoảng một năm vừa qua.",
-			"continuity": "Tiện ích mở rộng này sẽ tiếp tục hoạt động vô thời hạn, nhưng sẽ không nhận bản sửa lỗi, tính năng mới hoặc cập nhật mô hình.",
-			"alternatives": "Nếu bạn muốn sử dụng một tiện ích mở rộng, chúng tôi khuyên bạn nên xem <zooCodeLink>ZooCode</zooCodeLink> (một fork AI Code Orchestrator do cộng đồng phát triển) và <clineLink>Cline</clineLink> (nơi AI Code Orchestrator ban đầu bắt đầu).",
-			"signoff": "Chúc lập trình vui vẻ!"
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} cải thiện việc chọn model theo vai trò. Các model được gán cho vai trò giờ đây luôn được ưu tiên nhất quán trong giao diện chat và khi thực thi tác vụ, còn vai trò không được gán model sẽ kế thừa model chính.",
+			"continuity": "Bản phát hành này cũng sửa lỗi chọn model khi cấu hình gán model cho vai trò mà không có tên hồ sơ.",
+			"alternatives": "Việc chọn model theo vai trò giờ đây nhất quán từ cấu hình đến thực thi.",
+			"signoff": "Chúc bạn lập trình vui vẻ!"
 		},
 		"release": {
 			"heading": "Tính năng mới:",

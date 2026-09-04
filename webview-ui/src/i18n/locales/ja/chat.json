@@ -326,11 +326,11 @@
 		"title": "AI Code Orchestrator {{version}} リリース",
 		"support": "<githubLink>GitHub</githubLink>でスターを付けてAI Code Orchestratorを応援してください。",
 		"finalRelease": {
-			"title": "AI Code Orchestrator 最後のリリース",
-			"intro": "これは AI Code Orchestrator の最後のリリースです。<announcementLink>数週間前にお知らせしたとおり</announcementLink>、私たちは今後、ソフトウェア開発の未来だと考えているクラウドエージェントプラットフォーム <remoteLink>remote</remoteLink> に注力することにしました。この約1年間のご支援、本当にありがとうございました。",
-			"continuity": "この拡張機能は今後も無期限に動作し続けるはずですが、バグ修正、新機能、モデル更新は提供されません。",
-			"alternatives": "拡張機能を使いたい場合は、コミュニティによる AI Code Orchestrator のフォークである <zooCodeLink>ZooCode</zooCodeLink> と、AI Code Orchestrator の出発点である <clineLink>Cline</clineLink> をぜひ確認してみてください。",
-			"signoff": "Happy coding!"
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} では、ロールごとのモデル選択が改善されました。ロールに割り当てたモデルがチャット UI とタスク実行の両方で一貫して優先され、モデルを割り当てていないロールはプライマリモデルを継承します。",
+			"continuity": "また、プロファイル名なしでロールモデルを設定した場合のモデル選択を修正しました。",
+			"alternatives": "ロールモデルの選択が、設定から実行まで一貫して機能するようになりました。",
+			"signoff": "コーディングをお楽しみください！"
 		},
 		"release": {
 			"heading": "新機能:",

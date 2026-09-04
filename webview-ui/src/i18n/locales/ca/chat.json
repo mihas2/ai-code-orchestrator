@@ -326,11 +326,11 @@
 		"title": "AI Code Orchestrator {{version}} Llançat",
 		"support": "Si us plau, dona suport a AI Code Orchestrator fent una estrella al nostre <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
-			"title": "L'última versió de AI Code Orchestrator",
-			"intro": "Aquesta és l'última versió de AI Code Orchestrator. <announcementLink>Com vam anunciar fa unes setmanes</announcementLink>, hem decidit centrar-nos en <remoteLink>remote</remoteLink>, la nostra plataforma d'agents al núvol, que creiem que és el futur del desenvolupament de programari. Moltes gràcies pel teu suport durant aquest darrer any aproximadament.",
-			"continuity": "Aquesta extensió hauria de continuar funcionant indefinidament, però no rebrà correccions d'errors, noves funcionalitats ni actualitzacions de models.",
-			"alternatives": "Si vols utilitzar una extensió, et recomanem donar un cop d'ull a <zooCodeLink>ZooCode</zooCodeLink> (un fork comunitari de AI Code Orchestrator) i <clineLink>Cline</clineLink> (d'on va començar originalment AI Code Orchestrator).",
-			"signoff": "Feliç programació!"
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} millora la selecció de models per rol. Els models assignats als rols ara tenen prioritat de manera coherent tant a la interfície del xat com durant l’execució de tasques, i els rols sense model assignat hereten el model principal.",
+			"continuity": "Aquesta versió també corregeix la selecció del model quan es configura una assignació de rol sense nom de perfil.",
+			"alternatives": "La selecció de models per rol ara és coherent des de la configuració fins a l’execució.",
+			"signoff": "Bona programació!"
 		},
 		"release": {
 			"heading": "Què hi ha de nou:",

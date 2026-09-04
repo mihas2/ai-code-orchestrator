@@ -7,6 +7,7 @@ import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 
 import { sourcemapPlugin } from "./src/vite-plugins/sourcemapPlugin"
+import extensionPackage from "../src/package.json"
 
 function getGitSha() {
 	let gitSha: string | undefined = undefined
@@ -55,7 +56,9 @@ const persistPortPlugin = (): Plugin => ({
 export default defineConfig(({ mode }) => {
 	let outDir = "../src/webview-ui/build"
 
-	const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src", "package.json"), "utf8"))
+	// Keep package metadata in Vite's config dependency graph so changing the
+	// extension version restarts the dev server and refreshes define values.
+	const pkg = extensionPackage
 	const gitSha = getGitSha()
 
 	const define: Record<string, any> = {
