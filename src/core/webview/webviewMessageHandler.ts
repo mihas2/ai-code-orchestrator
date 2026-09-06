@@ -562,6 +562,9 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "orchestrationApproveIntegration": {
 			const runId = message.orchestrationRunId
 			if (!runId) throw new Error("Orchestration run id is required")
+			const currentTask = provider.getCurrentTask()
+			const rootTaskId = currentTask?.rootTaskId ?? currentTask?.taskId
+			if (!rootTaskId) throw new Error("Active task tree is required for orchestration actions")
 			const service = await provider.getOrchestrationService()
 			switch (message.type) {
 				case "orchestrationSnapshot":
@@ -573,11 +576,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					await service.resume(runId)
 					break
 				case "orchestrationCancel":
-					await service.cancel(runId, message.text)
+					await service.cancel(runId, rootTaskId, message.text)
 					break
 				case "orchestrationRetry":
 					if (!message.orchestrationNodeId) throw new Error("Orchestration node id is required")
-					await service.retryNode(runId, message.orchestrationNodeId)
+					await service.retryNode(runId, message.orchestrationNodeId, rootTaskId)
 					break
 				case "orchestrationReview":
 					if (!message.orchestrationNodeId) throw new Error("Orchestration node id is required")
@@ -587,7 +590,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					await service.approvePlan(runId)
 					break
 				case "orchestrationApproveIntegration":
-					await service.approveIntegration(runId)
+					await service.approveIntegration(runId, rootTaskId)
 			}
 			await provider.postMessageToWebview({
 				type: "orchestrationSnapshot",

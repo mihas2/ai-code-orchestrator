@@ -29,17 +29,23 @@ export function validateDag(nodes: readonly PlanNodeInput[]): DagIssue[] {
 		visited.add(id)
 	}
 	for (const id of byId.keys()) visit(id, [])
-	const owners = new Map<string, PlanNodeInput>()
+	const owners: Array<{ path: string; segments: string[]; node: PlanNodeInput }> = []
 	for (const n of nodes)
 		for (const path of n.inputContract.fileScopes.write ?? []) {
-			const owner = owners.get(path)
-			if (
-				owner &&
-				!owner.inputContract.fileScopes.allowOverlapWith?.includes(n.nodeId) &&
-				!n.inputContract.fileScopes.allowOverlapWith?.includes(owner.nodeId)
-			)
-				issues.push({ code: "duplicate_write_scope", nodeIds: [owner.nodeId, n.nodeId], path })
-			else owners.set(path, n)
+			const segments = path.split("/").filter(Boolean)
+			for (const owner of owners) {
+				const overlaps =
+					segments.length <= owner.segments.length
+						? segments.every((segment, index) => segment === owner.segments[index])
+						: owner.segments.every((segment, index) => segment === segments[index])
+				if (
+					overlaps &&
+					!owner.node.inputContract.fileScopes.allowOverlapWith?.includes(n.nodeId) &&
+					!n.inputContract.fileScopes.allowOverlapWith?.includes(owner.node.nodeId)
+				)
+					issues.push({ code: "duplicate_write_scope", nodeIds: [owner.node.nodeId, n.nodeId], path })
+			}
+			owners.push({ path, segments, node: n })
 		}
 	return issues
 }
