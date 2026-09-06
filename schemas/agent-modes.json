@@ -31,6 +31,22 @@
 						"type": "string",
 						"enum": ["global", "project"]
 					},
+					"rulesFiles": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"relativePath": {
+									"type": "string"
+								},
+								"content": {
+									"type": "string"
+								}
+							},
+							"required": ["relativePath"],
+							"additionalProperties": false
+						}
+					},
 					"groups": {
 						"type": "array",
 						"items": {
@@ -63,22 +79,6 @@
 									]
 								}
 							]
-						}
-					},
-					"rulesFiles": {
-						"type": "array",
-						"items": {
-							"type": "object",
-							"properties": {
-								"relativePath": {
-									"type": "string"
-								},
-								"content": {
-									"type": "string"
-								}
-							},
-							"required": ["relativePath"],
-							"additionalProperties": false
 						}
 					}
 				},

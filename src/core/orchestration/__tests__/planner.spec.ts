@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { extractPlannerJson, parseAndValidatePlan, redactPlannerContext } from "../planner"
 
 const limits = { modes: ["code", "debug"], allowedScopes: ["src", "."], maxChildTokens: 100, maxRunTokens: 150 }
@@ -20,6 +20,19 @@ const plan = (
 
 describe("planner adapter", () => {
 	it("parses a valid plan", () => expect(parseAndValidatePlan(plan(), limits)[0].nodeId).toBe("a"))
+	it("keeps plans with unknown roles and logs a diagnostic", () => {
+		const logger = vi.fn()
+		const result = parseAndValidatePlan(plan([{ ...JSON.parse(plan()).nodes[0], role: "future-role" }]), {
+			...limits,
+			roles: ["worker"],
+			logger,
+		})
+		expect(result).toHaveLength(1)
+		expect(logger).toHaveBeenCalledWith(
+			"info",
+			"Plan includes unknown role 'future-role', may fallback to default during resolution",
+		)
+	})
 	it.each([
 		["plain JSON", plan()],
 		["fenced JSON", `\`\`\`json\n${plan()}\n\`\`\``],

@@ -28,6 +28,8 @@ export type PlannerPlan = z.infer<typeof planSchema>
 export interface PlannerLimits {
 	modes: readonly string[]
 	allowedScopes: readonly string[]
+	roles?: readonly string[]
+	logger?: (level: "info" | "debug", message: string) => void
 	maxChildTokens?: number
 	maxRunTokens?: number
 }
@@ -111,7 +113,15 @@ export function parseAndValidatePlan(raw: string, limits: PlannerLimits): PlanNo
 			continue
 		}
 		const issues: string[] = []
+		const unknownRoles = new Set<string>()
 		for (const n of parsed.data.nodes) {
+			if (limits.roles && !limits.roles.includes(n.role) && !unknownRoles.has(n.role)) {
+				unknownRoles.add(n.role)
+				limits.logger?.(
+					"info",
+					`Plan includes unknown role '${n.role}', may fallback to default during resolution`,
+				)
+			}
 			if (!limits.modes.includes(n.mode)) issues.push(`unsupported_mode:${n.mode}`)
 			if (limits.maxChildTokens !== undefined && n.tokenBudget > limits.maxChildTokens)
 				issues.push(`child_budget:${n.id}`)
