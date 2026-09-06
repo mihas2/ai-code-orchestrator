@@ -93,6 +93,14 @@ export const groupEntryArraySchema = z.preprocess((val) => {
 	return val.filter((entry) => !isDeprecatedGroupEntry(entry))
 }, rawGroupEntryArraySchema) as z.ZodType<GroupEntry[], z.ZodTypeDef, GroupEntry[]>
 
+/** A rule file associated with a mode. */
+export const ruleFileSchema = z.object({
+	relativePath: z.string(),
+	content: z.string().optional(),
+})
+
+export type RuleFile = z.infer<typeof ruleFileSchema>
+
 export const modeConfigSchema = z.object({
 	slug: z.string().regex(/^[a-zA-Z0-9-]+$/, "Slug must contain only letters numbers and dashes"),
 	name: z.string().min(1, "Name is required"),
@@ -102,9 +110,17 @@ export const modeConfigSchema = z.object({
 	customInstructions: z.string().optional(),
 	groups: groupEntryArraySchema,
 	source: z.enum(["global", "project"]).optional(),
+	/** Optional list of rule files to apply for this mode. */
+	rulesFiles: z.array(ruleFileSchema).optional(),
 })
 
 export type ModeConfig = z.infer<typeof modeConfigSchema>
+
+/** Runtime configuration for an agent mode, including persistent rule file paths. */
+export type AgentMode = Omit<ModeConfig, "rulesFiles"> & {
+	/** Optional list of rule files to apply for this mode. */
+	rulesFiles?: string[]
+}
 
 /**
  * CustomModesSettings

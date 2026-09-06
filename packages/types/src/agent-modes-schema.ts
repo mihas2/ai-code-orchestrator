@@ -19,18 +19,11 @@ const allToolGroupsSchema = z.enum(allToolGroups)
 // Build a GroupEntry schema that uses the extended tool group list.
 const groupEntrySchema = z.union([allToolGroupsSchema, z.tuple([allToolGroupsSchema, groupOptionsSchema])])
 
-// Build the RuleFile schema (used during import/export but not part of the
-// core Zod types).
-const ruleFileSchema = z.object({
-	relativePath: z.string(),
-	content: z.string().optional(),
-})
-
-// Build an extended ModeConfig schema that includes rulesFiles and uses the
-// extended groups (with deprecated entries).
+// Build an extended ModeConfig schema that uses the extended groups (with
+// deprecated entries). All other fields, including rulesFiles, come from the
+// runtime mode schema.
 const exportedModeConfigSchema = modeConfigSchema.omit({ groups: true }).extend({
 	groups: z.array(groupEntrySchema),
-	rulesFiles: z.array(ruleFileSchema).optional(),
 })
 
 // Build the top-level .agent-modes schema.
