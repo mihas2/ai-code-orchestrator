@@ -45,7 +45,15 @@ const input = (): StartOrchestrationInput => ({
 	goal: "g",
 	settings,
 	nodes: [
-		{ nodeId: "a", role: "code", mode: "code", title: "a", objective: "a", inputContract: contract("a") },
+		{
+			nodeId: "a",
+			role: "code",
+			mode: "code",
+			title: "a",
+			objective: "a",
+			payload: { source: "test" },
+			inputContract: contract("a"),
+		},
 		{
 			nodeId: "b",
 			role: "code",
@@ -73,6 +81,15 @@ function memory(initial?: OrchestrationSnapshot) {
 }
 
 describe("OrchestrationService", () => {
+	it("includes node attempt limits and payload in the snapshot", async () => {
+		const store = memory()
+		const service = new OrchestrationService(store.persistence)
+		await service.start(input())
+		const snapshot = store.get()
+		expect(snapshot.nodes[0]).toMatchObject({ attempt: 0, maxAttempts: 2, payload: { source: "test" } })
+		expect(snapshot.nodes[1]).toMatchObject({ attempt: 0, maxAttempts: 2 })
+	})
+
 	it("persists monotonic events before publishing and dispatches dependencies within capacity", async () => {
 		const store = memory(),
 			starts: string[] = [],

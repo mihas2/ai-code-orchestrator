@@ -121,6 +121,8 @@ export interface OrchestrationNode {
 	status: NodeStatus
 	attempt: number
 	maxAttempts: number
+	/** Arguments supplied when the task was created. */
+	payload?: unknown
 	inputContract: ContextContract
 	outputContract?: ResultContract
 	/** Usage reported by the latest completed attempt. */
@@ -190,6 +192,8 @@ export interface PlanNodeInput {
 	title: string
 	objective: string
 	dependsOn?: string[]
+	/** Arguments supplied when the task was created. */
+	payload?: unknown
 	inputContract: ContextContract
 	maxAttempts?: number
 }
