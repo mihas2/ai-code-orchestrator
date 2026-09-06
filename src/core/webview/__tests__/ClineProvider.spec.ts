@@ -540,16 +540,15 @@ describe("ClineProvider", () => {
 		expect(mockPostMessage).toHaveBeenCalledWith(message)
 	})
 
-	test("postMessageToWebview does not throw when webview is disposed", async () => {
+	test("postMessageToWebview logs publication failures without throwing", async () => {
 		await provider.resolveWebviewView(mockWebviewView)
-
-		// Simulate postMessage throwing after webview disposal
+		const log = vi.spyOn(provider, "log")
 		mockPostMessage.mockRejectedValueOnce(new Error("Webview is disposed"))
 
 		const message: ExtensionMessage = { type: "action", action: "chatButtonClicked" }
 
-		// Should not throw
 		await expect(provider.postMessageToWebview(message)).resolves.toBeUndefined()
+		expect(log).toHaveBeenCalledWith(expect.stringContaining("Webview is disposed"))
 	})
 
 	test("postMessageToWebview skips postMessage after dispose", async () => {

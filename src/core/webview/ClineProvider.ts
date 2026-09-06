@@ -1449,8 +1449,12 @@ export class ClineProvider
 
 		try {
 			await this.view?.webview.postMessage(message)
-		} catch {
-			// View disposed, drop message silently
+		} catch (error) {
+			this.log(
+				`[ClineProvider] Failed to publish webview message (${message.type}): ${
+					error instanceof Error ? error.message : String(error)
+				}`,
+			)
 		}
 	}
 

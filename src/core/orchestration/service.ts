@@ -454,21 +454,28 @@ export class OrchestrationService implements OrchestratorService {
 	}
 	async recover() {
 		for (const s of await this.persistence.scanRecoverable()) {
-			this.snapshots.set(s.run.runId, s)
-			for (const n of s.nodes)
-				if (n.status === "running" && !this.handles.has(n.nodeId)) {
-					const h = await this.executor.recover?.(s.run, n)
-					if (h) {
-						this.handles.set(n.nodeId, h)
-						this.startWatchdog(s, n, h)
-					} else
-						await this.failNode(s, n, {
-							code: "recovery_unavailable",
-							message: "Child execution cannot be recovered",
-							recoverable: true,
-						})
-				}
-			await this.dispatch(s.run.runId)
+			try {
+				if (!s?.run?.runId || !Array.isArray(s.nodes))
+					throw new Error("Invalid persisted orchestration snapshot")
+				this.snapshots.set(s.run.runId, s)
+				for (const n of s.nodes)
+					if (n.status === "running" && !this.handles.has(n.nodeId)) {
+						const h = await this.executor.recover?.(s.run, n)
+						if (h) {
+							this.handles.set(n.nodeId, h)
+							this.startWatchdog(s, n, h)
+						} else
+							await this.failNode(s, n, {
+								code: "recovery_unavailable",
+								message: "Child execution cannot be recovered",
+								recoverable: true,
+							})
+					}
+				await this.dispatch(s.run.runId)
+			} catch {
+				// A malformed run must not prevent other persisted runs from recovering.
+				continue
+			}
 		}
 	}
 

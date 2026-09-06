@@ -162,6 +162,34 @@ describe("OrchestrationService", () => {
 		expect(cancel).toHaveBeenCalledTimes(1)
 		expect(store.get().nodes.every((n) => ["canceled", "integrated", "failed"].includes(n.status))).toBe(true)
 	})
+	it("isolates a corrupted run while recovering other runs", async () => {
+		const valid = memory()
+		await new OrchestrationService(valid.persistence, {
+			start: async ({ node }) => ({ taskId: node.nodeId, cancel: async () => undefined }),
+		}).start({ ...input(), runId: "valid" })
+		const validSnapshot = valid.get()
+		const recoveredIds: string[] = []
+		const persistence: OrchestrationPersistence = {
+			load: async () => undefined,
+			save: async () => undefined,
+			scanRecoverable: async () => [
+				{ ...validSnapshot, run: { ...validSnapshot.run, runId: "valid", status: "paused" } },
+				{ run: { runId: "corrupted" } } as never,
+			],
+		}
+		const service = new OrchestrationService(persistence, {
+			start: vi.fn(),
+			recover: async (run) => {
+				recoveredIds.push(run.runId)
+				return undefined
+			},
+		})
+
+		await expect(service.recover()).resolves.toBeUndefined()
+		expect(recoveredIds).toEqual([])
+		expect(await service.getSnapshot("valid")).toBeDefined()
+	})
+
 	it("runs review, approval, integration, and synthesis without duplicate dispatch", async () => {
 		const store = memory()
 		const starts: string[] = []
