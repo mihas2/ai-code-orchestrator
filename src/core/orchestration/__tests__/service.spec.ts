@@ -181,8 +181,13 @@ describe("OrchestrationService", () => {
 			undefined,
 			{ review, integration },
 		)
+		const reviewInput = input()
+		reviewInput.nodes = reviewInput.nodes.map((node) => ({
+			...node,
+			inputContract: { ...node.inputContract, fileScopes: { include: ["child.patch"], exclude: [] } },
+		}))
 		await service.start({
-			...input(),
+			...reviewInput,
 			settings: {
 				...settings,
 				requirePlanApproval: true,

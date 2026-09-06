@@ -42,6 +42,7 @@ const terminalNode = new Set<NodeStatus>(["integrated", "failed", "canceled"])
 export class OrchestrationService implements OrchestratorService {
 	private snapshots = new Map<string, OrchestrationSnapshot>()
 	private handles = new Map<string, ExecutionHandle>()
+	private watchdogs = new Map<string, ReturnType<typeof setTimeout>>()
 	private eventKeys = new Map<string, Set<string>>()
 	/** Exposed read-only worker registry for lifecycle/recovery diagnostics. */
 	get workerHandles(): ReadonlyMap<string, ExecutionHandle> {
@@ -210,6 +211,7 @@ export class OrchestrationService implements OrchestratorService {
 					idempotencyKey: `${id}:${n.nodeId}:${n.attempt}`,
 				})
 				this.handles.set(n.nodeId, handle)
+				this.startWatchdog(s, n, handle)
 			} catch (error) {
 				await this.failNode(s, n, {
 					code: "dispatch_failed",
@@ -245,6 +247,7 @@ export class OrchestrationService implements OrchestratorService {
 					? "ready_to_integrate"
 					: e.status
 		if (n.status === "integrated" && e.status === "integrated") return
+		this.clearWatchdog(n.nodeId)
 		assertNodeTransition(n.status, reportedStatus)
 		const reserved = n.inputContract.tokenBudget
 		n.status = reportedStatus
@@ -352,6 +355,7 @@ export class OrchestrationService implements OrchestratorService {
 		s.run.status = "canceled"
 		s.run.error = { code: "canceled", message: reason ?? "Canceled", recoverable: false }
 		await Promise.all([...this.handles.values()].map((h) => h.cancel(reason)))
+		for (const nodeId of this.watchdogs.keys()) this.clearWatchdog(nodeId)
 		this.handles.clear()
 		s.run.activeNodeIds = []
 		for (const n of s.nodes) if (!terminalNode.has(n.status)) n.status = "canceled"
@@ -383,8 +387,10 @@ export class OrchestrationService implements OrchestratorService {
 			for (const n of s.nodes)
 				if (n.status === "running" && !this.handles.has(n.nodeId)) {
 					const h = await this.executor.recover?.(s.run, n)
-					if (h) this.handles.set(n.nodeId, h)
-					else
+					if (h) {
+						this.handles.set(n.nodeId, h)
+						this.startWatchdog(s, n, h)
+					} else
 						await this.failNode(s, n, {
 							code: "recovery_unavailable",
 							message: "Child execution cannot be recovered",
@@ -395,12 +401,46 @@ export class OrchestrationService implements OrchestratorService {
 		}
 	}
 
+	private startWatchdog(s: OrchestrationSnapshot, n: OrchestrationNode, handle: ExecutionHandle) {
+		this.clearWatchdog(n.nodeId)
+		const timeoutMs = s.run.settingsSnapshot.timeoutMs
+		if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return
+		const timer = setTimeout(async () => {
+			this.watchdogs.delete(n.nodeId)
+			if (n.status !== "running" || !s.run.activeNodeIds.includes(n.nodeId)) return
+			try {
+				await handle.cancel("orchestration timeout")
+				this.handles.delete(n.nodeId)
+				await this.failNode(s, n, {
+					code: "timeout",
+					message: `Node produced no child event within ${timeoutMs}ms`,
+					recoverable: true,
+				})
+				await this.persist(s)
+			} catch (error) {
+				s.run.status = "failed"
+				s.run.error = {
+					code: "watchdog_failed",
+					message: error instanceof Error ? error.message : String(error),
+					recoverable: false,
+				}
+				await this.persist(s)
+			}
+		}, timeoutMs)
+		this.watchdogs.set(n.nodeId, timer)
+	}
+	private clearWatchdog(nodeId: string) {
+		const timer = this.watchdogs.get(nodeId)
+		if (timer) clearTimeout(timer)
+		this.watchdogs.delete(nodeId)
+	}
 	private async failNode(
 		s: OrchestrationSnapshot,
 		n: OrchestrationNode,
 		error: OrchestrationNode["error"],
 		releaseReservation = true,
 	) {
+		this.clearWatchdog(n.nodeId)
 		n.status = "failed"
 		n.error = error
 		n.timestamps.failed = Date.now()
