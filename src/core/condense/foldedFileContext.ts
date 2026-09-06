@@ -1,6 +1,6 @@
 import * as path from "path"
 import { parseSourceCodeDefinitionsForFile } from "../../services/tree-sitter"
-import { RooIgnoreController } from "../ignore/RooIgnoreController"
+import { AicoIgnoreController } from "../ignore/AicoIgnoreController"
 
 /**
  * Checks if a definitions string is actually an error message from tree-sitter
@@ -37,8 +37,8 @@ export interface FoldedFileContextOptions {
 	maxCharacters?: number
 	/** The current working directory for resolving relative paths */
 	cwd: string
-	/** Optional RooIgnoreController for file access validation */
-	rooIgnoreController?: RooIgnoreController
+	/** Optional AicoIgnoreController for file access validation */
+	aicoIgnoreController?: AicoIgnoreController
 }
 
 /**
@@ -77,7 +77,7 @@ export async function generateFoldedFileContext(
 	filePaths: string[],
 	options: FoldedFileContextOptions,
 ): Promise<FoldedFileContextResult> {
-	const { maxCharacters = 50000, cwd, rooIgnoreController } = options
+	const { maxCharacters = 50000, cwd, aicoIgnoreController } = options
 
 	const result: FoldedFileContextResult = {
 		content: "",
@@ -102,7 +102,7 @@ export async function generateFoldedFileContext(
 
 		try {
 			// Get the folded definitions using tree-sitter
-			const definitions = await parseSourceCodeDefinitionsForFile(absolutePath, rooIgnoreController)
+			const definitions = await parseSourceCodeDefinitionsForFile(absolutePath, aicoIgnoreController)
 
 			if (!definitions || isTreeSitterErrorString(definitions)) {
 				// File type not supported, no definitions found, or error accessing file

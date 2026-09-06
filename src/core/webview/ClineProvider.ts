@@ -15,7 +15,7 @@ import {
 	type GlobalState,
 	type ProviderName,
 	type ProviderSettings,
-	type RooCodeSettings,
+	type AiCodeOrchestratorSettings,
 	type ProviderSettingsEntry,
 	type CodeActionId,
 	type CodeActionName,
@@ -27,7 +27,7 @@ import {
 	type ToolUsage,
 	type ExtensionMessage,
 	type ExtensionState,
-	RooCodeEventName,
+	AiCodeOrchestratorEventName,
 	requestyDefaultModelId,
 	openRouterDefaultModelId,
 	DEFAULT_WRITE_DELAY_MS,
@@ -35,8 +35,10 @@ import {
 	DEFAULT_MODES,
 	DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
 	getModelId,
+	modelIdKeys,
+	modelIdKeysByProvider,
 	isRetiredProvider,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 import { aggregateTaskCostsRecursive, type AggregatedCosts } from "./aggregateTaskCosts"
 
 import { Package } from "../../shared/package"
@@ -82,7 +84,15 @@ import { CustomModesManager } from "../config/CustomModesManager"
 import { Task } from "../task/Task"
 
 import { webviewMessageHandler } from "./webviewMessageHandler"
-import type { ClineMessage, TodoItem } from "@roo-code/types"
+import { OrchestrationService } from "../orchestration/service"
+import { GitIntegrationAdapter } from "../orchestration/integrationAdapter"
+import { OrchestrationSynthesisAdapter, ReviewerAdapter } from "../orchestration/reviewerAdapter"
+import { GlobalStateOrchestrationPersistence } from "../orchestration/persistence"
+import { GitWorkerWorkspaceRegistry } from "../orchestration/workerIsolation"
+import type { OrchestrationExecutor } from "../orchestration/types"
+import { parseAndValidatePlan, redactPlannerContext } from "../orchestration/planner"
+import { extractResultContract, RESULT_CONTRACT_INSTRUCTION } from "../orchestration/resultContract"
+import type { ClineMessage, TodoItem } from "@ai-code-orchestrator/types"
 import { readApiMessages, saveApiMessages, saveTaskMessages, TaskHistoryStore } from "../task-persistence"
 import { readTaskMessages } from "../task-persistence/taskMessages"
 import { getNonce } from "./getNonce"
@@ -146,12 +156,15 @@ export class ClineProvider
 	 * Used by the frontend to reject stale state that arrives out-of-order.
 	 */
 	private clineMessagesSeq = 0
+	private static readonly STATE_POST_DEBOUNCE_MS = 32
+	private pendingStatePost?: Promise<void>
 
 	public isViewLaunched = false
 	public settingsImportedAt?: number
-	public readonly latestAnnouncementId = "may-2026-final-roo-code-release" // Final Roo Code release announcement.
+	public readonly latestAnnouncementId = "1.1.2-role-model-selection-release" // Final AI Code Orchestrator release announcement.
 	public readonly providerSettingsManager: ProviderSettingsManager
 	public readonly customModesManager: CustomModesManager
+	private orchestrationService?: OrchestrationService
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -205,14 +218,14 @@ export class ClineProvider
 		// Forward <most> task events to the provider.
 		// We do something fairly similar for the IPC-based API.
 		this.taskCreationCallback = (instance: Task) => {
-			this.emit(RooCodeEventName.TaskCreated, instance)
+			this.emit(AiCodeOrchestratorEventName.TaskCreated, instance)
 
 			// Create named listener functions so we can remove them later.
-			const onTaskStarted = () => this.emit(RooCodeEventName.TaskStarted, instance.taskId)
+			const onTaskStarted = () => this.emit(AiCodeOrchestratorEventName.TaskStarted, instance.taskId)
 			const onTaskCompleted = (taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage) =>
-				this.emit(RooCodeEventName.TaskCompleted, taskId, tokenUsage, toolUsage)
+				this.emit(AiCodeOrchestratorEventName.TaskCompleted, taskId, tokenUsage, toolUsage)
 			const onTaskAborted = async () => {
-				this.emit(RooCodeEventName.TaskAborted, instance.taskId)
+				this.emit(AiCodeOrchestratorEventName.TaskAborted, instance.taskId)
 
 				try {
 					// Only rehydrate on genuine streaming failures.
@@ -240,51 +253,51 @@ export class ClineProvider
 					)
 				}
 			}
-			const onTaskFocused = () => this.emit(RooCodeEventName.TaskFocused, instance.taskId)
-			const onTaskUnfocused = () => this.emit(RooCodeEventName.TaskUnfocused, instance.taskId)
-			const onTaskActive = (taskId: string) => this.emit(RooCodeEventName.TaskActive, taskId)
-			const onTaskInteractive = (taskId: string) => this.emit(RooCodeEventName.TaskInteractive, taskId)
-			const onTaskResumable = (taskId: string) => this.emit(RooCodeEventName.TaskResumable, taskId)
-			const onTaskIdle = (taskId: string) => this.emit(RooCodeEventName.TaskIdle, taskId)
-			const onTaskPaused = (taskId: string) => this.emit(RooCodeEventName.TaskPaused, taskId)
-			const onTaskUnpaused = (taskId: string) => this.emit(RooCodeEventName.TaskUnpaused, taskId)
-			const onTaskSpawned = (taskId: string) => this.emit(RooCodeEventName.TaskSpawned, taskId)
-			const onTaskUserMessage = (taskId: string) => this.emit(RooCodeEventName.TaskUserMessage, taskId)
+			const onTaskFocused = () => this.emit(AiCodeOrchestratorEventName.TaskFocused, instance.taskId)
+			const onTaskUnfocused = () => this.emit(AiCodeOrchestratorEventName.TaskUnfocused, instance.taskId)
+			const onTaskActive = (taskId: string) => this.emit(AiCodeOrchestratorEventName.TaskActive, taskId)
+			const onTaskInteractive = (taskId: string) => this.emit(AiCodeOrchestratorEventName.TaskInteractive, taskId)
+			const onTaskResumable = (taskId: string) => this.emit(AiCodeOrchestratorEventName.TaskResumable, taskId)
+			const onTaskIdle = (taskId: string) => this.emit(AiCodeOrchestratorEventName.TaskIdle, taskId)
+			const onTaskPaused = (taskId: string) => this.emit(AiCodeOrchestratorEventName.TaskPaused, taskId)
+			const onTaskUnpaused = (taskId: string) => this.emit(AiCodeOrchestratorEventName.TaskUnpaused, taskId)
+			const onTaskSpawned = (taskId: string) => this.emit(AiCodeOrchestratorEventName.TaskSpawned, taskId)
+			const onTaskUserMessage = (taskId: string) => this.emit(AiCodeOrchestratorEventName.TaskUserMessage, taskId)
 			const onTaskTokenUsageUpdated = (taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage) =>
-				this.emit(RooCodeEventName.TaskTokenUsageUpdated, taskId, tokenUsage, toolUsage)
+				this.emit(AiCodeOrchestratorEventName.TaskTokenUsageUpdated, taskId, tokenUsage, toolUsage)
 
 			// Attach the listeners.
-			instance.on(RooCodeEventName.TaskStarted, onTaskStarted)
-			instance.on(RooCodeEventName.TaskCompleted, onTaskCompleted)
-			instance.on(RooCodeEventName.TaskAborted, onTaskAborted)
-			instance.on(RooCodeEventName.TaskFocused, onTaskFocused)
-			instance.on(RooCodeEventName.TaskUnfocused, onTaskUnfocused)
-			instance.on(RooCodeEventName.TaskActive, onTaskActive)
-			instance.on(RooCodeEventName.TaskInteractive, onTaskInteractive)
-			instance.on(RooCodeEventName.TaskResumable, onTaskResumable)
-			instance.on(RooCodeEventName.TaskIdle, onTaskIdle)
-			instance.on(RooCodeEventName.TaskPaused, onTaskPaused)
-			instance.on(RooCodeEventName.TaskUnpaused, onTaskUnpaused)
-			instance.on(RooCodeEventName.TaskSpawned, onTaskSpawned)
-			instance.on(RooCodeEventName.TaskUserMessage, onTaskUserMessage)
-			instance.on(RooCodeEventName.TaskTokenUsageUpdated, onTaskTokenUsageUpdated)
+			instance.on(AiCodeOrchestratorEventName.TaskStarted, onTaskStarted)
+			instance.on(AiCodeOrchestratorEventName.TaskCompleted, onTaskCompleted)
+			instance.on(AiCodeOrchestratorEventName.TaskAborted, onTaskAborted)
+			instance.on(AiCodeOrchestratorEventName.TaskFocused, onTaskFocused)
+			instance.on(AiCodeOrchestratorEventName.TaskUnfocused, onTaskUnfocused)
+			instance.on(AiCodeOrchestratorEventName.TaskActive, onTaskActive)
+			instance.on(AiCodeOrchestratorEventName.TaskInteractive, onTaskInteractive)
+			instance.on(AiCodeOrchestratorEventName.TaskResumable, onTaskResumable)
+			instance.on(AiCodeOrchestratorEventName.TaskIdle, onTaskIdle)
+			instance.on(AiCodeOrchestratorEventName.TaskPaused, onTaskPaused)
+			instance.on(AiCodeOrchestratorEventName.TaskUnpaused, onTaskUnpaused)
+			instance.on(AiCodeOrchestratorEventName.TaskSpawned, onTaskSpawned)
+			instance.on(AiCodeOrchestratorEventName.TaskUserMessage, onTaskUserMessage)
+			instance.on(AiCodeOrchestratorEventName.TaskTokenUsageUpdated, onTaskTokenUsageUpdated)
 
 			// Store the cleanup functions for later removal.
 			this.taskEventListeners.set(instance, [
-				() => instance.off(RooCodeEventName.TaskStarted, onTaskStarted),
-				() => instance.off(RooCodeEventName.TaskCompleted, onTaskCompleted),
-				() => instance.off(RooCodeEventName.TaskAborted, onTaskAborted),
-				() => instance.off(RooCodeEventName.TaskFocused, onTaskFocused),
-				() => instance.off(RooCodeEventName.TaskUnfocused, onTaskUnfocused),
-				() => instance.off(RooCodeEventName.TaskActive, onTaskActive),
-				() => instance.off(RooCodeEventName.TaskInteractive, onTaskInteractive),
-				() => instance.off(RooCodeEventName.TaskResumable, onTaskResumable),
-				() => instance.off(RooCodeEventName.TaskIdle, onTaskIdle),
-				() => instance.off(RooCodeEventName.TaskUserMessage, onTaskUserMessage),
-				() => instance.off(RooCodeEventName.TaskPaused, onTaskPaused),
-				() => instance.off(RooCodeEventName.TaskUnpaused, onTaskUnpaused),
-				() => instance.off(RooCodeEventName.TaskSpawned, onTaskSpawned),
-				() => instance.off(RooCodeEventName.TaskTokenUsageUpdated, onTaskTokenUsageUpdated),
+				() => instance.off(AiCodeOrchestratorEventName.TaskStarted, onTaskStarted),
+				() => instance.off(AiCodeOrchestratorEventName.TaskCompleted, onTaskCompleted),
+				() => instance.off(AiCodeOrchestratorEventName.TaskAborted, onTaskAborted),
+				() => instance.off(AiCodeOrchestratorEventName.TaskFocused, onTaskFocused),
+				() => instance.off(AiCodeOrchestratorEventName.TaskUnfocused, onTaskUnfocused),
+				() => instance.off(AiCodeOrchestratorEventName.TaskActive, onTaskActive),
+				() => instance.off(AiCodeOrchestratorEventName.TaskInteractive, onTaskInteractive),
+				() => instance.off(AiCodeOrchestratorEventName.TaskResumable, onTaskResumable),
+				() => instance.off(AiCodeOrchestratorEventName.TaskIdle, onTaskIdle),
+				() => instance.off(AiCodeOrchestratorEventName.TaskUserMessage, onTaskUserMessage),
+				() => instance.off(AiCodeOrchestratorEventName.TaskPaused, onTaskPaused),
+				() => instance.off(AiCodeOrchestratorEventName.TaskUnpaused, onTaskUnpaused),
+				() => instance.off(AiCodeOrchestratorEventName.TaskSpawned, onTaskSpawned),
+				() => instance.off(AiCodeOrchestratorEventName.TaskTokenUsageUpdated, onTaskTokenUsageUpdated),
 			])
 		}
 	}
@@ -346,7 +359,7 @@ export class ClineProvider
 		// Add this cline instance into the stack that represents the order of
 		// all the called tasks.
 		this.clineStack.push(task)
-		task.emit(RooCodeEventName.TaskFocused)
+		task.emit(AiCodeOrchestratorEventName.TaskFocused)
 
 		// Perform special setup provider specific tasks.
 		await this.performPreparationTasks(task)
@@ -393,7 +406,7 @@ export class ClineProvider
 			const childTaskId = task.taskId
 			const parentTaskId = task.parentTaskId
 
-			task.emit(RooCodeEventName.TaskUnfocused)
+			task.emit(AiCodeOrchestratorEventName.TaskUnfocused)
 
 			try {
 				// Abort the running task and set isAbandoned to true so
@@ -745,7 +758,7 @@ export class ClineProvider
 		}
 
 		webviewView.webview.html =
-			this.contextProxy.extensionMode === vscode.ExtensionMode.Development
+			this.contextProxy.extensionMode === vscode.ExtensionMode.Development && process.env.AICO_E2E !== "1"
 				? await this.getHMRHtmlContent(webviewView.webview)
 				: await this.getHtmlContent(webviewView.webview)
 
@@ -826,11 +839,13 @@ export class ClineProvider
 		historyItem: HistoryItem & { rootTask?: Task; parentTask?: Task },
 		options?: { startTask?: boolean },
 	) {
-		const isCliRuntime = process.env.ROO_CLI_RUNTIME === "1"
+		const isCliRuntime = process.env.AICO_CLI_RUNTIME === "1"
 		// CLI injects runtime provider settings from command flags/env at startup.
 		// Restoring provider profiles from task history can overwrite those
 		// runtime settings with stale/incomplete persisted profiles.
 		const skipProfileRestoreFromHistory = isCliRuntime
+
+		let restoredApiConfiguration: ProviderSettings | undefined
 
 		// Check if we're rehydrating the current task to avoid flicker
 		const currentTask = this.getCurrentTask()
@@ -878,11 +893,17 @@ export class ClineProvider
 							// In CLI mode, the ProviderSettingsManager may return empty default profiles
 							// that only contain 'id' and 'name' fields. Activating such a profile would
 							// overwrite the CLI's working API configuration with empty settings.
-							const fullProfile = await this.providerSettingsManager.getProfile({ name: profile.name })
+							const {
+								name: _name,
+								id: _id,
+								...fullProfile
+							} = await this.providerSettingsManager.getProfile({
+								name: profile.name,
+							})
 							const hasActualSettings = !!fullProfile.apiProvider
 
 							if (hasActualSettings) {
-								await this.activateProviderProfile({ name: profile.name })
+								restoredApiConfiguration = fullProfile
 							} else {
 								// The task will continue with the current/default configuration.
 							}
@@ -911,10 +932,14 @@ export class ClineProvider
 
 			if (profile?.name) {
 				try {
-					await this.activateProviderProfile(
-						{ name: profile.name },
-						{ persistModeConfig: false, persistTaskHistory: false },
-					)
+					const {
+						name: _name,
+						id: _id,
+						...taskProfile
+					} = await this.providerSettingsManager.getProfile({
+						name: profile.name,
+					})
+					restoredApiConfiguration = taskProfile
 				} catch (error) {
 					// Log the error but continue with task restoration.
 					this.log(
@@ -935,11 +960,18 @@ export class ClineProvider
 			)
 		}
 
-		const { apiConfiguration, enableCheckpoints, checkpointTimeout, experiments } = await this.getState()
+		const state = await this.getState()
+		const { apiConfiguration, enableCheckpoints, checkpointTimeout, experiments } = state
+		const { effectiveApiConfiguration, isRoleSpecificConfig } = await this.resolveEffectiveApiConfiguration({
+			mode: historyItem.mode,
+			baseApiConfiguration: restoredApiConfiguration ?? apiConfiguration,
+			state,
+		})
 
 		const task = new Task({
 			provider: this,
-			apiConfiguration,
+			apiConfiguration: effectiveApiConfiguration,
+			isRoleSpecificConfig,
 			enableCheckpoints,
 			checkpointTimeout,
 			consecutiveMistakeLimit: apiConfiguration.consecutiveMistakeLimit,
@@ -980,7 +1012,7 @@ export class ClineProvider
 
 			// Replace the task in the stack
 			this.clineStack[stackIndex] = task
-			task.emit(RooCodeEventName.TaskFocused)
+			task.emit(AiCodeOrchestratorEventName.TaskFocused)
 
 			// Perform preparation tasks and set up event listeners
 			await this.performPreparationTasks(task)
@@ -1040,6 +1072,342 @@ export class ClineProvider
 		}
 
 		return task
+	}
+
+	public async planOrchestration(
+		goal: string,
+		runId: string,
+		rootTaskId: string,
+	): Promise<import("../orchestration/types").OrchestrationRun> {
+		const task = this.getCurrentTask()
+		if (!task?.api.completePrompt) throw new Error("Selected provider does not support planner completion")
+		const settings =
+			(await this.contextProxy.getValue("orchestrationSettings")) ??
+			(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS
+		if ((await this.getMode()) !== (settings?.orchestratorModeSlug ?? "orchestrator"))
+			throw new Error("Orchestration is only available in orchestrator mode")
+		const state = await this.getState()
+		const context = redactPlannerContext(`${goal}\nWorkspace: ${this.cwd}`)
+		const raw = await task.api.completePrompt(
+			`Return ONLY JSON plan: {\"version\":1,\"nodes\":[{\"id\":\"n1\",\"role\":\"worker\",\"mode\":\"code\",\"objective\":\"...\",\"acceptanceCriteria\":[],\"constraints\":[],\"fileScopes\":{\"include\":[],\"exclude\":[]},\"dependencies\":[],\"tokenBudget\":1}]}\n\nFile scope rules: fileScopes must contain only project source code and configuration files necessary to complete the goal. NEVER include .git or any of its subdirectories, .aico or any of its subdirectories, node_modules, .vscode, or other standard service/tooling directories and files (for example build output, caches, logs, and IDE metadata). These paths are forbidden even if they appear relevant; leave them out of both include and exclude scopes.\nGoal: ${context}`,
+		)
+		let nodes: ReturnType<typeof parseAndValidatePlan>
+		try {
+			nodes = parseAndValidatePlan(raw, {
+				modes: DEFAULT_MODES.map((m) => m.slug),
+				allowedScopes: [".", this.cwd],
+				maxChildTokens: settings.maxChildTokens,
+				maxRunTokens: settings.maxRunTokens,
+			})
+		} catch (error) {
+			const diagnostic = raw.trim().replace(/(?:api[_-]?key|token|secret|password)\s*[:=]\s*\S+/gi, "[REDACTED]")
+			this.log(
+				`[Orchestration planner] ${error instanceof Error ? error.message : String(error)}; response: ${diagnostic.slice(0, 500)}`,
+			)
+			throw error
+		}
+		for (const node of nodes) {
+			node.inputContract.runId = runId
+			node.inputContract.goal = goal
+			node.inputContract.parentContextDigest = "planner"
+		}
+		return await (
+			await this.getOrchestrationService()
+		).start({
+			runId,
+			rootTaskId,
+			goal,
+			settings,
+			nodes,
+			estimatedTokens: nodes.reduce((s, n) => s + n.inputContract.tokenBudget, 0),
+		})
+	}
+
+	private async resolveOrchestrationRoute(node: {
+		role: string
+		mode?: string
+		nodeId?: string
+	}): Promise<import("@ai-code-orchestrator/types").ModelRoute> {
+		const state = await this.getState()
+		this.log(
+			`[Orchestration route] Resolving role='${node.role}' mode='${node.mode ?? "unset"}' nodeId='${node.nodeId ?? "unset"}' ` +
+				`activeProfile='${state.currentApiConfigName ?? "default"}' assignments=${JSON.stringify(Object.keys(state.roleAssignments?.roles ?? {}))}`,
+		)
+		// The UI persists assignments under the selected mode slug (visualMode), while
+		// orchestration plans identify nodes by role. Check both canonical and legacy
+		// keys before falling back to the built-in orchestration roles.
+		const assignments = state.roleAssignments?.roles
+		const fallbackRole = node.role === "orchestrator" || node.mode === "orchestrator" ? "orchestrator" : "worker"
+		const assignmentEntries = [
+			["node.role", node.role, assignments?.[node.role]],
+			["node.nodeId", node.nodeId, assignments?.[node.nodeId ?? ""]],
+			["node.mode", node.mode, assignments?.[node.mode ?? ""]],
+			[`role.${fallbackRole}`, fallbackRole, assignments?.[fallbackRole]],
+		] as const
+		const [assignmentKey, assignmentLookupKey, assignment] = assignmentEntries.find(
+			([, , value]) => value != null,
+		) ?? ["none", undefined, undefined]
+		this.log(
+			`[Orchestration route] Assignment lookup role='${node.role}' fallback='${fallbackRole}' ` +
+				`selected=${assignmentKey}:${assignmentLookupKey ?? "none"} ` +
+				`profile='${assignment?.profileName ?? "active"}' model='${assignment?.modelId ?? "primary"}'`,
+		)
+		const activeProfileName: string = state.currentApiConfigName ?? "default"
+		const assignedProfileId = state.modeApiConfigs?.[node.mode ?? node.role]
+		const profileRef = assignment?.profileName
+		let profile: ProviderSettings & { id?: string; name?: string }
+		try {
+			// A role assignment is canonical. modeApiConfigs is only a compatibility fallback.
+			profile = profileRef
+				? await this.providerSettingsManager.getProfile({ name: profileRef })
+				: assignedProfileId
+					? await this.providerSettingsManager.getProfile({ id: assignedProfileId })
+					: await this.providerSettingsManager.getProfile({ name: activeProfileName })
+		} catch (error) {
+			this.log(
+				`[Orchestration route] Profile '${profileRef ?? assignedProfileId ?? activeProfileName}' for role '${node.role}' could not be loaded; falling back to active profile '${activeProfileName}': ${error instanceof Error ? error.message : String(error)}`,
+			)
+			profile = await this.providerSettingsManager.getProfile({ name: activeProfileName })
+		}
+		const profileName = profile.name ?? activeProfileName
+		this.log(
+			`[Orchestration route] Loaded profile='${profileName}' id='${profile.id ?? "unset"}' ` +
+				`provider='${profile.apiProvider ?? "unset"}' primaryModel='${getModelId(profile) ?? "unset"}' ` +
+				`roleModelKeys=${JSON.stringify(Object.keys(profile.profileRoleModelSettings?.roleModels ?? {}))}`,
+		)
+		if (!profileRef && !assignedProfileId) {
+			this.log(
+				`[Orchestration route] Role '${node.role}' has no assigned profile; using active profile '${activeProfileName}'.`,
+			)
+		}
+		if (assignment?.modelId && assignment.inheritPrimary !== false) {
+			this.log(
+				`[Orchestration route] Role '${node.role}' has model '${assignment.modelId}' with inheritPrimary=true; using the explicitly configured role model for backwards compatibility.`,
+			)
+		}
+		if (!profile.apiProvider) throw new Error(`Role '${node.role}' has no configured provider profile`)
+
+		const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
+			profileId: profile.id ?? this.getProviderProfileEntry(profileName)?.id ?? profileName,
+			provider: profile.apiProvider,
+			primaryModelId: getModelId(profile) ?? "",
+			role: node.role,
+			// Role assignments are global and take precedence over profile primary models.
+			explicitModelId: assignment?.modelId,
+			roleModels: profile.profileRoleModelSettings,
+		})
+		this.log(
+			`[Orchestration route] Resolved role='${node.role}' profile='${route.profileId}' ` +
+				`provider='${route.provider}' model='${route.modelId}' source='${route.source}'`,
+		)
+		return route
+	}
+
+	public async getOrchestrationService(): Promise<OrchestrationService> {
+		const settings =
+			(await this.contextProxy.getValue("orchestrationSettings")) ??
+			(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS
+		if ((await this.getMode()) !== (settings?.orchestratorModeSlug ?? "orchestrator")) {
+			throw new Error("Orchestration is only available in orchestrator mode")
+		}
+		if (!this.orchestrationService) {
+			const workerRegistry = new GitWorkerWorkspaceRegistry(this.cwd)
+			// Orchestration workers use dedicated git worktrees; regular delegation remains unchanged.
+			// than constructing a Task directly, so parent lineage and history are persisted.
+			const executor: OrchestrationExecutor = {
+				maxParallel: settings.maxParallelWorkers,
+				start: async ({ run, node, idempotencyKey }) => {
+					// Delegation is serialized: the currently active task is the parent
+					// (after the first node this is the previous child, not the root).
+					let parent
+					try {
+						parent = this.getCurrentTask()
+					} catch {
+						throw new Error("Orchestration has no safe Task adapter in the current provider lifecycle")
+					}
+					if (!parent) throw new Error("Orchestration has no safe Task adapter: parent task is not active")
+					const workspace = await workerRegistry.allocate(run.runId, node.nodeId, node.attempt)
+					const route = node.route
+					let selectedProfile: (ProviderSettings & { id?: string; name?: string }) | undefined
+					if (route) {
+						try {
+							selectedProfile = await this.providerSettingsManager.getProfile({ id: route.profileId })
+							if (!selectedProfile) throw new Error(`Profile '${route.profileId}' was not found by id`)
+						} catch (error) {
+							// Routes may use the profile name as a stable fallback when no id is persisted.
+							this.log(
+								`[Orchestration executor] Profile id '${route.profileId}' lookup failed; retrying by name: ${error instanceof Error ? error.message : String(error)}`,
+							)
+							try {
+								selectedProfile = await this.providerSettingsManager.getProfile({
+									name: route.profileId,
+								})
+								if (!selectedProfile)
+									throw new Error(`Profile '${route.profileId}' was not found by name`)
+							} catch (nameError) {
+								const activeProfileName = (await this.getState()).currentApiConfigName ?? "default"
+								this.log(
+									`[Orchestration executor] Profile '${route.profileId}' unavailable; using active profile '${activeProfileName}': ${nameError instanceof Error ? nameError.message : String(nameError)}`,
+								)
+								selectedProfile = await this.providerSettingsManager.getProfile({
+									name: activeProfileName,
+								})
+							}
+						}
+						if (!selectedProfile?.apiProvider) {
+							throw new Error(
+								`Resolved orchestration route '${route.profileId}' has no usable provider profile`,
+							)
+						}
+					}
+					const child = await this.delegateParentAndOpenChild({
+						parentTaskId: parent.taskId,
+						message: [
+							node.title,
+							node.objective,
+							`Acceptance criteria: ${node.inputContract.acceptanceCriteria.join("; ")}`,
+							`Declared file scopes: ${JSON.stringify(node.inputContract.fileScopes)}`,
+							RESULT_CONTRACT_INSTRUCTION,
+						].join("\n\n"),
+						initialTodos: [],
+						mode: node.mode,
+						workspacePath: workspace.path,
+						configuration:
+							selectedProfile && route
+								? (() => {
+										const modelKey =
+											selectedProfile.apiProvider === "openai"
+												? "openAiModelId"
+												: modelIdKeysByProvider[
+														selectedProfile.apiProvider as keyof typeof modelIdKeysByProvider
+													] || "apiModelId"
+										const configuration = { ...selectedProfile }
+										for (const key of modelIdKeys) delete configuration[key]
+										return {
+											...configuration,
+											[modelKey]: route.modelId,
+											currentApiConfigName: selectedProfile.name,
+										}
+									})()
+								: (() => {
+										this.log(
+											`[Orchestration executor] Missing resolved configuration for node '${node.nodeId}', role '${node.role}', route=${JSON.stringify(route)}`,
+										)
+										throw new Error(
+											`Unable to create configuration for orchestration node '${node.nodeId}'`,
+										)
+									})(),
+						explicitRole: node.role,
+					})
+					node.taskId = child.taskId
+					const complete = async (_taskId: string, usage: TokenUsage) => {
+						child.off(AiCodeOrchestratorEventName.TaskCompleted, complete)
+						child.off(AiCodeOrchestratorEventName.TaskAborted, aborted)
+						try {
+							const extracted = extractResultContract({
+								completionMessages: child.clineMessages,
+								apiHistory: child.apiConversationHistory,
+								fileScopes: node.inputContract.fileScopes,
+								// Validate worker reports against the isolated workspace, not the parent cwd.
+								cwd: workspace.path,
+								persistTranscript: !!settings.persistTranscripts,
+								usage: {
+									inputTokens: usage.totalTokensIn ?? 0,
+									outputTokens: usage.totalTokensOut ?? 0,
+									cost: usage.totalCost,
+								},
+								route: node.route
+									? {
+											profileId: node.route.profileId,
+											provider: node.route.provider,
+											modelId: node.route.modelId,
+											role: node.route.role,
+										}
+									: undefined,
+							})
+							await this.orchestrationService?.handleChildEvent({
+								runId: run.runId,
+								nodeId: node.nodeId,
+								idempotencyKey: `${idempotencyKey}:completed`,
+								status: "integrated",
+								result: extracted.result,
+								usage: extracted.usage,
+							})
+						} catch (error) {
+							await this.orchestrationService?.handleChildEvent({
+								runId: run.runId,
+								nodeId: node.nodeId,
+								idempotencyKey: `${idempotencyKey}:contract-invalid`,
+								status: "failed",
+								usage: {
+									inputTokens: usage.totalTokensIn ?? 0,
+									outputTokens: usage.totalTokensOut ?? 0,
+									cost: usage.totalCost,
+								},
+								error: {
+									code:
+										error instanceof Error && error.message.startsWith("result_contract_missing")
+											? "result_contract_unavailable"
+											: "result_contract_invalid",
+									message: error instanceof Error ? error.message : String(error),
+									recoverable: true,
+								},
+							})
+						}
+					}
+					const aborted = async () => {
+						child.off(AiCodeOrchestratorEventName.TaskCompleted, complete)
+						child.off(AiCodeOrchestratorEventName.TaskAborted, aborted)
+						await this.orchestrationService?.handleChildEvent({
+							runId: run.runId,
+							nodeId: node.nodeId,
+							idempotencyKey: `${idempotencyKey}:canceled`,
+							status: "canceled",
+							error: { code: "child_canceled", message: "Child task canceled", recoverable: true },
+						})
+					}
+					child.on(AiCodeOrchestratorEventName.TaskCompleted, complete)
+					child.on(AiCodeOrchestratorEventName.TaskAborted, aborted)
+					return {
+						taskId: child.taskId,
+						workspacePath: workspace.path,
+						cancel: async (reason?: string) => {
+							child.abortReason = reason as any
+							await child.abortTask()
+						},
+						dispose: async () => {
+							await workerRegistry.release(workspace.workerId, true)
+						},
+					}
+				},
+			}
+			this.orchestrationService = new OrchestrationService(
+				new GlobalStateOrchestrationPersistence(this.context.globalState),
+				executor,
+				async (event) => {
+					await this.postMessageToWebview({ type: "orchestrationEvent", payload: event })
+					const snapshot = await this.orchestrationService?.getSnapshot(event.runId)
+					if (snapshot) await this.postMessageToWebview({ type: "orchestrationSnapshot", payload: snapshot })
+				},
+				{
+					integration: new GitIntegrationAdapter(this.cwd),
+					review: new ReviewerAdapter(async ({ result }) =>
+						(result.findings ?? []).map((finding) => ({
+							...finding,
+							provenance: {
+								artifactRefs: [],
+								conflictRefs: [],
+								detectedAt: Date.now(),
+							},
+						})),
+					),
+					synthesis: new OrchestrationSynthesisAdapter(),
+					route: { resolve: ({ node }) => this.resolveOrchestrationRoute(node) },
+				},
+			)
+			await this.orchestrationService.recover()
+		}
+		return this.orchestrationService
 	}
 
 	public async postMessageToWebview(message: ExtensionMessage) {
@@ -1145,7 +1513,7 @@ export class ClineProvider
 						window.AUDIO_BASE_URI = "${audioUri}"
 						window.MATERIAL_ICONS_BASE_URI = "${materialIconsUri}"
 					</script>
-					<title>Roo Code</title>
+					<title>AI Code Orchestrator</title>
 				</head>
 				<body>
 					<div id="root"></div>
@@ -1224,7 +1592,7 @@ export class ClineProvider
 				window.AUDIO_BASE_URI = "${audioUri}"
 				window.MATERIAL_ICONS_BASE_URI = "${materialIconsUri}"
 			</script>
-            <title>Roo Code</title>
+            <title>AI Code Orchestrator</title>
           </head>
           <body>
             <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -1248,42 +1616,44 @@ export class ClineProvider
 		this.webviewDisposables.push(messageDisposable)
 	}
 
-	/**
-	 * Handle switching to a new mode, including updating the associated API configuration
-	 * @param newMode The mode to switch to
-	 */
-	public async handleModeSwitch(newMode: Mode) {
-		const task = this.getCurrentTask()
+	/** Apply a mode change to a task without changing Settings state. */
+	public async switchRuntimeMode(task: Task, newMode: string) {
+		task.emit(AiCodeOrchestratorEventName.TaskModeSwitched, task.taskId, newMode)
 
-		if (task) {
-			task.emit(RooCodeEventName.TaskModeSwitched, task.taskId, newMode)
+		try {
+			const taskHistoryItem =
+				this.taskHistoryStore.get(task.taskId) ??
+				(this.getGlobalState("taskHistory") ?? []).find((item) => item.id === task.taskId)
 
-			try {
-				// Update the task history with the new mode first.
-				const taskHistoryItem =
-					this.taskHistoryStore.get(task.taskId) ??
-					(this.getGlobalState("taskHistory") ?? []).find((item) => item.id === task.taskId)
-
-				if (taskHistoryItem) {
-					await this.updateTaskHistory({ ...taskHistoryItem, mode: newMode })
-				}
-
-				// Only update the task's mode after successful persistence.
-				;(task as any)._taskMode = newMode
-			} catch (error) {
-				// If persistence fails, log the error but don't update the in-memory state.
-				this.log(
-					`Failed to persist mode switch for task ${task.taskId}: ${error instanceof Error ? error.message : String(error)}`,
-				)
-
-				// This ensures the in-memory state remains consistent with persisted state.
-				throw error
+			if (taskHistoryItem) {
+				await this.updateTaskHistory({ ...taskHistoryItem, mode: newMode })
 			}
+
+			;(task as any)._taskMode = newMode
+			console.log("[ClineProvider] Applied mode to task:", { taskId: task.taskId, mode: task.taskMode })
+			await this.postMessageToWebview({ type: "state", state: { runtimeMode: newMode } })
+		} catch (error) {
+			this.log(
+				`Failed to persist mode switch for task ${task.taskId}: ${error instanceof Error ? error.message : String(error)}`,
+			)
+			throw error
+		}
+	}
+
+	/** Persist the user's default mode and reset the active runtime mode to it. */
+	public async setDefaultMode(newMode: string) {
+		console.log("[ClineProvider] Received default mode change:", newMode)
+		const task = this.getCurrentTask()
+		if (task) {
+			await this.switchRuntimeMode(task, newMode)
 		}
 
 		await this.updateGlobalState("mode", newMode)
-
-		this.emit(RooCodeEventName.ModeChanged, newMode)
+		this.emit(AiCodeOrchestratorEventName.ModeChanged, newMode)
+		await this.postMessageToWebview({
+			type: "state",
+			state: { defaultMode: newMode, mode: newMode, runtimeMode: newMode },
+		})
 
 		// If workspace lock is on, keep the current API config — don't load mode-specific config
 		const lockApiConfigAcrossModes = this.context.workspaceState.get("lockApiConfigAcrossModes", false)
@@ -1337,6 +1707,11 @@ export class ClineProvider
 		await this.postStateToWebview()
 	}
 
+	/** @deprecated Use setDefaultMode for Settings actions. */
+	public async handleModeSwitch(newMode: Mode) {
+		return this.setDefaultMode(newMode)
+	}
+
 	// Provider Profile Management
 
 	/**
@@ -1357,6 +1732,8 @@ export class ClineProvider
 
 		const { forceRebuild = false } = options
 
+		if ((task as any).hasRoleSpecificApiConfiguration?.()) return
+
 		// Determine if we need to rebuild using the previous configuration snapshot
 		const prevConfig = task.apiConfiguration
 		const prevProvider = prevConfig?.apiProvider
@@ -1372,8 +1749,8 @@ export class ClineProvider
 			// so we can safely call it without awaiting.
 			task.updateApiConfiguration(providerSettings)
 		} else {
-			// No rebuild needed, just sync apiConfiguration
-			;(task as any).apiConfiguration = providerSettings
+			// No rebuild needed, just sync an isolated configuration snapshot.
+			;(task as any).apiConfiguration = structuredClone(providerSettings)
 		}
 	}
 
@@ -1497,23 +1874,28 @@ export class ClineProvider
 
 	async activateProviderProfile(
 		args: { name: string } | { id: string },
-		options?: { persistModeConfig?: boolean; persistTaskHistory?: boolean },
+		options?: { persistModeConfig?: boolean; persistTaskHistory?: boolean; syncGlobalProviderState?: boolean },
 	) {
-		const { name, id, ...providerSettings } = await this.providerSettingsManager.activateProfile(args)
+		const syncGlobalProviderState = options?.syncGlobalProviderState ?? false
+		const { name, id, ...providerSettings } = syncGlobalProviderState
+			? await this.providerSettingsManager.activateProfile(args)
+			: await this.providerSettingsManager.getProfile(args)
 
 		const persistModeConfig = options?.persistModeConfig ?? true
 		const persistTaskHistory = options?.persistTaskHistory ?? true
 
-		// See `upsertProviderProfile` for a description of what this is doing.
-		await Promise.all([
-			this.contextProxy.setValue("listApiConfigMeta", await this.providerSettingsManager.listConfig()),
-			this.contextProxy.setValue("currentApiConfigName", name),
-			this.contextProxy.setProviderSettings(providerSettings),
-		])
+		// Task restoration reads a profile without changing the global Settings profile.
+		if (syncGlobalProviderState) {
+			await Promise.all([
+				this.contextProxy.setValue("listApiConfigMeta", await this.providerSettingsManager.listConfig()),
+				this.contextProxy.setValue("currentApiConfigName", name),
+				this.contextProxy.setProviderSettings(providerSettings),
+			])
+		}
 
 		const { mode } = await this.getState()
 
-		if (id && persistModeConfig) {
+		if (syncGlobalProviderState && id && persistModeConfig) {
 			await this.providerSettingsManager.setModeConfig(mode, id)
 		}
 
@@ -1529,7 +1911,10 @@ export class ClineProvider
 		await this.postStateToWebview()
 
 		if (providerSettings.apiProvider) {
-			this.emit(RooCodeEventName.ProviderProfileChanged, { name, provider: providerSettings.apiProvider })
+			this.emit(AiCodeOrchestratorEventName.ProviderProfileChanged, {
+				name,
+				provider: providerSettings.apiProvider,
+			})
 		}
 	}
 
@@ -1545,21 +1930,21 @@ export class ClineProvider
 		// Get platform-specific application data directory
 		let mcpServersDir: string
 		if (process.platform === "win32") {
-			// Windows: %APPDATA%\Roo-Code\MCP
-			mcpServersDir = path.join(os.homedir(), "AppData", "Roaming", "Roo-Code", "MCP")
+			// Windows: %APPDATA%\AI Code Orchestrator-Code\MCP
+			mcpServersDir = path.join(os.homedir(), "AppData", "Roaming", "AI Code Orchestrator-Code", "MCP")
 		} else if (process.platform === "darwin") {
 			// macOS: ~/Documents/Cline/MCP
 			mcpServersDir = path.join(os.homedir(), "Documents", "Cline", "MCP")
 		} else {
 			// Linux: ~/.local/share/Cline/MCP
-			mcpServersDir = path.join(os.homedir(), ".local", "share", "Roo-Code", "MCP")
+			mcpServersDir = path.join(os.homedir(), ".local", "share", "AI Code Orchestrator-Code", "MCP")
 		}
 
 		try {
 			await fs.mkdir(mcpServersDir, { recursive: true })
 		} catch (error) {
 			// Fallback to a relative path if directory creation fails
-			return path.join(os.homedir(), ".roo-code", "mcp")
+			return path.join(os.homedir(), ".ai-code-orchestrator", "mcp")
 		}
 		return mcpServersDir
 	}
@@ -1826,6 +2211,19 @@ export class ClineProvider
 	}
 
 	async postStateToWebview() {
+		if (!this.pendingStatePost) {
+			this.pendingStatePost = new Promise<void>((resolve, reject) => {
+				setTimeout(() => {
+					this.pendingStatePost = undefined
+					this.sendStateToWebview().then(resolve, reject)
+				}, ClineProvider.STATE_POST_DEBOUNCE_MS)
+			})
+		}
+
+		return this.pendingStatePost
+	}
+
+	private async sendStateToWebview() {
 		const state = await this.getStateToPostToWebview()
 		this.clineMessagesSeq++
 		state.clineMessagesSeq = this.clineMessagesSeq
@@ -1841,7 +2239,7 @@ export class ClineProvider
 	 *   `taskHistoryUpdated` / `taskHistoryItemUpdated`.
 	 */
 	async postStateToWebviewWithoutTaskHistory(): Promise<void> {
-		const state = await this.getStateToPostToWebview()
+		const state = await this.getStateToPostToWebview({ includeTaskHistory: false })
 		this.clineMessagesSeq++
 		state.clineMessagesSeq = this.clineMessagesSeq
 		const { taskHistory: _omit, ...rest } = state
@@ -1860,7 +2258,7 @@ export class ClineProvider
 	 *   without interfering with task message streaming.
 	 */
 	async postStateToWebviewWithoutClineMessages(): Promise<void> {
-		const state = await this.getStateToPostToWebview()
+		const state = await this.getStateToPostToWebview({ includeTaskHistory: false, includeClineMessages: false })
 		const { clineMessages: _omitMessages, taskHistory: _omitHistory, ...rest } = state
 		this.postMessageToWebview({ type: "state", state: rest })
 	}
@@ -1921,9 +2319,14 @@ export class ClineProvider
 		}
 	}
 
-	async getStateToPostToWebview(): Promise<ExtensionState> {
-		// Ensure the store is initialized before reading task history
-		await this.taskHistoryStore.initialized
+	async getStateToPostToWebview({
+		includeTaskHistory = true,
+		includeClineMessages = true,
+	}: { includeTaskHistory?: boolean; includeClineMessages?: boolean } = {}): Promise<ExtensionState> {
+		// Avoid initializing/reading the history store for incremental state pushes.
+		if (includeTaskHistory) {
+			await this.taskHistoryStore.initialized
+		}
 
 		const {
 			apiConfiguration,
@@ -1949,7 +2352,6 @@ export class ClineProvider
 			ttsSpeed,
 			enableCheckpoints,
 			checkpointTimeout,
-			taskHistory,
 			soundVolume,
 			writeDelayMs,
 			terminalShellIntegrationTimeout,
@@ -1974,7 +2376,7 @@ export class ClineProvider
 			maxOpenTabsContext,
 			maxWorkspaceFiles,
 			disabledTools,
-			showRooIgnoredFiles,
+			showAicoIgnoredFiles,
 			enableSubfolderRules,
 			language,
 			maxImageFileSize,
@@ -1995,6 +2397,7 @@ export class ClineProvider
 			includeCurrentTime,
 			includeCurrentCost,
 			maxGitStatusFiles,
+			roleAssignments,
 			imageGenerationProvider,
 			openRouterImageApiKey,
 			openRouterImageGenerationSelectedModel,
@@ -2006,6 +2409,8 @@ export class ClineProvider
 		const cwd = this.cwd
 		const currentTask = this.getCurrentTask()
 
+		// Settings always shows the global profile. Task routing remains available through
+		// currentTaskItem/task history for chat-specific model indicators.
 		return {
 			version: this.context.extension?.packageJSON?.version ?? "",
 			apiConfiguration,
@@ -2025,11 +2430,15 @@ export class ClineProvider
 			autoCondenseContextPercent: autoCondenseContextPercent ?? 100,
 			uriScheme: vscode.env.uriScheme,
 			currentTaskId: currentTask?.taskId,
-			currentTaskItem: currentTask?.taskId ? this.taskHistoryStore.get(currentTask.taskId) : undefined,
-			clineMessages: currentTask?.clineMessages || [],
+			currentTaskInstanceId: currentTask?.instanceId,
+			currentTaskItem:
+				includeTaskHistory && currentTask?.taskId ? this.taskHistoryStore.get(currentTask.taskId) : undefined,
+			clineMessages: includeClineMessages ? currentTask?.clineMessages || [] : [],
 			currentTaskTodos: currentTask?.todoList || [],
 			messageQueue: currentTask?.messageQueueService?.messages,
-			taskHistory: this.taskHistoryStore.getAll().filter((item: HistoryItem) => item.ts && item.task),
+			taskHistory: includeTaskHistory
+				? this.taskHistoryStore.getAll().filter((item: HistoryItem) => item.ts && item.task)
+				: [],
 			soundEnabled: soundEnabled ?? false,
 			ttsEnabled: ttsEnabled ?? false,
 			ttsSpeed: ttsSpeed ?? 1.0,
@@ -2050,9 +2459,12 @@ export class ClineProvider
 			terminalZdotdir: terminalZdotdir ?? false,
 			mcpEnabled: mcpEnabled ?? true,
 			currentApiConfigName: currentApiConfigName ?? "default",
+			runtimeApiConfigName: currentTask?.taskApiConfigName ?? currentApiConfigName ?? "default",
 			listApiConfigMeta: listApiConfigMeta ?? [],
 			pinnedApiConfigs: pinnedApiConfigs ?? {},
+			defaultMode: mode ?? defaultModeSlug,
 			mode: mode ?? defaultModeSlug,
+			runtimeMode: currentTask?.taskMode ?? mode ?? defaultModeSlug,
 			customModePrompts: customModePrompts ?? {},
 			customSupportPrompts: customSupportPrompts ?? {},
 			enhancementApiConfigId,
@@ -2064,7 +2476,7 @@ export class ClineProvider
 			maxWorkspaceFiles: maxWorkspaceFiles ?? 200,
 			cwd,
 			disabledTools,
-			showRooIgnoredFiles: showRooIgnoredFiles ?? false,
+			showAicoIgnoredFiles: showAicoIgnoredFiles ?? false,
 			enableSubfolderRules: enableSubfolderRules ?? false,
 			language: language ?? formatLanguage(vscode.env.language),
 			renderContext: this.renderContext,
@@ -2085,6 +2497,8 @@ export class ClineProvider
 				codebaseIndexEmbedderModelId: codebaseIndexConfig?.codebaseIndexEmbedderModelId ?? "",
 				codebaseIndexEmbedderModelDimension: codebaseIndexConfig?.codebaseIndexEmbedderModelDimension ?? 1536,
 				codebaseIndexOpenAiCompatibleBaseUrl: codebaseIndexConfig?.codebaseIndexOpenAiCompatibleBaseUrl,
+				codebaseIndexOpenAiCompatibleUseFloatEncoding:
+					codebaseIndexConfig?.codebaseIndexOpenAiCompatibleUseFloatEncoding ?? false,
 				codebaseIndexSearchMaxResults: codebaseIndexConfig?.codebaseIndexSearchMaxResults,
 				codebaseIndexSearchMinScore: codebaseIndexConfig?.codebaseIndexSearchMinScore,
 				codebaseIndexBedrockRegion: codebaseIndexConfig?.codebaseIndexBedrockRegion,
@@ -2092,6 +2506,9 @@ export class ClineProvider
 				codebaseIndexOpenRouterSpecificProvider: codebaseIndexConfig?.codebaseIndexOpenRouterSpecificProvider,
 			},
 			profileThresholds: profileThresholds ?? {},
+			orchestrationSettings:
+				(await this.contextProxy.getValue("orchestrationSettings")) ??
+				(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS,
 			hasOpenedModeSelector: this.getGlobalState("hasOpenedModeSelector") ?? false,
 			lockApiConfigAcrossModes: lockApiConfigAcrossModes ?? false,
 			alwaysAllowFollowupQuestions: alwaysAllowFollowupQuestions ?? false,
@@ -2102,6 +2519,7 @@ export class ClineProvider
 			includeCurrentTime: includeCurrentTime ?? true,
 			includeCurrentCost: includeCurrentCost ?? true,
 			maxGitStatusFiles: maxGitStatusFiles ?? 0,
+			roleAssignments,
 			imageGenerationProvider,
 			openRouterImageApiKey,
 			openRouterImageGenerationSelectedModel,
@@ -2209,7 +2627,7 @@ export class ClineProvider
 			maxOpenTabsContext: stateValues.maxOpenTabsContext ?? 20,
 			maxWorkspaceFiles: stateValues.maxWorkspaceFiles ?? 200,
 			disabledTools: stateValues.disabledTools,
-			showRooIgnoredFiles: stateValues.showRooIgnoredFiles ?? false,
+			showAicoIgnoredFiles: stateValues.showAicoIgnoredFiles ?? false,
 			enableSubfolderRules: stateValues.enableSubfolderRules ?? false,
 			maxImageFileSize: stateValues.maxImageFileSize ?? 5,
 			maxTotalImageSize: stateValues.maxTotalImageSize ?? 20,
@@ -2231,6 +2649,8 @@ export class ClineProvider
 					stateValues.codebaseIndexConfig?.codebaseIndexEmbedderModelDimension,
 				codebaseIndexOpenAiCompatibleBaseUrl:
 					stateValues.codebaseIndexConfig?.codebaseIndexOpenAiCompatibleBaseUrl,
+				codebaseIndexOpenAiCompatibleUseFloatEncoding:
+					stateValues.codebaseIndexConfig?.codebaseIndexOpenAiCompatibleUseFloatEncoding ?? false,
 				codebaseIndexSearchMaxResults: stateValues.codebaseIndexConfig?.codebaseIndexSearchMaxResults,
 				codebaseIndexSearchMinScore: stateValues.codebaseIndexConfig?.codebaseIndexSearchMinScore,
 				codebaseIndexBedrockRegion: stateValues.codebaseIndexConfig?.codebaseIndexBedrockRegion,
@@ -2240,6 +2660,7 @@ export class ClineProvider
 			},
 			profileThresholds: stateValues.profileThresholds ?? {},
 			lockApiConfigAcrossModes: this.context.workspaceState.get("lockApiConfigAcrossModes", false),
+			roleAssignments: stateValues.roleAssignments,
 			includeDiagnosticMessages: stateValues.includeDiagnosticMessages ?? true,
 			maxDiagnosticMessages: stateValues.maxDiagnosticMessages ?? 50,
 			includeTaskHistoryInEnhance: stateValues.includeTaskHistoryInEnhance ?? true,
@@ -2349,11 +2770,11 @@ export class ClineProvider
 		return this.contextProxy.getValue(key)
 	}
 
-	public async setValue<K extends keyof RooCodeSettings>(key: K, value: RooCodeSettings[K]) {
+	public async setValue<K extends keyof AiCodeOrchestratorSettings>(key: K, value: AiCodeOrchestratorSettings[K]) {
 		await this.contextProxy.setValue(key, value)
 	}
 
-	public getValue<K extends keyof RooCodeSettings>(key: K) {
+	public getValue<K extends keyof AiCodeOrchestratorSettings>(key: K) {
 		return this.contextProxy.getValue(key)
 	}
 
@@ -2361,7 +2782,7 @@ export class ClineProvider
 		return this.contextProxy.getValues()
 	}
 
-	public async setValues(values: RooCodeSettings) {
+	public async setValues(values: AiCodeOrchestratorSettings) {
 		await this.contextProxy.setValues(values)
 	}
 
@@ -2390,7 +2811,6 @@ export class ClineProvider
 
 	public log(message: string) {
 		this.outputChannel.appendLine(message)
-		console.log(message)
 	}
 
 	// getters
@@ -2527,6 +2947,65 @@ export class ClineProvider
 		return this.recentTasksCache
 	}
 
+	private async resolveEffectiveApiConfiguration({
+		mode,
+		baseApiConfiguration,
+		state,
+		providedConfiguration = {},
+		explicitRole,
+	}: {
+		mode?: string
+		baseApiConfiguration: ProviderSettings
+		state?: Awaited<ReturnType<ClineProvider["getState"]>>
+		providedConfiguration?: AiCodeOrchestratorSettings
+		explicitRole?: string
+	}): Promise<{ effectiveApiConfiguration: ProviderSettings; isRoleSpecificConfig: boolean }> {
+		const snapshot = structuredClone(baseApiConfiguration)
+		const hasProvidedModelConfiguration = modelIdKeys.some((key) => providedConfiguration[key] != null)
+		if (explicitRole && hasProvidedModelConfiguration) {
+			for (const key of modelIdKeys) delete snapshot[key]
+			return {
+				effectiveApiConfiguration: { ...snapshot, ...structuredClone(providedConfiguration) },
+				isRoleSpecificConfig: true,
+			}
+		}
+
+		const currentState = state ?? (await this.getState())
+		const assignments = currentState.roleAssignments?.roles
+		const requestedRole = explicitRole ?? mode ?? defaultModeSlug
+		const fallbackRole = requestedRole === "orchestrator" ? "orchestrator" : "worker"
+		const roleToUse = assignments?.[requestedRole] ? requestedRole : fallbackRole
+		const assignment = assignments?.[roleToUse]
+		if (!assignment) return { effectiveApiConfiguration: snapshot, isRoleSpecificConfig: false }
+
+		const profile: ProviderSettings & { id?: string; name?: string } = assignment.profileName
+			? await this.providerSettingsManager.getProfile({ name: assignment.profileName })
+			: baseApiConfiguration
+		if (!profile?.apiProvider) return { effectiveApiConfiguration: snapshot, isRoleSpecificConfig: false }
+
+		const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
+			profileId:
+				profile.id ??
+				(assignment.profileName ? this.getProviderProfileEntry(assignment.profileName)?.id : undefined) ??
+				assignment.profileName ??
+				currentState.currentApiConfigName ??
+				"default",
+			provider: profile.apiProvider,
+			primaryModelId: getModelId(profile) ?? "",
+			role: roleToUse,
+			explicitModelId: assignment.modelId,
+			roleModels: profile.profileRoleModelSettings,
+		})
+		const modelKey =
+			profile.apiProvider === "openai"
+				? "openAiModelId"
+				: modelIdKeysByProvider[profile.apiProvider as keyof typeof modelIdKeysByProvider] || "apiModelId"
+		const effectiveApiConfiguration = structuredClone(profile)
+		for (const key of modelIdKeys) delete effectiveApiConfiguration[key]
+		effectiveApiConfiguration[modelKey] = route.modelId
+		return { effectiveApiConfiguration, isRoleSpecificConfig: true }
+	}
+
 	// When initializing a new task, (not from history but from a tool command
 	// new_task) there is no need to remove the previous task since the new
 	// task is a subtask of the previous one, and when it finishes it is removed
@@ -2538,7 +3017,8 @@ export class ClineProvider
 		images?: string[],
 		parentTask?: Task,
 		options: CreateTaskOptions = {},
-		configuration: RooCodeSettings = {},
+		configuration: AiCodeOrchestratorSettings = {},
+		explicitRole?: string,
 	): Promise<Task> {
 		if (configuration) {
 			await this.setValues(configuration)
@@ -2571,7 +3051,7 @@ export class ClineProvider
 
 			// Register custom modes so the CustomModesManager knows about them.
 			// setValues writes to global state, but the manager overwrites that
-			// when it merges .roomodes + global settings on refresh.  Persisting
+			// when it merges .agent-modes + global settings on refresh.  Persisting
 			// via updateCustomMode ensures modes survive the merge cycle.
 			if (configuration.customModes?.length) {
 				for (const mode of configuration.customModes) {
@@ -2580,8 +3060,22 @@ export class ClineProvider
 			}
 		}
 
-		const { apiConfiguration, organizationAllowList, enableCheckpoints, checkpointTimeout, experiments } =
-			await this.getState()
+		const state = await this.getState()
+		const { apiConfiguration, organizationAllowList, enableCheckpoints, checkpointTimeout, experiments } = state
+		// Delegated tasks use their explicit role instead of inheriting provider state.
+		// The worker fallback prevents an orchestrator parent from recursively spawning itself.
+		const requestedTaskMode = parentTask ? (explicitRole ?? configuration.mode) : configuration.mode
+		const taskMode =
+			parentTask && (!requestedTaskMode || requestedTaskMode === "orchestrator")
+				? "worker"
+				: (requestedTaskMode ?? state.mode)
+		const { effectiveApiConfiguration, isRoleSpecificConfig } = await this.resolveEffectiveApiConfiguration({
+			mode: taskMode,
+			baseApiConfiguration: apiConfiguration,
+			state,
+			providedConfiguration: configuration,
+			explicitRole,
+		})
 
 		// Single-open-task invariant: always enforce for user-initiated top-level tasks
 		if (!parentTask) {
@@ -2592,13 +3086,21 @@ export class ClineProvider
 			}
 		}
 
-		if (!ProfileValidator.isProfileAllowed(apiConfiguration, organizationAllowList)) {
+		if (!ProfileValidator.isProfileAllowed(effectiveApiConfiguration, organizationAllowList)) {
 			throw new OrganizationAllowListViolationError(t("common:errors.violated_organization_allowlist"))
 		}
 
+		const willBeOrchestrator = taskMode === "orchestrator"
+		console.log("[createTask] Creating task with:", {
+			explicitRole,
+			taskMode,
+			parentTaskId: parentTask?.taskId,
+			willBeOrchestrator,
+		})
+
 		const task = new Task({
 			provider: this,
-			apiConfiguration,
+			apiConfiguration: effectiveApiConfiguration,
 			enableCheckpoints,
 			checkpointTimeout,
 			consecutiveMistakeLimit: apiConfiguration.consecutiveMistakeLimit,
@@ -2613,6 +3115,8 @@ export class ClineProvider
 			// Ensure this task is present in clineStack before startTask() emits
 			// its initial state update, so state.currentTaskId is available ASAP.
 			startTask: false,
+			taskMode,
+			isRoleSpecificConfig,
 			...options,
 		})
 
@@ -2626,10 +3130,47 @@ export class ClineProvider
 		return task
 	}
 
-	public async cancelTask(): Promise<void> {
+	public async cancelTask(taskId?: string, instanceId?: string, bypassValidation = false): Promise<void> {
 		const task = this.getCurrentTask()
 
+		console.log("[cancelTask] received:", {
+			messageTaskId: taskId,
+			messageInstanceId: instanceId,
+			currentTaskId: task?.taskId,
+			currentInstanceId: task?.instanceId,
+		})
+		console.log("[cancelTask] stack trace:", new Error().stack)
+
+		if (
+			!bypassValidation &&
+			(!taskId || !instanceId || taskId !== task?.taskId || instanceId !== task?.instanceId)
+		) {
+			console.log("[cancelTask] Ignoring cancel - task identity mismatch or missing", {
+				provided: { taskId, instanceId },
+				current: { currentTaskId: task?.taskId, currentInstanceId: task?.instanceId },
+			})
+			return
+		}
+
 		if (!task) {
+			return
+		}
+
+		// isStreaming is set before the lazy API iterator is advanced, so it can be
+		// true during checkpoint/setup work even though no HTTP request exists yet.
+		const hasActiveRequest = task.isWaitingForFirstChunk || task.currentRequestAbortController !== undefined
+		const guardState = hasActiveRequest ? "active-request" : "initializing-before-first-request"
+		console.log(
+			`[cancelTask] guard check: isStreaming=${task.isStreaming}, ` +
+				`isWaitingForFirstChunk=${task.isWaitingForFirstChunk}, ` +
+				`hasAbortController=${task.currentRequestAbortController !== undefined}, state=${guardState}`,
+		)
+
+		// Ignore stale UI cancellation during task initialization. Once a request
+		// is waiting for its first chunk or has an abort controller, it is genuinely
+		// active and must remain cancellable.
+		if (!bypassValidation && !hasActiveRequest) {
+			console.log(`[cancelTask] ignoring cancel before first API request for ${task.taskId}.${task.instanceId}`)
 			return
 		}
 
@@ -2765,7 +3306,7 @@ export class ClineProvider
 	}
 
 	public async setProviderProfile(name: string): Promise<void> {
-		await this.activateProviderProfile({ name })
+		await this.activateProviderProfile({ name }, { syncGlobalProviderState: true })
 	}
 
 	public get cwd() {
@@ -2785,8 +3326,19 @@ export class ClineProvider
 		message: string
 		initialTodos: TodoItem[]
 		mode: string
+		workspacePath?: string
+		configuration?: AiCodeOrchestratorSettings
+		explicitRole?: string
 	}): Promise<Task> {
-		const { parentTaskId, message, initialTodos, mode } = params
+		const { parentTaskId, message, initialTodos, mode, workspacePath, configuration, explicitRole } = params
+		console.log(
+			"[orchestrator-delegation] explicitRole:",
+			explicitRole,
+			"taskMode:",
+			mode,
+			"resolvedConfig:",
+			configuration ?? {},
+		)
 
 		// Metadata-driven delegation is always enabled
 
@@ -2873,11 +3425,28 @@ export class ClineProvider
 		// Without this, the child's fire-and-forget startTask() races with step 5,
 		// and the last writer to globalState overwrites the other's changes—
 		// causing the parent's delegation fields to be lost.
-		const child = await this.createTask(message, undefined, parent as any, {
-			initialTodos,
-			initialStatus: "active",
-			startTask: false,
-		})
+		let child: Task
+		try {
+			child = await this.createTask(
+				message,
+				undefined,
+				parent as any,
+				{
+					initialTodos,
+					initialStatus: "active",
+					startTask: false,
+					workspacePath,
+				},
+				configuration,
+				explicitRole,
+			)
+		} catch (error) {
+			// Restore the parent when child creation fails so delegation is atomic.
+			if (this.clineStack.length === 0) {
+				this.clineStack.push(parent)
+			}
+			throw error
+		}
 
 		// 5) Persist parent delegation metadata BEFORE the child starts writing.
 		try {
@@ -2904,7 +3473,7 @@ export class ClineProvider
 
 		// 7) Emit TaskDelegated (provider-level)
 		try {
-			this.emit(RooCodeEventName.TaskDelegated, parentTaskId, child.taskId)
+			this.emit(AiCodeOrchestratorEventName.TaskDelegated, parentTaskId, child.taskId)
 		} catch {
 			// non-fatal
 		}
@@ -3077,7 +3646,12 @@ export class ClineProvider
 
 		// 6) Emit TaskDelegationCompleted (provider-level)
 		try {
-			this.emit(RooCodeEventName.TaskDelegationCompleted, parentTaskId, childTaskId, completionResultSummary)
+			this.emit(
+				AiCodeOrchestratorEventName.TaskDelegationCompleted,
+				parentTaskId,
+				childTaskId,
+				completionResultSummary,
+			)
 		} catch {
 			// non-fatal
 		}
@@ -3105,7 +3679,7 @@ export class ClineProvider
 
 		// 9) Emit TaskDelegationResumed (provider-level)
 		try {
-			this.emit(RooCodeEventName.TaskDelegationResumed, parentTaskId, childTaskId)
+			this.emit(AiCodeOrchestratorEventName.TaskDelegationResumed, parentTaskId, childTaskId)
 		} catch {
 			// non-fatal
 		}

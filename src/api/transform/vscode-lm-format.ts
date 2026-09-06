@@ -23,7 +23,7 @@ function asObjectSafe(value: any): object {
 
 		return {}
 	} catch (error) {
-		console.warn("Roo Code <Language Model API>: Failed to parse object:", error)
+		console.warn("AI Code Orchestrator <Language Model API>: Failed to parse object:", error)
 		return {}
 	}
 }
@@ -184,7 +184,10 @@ export function extractTextCountFromMessage(message: vscode.LanguageModelChatMes
 					try {
 						text += JSON.stringify(item.input)
 					} catch (error) {
-						console.error("Roo Code <Language Model API>: Failed to stringify tool call input:", error)
+						console.error(
+							"AI Code Orchestrator <Language Model API>: Failed to stringify tool call input:",
+							error,
+						)
 					}
 				}
 			}

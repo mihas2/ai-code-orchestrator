@@ -32,7 +32,7 @@ import {
 	vercelAiGatewayDefaultModelId,
 	minimaxDefaultModelId,
 	unboundDefaultModelId,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 
 import {
 	getProviderServiceConfig,
@@ -477,8 +477,8 @@ const ApiOptions = ({
 					className="rounded-md border border-vscode-panel-border px-3 py-2 text-sm text-vscode-descriptionForeground"
 					data-testid="retired-provider-message">
 					{t(
-						apiConfiguration.apiProvider === "roo"
-							? "settings:providers.retiredRooProviderMessage"
+						apiConfiguration.apiProvider === "aico"
+							? "settings:providers.retiredAicoProviderMessage"
 							: "settings:providers.retiredProviderMessage",
 					)}
 				</div>

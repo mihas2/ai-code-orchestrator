@@ -2,7 +2,7 @@
 
 import { Anthropic } from "@anthropic-ai/sdk"
 
-import type { ModelInfo } from "@roo-code/types"
+import type { ModelInfo } from "@ai-code-orchestrator/types"
 
 import { BaseProvider } from "../../../api/providers/base-provider"
 import { ApiMessage } from "../../task-persistence/apiMessages"
@@ -861,7 +861,7 @@ describe("Context Management", () => {
 			{ role: "user", content: "Fifth message" },
 		]
 
-		it("should pass filesReadByRoo, cwd, and rooIgnoreController to summarizeConversation when provided", async () => {
+		it("should pass filesReadByRoo, cwd, and aicoIgnoreController to summarizeConversation when provided", async () => {
 			// Mock the summarizeConversation function
 			const mockSummary = "Summary with folded context"
 			const mockCost = 0.05
@@ -889,9 +889,9 @@ describe("Context Management", () => {
 
 			const filesReadByRoo = ["src/test.ts", "src/utils.ts"]
 			const cwd = "/test/project"
-			const mockRooIgnoreController = {
+			const mockAicoIgnoreController = {
 				filterPaths: vi.fn(),
-			} as unknown as import("../../ignore/RooIgnoreController").RooIgnoreController
+			} as unknown as import("../../ignore/AicoIgnoreController").AicoIgnoreController
 
 			const result = await manageContext({
 				messages: messagesWithSmallContent,
@@ -907,10 +907,10 @@ describe("Context Management", () => {
 				currentProfileId: "default",
 				filesReadByRoo,
 				cwd,
-				rooIgnoreController: mockRooIgnoreController,
+				aicoIgnoreController: mockAicoIgnoreController,
 			})
 
-			// Verify summarizeConversation was called with filesReadByRoo, cwd, and rooIgnoreController
+			// Verify summarizeConversation was called with filesReadByRoo, cwd, and aicoIgnoreController
 			expect(summarizeSpy).toHaveBeenCalledWith({
 				messages: messagesWithSmallContent,
 				apiHandler: mockApiHandler,
@@ -919,7 +919,7 @@ describe("Context Management", () => {
 				isAutomaticTrigger: true,
 				filesReadByRoo,
 				cwd,
-				rooIgnoreController: mockRooIgnoreController,
+				aicoIgnoreController: mockAicoIgnoreController,
 			})
 
 			// Verify the result contains the summary information
@@ -972,7 +972,7 @@ describe("Context Management", () => {
 				taskId,
 				profileThresholds: {},
 				currentProfileId: "default",
-				// filesReadByRoo, cwd, rooIgnoreController are NOT provided
+				// filesReadByRoo, cwd, aicoIgnoreController are NOT provided
 			})
 
 			// Verify summarizeConversation was called with undefined parameters

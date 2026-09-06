@@ -1,5 +1,5 @@
 ---
-description: Learn how to report errors in Roo Code by accessing error details, copying diagnostic information, and sharing it with the support team.
+description: Learn how to report errors in AI Code Orchestrator by accessing error details, copying diagnostic information, and sharing it with the support team.
 keywords:
     - error reporting
     - error details
@@ -11,7 +11,7 @@ keywords:
 
 # Reporting Errors
 
-When Roo Code encounters an error, you can export detailed diagnostic information to share with the support team. This helps resolve issues faster by providing complete context about what went wrong.
+When AI Code Orchestrator encounters an error, you can export detailed diagnostic information to share with the support team. This helps resolve issues faster by providing complete context about what went wrong.
 
 ---
 
@@ -54,7 +54,7 @@ The Error Details modal offers two buttons, each serving different needs:
 
 After copying error information:
 
-- **Email**: Send to [support@roocode.com](mailto:support@roocode.com)
-- **GitHub Issues**: File at [github.com/RooCodeInc/Roo-Code/issues](https://github.com/RooCodeInc/Roo-Code/issues)
+- **Email**: Send to [support@AI Code Orchestrator.com](mailto:support@AI Code Orchestrator.com)
+- **GitHub Issues**: File at [github.com/AIOrchestrator/ai-code-orchestrator/issues](https://github.com/AIOrchestrator/ai-code-orchestrator/issues)
 
 Include a brief description of what you were trying to do when the error occurred. The exported diagnostics handle the technical details.

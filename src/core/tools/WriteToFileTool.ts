@@ -2,7 +2,7 @@ import path from "path"
 import delay from "delay"
 import fs from "fs/promises"
 
-import { type ClineSayTool, DEFAULT_WRITE_DELAY_MS } from "@roo-code/types"
+import { type ClineSayTool, DEFAULT_WRITE_DELAY_MS } from "@ai-code-orchestrator/types"
 
 import { Task } from "../task/Task"
 import { formatResponse } from "../prompts/responses"
@@ -47,15 +47,15 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 			return
 		}
 
-		const accessAllowed = task.rooIgnoreController?.validateAccess(relPath)
+		const accessAllowed = task.aicoIgnoreController?.validateAccess(relPath)
 
 		if (!accessAllowed) {
-			await task.say("rooignore_error", relPath)
-			pushToolResult(formatResponse.rooIgnoreError(relPath))
+			await task.say("aicoignore_error", relPath)
+			pushToolResult(formatResponse.aicoIgnoreError(relPath))
 			return
 		}
 
-		const isWriteProtected = task.rooProtectedController?.isWriteProtected(relPath) || false
+		const isWriteProtected = task.aicoProtectedController?.isWriteProtected(relPath) || false
 
 		let fileExists: boolean
 		const absolutePath = path.resolve(task.cwd, relPath)
@@ -170,7 +170,7 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 			}
 
 			if (relPath) {
-				await task.fileContextTracker.trackFileContext(relPath, "roo_edited" as RecordSource)
+				await task.fileContextTracker.trackFileContext(relPath, "aico_edited" as RecordSource)
 			}
 
 			task.didEditFile = true
@@ -197,8 +197,7 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 		const relPath: string | undefined = block.params.path
 		let newContent: string | undefined = block.params.content
 
-		// Wait for path to stabilize before showing UI (prevents truncated paths)
-		if (!this.hasPathStabilized(relPath) || newContent === undefined) {
+		if (!relPath || newContent === undefined) {
 			return
 		}
 
@@ -208,10 +207,6 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 			state?.experiments ?? {},
 			EXPERIMENT_IDS.PREVENT_FOCUS_DISRUPTION,
 		)
-
-		if (isPreventFocusDisruptionEnabled) {
-			return
-		}
 
 		// relPath is guaranteed non-null after hasPathStabilized
 		let fileExists: boolean
@@ -230,7 +225,7 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 			await createDirectoriesForFile(absolutePath)
 		}
 
-		const isWriteProtected = task.rooProtectedController?.isWriteProtected(relPath!) || false
+		const isWriteProtected = task.aicoProtectedController?.isWriteProtected(relPath!) || false
 		const isOutsideWorkspace = isPathOutsideWorkspace(absolutePath)
 
 		const sharedMessageProps: ClineSayTool = {
@@ -241,10 +236,14 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 			isProtected: isWriteProtected,
 		}
 
+		const toolProgressStatus = {
+			icon: "pencil",
+			text: `Writing ${newContent.length} chars`,
+		}
 		const partialMessage = JSON.stringify(sharedMessageProps)
-		await task.ask("tool", partialMessage, block.partial).catch(() => {})
+		await task.ask("tool", partialMessage, block.partial, toolProgressStatus).catch(() => {})
 
-		if (newContent) {
+		if (newContent && !isPreventFocusDisruptionEnabled) {
 			if (!task.diffViewProvider.isEditing) {
 				await task.diffViewProvider.open(relPath!)
 			}

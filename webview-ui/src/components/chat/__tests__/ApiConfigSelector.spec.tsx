@@ -16,8 +16,8 @@ vi.mock("@/i18n/TranslationContext", () => ({
 	}),
 }))
 
-vi.mock("@/components/ui/hooks/useRooPortal", () => ({
-	useRooPortal: () => document.body,
+vi.mock("@/components/ui/hooks/useAicoPortal", () => ({
+	useAicoPortal: () => document.body,
 }))
 
 // Mock the ExtensionStateContext
@@ -30,8 +30,8 @@ vi.mock("@/context/ExtensionStateContext", () => ({
 	}),
 }))
 
-// Mock the getModelId function from @roo-code/types
-vi.mock("@roo-code/types", () => ({
+// Mock the getModelId function from @ai-code-orchestrator/types
+vi.mock("@ai-code-orchestrator/types", () => ({
 	getModelId: (config: any) => config?.apiModelId || undefined,
 }))
 

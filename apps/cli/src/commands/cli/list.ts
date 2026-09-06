@@ -4,9 +4,9 @@ import { fileURLToPath } from "url"
 
 import pWaitFor from "p-wait-for"
 
-import type { TaskSessionEntry } from "@roo-code/core/cli"
-import type { Command, ModelRecord, WebviewMessage } from "@roo-code/types"
-import { openRouterDefaultModelId } from "@roo-code/types"
+import type { TaskSessionEntry } from "@ai-code-orchestrator/core/cli"
+import type { Command, ModelRecord, WebviewMessage } from "@ai-code-orchestrator/types"
+import { openRouterDefaultModelId } from "@ai-code-orchestrator/types"
 
 import { ExtensionHost, type ExtensionHostOptions } from "@/agent/index.js"
 import { readWorkspaceTaskSessions } from "@/lib/task-history/index.js"

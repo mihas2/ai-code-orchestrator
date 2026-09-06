@@ -8,7 +8,7 @@ export interface ClientConfig {
 	authToken: string
 }
 
-export interface RooClient {
+export interface AicoClient {
 	auth: {
 		me: {
 			query: () => Promise<{ type: "user"; user: User } | { type: "org"; org: Org } | null>
@@ -16,7 +16,7 @@ export interface RooClient {
 	}
 }
 
-export const createClient = ({ url, authToken }: ClientConfig): RooClient => {
+export const createClient = ({ url, authToken }: ClientConfig): AicoClient => {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	return createTRPCProxyClient<any>({
 		links: [
@@ -26,5 +26,5 @@ export const createClient = ({ url, authToken }: ClientConfig): RooClient => {
 				headers: () => (authToken ? { Authorization: `Bearer ${authToken}` } : {}),
 			}),
 		],
-	}) as unknown as RooClient
+	}) as unknown as AicoClient
 }

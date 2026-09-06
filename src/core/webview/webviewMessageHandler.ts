@@ -2,7 +2,7 @@ import { safeWriteJson } from "../../utils/safeWriteJson"
 import * as path from "path"
 import * as os from "os"
 import * as fs from "fs/promises"
-import { getRooDirectoriesForCwd } from "../../services/roo-config/index.js"
+import { getAicoDirectoriesForCwd } from "../../services/aico-config/index.js"
 import pWaitFor from "p-wait-for"
 import * as vscode from "vscode"
 
@@ -14,12 +14,12 @@ import {
 	type Command as SlashCommand,
 	type WebviewMessage,
 	type EditQueuedMessagePayload,
-	RooCodeSettings,
+	AiCodeOrchestratorSettings,
 	ExperimentId,
 	checkoutDiffPayloadSchema,
 	checkoutRestorePayloadSchema,
-} from "@roo-code/types"
-import { customToolRegistry } from "@roo-code/core"
+} from "@ai-code-orchestrator/types"
+import { customToolRegistry } from "@ai-code-orchestrator/core"
 
 import { type ApiMessage } from "../task-persistence/apiMessages"
 import { saveTaskMessages } from "../task-persistence"
@@ -57,7 +57,7 @@ import { getOpenAiModels } from "../../api/providers/openai"
 import { getVsCodeLmModels } from "../../api/providers/vscode-lm"
 import { openMention } from "../mentions"
 import { resolveImageMentions } from "../mentions/resolveImageMentions"
-import { RooIgnoreController } from "../ignore/RooIgnoreController"
+import { AicoIgnoreController } from "../ignore/AicoIgnoreController"
 import { getWorkspacePath } from "../../utils/path"
 import { isPathOutsideWorkspace } from "../../utils/pathUtils"
 import { Mode, defaultModeSlug } from "../../shared/modes"
@@ -172,7 +172,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			text,
 			images,
 			cwd: getCurrentCwd(),
-			rooIgnoreController: currentTask?.rooIgnoreController,
+			aicoIgnoreController: currentTask?.aicoIgnoreController,
 			maxImageFileSize: state.maxImageFileSize,
 			maxTotalImageSize: state.maxTotalImageSize,
 		})
@@ -525,6 +525,76 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 	}
 
 	switch (message.type) {
+		case "updateOrchestrationSettings": {
+			if (!message.orchestrationSettings) throw new Error("Orchestration settings are required")
+			const { orchestrationSettingsSchema } = await import("@ai-code-orchestrator/types")
+			const parsed = orchestrationSettingsSchema.safeParse(message.orchestrationSettings)
+			if (!parsed.success) throw new Error("Invalid orchestration settings")
+			await updateGlobalState("orchestrationSettings", parsed.data)
+			await provider.postStateToWebview()
+			break
+		}
+		case "orchestrationOpenTask":
+		case "orchestrationViewDiff": {
+			const runId = message.orchestrationRunId
+			const nodeId = message.orchestrationNodeId
+			if (!runId || !nodeId) throw new Error("Orchestration run and node ids are required")
+			const snapshot = await (await provider.getOrchestrationService()).getSnapshot(runId)
+			const node = snapshot.nodes.find((item) => item.nodeId === nodeId)
+			if (!node) throw new Error("Unknown orchestration node")
+			if (message.type === "orchestrationOpenTask") {
+				if (!node.taskId) throw new Error("Orchestration node has no child task")
+				await provider.showTaskWithId(node.taskId)
+			} else {
+				const file = node.outputContract?.filesChanged[0]
+				if (!file) throw new Error("Orchestration node has no changed files")
+				await provider.postMessageToWebview({ type: "invoke", invoke: "sendMessage", text: `@${file}` })
+			}
+			break
+		}
+		case "orchestrationSnapshot":
+		case "orchestrationPause":
+		case "orchestrationResume":
+		case "orchestrationCancel":
+		case "orchestrationRetry":
+		case "orchestrationReview":
+		case "orchestrationApprovePlan":
+		case "orchestrationApproveIntegration": {
+			const runId = message.orchestrationRunId
+			if (!runId) throw new Error("Orchestration run id is required")
+			const service = await provider.getOrchestrationService()
+			switch (message.type) {
+				case "orchestrationSnapshot":
+					break
+				case "orchestrationPause":
+					await service.pause(runId)
+					break
+				case "orchestrationResume":
+					await service.resume(runId)
+					break
+				case "orchestrationCancel":
+					await service.cancel(runId, message.text)
+					break
+				case "orchestrationRetry":
+					if (!message.orchestrationNodeId) throw new Error("Orchestration node id is required")
+					await service.retryNode(runId, message.orchestrationNodeId)
+					break
+				case "orchestrationReview":
+					if (!message.orchestrationNodeId) throw new Error("Orchestration node id is required")
+					await service.reviewNodeById(runId, message.orchestrationNodeId)
+					break
+				case "orchestrationApprovePlan":
+					await service.approvePlan(runId)
+					break
+				case "orchestrationApproveIntegration":
+					await service.approveIntegration(runId)
+			}
+			await provider.postMessageToWebview({
+				type: "orchestrationSnapshot",
+				payload: await service.getSnapshot(runId),
+			})
+			break
+		}
 		case "webviewDidLaunch":
 			// Load custom modes first
 			const customModes = await provider.customModesManager.getCustomModes()
@@ -579,7 +649,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 							await updateGlobalState("currentApiConfigName", name)
 
 							if (name) {
-								await provider.activateProviderProfile({ name })
+								await provider.activateProviderProfile({ name }, { syncGlobalProviderState: true })
 								return
 							}
 						}
@@ -599,6 +669,30 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			provider.isViewLaunched = true
 			break
 		case "newTask":
+			{
+				const orchestrationSettings = await getGlobalState("orchestrationSettings")
+				const currentMode = await getCurrentMode()
+				if (currentMode === (orchestrationSettings?.orchestratorModeSlug ?? "orchestrator")) {
+					const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
+					const root = await provider.createTask(resolved.text, resolved.images, undefined, {
+						taskId: message.taskId,
+						startTask: false,
+						initialStatus: "active",
+					})
+					try {
+						const run = await provider.planOrchestration(resolved.text, `run:${root.taskId}`, root.taskId)
+						await provider.postMessageToWebview({ type: "invoke", invoke: "newChat" })
+						if (!run.settingsSnapshot.requirePlanApproval)
+							await (await provider.getOrchestrationService()).dispatch(run.runId)
+					} catch (error) {
+						await provider.postMessageToWebview({ type: "invoke", invoke: "newChat" })
+						vscode.window.showErrorMessage(
+							`Failed to plan orchestration: ${error instanceof Error ? error.message : String(error)}`,
+						)
+					}
+					break
+				}
+			}
 			// Initializing new instance of Cline will make sure that any
 			// agentically running promises in old instance don't affect our new
 			// task. This essentially creates a fresh slate for the new task.
@@ -628,10 +722,32 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 		case "askResponse":
 			{
+				const task = provider.getCurrentTask()
+				const messageTaskId = message.taskId
+				const messageInstanceId = message.instanceId
+				const currentTaskId = task?.taskId
+				const currentInstanceId = task?.instanceId
+				console.log("[yesButtonClicked] validation:", {
+					messageTaskId,
+					messageInstanceId,
+					currentTaskId,
+					currentInstanceId,
+					matches: messageTaskId === currentTaskId && messageInstanceId === currentInstanceId,
+					askResponse: message.askResponse,
+				})
+				if (
+					!message.taskId ||
+					!message.instanceId ||
+					message.taskId !== currentTaskId ||
+					message.instanceId !== currentInstanceId
+				) {
+					provider.log(
+						`[askResponse] Ignoring stale response for ${message.taskId ?? "unknown"}.${message.instanceId ?? "unknown"}; current is ${currentTaskId ?? "unknown"}.${currentInstanceId ?? "unknown"}`,
+					)
+					break
+				}
 				const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
-				provider
-					.getCurrentTask()
-					?.handleWebviewAskResponse(message.askResponse!, resolved.text, resolved.images)
+				task?.handleWebviewAskResponse(message.askResponse!, resolved.text, resolved.images)
 			}
 			break
 
@@ -725,7 +841,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 						}
 					}
 
-					await provider.contextProxy.setValue(key as keyof RooCodeSettings, newValue)
+					await provider.contextProxy.setValue(key as keyof AiCodeOrchestratorSettings, newValue)
 				}
 
 				await provider.postStateToWebview()
@@ -1169,7 +1285,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			const result = checkoutRestorePayloadSchema.safeParse(message.payload)
 
 			if (result.success) {
-				await provider.cancelTask()
+				await provider.cancelTask(undefined, undefined, true)
 
 				try {
 					await pWaitFor(() => provider.getCurrentTask()?.isInitialized === true, { timeout: 3_000 })
@@ -1187,7 +1303,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 		}
 		case "cancelTask":
-			await provider.cancelTask()
+			await provider.cancelTask(message.taskId, message.instanceId)
 			break
 		case "cancelAutoApproval":
 			// Cancel any pending auto-approval timeout for the current task
@@ -1235,7 +1351,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 		}
 		case "openKeyboardShortcuts": {
-			// Open VSCode keyboard shortcuts settings and optionally filter to show the Roo Code commands
+			// Open VSCode keyboard shortcuts settings and optionally filter to show the AI Code Orchestrator commands
 			const searchQuery = message.text || ""
 			if (searchQuery) {
 				// Open with a search query pre-filled
@@ -1262,11 +1378,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			}
 
 			const workspaceFolder = getCurrentCwd()
-			const rooDir = path.join(workspaceFolder, ".roo")
-			const mcpPath = path.join(rooDir, "mcp.json")
+			const aicoDir = path.join(workspaceFolder, ".ai-code-orchestrator")
+			const mcpPath = path.join(aicoDir, "mcp.json")
 
 			try {
-				await fs.mkdir(rooDir, { recursive: true })
+				await fs.mkdir(aicoDir, { recursive: true })
 				const exists = await fileExistsAtPath(mcpPath)
 
 				if (!exists) {
@@ -1432,7 +1548,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 
 		case "mode":
-			await provider.handleModeSwitch(message.text as Mode)
+			console.log("[ClineProvider] Received mode switch:", message.text)
+			await provider.setDefaultMode(message.text as Mode)
+			console.log("[webviewMessageHandler] About to postStateToWebview after mode switch")
+			await provider.postStateToWebview()
+			console.log("[webviewMessageHandler] postStateToWebview completed")
 			break
 		case "updatePrompt":
 			if (message.promptMode && message.customPrompt !== undefined) {
@@ -1625,26 +1745,26 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					20, // Use default limit, as filtering is now done in the backend
 				)
 
-				// Get the RooIgnoreController from the current task, or create a new one
+				// Get the AicoIgnoreController from the current task, or create a new one
 				const currentTask = provider.getCurrentTask()
-				let rooIgnoreController = currentTask?.rooIgnoreController
-				let tempController: RooIgnoreController | undefined
+				let aicoIgnoreController = currentTask?.aicoIgnoreController
+				let tempController: AicoIgnoreController | undefined
 
 				// If no current task or no controller, create a temporary one
-				if (!rooIgnoreController) {
-					tempController = new RooIgnoreController(workspacePath)
+				if (!aicoIgnoreController) {
+					tempController = new AicoIgnoreController(workspacePath)
 					await tempController.initialize()
-					rooIgnoreController = tempController
+					aicoIgnoreController = tempController
 				}
 
 				try {
-					// Get showRooIgnoredFiles setting from state
-					const { showRooIgnoredFiles = false } = (await provider.getState()) ?? {}
+					// Get showAicoIgnoredFiles setting from state
+					const { showAicoIgnoredFiles = false } = (await provider.getState()) ?? {}
 
-					// Filter results using RooIgnoreController if showRooIgnoredFiles is false
+					// Filter results using AicoIgnoreController if showAicoIgnoredFiles is false
 					let filteredResults = results
-					if (!showRooIgnoredFiles && rooIgnoreController) {
-						const allowedPaths = rooIgnoreController.filterPaths(results.map((r) => r.path))
+					if (!showAicoIgnoredFiles && aicoIgnoreController) {
+						const allowedPaths = aicoIgnoreController.filterPaths(results.map((r) => r.path))
 						filteredResults = results.filter((r) => allowedPaths.includes(r.path))
 					}
 
@@ -1681,7 +1801,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		}
 		case "refreshCustomTools": {
 			try {
-				const toolDirs = getRooDirectoriesForCwd(getCurrentCwd()).map((dir) => path.join(dir, "tools"))
+				const toolDirs = getAicoDirectoriesForCwd(getCurrentCwd()).map((dir) => path.join(dir, "tools"))
 				await customToolRegistry.loadFromDirectories(toolDirs)
 
 				await provider.postMessageToWebview({
@@ -1737,7 +1857,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 					// Re-activate to update the global settings related to the
 					// currently activated provider profile.
-					await provider.activateProviderProfile({ name: newName })
+					await provider.activateProviderProfile({ name: newName }, { syncGlobalProviderState: true })
 				} catch (error) {
 					provider.log(
 						`Error rename api configuration: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
@@ -1750,7 +1870,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "loadApiConfiguration":
 			if (message.text) {
 				try {
-					await provider.activateProviderProfile({ name: message.text })
+					await provider.activateProviderProfile({ name: message.text }, { syncGlobalProviderState: true })
 				} catch (error) {
 					provider.log(
 						`Error load api configuration: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
@@ -1762,7 +1882,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "loadApiConfigurationById":
 			if (message.text) {
 				try {
-					await provider.activateProviderProfile({ id: message.text })
+					await provider.activateProviderProfile({ id: message.text }, { syncGlobalProviderState: true })
 				} catch (error) {
 					provider.log(
 						`Error load api configuration by ID: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
@@ -1796,7 +1916,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 				try {
 					await provider.providerSettingsManager.deleteConfig(oldName)
-					await provider.activateProviderProfile({ name: newName })
+					await provider.activateProviderProfile({ name: newName }, { syncGlobalProviderState: true })
 				} catch (error) {
 					provider.log(
 						`Error delete api configuration: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
@@ -1864,6 +1984,9 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		case "updateCustomMode":
 			if (message.modeConfig) {
 				try {
+					if (message.modeConfig.slug === "orchestrator") {
+						throw new Error("The orchestrator role is system-managed and cannot be edited")
+					}
 					// Check if this is a new mode or an update to an existing mode
 					const existingModes = await provider.customModesManager.getCustomModes()
 					const isNewMode = !existingModes.some((mode) => mode.slug === message.modeConfig?.slug)
@@ -1882,6 +2005,10 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 		case "deleteCustomMode":
 			if (message.slug) {
+				if (message.slug === "orchestrator") {
+					vscode.window.showErrorMessage("The orchestrator role cannot be deleted")
+					break
+				}
 				// Get the mode details to determine source and rules folder path
 				const customModes = await provider.customModesManager.getCustomModes()
 				const modeToDelete = customModes.find((mode) => mode.slug === message.slug)
@@ -1898,14 +2025,14 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				if (scope === "project") {
 					const workspacePath = getWorkspacePath()
 					if (workspacePath) {
-						rulesFolderPath = path.join(workspacePath, ".roo", `rules-${message.slug}`)
+						rulesFolderPath = path.join(workspacePath, ".ai-code-orchestrator", `rules-${message.slug}`)
 					} else {
-						rulesFolderPath = path.join(".roo", `rules-${message.slug}`)
+						rulesFolderPath = path.join(".ai-code-orchestrator", `rules-${message.slug}`)
 					}
 				} else {
 					// Global scope - use OS home directory
 					const homeDir = os.homedir()
-					rulesFolderPath = path.join(homeDir, ".roo", `rules-${message.slug}`)
+					rulesFolderPath = path.join(homeDir, ".ai-code-orchestrator", `rules-${message.slug}`)
 				}
 
 				// Check if the rules folder exists
@@ -2197,6 +2324,8 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					codebaseIndexEmbedderModelId: settings.codebaseIndexEmbedderModelId,
 					codebaseIndexEmbedderModelDimension: settings.codebaseIndexEmbedderModelDimension, // Generic dimension
 					codebaseIndexOpenAiCompatibleBaseUrl: settings.codebaseIndexOpenAiCompatibleBaseUrl,
+					codebaseIndexOpenAiCompatibleUseFloatEncoding:
+						settings.codebaseIndexOpenAiCompatibleUseFloatEncoding ?? false,
 					codebaseIndexBedrockRegion: settings.codebaseIndexBedrockRegion,
 					codebaseIndexBedrockProfile: settings.codebaseIndexBedrockProfile,
 					codebaseIndexSearchMaxResults: settings.codebaseIndexSearchMaxResults,
@@ -2655,7 +2784,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				// Determine the commands directory based on source
 				let commandsDir: string
 				if (source === "global") {
-					const globalConfigDir = path.join(os.homedir(), ".roo")
+					const globalConfigDir = path.join(os.homedir(), ".ai-code-orchestrator")
 					commandsDir = path.join(globalConfigDir, "commands")
 				} else {
 					if (!vscode.workspace.workspaceFolders?.length) {
@@ -2668,7 +2797,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 						vscode.window.showErrorMessage(t("common:errors.no_workspace_for_project_command"))
 						break
 					}
-					commandsDir = path.join(workspaceRoot, ".roo", "commands")
+					commandsDir = path.join(workspaceRoot, ".ai-code-orchestrator", "commands")
 				}
 
 				// Ensure the commands directory exists
@@ -2835,7 +2964,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				try {
 					const tmpDir = os.tmpdir()
 					const timestamp = Date.now()
-					const tempFileName = `roo-preview-${timestamp}.md`
+					const tempFileName = `aico-preview-${timestamp}.md`
 					const tempFilePath = path.join(tmpDir, tempFileName)
 
 					await fs.writeFile(tempFilePath, message.text, "utf8")
@@ -2923,7 +3052,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				// Create a temporary file
 				const tmpDir = os.tmpdir()
 				const timestamp = Date.now()
-				const tempFileName = `roo-debug-${message.type === "openDebugApiHistory" ? "api" : "ui"}-${currentTask.taskId.slice(0, 8)}-${timestamp}.json`
+				const tempFileName = `aico-debug-${message.type === "openDebugApiHistory" ? "api" : "ui"}-${currentTask.taskId.slice(0, 8)}-${timestamp}.json`
 				const tempFilePath = path.join(tmpDir, tempFileName)
 
 				await fs.writeFile(tempFilePath, prettifiedContent, "utf8")

@@ -14,30 +14,30 @@ export class ShellIntegrationManager {
 		// Create a temporary directory with the sticky bit set for security
 		const os = require("os")
 		const path = require("path")
-		const tmpDir = path.join(os.tmpdir(), `roo-zdotdir-${Math.random().toString(36).substring(2, 15)}`)
+		const tmpDir = path.join(os.tmpdir(), `aico-zdotdir-${Math.random().toString(36).substring(2, 15)}`)
 		console.info(`[TerminalRegistry] Creating temporary directory for ZDOTDIR: ${tmpDir}`)
 
-		// Save original ZDOTDIR as ROO_ZDOTDIR
+		// Save original ZDOTDIR as AICO_ZDOTDIR
 		if (process.env.ZDOTDIR) {
-			env.ROO_ZDOTDIR = process.env.ZDOTDIR
+			env.AICO_ZDOTDIR = process.env.ZDOTDIR
 		}
 
 		// Create the temporary directory
 		vscode.workspace.fs
 			.createDirectory(vscode.Uri.file(tmpDir))
-			.then(() => {
+			.then(async () => {
 				console.info(`[TerminalRegistry] Created temporary directory for ZDOTDIR at ${tmpDir}`)
 
 				// Create .zshrc in the temporary directory
 				const zshrcPath = `${tmpDir}/.zshrc`
 
 				// Get the path to the shell integration script
-				const shellIntegrationPath = this.getShellIntegrationPath("zsh")
+				const shellIntegrationPath = await this.getShellIntegrationPath("zsh")
 
 				const zshrcContent = `
 	source "${shellIntegrationPath}"
-	ZDOTDIR=\${ROO_ZDOTDIR:-$HOME}
-	unset ROO_ZDOTDIR
+	ZDOTDIR=\${AICO_ZDOTDIR:-$HOME}
+	unset AICO_ZDOTDIR
 	[ -f "$ZDOTDIR/.zshenv" ] && source "$ZDOTDIR/.zshenv"
 	[ -f "$ZDOTDIR/.zprofile" ] && source "$ZDOTDIR/.zprofile"
 	[ -f "$ZDOTDIR/.zshrc" ] && source "$ZDOTDIR/.zshrc"
@@ -118,7 +118,7 @@ export class ShellIntegrationManager {
 	 * @param shell The shell type
 	 * @returns The path to the shell integration script
 	 */
-	private static getShellIntegrationPath(shell: "bash" | "pwsh" | "zsh" | "fish"): string {
+	private static async getShellIntegrationPath(shell: "bash" | "pwsh" | "zsh" | "fish"): Promise<string> {
 		let filename: string
 
 		switch (shell) {
@@ -138,17 +138,43 @@ export class ShellIntegrationManager {
 				throw new Error(`Invalid shell type: ${shell}`)
 		}
 
-		// This is the same path used by the CLI command
-		return path.join(
-			vscode.env.appRoot,
-			"out",
-			"vs",
-			"workbench",
-			"contrib",
-			"terminal",
-			"common",
-			"scripts",
-			filename,
-		)
+		// VS Code has moved terminal scripts between app and resources roots.
+		// Prefer the current layout, then retain compatibility with older builds.
+		const candidates = [
+			path.join(
+				vscode.env.appRoot,
+				"out",
+				"vs",
+				"workbench",
+				"contrib",
+				"terminal",
+				"common",
+				"scripts",
+				filename,
+			),
+			path.join(vscode.env.appRoot, "out", "vs", "platform", "terminal", "node", "scripts", filename),
+			path.join(
+				path.dirname(vscode.env.appRoot),
+				"out",
+				"vs",
+				"workbench",
+				"contrib",
+				"terminal",
+				"common",
+				"scripts",
+				filename,
+			),
+		]
+
+		for (const candidate of candidates) {
+			try {
+				await vscode.workspace.fs.stat(vscode.Uri.file(candidate))
+				return candidate
+			} catch {
+				// Try the next known VS Code layout.
+			}
+		}
+
+		return candidates[0]
 	}
 }

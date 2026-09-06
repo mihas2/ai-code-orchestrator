@@ -16,12 +16,12 @@ export class CodeIndexConfigManager {
 	private modelDimension?: number
 	private openAiOptions?: ApiHandlerOptions
 	private ollamaOptions?: ApiHandlerOptions
-	private openAiCompatibleOptions?: { baseUrl: string; apiKey: string }
+	private openAiCompatibleOptions?: { baseUrl: string; apiKey: string; useFloatEncoding?: boolean }
 	private geminiOptions?: { apiKey: string }
 	private mistralOptions?: { apiKey: string }
 	private vercelAiGatewayOptions?: { apiKey: string }
 	private bedrockOptions?: { region: string; profile?: string }
-	private openRouterOptions?: { apiKey: string; specificProvider?: string }
+	private openRouterOptions?: { apiKey: string; specificProvider?: string; useFloatEncoding?: boolean }
 	private qdrantUrl?: string = "http://localhost:6333"
 	private qdrantApiKey?: string
 	private searchMinScore?: number
@@ -72,6 +72,7 @@ export class CodeIndexConfigManager {
 		// Fix: Read OpenAI Compatible settings from the correct location within codebaseIndexConfig
 		const openAiCompatibleBaseUrl = codebaseIndexConfig.codebaseIndexOpenAiCompatibleBaseUrl ?? ""
 		const openAiCompatibleApiKey = this.contextProxy?.getSecret("codebaseIndexOpenAiCompatibleApiKey") ?? ""
+		const useFloatEncoding = codebaseIndexConfig.codebaseIndexOpenAiCompatibleUseFloatEncoding ?? false
 		const geminiApiKey = this.contextProxy?.getSecret("codebaseIndexGeminiApiKey") ?? ""
 		const mistralApiKey = this.contextProxy?.getSecret("codebaseIndexMistralApiKey") ?? ""
 		const vercelAiGatewayApiKey = this.contextProxy?.getSecret("codebaseIndexVercelAiGatewayApiKey") ?? ""
@@ -135,6 +136,7 @@ export class CodeIndexConfigManager {
 				? {
 						baseUrl: openAiCompatibleBaseUrl,
 						apiKey: openAiCompatibleApiKey,
+						useFloatEncoding,
 					}
 				: undefined
 
@@ -142,7 +144,7 @@ export class CodeIndexConfigManager {
 		this.mistralOptions = mistralApiKey ? { apiKey: mistralApiKey } : undefined
 		this.vercelAiGatewayOptions = vercelAiGatewayApiKey ? { apiKey: vercelAiGatewayApiKey } : undefined
 		this.openRouterOptions = openRouterApiKey
-			? { apiKey: openRouterApiKey, specificProvider: openRouterSpecificProvider || undefined }
+			? { apiKey: openRouterApiKey, specificProvider: openRouterSpecificProvider || undefined, useFloatEncoding }
 			: undefined
 		// Set bedrockOptions if region is provided (profile is optional)
 		this.bedrockOptions = bedrockRegion
@@ -162,12 +164,12 @@ export class CodeIndexConfigManager {
 			modelDimension?: number
 			openAiOptions?: ApiHandlerOptions
 			ollamaOptions?: ApiHandlerOptions
-			openAiCompatibleOptions?: { baseUrl: string; apiKey: string }
+			openAiCompatibleOptions?: { baseUrl: string; apiKey: string; useFloatEncoding?: boolean }
 			geminiOptions?: { apiKey: string }
 			mistralOptions?: { apiKey: string }
 			vercelAiGatewayOptions?: { apiKey: string }
 			bedrockOptions?: { region: string; profile?: string }
-			openRouterOptions?: { apiKey: string }
+			openRouterOptions?: { apiKey: string; specificProvider?: string; useFloatEncoding?: boolean }
 			qdrantUrl?: string
 			qdrantApiKey?: string
 			searchMinScore?: number
@@ -185,6 +187,7 @@ export class CodeIndexConfigManager {
 			ollamaBaseUrl: this.ollamaOptions?.ollamaBaseUrl ?? "",
 			openAiCompatibleBaseUrl: this.openAiCompatibleOptions?.baseUrl ?? "",
 			openAiCompatibleApiKey: this.openAiCompatibleOptions?.apiKey ?? "",
+			openAiCompatibleUseFloatEncoding: this.openAiCompatibleOptions?.useFloatEncoding ?? false,
 			geminiApiKey: this.geminiOptions?.apiKey ?? "",
 			mistralApiKey: this.mistralOptions?.apiKey ?? "",
 			vercelAiGatewayApiKey: this.vercelAiGatewayOptions?.apiKey ?? "",
@@ -303,6 +306,7 @@ export class CodeIndexConfigManager {
 		const prevOllamaBaseUrl = prev?.ollamaBaseUrl ?? ""
 		const prevOpenAiCompatibleBaseUrl = prev?.openAiCompatibleBaseUrl ?? ""
 		const prevOpenAiCompatibleApiKey = prev?.openAiCompatibleApiKey ?? ""
+		const prevOpenAiCompatibleUseFloatEncoding = prev?.openAiCompatibleUseFloatEncoding ?? false
 		const prevModelDimension = prev?.modelDimension
 		const prevGeminiApiKey = prev?.geminiApiKey ?? ""
 		const prevMistralApiKey = prev?.mistralApiKey ?? ""
@@ -345,6 +349,7 @@ export class CodeIndexConfigManager {
 		const currentOllamaBaseUrl = this.ollamaOptions?.ollamaBaseUrl ?? ""
 		const currentOpenAiCompatibleBaseUrl = this.openAiCompatibleOptions?.baseUrl ?? ""
 		const currentOpenAiCompatibleApiKey = this.openAiCompatibleOptions?.apiKey ?? ""
+		const currentOpenAiCompatibleUseFloatEncoding = this.openAiCompatibleOptions?.useFloatEncoding ?? false
 		const currentModelDimension = this.modelDimension
 		const currentGeminiApiKey = this.geminiOptions?.apiKey ?? ""
 		const currentMistralApiKey = this.mistralOptions?.apiKey ?? ""
@@ -366,7 +371,8 @@ export class CodeIndexConfigManager {
 
 		if (
 			prevOpenAiCompatibleBaseUrl !== currentOpenAiCompatibleBaseUrl ||
-			prevOpenAiCompatibleApiKey !== currentOpenAiCompatibleApiKey
+			prevOpenAiCompatibleApiKey !== currentOpenAiCompatibleApiKey ||
+			prevOpenAiCompatibleUseFloatEncoding !== currentOpenAiCompatibleUseFloatEncoding
 		) {
 			return true
 		}

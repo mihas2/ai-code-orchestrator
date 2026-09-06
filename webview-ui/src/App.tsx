@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react"
 import { useEvent } from "react-use"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-import { type ExtensionMessage } from "@roo-code/types"
+import { type ExtensionMessage } from "@ai-code-orchestrator/types"
 
 import TranslationProvider from "./i18n/TranslationContext"
 import { vscode } from "./utils/vscode"

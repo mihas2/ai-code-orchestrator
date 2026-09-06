@@ -3,7 +3,7 @@
 import * as vscode from "vscode"
 import { ClineProvider } from "../ClineProvider"
 import { ContextProxy } from "../../config/ContextProxy"
-import type { HistoryItem } from "@roo-code/types"
+import type { HistoryItem } from "@ai-code-orchestrator/types"
 
 vi.mock("vscode", () => ({
 	ExtensionContext: vi.fn(),
@@ -173,13 +173,13 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 	let mockOutputChannel: vscode.OutputChannel
 	let mockWebviewView: vscode.WebviewView
 	let mockPostMessage: any
-	let originalRooCliRuntimeEnv: string | undefined
+	let originalAicoCliRuntimeEnv: string | undefined
 
 	beforeEach(async () => {
 		vi.clearAllMocks()
 		taskIdCounter = 0
-		originalRooCliRuntimeEnv = process.env.ROO_CLI_RUNTIME
-		delete process.env.ROO_CLI_RUNTIME
+		originalAicoCliRuntimeEnv = process.env.AICO_CLI_RUNTIME
+		delete process.env.AICO_CLI_RUNTIME
 
 		const globalState: Record<string, string | undefined> = {
 			mode: "code",
@@ -265,10 +265,10 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 	})
 
 	afterEach(() => {
-		if (originalRooCliRuntimeEnv === undefined) {
-			delete process.env.ROO_CLI_RUNTIME
+		if (originalAicoCliRuntimeEnv === undefined) {
+			delete process.env.AICO_CLI_RUNTIME
 		} else {
-			process.env.ROO_CLI_RUNTIME = originalRooCliRuntimeEnv
+			process.env.AICO_CLI_RUNTIME = originalAicoCliRuntimeEnv
 		}
 	})
 
@@ -322,7 +322,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			])
 
 			// Switch provider profile
-			await provider.activateProviderProfile({ name: "new-profile" })
+			await provider.activateProviderProfile({ name: "new-profile" }, { syncGlobalProviderState: true })
 
 			// Verify task history was updated with new provider profile
 			expect(updateTaskHistorySpy).toHaveBeenCalledWith(
@@ -385,7 +385,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			])
 
 			// Switch provider profile
-			await provider.activateProviderProfile({ name: "new-profile" })
+			await provider.activateProviderProfile({ name: "new-profile" }, { syncGlobalProviderState: true })
 
 			// Verify task's _taskApiConfigName property was updated
 			expect(mockTask._taskApiConfigName).toBe("new-profile")
@@ -426,7 +426,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 				{ name: "new-profile", id: "new-profile-id", apiProvider: "openrouter" },
 			])
 
-			await provider.activateProviderProfile({ name: "new-profile" })
+			await provider.activateProviderProfile({ name: "new-profile" }, { syncGlobalProviderState: true })
 
 			// In-memory should still update, even without a history item.
 			expect(mockTask._taskApiConfigName).toBe("new-profile")
@@ -454,10 +454,13 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 				apiConfigName: "saved-profile", // Saved provider profile
 			}
 
-			// Mock activateProviderProfile to track calls
-			const activateProviderProfileSpy = vi
-				.spyOn(provider, "activateProviderProfile")
-				.mockResolvedValue(undefined)
+			// Restoring a task reads its profile without activating it globally.
+			const activateProviderProfileSpy = vi.spyOn(provider, "activateProviderProfile")
+			const getProfileSpy = vi.spyOn(provider.providerSettingsManager, "getProfile").mockResolvedValue({
+				name: "saved-profile",
+				id: "saved-profile-id",
+				apiProvider: "anthropic",
+			})
 
 			// Mock providerSettingsManager.listConfig
 			vi.spyOn(provider.providerSettingsManager, "listConfig").mockResolvedValue([
@@ -467,16 +470,14 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			// Initialize task with history item
 			await provider.createTaskWithHistoryItem(historyItem)
 
-			// Verify provider profile was restored via activateProviderProfile (restore-only: don't persist mode config)
-			expect(activateProviderProfileSpy).toHaveBeenCalledWith(
-				{ name: "saved-profile" },
-				{ persistModeConfig: false, persistTaskHistory: false },
-			)
+			// Restoring a task must not activate or mutate the global provider profile.
+			expect(activateProviderProfileSpy).not.toHaveBeenCalled()
+			expect(getProfileSpy).toHaveBeenCalledWith({ name: "saved-profile" })
 		})
 
 		it("should skip restoring task apiConfigName from history in CLI runtime", async () => {
 			await provider.resolveWebviewView(mockWebviewView)
-			process.env.ROO_CLI_RUNTIME = "1"
+			process.env.AICO_CLI_RUNTIME = "1"
 
 			const historyItem: HistoryItem = {
 				id: "test-task-id",
@@ -510,7 +511,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 
 		it("should skip restoring mode-based provider config from history in CLI runtime", async () => {
 			await provider.resolveWebviewView(mockWebviewView)
-			process.env.ROO_CLI_RUNTIME = "1"
+			process.env.AICO_CLI_RUNTIME = "1"
 
 			const historyItem: HistoryItem = {
 				id: "test-task-id",
@@ -599,6 +600,14 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			})
 
 			// Mock providerSettingsManager methods
+			vi.spyOn(provider.providerSettingsManager, "getProfile").mockImplementation(async (args) => {
+				const name = "name" in args ? args.name : "task-specific-profile"
+				return {
+					name,
+					id: name === "task-specific-profile" ? "task-profile-id" : "mode-config-id",
+					apiProvider: name === "task-specific-profile" ? "openai" : "anthropic",
+				}
+			})
 			vi.spyOn(provider.providerSettingsManager, "getModeConfigId").mockResolvedValue("mode-config-id")
 			vi.spyOn(provider.providerSettingsManager, "listConfig").mockResolvedValue([
 				{ name: "mode-preferred-profile", id: "mode-config-id", apiProvider: "anthropic" },
@@ -608,8 +617,8 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			// Initialize task with history item
 			await provider.createTaskWithHistoryItem(historyItem)
 
-			// Verify task's apiConfigName was activated LAST (overriding mode-based config)
-			expect(activateCalls[activateCalls.length - 1]).toBe("task-specific-profile")
+			// Verify task profile was read without changing the global activation.
+			expect(activateCalls).toHaveLength(0)
 		})
 
 		it("should handle missing provider profile gracefully", async () => {
@@ -695,7 +704,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			])
 
 			// Trigger a profile switch
-			await provider.activateProviderProfile({ name: "new-profile" })
+			await provider.activateProviderProfile({ name: "new-profile" }, { syncGlobalProviderState: true })
 
 			// Verify apiConfigName was included in the updated history item
 			expect(updatedHistoryItem).toBeDefined()
@@ -798,7 +807,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			])
 
 			// Switch task 1's profile to profile C
-			await provider.activateProviderProfile({ name: "profile-c" })
+			await provider.activateProviderProfile({ name: "profile-c" }, { syncGlobalProviderState: true })
 
 			// Verify task 1's profile was updated
 			expect(task1._taskApiConfigName).toBe("profile-c")
@@ -858,7 +867,9 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			const logSpy = vi.spyOn(provider, "log")
 
 			// Switch provider profile - should not throw
-			await expect(provider.activateProviderProfile({ name: "new-profile" })).resolves.not.toThrow()
+			await expect(
+				provider.activateProviderProfile({ name: "new-profile" }, { syncGlobalProviderState: true }),
+			).resolves.not.toThrow()
 
 			// Verify error was logged
 			expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to persist provider profile switch"))

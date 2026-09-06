@@ -8,13 +8,26 @@
 		"noMatchFound": "Không tìm thấy chế độ nào",
 		"editModesConfig": "Chỉnh sửa cấu hình chế độ",
 		"editGlobalModes": "Chỉnh sửa chế độ toàn cục",
-		"editProjectModes": "Chỉnh sửa chế độ dự án (.roomodes)",
-		"createModeHelpText": "Chế độ là các vai trò chuyên biệt điều chỉnh hành vi của Roo. <0>Tìm hiểu về Sử dụng Chế độ</0> hoặc <1>Tùy chỉnh Chế độ.</1>",
+		"editProjectModes": "Chỉnh sửa chế độ dự án (.agent-modes)",
+		"createModeHelpText": "Chế độ là các vai trò chuyên biệt điều chỉnh hành vi của AI Code Orchestrator. <0>Tìm hiểu về Sử dụng Chế độ</0> hoặc <1>Tùy chỉnh Chế độ.</1>",
 		"selectMode": "Tìm kiếm chế độ"
+	},
+	"reviewer": {
+		"name": "Người đánh giá",
+		"description": "Đánh giá chất lượng chỉ đọc đối với công việc đã hoàn thành",
+		"readOnlyNotice": "Người đánh giá có thể đọc tệp và chạy chẩn đoán, nhưng không thể chỉnh sửa tệp hoặc mở rộng phạm vi đã khai báo.",
+		"findingSeverities": "Mức độ nghiêm trọng của phát hiện: blocker, major, minor, note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator là trưởng nhóm chịu trách nhiệm kết nối người dùng với các tác nhân chuyên biệt. Vai trò này sở hữu mục tiêu, kế hoạch, phụ thuộc, phân công, ngân sách, cổng chất lượng, tích hợp và kết quả cuối cùng, đồng thời chỉ giữ trạng thái tổng hợp gọn thay vì toàn bộ bản ghi triển khai.",
+		"whenToUse": "Dùng cho công việc phức tạp nhiều bước cần phân rã, phối hợp architect, code, debug và reviewer, chạy song song, phụ thuộc rõ ràng, đánh giá, sửa chữa, tích hợp có kiểm soát và bảo đảm chất lượng.",
+		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
 	},
 	"apiConfiguration": {
 		"title": "Cấu hình API",
-		"select": "Chọn cấu hình API nào để sử dụng cho chế độ này"
+		"select": "Chọn cấu hình API nào để sử dụng cho chế độ này",
+		"inheritProfile": "Sử dụng hồ sơ đang hoạt động",
+		"inheritModel": "Sử dụng mô hình của hồ sơ"
 	},
 	"tools": {
 		"title": "Công cụ có sẵn",
@@ -33,7 +46,7 @@
 	"roleDefinition": {
 		"title": "Định nghĩa vai trò",
 		"resetToDefault": "Đặt lại về mặc định",
-		"description": "Xác định chuyên môn và tính cách của Roo cho chế độ này. Mô tả này định hình cách Roo giới thiệu bản thân và tiếp cận nhiệm vụ."
+		"description": "Xác định chuyên môn và tính cách của AI Code Orchestrator cho chế độ này. Mô tả này định hình cách AI Code Orchestrator giới thiệu bản thân và tiếp cận nhiệm vụ."
 	},
 	"description": {
 		"title": "Mô tả ngắn (cho con người)",
@@ -49,18 +62,17 @@
 		"title": "Hướng dẫn tùy chỉnh dành riêng cho chế độ (tùy chọn)",
 		"resetToDefault": "Đặt lại về mặc định",
 		"description": "Thêm hướng dẫn hành vi dành riêng cho chế độ {{modeName}}.",
-		"loadFromFile": "Hướng dẫn tùy chỉnh cụ thể cho chế độ {{mode}} cũng có thể được tải từ thư mục <span>.roo/rules-{{slug}}/</span> trong không gian làm việc của bạn hoặc từ toàn cục <0>.roo/rules-{{slug}}/</0> (.roorules-{{slug}} và .clinerules-{{slug}} đã lỗi thời và sẽ ngừng hoạt động sớm)."
+		"loadFromFile": "Hướng dẫn tùy chỉnh cụ thể cho chế độ {{mode}} cũng có thể được tải từ thư mục <span>.ai-code-orchestrator/rules-{{slug}}/</span> trong không gian làm việc của bạn hoặc từ toàn cục <0>.ai-code-orchestrator/rules-{{slug}}/</0> (.aicorules-{{slug}} và .clinerules-{{slug}} đã lỗi thời và sẽ ngừng hoạt động sớm)."
 	},
 	"exportMode": {
 		"title": "Xuất chế độ",
 		"description": "Xuất chế độ này sang tệp YAML với tất cả các quy tắc được bao gồm để dễ dàng chia sẻ với người khác.",
-		"export": "Xuất chế độ",
 		"exporting": "Đang xuất..."
 	},
 	"globalCustomInstructions": {
 		"title": "Hướng dẫn tùy chỉnh cho tất cả các chế độ",
 		"description": "Những hướng dẫn này áp dụng cho tất cả các chế độ. Chúng cung cấp một bộ hành vi cơ bản có thể được nâng cao bởi hướng dẫn dành riêng cho chế độ bên dưới. <0>Tìm hiểu thêm</0>",
-		"loadFromFile": "Hướng dẫn cũng có thể được tải từ thư mục <span>.roo/rules/</span> trong không gian làm việc của bạn hoặc từ toàn cục <0>.roo/rules/</0> (.roorules và .clinerules đã lỗi thời và sẽ ngừng hoạt động sớm)."
+		"loadFromFile": "Hướng dẫn cũng có thể được tải từ thư mục <span>.ai-code-orchestrator/rules/</span> trong không gian làm việc của bạn hoặc từ toàn cục <0>.ai-code-orchestrator/rules/</0> (.aicorules và .clinerules đã lỗi thời và sẽ ngừng hoạt động sớm)."
 	},
 	"importMode": {
 		"selectLevel": "Chọn nơi để nhập chế độ này:",
@@ -72,7 +84,7 @@
 		},
 		"project": {
 			"label": "Cấp độ dự án",
-			"description": "Chỉ có sẵn trong không gian làm việc này. Nếu chế độ đã xuất có chứa tệp quy tắc, chúng sẽ được tạo lại trong thư mục .roo/rules-{slug}/."
+			"description": "Chỉ có sẵn trong không gian làm việc này. Nếu chế độ đã xuất có chứa tệp quy tắc, chúng sẽ được tạo lại trong thư mục .ai-code-orchestrator/rules-{slug}/."
 		}
 	},
 	"systemPrompt": {
@@ -102,7 +114,7 @@
 		"types": {
 			"ENHANCE": {
 				"label": "Nâng cao lời nhắc",
-				"description": "Sử dụng nâng cao lời nhắc để nhận đề xuất hoặc cải tiến phù hợp cho đầu vào của bạn. Điều này đảm bảo Roo hiểu ý định của bạn và cung cấp phản hồi tốt nhất có thể. Có sẵn thông qua biểu tượng ✨ trong chat."
+				"description": "Sử dụng nâng cao lời nhắc để nhận đề xuất hoặc cải tiến phù hợp cho đầu vào của bạn. Điều này đảm bảo AI Code Orchestrator hiểu ý định của bạn và cung cấp phản hồi tốt nhất có thể. Có sẵn thông qua biểu tượng ✨ trong chat."
 			},
 			"CONDENSE": {
 				"label": "Cô đọng ngữ cảnh",
@@ -161,13 +173,13 @@
 				"description": "Có sẵn trong tất cả các không gian làm việc"
 			},
 			"project": {
-				"label": "Dành riêng cho dự án (.roomodes)",
+				"label": "Dành riêng cho dự án (.agent-modes)",
 				"description": "Chỉ có sẵn trong không gian làm việc này, được ưu tiên hơn toàn cục"
 			}
 		},
 		"roleDefinition": {
 			"label": "Định nghĩa vai trò",
-			"description": "Xác định chuyên môn và tính cách của Roo cho chế độ này."
+			"description": "Xác định chuyên môn và tính cách của AI Code Orchestrator cho chế độ này."
 		},
 		"whenToUse": {
 			"label": "Khi nào nên sử dụng (tùy chọn)",

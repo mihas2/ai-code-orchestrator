@@ -3,11 +3,11 @@ import { useEvent } from "react-use"
 import DynamicTextArea from "react-textarea-autosize"
 import { VolumeX, Image, WandSparkles, SendHorizontal, X, ListEnd, Square } from "lucide-react"
 
-import type { ExtensionMessage } from "@roo-code/types"
+import type { ExtensionMessage } from "@ai-code-orchestrator/types"
 
-import { mentionRegex, mentionRegexGlobal, commandRegexGlobal, unescapeSpaces } from "@roo/context-mentions"
-import { WebviewMessage } from "@roo/WebviewMessage"
-import { Mode, getAllModes } from "@roo/modes"
+import { mentionRegex, mentionRegexGlobal, commandRegexGlobal, unescapeSpaces } from "@aico/context-mentions"
+import { WebviewMessage } from "@aico/WebviewMessage"
+import { Mode, getAllModes } from "@aico/modes"
 
 import { vscode } from "@src/utils/vscode"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
@@ -85,8 +85,9 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		const {
 			filePaths,
 			openedTabs,
-			currentApiConfigName,
+			runtimeApiConfigName: currentApiConfigName,
 			listApiConfigMeta,
+			roleAssignments,
 			customModes,
 			customModePrompts,
 			cwd,
@@ -99,14 +100,15 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			lockApiConfigAcrossModes,
 		} = useExtensionState()
 
-		// Find the ID and display text for the currently selected API configuration.
+		// Role model assignments are independent from the active profile.
 		const { currentConfigId, displayName } = useMemo(() => {
 			const currentConfig = listApiConfigMeta?.find((config) => config.name === currentApiConfigName)
+			const assignedModel = roleAssignments?.roles?.[mode]?.modelId
 			return {
 				currentConfigId: currentConfig?.id || "",
-				displayName: currentApiConfigName || "", // Use the name directly for display.
+				displayName: `${currentApiConfigName || ""} ${assignedModel || currentConfig?.modelId || ""}`.trim(),
 			}
-		}, [listApiConfigMeta, currentApiConfigName])
+		}, [listApiConfigMeta, currentApiConfigName, roleAssignments, mode])
 
 		const [gitCommits, setGitCommits] = useState<any[]>([])
 		const [showDropdown, setShowDropdown] = useState(false)

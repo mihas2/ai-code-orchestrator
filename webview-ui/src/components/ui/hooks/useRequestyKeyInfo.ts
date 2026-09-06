@@ -1,7 +1,7 @@
 import axios from "axios"
 import { z } from "zod"
 import { useQuery, UseQueryOptions } from "@tanstack/react-query"
-import { toRequestyServiceUrl } from "@roo/utils/requesty"
+import { toRequestyServiceUrl } from "@aico/utils/requesty"
 
 const requestyKeyInfoSchema = z.object({
 	name: z.string(),

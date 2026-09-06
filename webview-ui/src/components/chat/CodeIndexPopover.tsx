@@ -12,7 +12,7 @@ import {
 import * as ProgressPrimitive from "@radix-ui/react-progress"
 import { AlertTriangle } from "lucide-react"
 
-import { type IndexingStatus, type EmbedderProvider, CODEBASE_INDEX_DEFAULTS } from "@roo-code/types"
+import { type IndexingStatus, type EmbedderProvider, CODEBASE_INDEX_DEFAULTS } from "@ai-code-orchestrator/types"
 
 import { vscode } from "@src/utils/vscode"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
@@ -40,7 +40,7 @@ import {
 	StandardTooltip,
 	Button,
 } from "@src/components/ui"
-import { useRooPortal } from "@src/components/ui/hooks/useRooPortal"
+import { useAicoPortal } from "@src/components/ui/hooks/useAicoPortal"
 import { useEscapeKey } from "@src/hooks/useEscapeKey"
 import {
 	useOpenRouterModelProviders,
@@ -76,6 +76,7 @@ interface LocalCodeIndexSettings {
 	codeIndexQdrantApiKey?: string
 	codebaseIndexOpenAiCompatibleBaseUrl?: string
 	codebaseIndexOpenAiCompatibleApiKey?: string
+	codebaseIndexOpenAiCompatibleUseFloatEncoding: boolean
 	codebaseIndexGeminiApiKey?: string
 	codebaseIndexMistralApiKey?: string
 	codebaseIndexVercelAiGatewayApiKey?: string
@@ -220,6 +221,7 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 		codeIndexQdrantApiKey: "",
 		codebaseIndexOpenAiCompatibleBaseUrl: "",
 		codebaseIndexOpenAiCompatibleApiKey: "",
+		codebaseIndexOpenAiCompatibleUseFloatEncoding: false,
 		codebaseIndexGeminiApiKey: "",
 		codebaseIndexMistralApiKey: "",
 		codebaseIndexVercelAiGatewayApiKey: "",
@@ -259,6 +261,8 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 				codeIndexQdrantApiKey: "",
 				codebaseIndexOpenAiCompatibleBaseUrl: codebaseIndexConfig.codebaseIndexOpenAiCompatibleBaseUrl || "",
 				codebaseIndexOpenAiCompatibleApiKey: "",
+				codebaseIndexOpenAiCompatibleUseFloatEncoding:
+					codebaseIndexConfig.codebaseIndexOpenAiCompatibleUseFloatEncoding ?? false,
 				codebaseIndexGeminiApiKey: "",
 				codebaseIndexMistralApiKey: "",
 				codebaseIndexVercelAiGatewayApiKey: "",
@@ -594,7 +598,7 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 		},
 	)
 
-	const portalContainer = useRooPortal("roo-portal")
+	const portalContainer = useAicoPortal("aico-portal")
 
 	return (
 		<>
@@ -1020,6 +1024,17 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 													</p>
 												)}
 											</div>
+
+											<VSCodeCheckbox
+												checked={currentSettings.codebaseIndexOpenAiCompatibleUseFloatEncoding}
+												onChange={(e: any) =>
+													updateSetting(
+														"codebaseIndexOpenAiCompatibleUseFloatEncoding",
+														e.target.checked,
+													)
+												}>
+												<span>{t("settings:codeIndex.useFloatEncodingLabel")}</span>
+											</VSCodeCheckbox>
 										</>
 									)}
 

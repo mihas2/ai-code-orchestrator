@@ -1,5 +1,5 @@
 {
-	"greeting": "Bienvenido a Roo Code",
+	"greeting": "Bienvenido a AI Code Orchestrator",
 	"task": {
 		"title": "Tarea",
 		"expand": "Expandir tarea",
@@ -90,10 +90,10 @@
 	"enqueueMessage": "Agregar mensaje a la cola (se enviará después de que termine la tarea actual)",
 	"scrollToBottom": "Desplazarse al final del chat",
 	"scrollToLatestCheckpoint": "Desplazarse al checkpoint anterior",
-	"about": "Roo Code es todo un equipo de desarrollo de IA en tu editor.",
+	"about": "AI Code Orchestrator es todo un equipo de desarrollo de IA en tu editor.",
 	"docs": "Consulta nuestra <DocsLink>documentación</DocsLink> para saber más.",
 	"onboarding": "Tu lista de tareas en este espacio de trabajo está vacía.",
-	"rooTips": {
+	"AicoTips": {
 		"customizableModes": {
 			"title": "Modos personalizables",
 			"description": "Personajes especializados que se mantienen en la tarea y cumplen."
@@ -121,7 +121,7 @@
 	"modeSelector": {
 		"title": "Modos",
 		"settings": "Configuración de Modos",
-		"description": "Personalidades especializadas que adaptan el comportamiento de Roo.",
+		"description": "Personalidades especializadas que adaptan el comportamiento de AI Code Orchestrator.",
 		"searchPlaceholder": "Buscar modos...",
 		"noResults": "No se encontraron resultados"
 	},
@@ -135,7 +135,7 @@
 	"diffError": {
 		"title": "Edición fallida"
 	},
-	"troubleMessage": "Roo está teniendo problemas...",
+	"troubleMessage": "AI Code Orchestrator está teniendo problemas...",
 	"apiRequest": {
 		"title": "Solicitud API",
 		"failed": "Solicitud API falló",
@@ -177,44 +177,40 @@
 		},
 		"current": "Actual"
 	},
-	"instructions": {
-		"wantsToFetch": "Roo quiere obtener instrucciones detalladas para ayudar con la tarea actual"
-	},
+	"instructions": {},
 	"fileOperations": {
-		"wantsToRead": "Roo quiere leer este archivo",
-		"wantsToReadOutsideWorkspace": "Roo quiere leer este archivo fuera del espacio de trabajo",
-		"didRead": "Roo leyó este archivo",
-		"wantsToEdit": "Roo quiere editar este archivo",
-		"wantsToEditOutsideWorkspace": "Roo quiere editar este archivo fuera del espacio de trabajo",
-		"wantsToEditProtected": "Roo quiere editar un archivo de configuración protegido",
-		"wantsToCreate": "Roo quiere crear un nuevo archivo",
-		"wantsToSearchReplace": "Roo quiere realizar búsqueda y reemplazo en este archivo",
-		"didSearchReplace": "Roo realizó búsqueda y reemplazo en este archivo",
-		"wantsToInsert": "Roo quiere insertar contenido en este archivo",
-		"wantsToInsertWithLineNumber": "Roo quiere insertar contenido en este archivo en la línea {{lineNumber}}",
-		"wantsToInsertAtEnd": "Roo quiere añadir contenido al final de este archivo",
-		"wantsToReadAndXMore": "Roo quiere leer este archivo y {{count}} más",
-		"wantsToReadMultiple": "Roo quiere leer varios archivos",
-		"wantsToApplyBatchChanges": "Roo quiere aplicar cambios a múltiples archivos",
-		"wantsToGenerateImage": "Roo quiere generar una imagen",
-		"wantsToGenerateImageOutsideWorkspace": "Roo quiere generar una imagen fuera del espacio de trabajo",
-		"wantsToGenerateImageProtected": "Roo quiere generar una imagen en una ubicación protegida",
-		"didGenerateImage": "Roo generó una imagen"
+		"wantsToRead": "AI Code Orchestrator quiere leer este archivo",
+		"wantsToReadOutsideWorkspace": "AI Code Orchestrator quiere leer este archivo fuera del espacio de trabajo",
+		"didRead": "AI Code Orchestrator leyó este archivo",
+		"wantsToEdit": "AI Code Orchestrator quiere editar este archivo",
+		"wantsToEditOutsideWorkspace": "AI Code Orchestrator quiere editar este archivo fuera del espacio de trabajo",
+		"wantsToEditProtected": "AI Code Orchestrator quiere editar un archivo de configuración protegido",
+		"wantsToCreate": "AI Code Orchestrator quiere crear un nuevo archivo",
+		"wantsToInsert": "AI Code Orchestrator quiere insertar contenido en este archivo",
+		"wantsToInsertWithLineNumber": "AI Code Orchestrator quiere insertar contenido en este archivo en la línea {{lineNumber}}",
+		"wantsToInsertAtEnd": "AI Code Orchestrator quiere añadir contenido al final de este archivo",
+		"wantsToReadAndXMore": "AI Code Orchestrator quiere leer este archivo y {{count}} más",
+		"wantsToReadMultiple": "AI Code Orchestrator quiere leer varios archivos",
+		"wantsToApplyBatchChanges": "AI Code Orchestrator quiere aplicar cambios a múltiples archivos",
+		"wantsToGenerateImage": "AI Code Orchestrator quiere generar una imagen",
+		"wantsToGenerateImageOutsideWorkspace": "AI Code Orchestrator quiere generar una imagen fuera del espacio de trabajo",
+		"wantsToGenerateImageProtected": "AI Code Orchestrator quiere generar una imagen en una ubicación protegida",
+		"didGenerateImage": "AI Code Orchestrator generó una imagen"
 	},
 	"directoryOperations": {
-		"wantsToViewTopLevel": "Roo quiere ver los archivos de nivel superior en este directorio",
-		"didViewTopLevel": "Roo vio los archivos de nivel superior en este directorio",
-		"wantsToViewRecursive": "Roo quiere ver recursivamente todos los archivos en este directorio",
-		"didViewRecursive": "Roo vio recursivamente todos los archivos en este directorio",
-		"wantsToSearch": "Roo quiere buscar en este directorio <code>{{regex}}</code>",
-		"didSearch": "Roo buscó en este directorio <code>{{regex}}</code>",
-		"wantsToSearchOutsideWorkspace": "Roo quiere buscar en este directorio (fuera del espacio de trabajo) <code>{{regex}}</code>",
-		"didSearchOutsideWorkspace": "Roo buscó en este directorio (fuera del espacio de trabajo) <code>{{regex}}</code>",
-		"wantsToViewTopLevelOutsideWorkspace": "Roo quiere ver los archivos de nivel superior en este directorio (fuera del espacio de trabajo)",
-		"didViewTopLevelOutsideWorkspace": "Roo vio los archivos de nivel superior en este directorio (fuera del espacio de trabajo)",
-		"wantsToViewRecursiveOutsideWorkspace": "Roo quiere ver recursivamente todos los archivos en este directorio (fuera del espacio de trabajo)",
-		"didViewRecursiveOutsideWorkspace": "Roo vio recursivamente todos los archivos en este directorio (fuera del espacio de trabajo)",
-		"wantsToViewMultipleDirectories": "Roo quiere ver varios directorios"
+		"wantsToViewTopLevel": "AI Code Orchestrator quiere ver los archivos de nivel superior en este directorio",
+		"didViewTopLevel": "AI Code Orchestrator vio los archivos de nivel superior en este directorio",
+		"wantsToViewRecursive": "AI Code Orchestrator quiere ver recursivamente todos los archivos en este directorio",
+		"didViewRecursive": "AI Code Orchestrator vio recursivamente todos los archivos en este directorio",
+		"wantsToSearch": "AI Code Orchestrator quiere buscar en este directorio <code>{{regex}}</code>",
+		"didSearch": "AI Code Orchestrator buscó en este directorio <code>{{regex}}</code>",
+		"wantsToSearchOutsideWorkspace": "AI Code Orchestrator quiere buscar en este directorio (fuera del espacio de trabajo) <code>{{regex}}</code>",
+		"didSearchOutsideWorkspace": "AI Code Orchestrator buscó en este directorio (fuera del espacio de trabajo) <code>{{regex}}</code>",
+		"wantsToViewTopLevelOutsideWorkspace": "AI Code Orchestrator quiere ver los archivos de nivel superior en este directorio (fuera del espacio de trabajo)",
+		"didViewTopLevelOutsideWorkspace": "AI Code Orchestrator vio los archivos de nivel superior en este directorio (fuera del espacio de trabajo)",
+		"wantsToViewRecursiveOutsideWorkspace": "AI Code Orchestrator quiere ver recursivamente todos los archivos en este directorio (fuera del espacio de trabajo)",
+		"didViewRecursiveOutsideWorkspace": "AI Code Orchestrator vio recursivamente todos los archivos en este directorio (fuera del espacio de trabajo)",
+		"wantsToViewMultipleDirectories": "AI Code Orchestrator quiere ver varios directorios"
 	},
 	"commandOutput": "Salida del comando",
 	"commandExecution": {
@@ -236,33 +232,32 @@
 	"response": "Respuesta",
 	"arguments": "Argumentos",
 	"text": {
-		"rooSaid": "Roo ha dicho"
+		"aicoSaid": "AI Code Orchestrator ha dicho"
 	},
 	"feedback": {
 		"youSaid": "Has dicho"
 	},
 	"mcp": {
-		"wantsToUseTool": "Roo quiere usar una herramienta en el servidor MCP {{serverName}}",
-		"wantsToAccessResource": "Roo quiere acceder a un recurso en el servidor MCP {{serverName}}"
+		"wantsToUseTool": "AI Code Orchestrator quiere usar una herramienta en el servidor MCP {{serverName}}",
+		"wantsToAccessResource": "AI Code Orchestrator quiere acceder a un recurso en el servidor MCP {{serverName}}"
 	},
 	"modes": {
-		"wantsToSwitch": "Roo quiere cambiar a modo <code>{{mode}}</code>",
-		"wantsToSwitchWithReason": "Roo quiere cambiar a modo <code>{{mode}}</code> porque: {{reason}}",
-		"didSwitch": "Roo cambió a modo <code>{{mode}}</code>",
-		"didSwitchWithReason": "Roo cambió a modo <code>{{mode}}</code> porque: {{reason}}"
+		"wantsToSwitch": "AI Code Orchestrator quiere cambiar a modo <code>{{mode}}</code>",
+		"wantsToSwitchWithReason": "AI Code Orchestrator quiere cambiar a modo <code>{{mode}}</code> porque: {{reason}}",
+		"didSwitch": "AI Code Orchestrator cambió a modo <code>{{mode}}</code>",
+		"didSwitchWithReason": "AI Code Orchestrator cambió a modo <code>{{mode}}</code> porque: {{reason}}"
 	},
 	"subtasks": {
-		"wantsToCreate": "Roo quiere crear una nueva subtarea en modo <code>{{mode}}</code>",
-		"wantsToFinish": "Roo quiere finalizar esta subtarea",
+		"wantsToCreate": "AI Code Orchestrator quiere crear una nueva subtarea en modo <code>{{mode}}</code>",
+		"wantsToFinish": "AI Code Orchestrator quiere finalizar esta subtarea",
 		"newTaskContent": "Instrucciones de la subtarea",
-		"completionContent": "Subtarea completada",
 		"resultContent": "Resultados de la subtarea",
 		"defaultResult": "Por favor, continúa con la siguiente tarea.",
 		"completionInstructions": "¡Subtarea completada! Puedes revisar los resultados y sugerir correcciones o próximos pasos. Si todo se ve bien, confirma para devolver el resultado a la tarea principal.",
 		"goToSubtask": "Ver tarea"
 	},
 	"questions": {
-		"hasQuestion": "Roo tiene una pregunta"
+		"hasQuestion": "AI Code Orchestrator tiene una pregunta"
 	},
 	"taskCompleted": "Tarea completada",
 	"modelResponseIncomplete": "Respuesta del modelo incompleta",
@@ -278,7 +273,7 @@
 		"copyToClipboard": "Copiar al portapapeles",
 		"copied": "¡Copiado!",
 		"diagnostics": "Obtener información de error detallada",
-		"proxyProvider": "Parece que estás usando un proveedor basado en proxy. Asegúrate de revisar sus registros y de que no está reescribiendo las solicitudes de Roo."
+		"proxyProvider": "Parece que estás usando un proveedor basado en proxy. Asegúrate de revisar sus registros y de que no está reescribiendo las solicitudes de AI Code Orchestrator."
 	},
 	"powershell": {
 		"issues": "Parece que estás teniendo problemas con Windows PowerShell, por favor consulta esta"
@@ -287,7 +282,6 @@
 		"tooltipManage": "Administrar la configuración de aprobación automática",
 		"tooltipStatus": "Aprobación automática habilitada para: {{toggles}}",
 		"title": "Aprobación automática",
-		"toggle": "Alternar aprobación automática",
 		"all": "Todo",
 		"none": "Ninguno",
 		"description": "Ejecuta estas acciones sin pedir permiso. Habilita esto solo para acciones en las que confíes plenamente.",
@@ -321,26 +315,26 @@
 		}
 	},
 	"skill": {
-		"wantsToLoad": "Roo quiere cargar una habilidad",
-		"didLoad": "Roo cargó una habilidad"
+		"wantsToLoad": "AI Code Orchestrator quiere cargar una habilidad",
+		"didLoad": "AI Code Orchestrator cargó una habilidad"
 	},
 	"followUpSuggest": {
 		"copyToInput": "Copiar a la entrada (o Shift + clic)",
 		"timerPrefix": "Aprobación automática habilitada. Seleccionando en {{seconds}}s…"
 	},
 	"announcement": {
-		"title": "Roo Code {{version}} publicado",
-		"support": "Por favor, apoya a Roo Code dándonos una estrella en <githubLink>GitHub</githubLink>.",
+		"title": "AI Code Orchestrator {{version}} publicado",
+		"support": "Por favor, apoya a AI Code Orchestrator dándonos una estrella en <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
-			"title": "La última versión de Roo Code",
-			"intro": "Esta es la última versión de Roo Code. <announcementLink>Como anunciamos hace unas semanas</announcementLink>, hemos decidido centrar nuestros esfuerzos en <roomoteLink>Roomote</roomoteLink>, nuestra plataforma de agentes en la nube, que creemos que es el futuro del desarrollo de software. Muchas gracias por tu apoyo durante este último año aproximadamente.",
-			"continuity": "Esta extensión debería seguir funcionando indefinidamente, pero no recibirá correcciones de errores, nuevas funciones ni actualizaciones de modelos.",
-			"alternatives": "Si quieres usar una extensión, te recomendamos echar un vistazo a <zooCodeLink>ZooCode</zooCodeLink> (un fork comunitario de Roo Code) y <clineLink>Cline</clineLink> (donde Roo Code comenzó originalmente).",
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} mejora la selección de modelos por rol. Los modelos asignados a roles ahora tienen prioridad de forma coherente tanto en la interfaz del chat como durante la ejecución de tareas, y los roles sin un modelo asignado heredan el modelo principal.",
+			"continuity": "Esta versión también corrige la selección del modelo cuando se configura una asignación de rol sin nombre de perfil.",
+			"alternatives": "La selección de modelos por rol ahora es coherente desde la configuración hasta la ejecución.",
 			"signoff": "¡Feliz programación!"
 		},
 		"release": {
 			"heading": "Qué hay de nuevo:",
-			"gpt55": "GPT-5.5 vía OpenAI Codex: Se añadió soporte para GPT-5.5 en el proveedor OpenAI Codex para que puedas usar el modelo más reciente directamente desde Roo Code.",
+			"gpt55": "GPT-5.5 vía OpenAI Codex: Se añadió soporte para GPT-5.5 en el proveedor OpenAI Codex para que puedas usar el modelo más reciente directamente desde AI Code Orchestrator.",
 			"claudeOpus47": "Claude Opus 4.7 en Vertex AI: Se añadió Claude Opus 4.7 al proveedor Vertex AI, el modelo de razonamiento insignia más reciente de Anthropic.",
 			"checkpointNav": "Navegación por Checkpoints Anteriores: Se añadieron controles en el chat para retroceder por los checkpoints previos, con soporte completo de i18n."
 		},
@@ -366,24 +360,24 @@
 	"profileViolationWarning": "El perfil actual no es compatible con la configuración de tu organización",
 	"shellIntegration": {
 		"title": "Advertencia de ejecución de comandos",
-		"description": "Tu comando se está ejecutando sin la integración de shell de terminal de VSCode. Para suprimir esta advertencia, puedes desactivar la integración de shell en la sección <strong>Terminal</strong> de la <settingsLink>configuración de Roo Code</settingsLink> o solucionar problemas de integración de terminal de VSCode usando el enlace de abajo.",
+		"description": "Tu comando se está ejecutando sin la integración de shell de terminal de VSCode. Para suprimir esta advertencia, puedes desactivar la integración de shell en la sección <strong>Terminal</strong> de la <settingsLink>configuración de AI Code Orchestrator</settingsLink> o solucionar problemas de integración de terminal de VSCode usando el enlace de abajo.",
 		"troubleshooting": "Haz clic aquí para ver la documentación de integración de shell."
 	},
 	"ask": {
 		"autoApprovedRequestLimitReached": {
 			"title": "Límite de Solicitudes Auto-aprobadas Alcanzado",
-			"description": "Roo ha alcanzado el límite auto-aprobado de {{count}} solicitud(es) API. ¿Deseas reiniciar el contador y continuar con la tarea?",
+			"description": "AI Code Orchestrator ha alcanzado el límite auto-aprobado de {{count}} solicitud(es) API. ¿Deseas reiniciar el contador y continuar con la tarea?",
 			"button": "Reiniciar y Continuar"
 		},
 		"autoApprovedCostLimitReached": {
 			"title": "Límite de Costo Auto-Aprobado Alcanzado",
-			"description": "Roo ha alcanzado el límite de costo autoaprobado de ${{count}}. ¿Le gustaría reiniciar el costo y continuar con la tarea?",
+			"description": "AI Code Orchestrator ha alcanzado el límite de costo autoaprobado de ${{count}}. ¿Le gustaría reiniciar el costo y continuar con la tarea?",
 			"button": "Reiniciar y continuar"
 		}
 	},
 	"codebaseSearch": {
-		"wantsToSearch": "Roo quiere buscar en la base de código <code>{{query}}</code>",
-		"wantsToSearchWithPath": "Roo quiere buscar en la base de código <code>{{query}}</code> en <code>{{path}}</code>",
+		"wantsToSearch": "AI Code Orchestrator quiere buscar en la base de código <code>{{query}}</code>",
+		"wantsToSearchWithPath": "AI Code Orchestrator quiere buscar en la base de código <code>{{query}}</code> en <code>{{path}}</code>",
 		"didSearch_one": "Se encontró 1 resultado",
 		"didSearch_other": "Se encontraron {{count}} resultados",
 		"resultTooltip": "Puntuación de similitud: {{score}} (haz clic para abrir el archivo)"
@@ -460,8 +454,8 @@
 		"clickToEdit": "Haz clic para editar el mensaje"
 	},
 	"slashCommand": {
-		"wantsToRun": "Roo quiere ejecutar un comando slash",
-		"didRun": "Roo ejecutó un comando slash"
+		"wantsToRun": "AI Code Orchestrator quiere ejecutar un comando slash",
+		"didRun": "AI Code Orchestrator ejecutó un comando slash"
 	},
 	"todo": {
 		"partial": "{{completed}} de {{total}} tareas pendientes realizadas",
@@ -480,12 +474,12 @@
 		"openMcpSettings": "Abrir configuración de MCP"
 	},
 	"readCommandOutput": {
-		"title": "Roo read command output"
+		"title": "AI Code Orchestrator read command output"
 	},
 	"retiredProvider": {
 		"title": "Proveedor ya no compatible",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Abrir configuración",
-		"rooMessage": "As part of our decision to sunset the Roo Code extension, we also ended the Roo Code Router, which only existed to support the extension. Sorry about the hassle."
+		"aicoMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

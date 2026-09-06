@@ -53,6 +53,11 @@ describe("Single-open-task invariant", () => {
 			removeClineFromStack,
 			addClineToStack,
 			setProviderProfile: vi.fn(),
+			getMode: vi.fn().mockResolvedValue("code"),
+			resolveEffectiveApiConfiguration: vi.fn(async ({ baseApiConfiguration }: any) => ({
+				effectiveApiConfiguration: structuredClone(baseApiConfiguration),
+				isRoleSpecificConfig: false,
+			})),
 			log: vi.fn(),
 			getStateToPostToWebview: vi.fn(),
 			providerSettingsManager: { getModeConfigId: vi.fn(), listConfig: vi.fn() },
@@ -83,6 +88,10 @@ describe("Single-open-task invariant", () => {
 			removeClineFromStack,
 			addClineToStack,
 			updateGlobalState,
+			resolveEffectiveApiConfiguration: vi.fn(async ({ baseApiConfiguration }: any) => ({
+				effectiveApiConfiguration: structuredClone(baseApiConfiguration),
+				isRoleSpecificConfig: false,
+			})),
 			log: vi.fn(),
 			customModesManager: { getCustomModes: vi.fn().mockResolvedValue([]) },
 			providerSettingsManager: {

@@ -73,7 +73,7 @@ describe("PromptsView", () => {
 		})
 	})
 
-	it("selects a mode from the dropdown and sends update message", async () => {
+	it("selects a role for editing without switching the active task mode", async () => {
 		renderPromptsView()
 		const selectTrigger = screen.getByTestId("mode-select-trigger")
 		fireEvent.click(selectTrigger)
@@ -81,11 +81,9 @@ describe("PromptsView", () => {
 		const askOption = await waitFor(() => screen.getByTestId("mode-option-ask"))
 		fireEvent.click(askOption)
 
-		expect(mockExtensionState.setEnhancementApiConfigId).not.toHaveBeenCalled() // Ensure this is not called by mode switch
-		expect(vscode.postMessage).toHaveBeenCalledWith({
-			type: "mode",
-			text: "ask",
-		})
+		expect(mockExtensionState.setEnhancementApiConfigId).not.toHaveBeenCalled()
+		// Role navigation is UI-only; task mode switches use explicit mode actions.
+		expect(vscode.postMessage).not.toHaveBeenCalledWith(expect.objectContaining({ type: "mode" }))
 		await waitFor(() => {
 			expect(selectTrigger).toHaveAttribute("aria-expanded", "false")
 		})

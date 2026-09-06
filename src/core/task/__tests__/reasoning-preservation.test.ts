@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import type { ClineProvider } from "../../webview/ClineProvider"
-import type { ProviderSettings, ModelInfo } from "@roo-code/types"
+import type { ProviderSettings, ModelInfo } from "@ai-code-orchestrator/types"
 
 // All vi.mock() calls are hoisted to the top of the file by Vitest
 // and are applied before any imports are resolved
@@ -94,8 +94,16 @@ vi.mock("../../environment/getEnvironmentDetails", () => ({
 	getEnvironmentDetails: vi.fn().mockResolvedValue(""),
 }))
 
-// Mock RooIgnoreController
-vi.mock("../../ignore/RooIgnoreController")
+// Mock AicoIgnoreController
+vi.mock("../../ignore/AicoIgnoreController", () => ({
+	AicoIgnoreController: vi.fn().mockImplementation(() => ({
+		initialize: vi.fn().mockResolvedValue(undefined),
+		filterPaths: vi.fn((paths: string[]) => paths),
+		validateAccess: vi.fn().mockReturnValue(true),
+		validateCommand: vi.fn().mockReturnValue(undefined),
+		dispose: vi.fn(),
+	})),
+}))
 
 // Mock condense
 vi.mock("../../condense", () => ({

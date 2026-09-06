@@ -33,11 +33,11 @@ jobs:
               with:
                   install-args: "--frozen-lockfile"
             - name: Run type check
-              run: pnpm --filter @roo-code/docs check-types
+              run: pnpm --filter @ai-code-orchestrator/docs check-types
             - name: Run lint
-              run: pnpm --filter @roo-code/docs lint
+              run: pnpm --filter @ai-code-orchestrator/docs lint
             - name: Build docs
-              run: pnpm --filter @roo-code/docs build
+              run: pnpm --filter @ai-code-orchestrator/docs build
             - name: Upload Pages artifact
               uses: actions/upload-pages-artifact@v3
               with:

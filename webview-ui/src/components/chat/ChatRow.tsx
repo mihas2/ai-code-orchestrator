@@ -11,12 +11,12 @@ import type {
 	ClineApiReqInfo,
 	ClineAskUseMcpServer,
 	ClineSayTool,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 
-import { Mode } from "@roo/modes"
+import { Mode } from "@aico/modes"
 
-import { COMMAND_OUTPUT_STRING } from "@roo/combineCommandSequences"
-import { safeJsonParse } from "@roo/core"
+import { COMMAND_OUTPUT_STRING } from "@aico/combineCommandSequences"
+import { safeJsonParse } from "@aico/core"
 
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { findMatchingResourceOrTemplate } from "@src/utils/mcp"
@@ -868,7 +868,7 @@ export const ChatRowContent = ({
 							</span>
 						</div>
 						<div className="border-l border-muted-foreground/80 ml-2 pl-4 pb-1">
-							<MarkdownBlock markdown={tool.content} />
+							<Markdown markdown={tool.content} partial={message.partial} />
 							<div>
 								{childTaskId && !isFollowedBySubtaskResult && (
 									<button
@@ -1117,7 +1117,8 @@ export const ChatRowContent = ({
 							} else {
 								// Non-HTTP-status-code error message - store full text as errorDetails
 								body = t("chat:apiRequest.errorMessage.unknown")
-								docsURL = "https://github.com/RooCodeInc/Roo-Code/issues/new?template=bug_report.yml"
+								docsURL =
+									"https://github.com/AIOrchestrator/ai-code-orchestrator/issues/new?template=bug_report.yml"
 							}
 						}
 
@@ -1184,7 +1185,7 @@ export const ChatRowContent = ({
 						<div className="group">
 							<div style={headerStyle}>
 								<MessageCircle className="w-4 shrink-0" aria-label="Speech bubble icon" />
-								<span style={{ fontWeight: "bold" }}>{t("chat:text.rooSaid")}</span>
+								<span style={{ fontWeight: "bold" }}>{t("chat:text.aicoSaid")}</span>
 								<div style={{ flexGrow: 1 }} />
 								<OpenMarkdownPreviewButton markdown={message.text} />
 							</div>

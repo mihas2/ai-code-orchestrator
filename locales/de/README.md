@@ -1,72 +1,64 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-cline"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/roocode"><img src="https://img.shields.io/badge/roocode-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
-# Roo Code
 
-> Dein KI-gestütztes Dev-Team – direkt in deinem Editor
+# AI Code Orchestrator
 
-<details>
-  <summary>🌐 Verfügbare Sprachen</summary>
+> Dein KI-gestütztes Entwicklungsteam – direkt in deinem Editor.
 
-- [English](../../README.md)
-- [Català](../ca/README.md)
-- [Deutsch](../de/README.md)
-- [Español](../es/README.md)
-- [Français](../fr/README.md)
-- [हिंदी](../hi/README.md)
-- [Bahasa Indonesia](../id/README.md)
-- [Italiano](../it/README.md)
-- [日本語](../ja/README.md)
-- [한국어](../ko/README.md)
-- [Nederlands](../nl/README.md)
-- [Polski](../pl/README.md)
-- [Português (BR)](../pt-BR/README.md)
-- [Русский](../ru/README.md)
-- [Türkçe](../tr/README.md)
-- [Tiếng Việt](../vi/README.md)
-- [简体中文](../zh-CN/README.md)
-- [繁體中文](../zh-TW/README.md)
-- ...
-    </details>
+AI Code Orchestrator ist eine VS-Code-Erweiterung und CLI zum Planen, Implementieren, Prüfen und Erklären von Software mit konfigurierbaren KI-Agenten. Es vereint Chat, Code-Aktionen, Terminal-Workflows, benutzerdefinierte Rollen, MCP-Integrationen und Multi-Agenten-Orchestrierung in einem Arbeitsbereich.
 
----
+## Funktionen
 
-## Was kann Roo Code für DICH tun?
+- Code aus natürlichsprachlichen Anforderungen erzeugen und ändern
+- Architekturen planen und Arbeit in koordinierte Aufgaben aufteilen
+- Arbeit als abhängigkeitsbewussten DAG mit parallelen Ausführenden, Review-Phasen, Budgets und kontrollierter Integration orchestrieren
+- **Kontextoptimierung** – intelligentes Kontextmanagement reduziert Tokenverbrauch und Kosten bei gleichbleibender Effektivität
+- Änderungen prüfen, Fehler diagnostizieren und bestehenden Code verbessern
+- Mit Dateien, Terminals, Bildern und externen MCP-Werkzeugen arbeiten
+- Anbieter wie Vercel AI Gateway und Unbound sowie Modelle, Berechtigungen und benutzerdefinierte Rollen konfigurieren
+- Modelle einzelnen Rollen zuweisen; ohne Überschreibung wird automatisch das primäre Modell geerbt
+- Aufgaben im Editor oder über die Befehlszeile fortsetzen
 
-- Code aus natürlichsprachlichen Beschreibungen generieren
-- Anpassung mit Modi: Code, Architekt, Fragen, Debuggen und benutzerdefinierte Modi
-- Bestehenden Code refaktorisieren & debuggen
-- Dokumentation schreiben & aktualisieren
-- Fragen zu deiner Codebasis beantworten
-- Wiederkehrende Aufgaben automatisieren
-- MCP-Server nutzen
+## Rollen
 
-## Modi
+AI Code Orchestrator passt sich der jeweiligen Aufgabe an:
 
-Roo Code passt sich an deine Arbeitsweise an, nicht umgekehrt:
+- **Code** – Änderungen implementieren und Projektdateien bearbeiten
+- **Architect** – Systeme, Spezifikationen und Migrationen entwerfen
+- **Ask** – Fragen beantworten und Code erklären
+- **Debug** – Ursachen isolieren und Korrekturen validieren
+- **Reviewer** – Änderungen validieren, Probleme identifizieren und Qualität sicherstellen
+- **Orchestrator** – abhängigkeitsbewusste Aufgabengraphen und parallele Agenten koordinieren; dies ist der Standardrolle
+- **Custom** – spezialisierte Arbeitsabläufe für ein Team erstellen
 
-- Code-Modus: tägliches Codieren, Bearbeitungen und Dateioperationen
-- Architekten-Modus: Systeme, Spezifikationen und Migrationen planen
-- Fragen-Modus: schnelle Antworten, Erklärungen und Dokumentationen
-- Debug-Modus: Probleme aufspüren, Protokolle hinzufügen, Ursachen isolieren
-- Benutzerdefinierte Modi: erstelle spezialisierte Modi für dein Team oder deinen Workflow
+Jede Rolle kann eine eigene Modellkonfiguration verwenden. Ist kein rollenspezifisches Modell zugewiesen, wird das primäre Modell geerbt. So lassen sich Leistungsfähigkeit, Geschwindigkeit und Kosten eines Workflows einfach ausbalancieren.
 
-Mehr erfahren: [Modi verwenden](https://roocodeinc.github.io/Roo-Code/basic-usage/using-modes) • [Benutzerdefinierte Modi](https://roocodeinc.github.io/Roo-Code/advanced-usage/custom-modes)
+## Dokumentation
 
-## Ressourcen
+Die Projektdokumentation einschließlich der Orchestrierungsspezifikation befindet sich unter [`apps/docs`](../../apps/docs).
 
-- **[Dokumentation](https://roocodeinc.github.io/Roo-Code/):** Die offizielle Anleitung zur Installation, Konfiguration und Beherrschung von Roo Code.
-- **[GitHub Issues](https://github.com/RooCodeInc/Roo-Code/issues):** Melde Fehler und verfolge die Entwicklung.
+## Installation
 
----
+Installiere die Erweiterung **AI Code Orchestrator** aus dem VS Code Marketplace oder erstelle lokal eine VSIX-Datei:
 
-## Haftungsausschluss
+```bash
+pnpm install
+pnpm vsix
+```
 
-**Bitte beachte**, dass Roo Code, Inc. **keine** Zusicherungen oder Garantien in Bezug auf Code, Modelle oder andere Werkzeuge gibt, die in Verbindung mit Roo Code, zugehörigen Drittanbieter-Werkzeugen oder den daraus resultierenden Ergebnissen bereitgestellt oder zugänglich gemacht werden. Du übernimmst **alle Risiken**, die mit der Nutzung solcher Werkzeuge oder Ergebnisse verbunden sind; diese Werkzeuge werden auf einer **"WIE BESEHEN"**- und **"WIE VERFÜGBAR"**-Basis bereitgestellt. Solche Risiken können unter anderem die Verletzung von geistigem Eigentum, Cyber-Schwachstellen oder -Angriffe, Voreingenommenheit, Ungenauigkeiten, Fehler, Defekte, Viren, Ausfallzeiten, Eigentumsverluste oder -schäden und/oder Personenschäden umfassen. Du bist allein verantwortlich für deine Nutzung solcher Werkzeuge oder Ergebnisse (einschließlich, aber nicht beschränkt auf deren Rechtmäßigkeit, Angemessenheit und Ergebnisse).
+Während der Entwicklung ist die CLI aus dem Monorepo verfügbar:
 
----
+```bash
+pnpm --filter @ai-code-orchestrator/cli dev
+```
+
+Der Paket-Scope und ältere Befehlskennungen bleiben zur Kompatibilität mit bestehenden Integrationen erhalten.
+
+## Danksagung
+
+AI Code Orchestrator basiert auf [Roo Code](https://github.com/RooCodeInc/Roo-Code). Die Implementierung behält ausgewählte kompatible APIs und Kennungen bei, damit bestehende Integrationen weiterhin funktionieren.
 
 ## Lizenz
 
-[Apache 2.0 © 2025 Roo Code, Inc.](../../LICENSE)
+[Apache 2.0](../../LICENSE)

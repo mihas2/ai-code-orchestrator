@@ -2,7 +2,7 @@
 description: This patch release delivers critical memory leak fixes, new Gemini 2.5 Pro Preview 06-05 model support, improved infrastructure for evals, and several quality-of-life and workflow enhancements.
 ---
 
-# Roo Code 3.19.4 Release Notes (2025-06-05)
+# AI Code Orchestrator 3.19.4 Release Notes (2025-06-05)
 
 This patch release delivers critical memory leak fixes, new Gemini 2.5 Pro Preview 06-05 model support, improved infrastructure for evals, and several quality-of-life and workflow enhancements.
 
@@ -17,8 +17,8 @@ We've added support for the newly released Gemini 2.5 Pro Preview 06-05 model, g
 We've resolved multiple memory leaks across the extension, resulting in improved stability and performance:
 - **ChatView**: Fixed leaks from unmanaged async operations and setTimeouts (thanks kiwina!)
 - **WorkspaceTracker**: FileSystemWatcher and other disposables are now properly cleaned up (thanks kiwina!)
-- **RooTips**: setTimeout is now cleared to prevent state updates on unmounted components (thanks kiwina!)
-- **RooIgnoreController**: FileSystemWatcher leak resolved by ensuring Task.dispose() is always called (thanks kiwina!)
+- **AicoTips**: setTimeout is now cleared to prevent state updates on unmounted components (thanks kiwina!)
+- **AicoIgnoreController**: FileSystemWatcher leak resolved by ensuring Task.dispose() is always called (thanks kiwina!)
 - **Clipboard**: useCopyToClipboard now clears setTimeout to avoid memory leaks (thanks kiwina!)
 - **ClineProvider**: Instance cleanup improved to prevent lingering resources (thanks xyOz-dev!)
 
@@ -45,7 +45,7 @@ We've resolved multiple memory leaks across the extension, resulting in improved
 ## Misc Improvements
 
 *   **OpenAI Compatible Embedder**: Added a new embedder for codebase indexing that is compatible with the OpenAI API, expanding options for local and custom embedding models (thanks SannidhyaSah!)
-*   **Enforce [`codebase_search`](/advanced-usage/available-tools/codebase-search) as primary tool**: Roo Code now always uses codebase_search as the first step for code understanding tasks, improving accuracy and consistency (thanks hannesrudolph!)
+*   **Enforce [`codebase_search`](/advanced-usage/available-tools/codebase-search) as primary tool**: AI Code Orchestrator now always uses codebase_search as the first step for code understanding tasks, improving accuracy and consistency (thanks hannesrudolph!)
 *   **Improved Docker setup for evals**: Dockerfile and docker-compose updated for better isolation, real-time monitoring, and streamlined configuration
 *   **Move evals into pnpm workspace, switch from SQLite to Postgres**: Evals are now managed in a pnpm workspace and use PostgreSQL for improved scalability
 *   **Refactor [MCP](/features/mcp/overview) to use getDefaultEnvironment for stdio client transport**: Simplifies MCP client setup and improves maintainability (thanks samhvw8!)

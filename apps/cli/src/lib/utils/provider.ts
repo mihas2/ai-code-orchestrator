@@ -1,4 +1,4 @@
-import { RooCodeSettings } from "@roo-code/types"
+import { AiCodeOrchestratorSettings } from "@ai-code-orchestrator/types"
 
 import type { SupportedProvider } from "@/types/index.js"
 
@@ -23,8 +23,8 @@ export function getProviderSettings(
 	provider: SupportedProvider,
 	apiKey: string | undefined,
 	model: string | undefined,
-): RooCodeSettings {
-	const config: RooCodeSettings = { apiProvider: provider }
+): AiCodeOrchestratorSettings {
+	const config: AiCodeOrchestratorSettings = { apiProvider: provider }
 
 	switch (provider) {
 		case "anthropic":

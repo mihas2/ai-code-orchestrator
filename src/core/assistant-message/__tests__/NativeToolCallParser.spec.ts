@@ -311,6 +311,18 @@ describe("NativeToolCallParser", () => {
 				expect(nativeArgs.path).toBe("src/test.ts")
 			})
 		})
+
+		describe("new_task tool", () => {
+			it("grows params.message when a JSON string is split across chunks", () => {
+				const id = "toolu_new_task_stream"
+				NativeToolCallParser.startStreamingToolCall(id, "new_task")
+				const first = NativeToolCallParser.processStreamingChunk(id, '{"mode":"code","message":"Write a long')
+				const second = NativeToolCallParser.processStreamingChunk(id, ' task brief incrementally"}')
+				expect(first?.params.message).toBe("Write a long")
+				expect(second?.params.message).toBe("Write a long task brief incrementally")
+				expect(second?.params.message?.startsWith(first?.params.message ?? "")).toBe(true)
+			})
+		})
 	})
 
 	describe("finalizeStreamingToolCall", () => {

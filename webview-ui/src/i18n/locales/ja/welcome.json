@@ -9,13 +9,13 @@
 		}
 	},
 	"landing": {
-		"greeting": "Roo Codeへようこそ！",
-		"introduction": "組み込みおよび拡張可能なモードを備えたRoo Codeは、計画、アーキテクチャ設計、コーディング、デバッグ、そして今までにない生産性向上を可能にします。",
+		"greeting": "AI Code Orchestratorへようこそ！",
+		"introduction": "組み込みおよび拡張可能なモードを備えたAI Code Orchestratorは、計画、アーキテクチャ設計、コーディング、デバッグ、そして今までにない生産性向上を可能にします。",
 		"getStarted": "Get Started"
 	},
 	"providerSignup": {
 		"heading": "プロバイダーを選択",
-		"chooseProvider": "Rooが機能するにはLLMプロバイダーが必要です。始めるために1つを選択してください。後から追加することもできます。",
+		"chooseProvider": "AI Code Orchestratorが機能するにはLLMプロバイダーが必要です。始めるために1つを選択してください。後から追加することもできます。",
 		"learnMore": "詳細を見る",
 		"useAnotherProvider": "サードパーティプロバイダー",
 		"useAnotherProviderDescription": "APIキーを入力して開始します。",

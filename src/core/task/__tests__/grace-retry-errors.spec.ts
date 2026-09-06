@@ -4,14 +4,14 @@ import * as os from "os"
 import * as path from "path"
 import * as vscode from "vscode"
 
-import type { GlobalState, ProviderSettings } from "@roo-code/types"
+import type { GlobalState, ProviderSettings } from "@ai-code-orchestrator/types"
 
 import { Task } from "../Task"
 import { ClineProvider } from "../../webview/ClineProvider"
 import { ContextProxy } from "../../config/ContextProxy"
 
-// Mock @roo-code/core
-vi.mock("@roo-code/core", () => ({
+// Mock @ai-code-orchestrator/core
+vi.mock("@ai-code-orchestrator/core", () => ({
 	customToolRegistry: {
 		getTools: vi.fn().mockReturnValue([]),
 		hasTool: vi.fn().mockReturnValue(false),
@@ -124,7 +124,15 @@ vi.mock("../../environment/getEnvironmentDetails", () => ({
 	getEnvironmentDetails: vi.fn().mockResolvedValue(""),
 }))
 
-vi.mock("../../ignore/RooIgnoreController")
+vi.mock("../../ignore/AicoIgnoreController", () => ({
+	AicoIgnoreController: vi.fn().mockImplementation(() => ({
+		initialize: vi.fn().mockResolvedValue(undefined),
+		filterPaths: vi.fn((paths: string[]) => paths),
+		validateAccess: vi.fn().mockReturnValue(true),
+		validateCommand: vi.fn().mockReturnValue(undefined),
+		dispose: vi.fn(),
+	})),
+}))
 
 vi.mock("../../../utils/storage", () => ({
 	getTaskDirectoryPath: vi

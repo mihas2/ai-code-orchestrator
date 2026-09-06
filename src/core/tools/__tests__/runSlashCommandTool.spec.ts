@@ -99,7 +99,7 @@ describe("runSlashCommandTool", () => {
 		const getSkillContent = vi.fn().mockResolvedValue({
 			name: "skill-only",
 			description: "Skill-generated command",
-			path: "/mock/.roo/skills/skill-only/SKILL.md",
+			path: "/mock/.ai-code-orchestrator/skills/skill-only/SKILL.md",
 			source: "project" as const,
 			instructions: "Use skill workflow",
 		})
@@ -160,14 +160,14 @@ Use skill workflow`,
 			name: "setup",
 			content: "Command content",
 			source: "project" as const,
-			filePath: ".roo/commands/setup.md",
+			filePath: ".ai-code-orchestrator/commands/setup.md",
 			description: "Real command",
 		}
 
 		const getSkillContent = vi.fn().mockResolvedValue({
 			name: "setup",
 			description: "Setup skill",
-			path: "/mock/.roo/skills/setup/SKILL.md",
+			path: "/mock/.ai-code-orchestrator/skills/setup/SKILL.md",
 			source: "project" as const,
 			instructions: "Skill should not run",
 		})
@@ -289,7 +289,7 @@ Initialize project content here`,
 			name: "test",
 			content: "Run tests with specific focus",
 			source: "project" as const,
-			filePath: ".roo/commands/test.md",
+			filePath: ".ai-code-orchestrator/commands/test.md",
 			description: "Run project tests",
 			argumentHint: "test type or focus area",
 		}
@@ -326,7 +326,7 @@ Run tests with specific focus`,
 			name: "deploy",
 			content: "Deploy application to production",
 			source: "global" as const,
-			filePath: "~/.roo/commands/deploy.md",
+			filePath: "~/.ai-code-orchestrator/commands/deploy.md",
 		}
 
 		vi.mocked(getCommand).mockResolvedValue(mockCommand)
@@ -437,7 +437,7 @@ Deploy application to production`,
 	})
 
 	it("should switch mode when mode is specified in command", async () => {
-		const mockHandleModeSwitch = vi.fn()
+		const mockSwitchRuntimeMode = vi.fn()
 		const block: ToolUse<"run_slash_command"> = {
 			type: "tool_use" as const,
 			name: "run_slash_command" as const,
@@ -452,7 +452,7 @@ Deploy application to production`,
 			name: "debug-app",
 			content: "Start debugging the application",
 			source: "project" as const,
-			filePath: ".roo/commands/debug-app.md",
+			filePath: ".ai-code-orchestrator/commands/debug-app.md",
 			description: "Debug the application",
 			mode: "debug",
 		}
@@ -464,14 +464,14 @@ Deploy application to production`,
 				},
 				customModes: undefined,
 			}),
-			handleModeSwitch: mockHandleModeSwitch,
+			switchRuntimeMode: mockSwitchRuntimeMode,
 		})
 
 		vi.mocked(getCommand).mockResolvedValue(mockCommand)
 
 		await runSlashCommandTool.handle(mockTask as Task, block, mockCallbacks)
 
-		expect(mockHandleModeSwitch).toHaveBeenCalledWith("debug")
+		expect(mockSwitchRuntimeMode).toHaveBeenCalledWith(mockTask, "debug")
 		expect(mockCallbacks.pushToolResult).toHaveBeenCalledWith(
 			`Command: /debug-app
 Description: Debug the application
@@ -485,7 +485,7 @@ Start debugging the application`,
 	})
 
 	it("should not switch mode when mode is not specified in command", async () => {
-		const mockHandleModeSwitch = vi.fn()
+		const mockSwitchRuntimeMode = vi.fn()
 		const block: ToolUse<"run_slash_command"> = {
 			type: "tool_use" as const,
 			name: "run_slash_command" as const,
@@ -500,7 +500,7 @@ Start debugging the application`,
 			name: "test",
 			content: "Run tests",
 			source: "project" as const,
-			filePath: ".roo/commands/test.md",
+			filePath: ".ai-code-orchestrator/commands/test.md",
 			description: "Run project tests",
 		}
 
@@ -511,14 +511,14 @@ Start debugging the application`,
 				},
 				customModes: undefined,
 			}),
-			handleModeSwitch: mockHandleModeSwitch,
+			switchRuntimeMode: mockSwitchRuntimeMode,
 		})
 
 		vi.mocked(getCommand).mockResolvedValue(mockCommand)
 
 		await runSlashCommandTool.handle(mockTask as Task, block, mockCallbacks)
 
-		expect(mockHandleModeSwitch).not.toHaveBeenCalled()
+		expect(mockSwitchRuntimeMode).not.toHaveBeenCalled()
 	})
 
 	it("should include mode in askApproval message when mode is specified", async () => {
@@ -536,7 +536,7 @@ Start debugging the application`,
 			name: "debug-app",
 			content: "Start debugging",
 			source: "project" as const,
-			filePath: ".roo/commands/debug-app.md",
+			filePath: ".ai-code-orchestrator/commands/debug-app.md",
 			description: "Debug the application",
 			mode: "debug",
 		}

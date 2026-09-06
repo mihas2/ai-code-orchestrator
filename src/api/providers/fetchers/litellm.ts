@@ -1,6 +1,6 @@
 import axios from "axios"
 
-import type { ModelRecord } from "@roo-code/types"
+import type { ModelRecord } from "@ai-code-orchestrator/types"
 
 import { DEFAULT_HEADERS } from "../constants"
 /**

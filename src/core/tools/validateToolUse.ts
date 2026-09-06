@@ -1,6 +1,6 @@
-import type { ToolName, ModeConfig, ExperimentId, GroupOptions, GroupEntry } from "@roo-code/types"
-import { toolNames as validToolNames } from "@roo-code/types"
-import { customToolRegistry } from "@roo-code/core"
+import type { ToolName, ModeConfig, ExperimentId, GroupOptions, GroupEntry } from "@ai-code-orchestrator/types"
+import { toolNames as validToolNames } from "@ai-code-orchestrator/types"
+import { customToolRegistry } from "@ai-code-orchestrator/core"
 
 import { type Mode, FileRestrictionError, getModeBySlug, getGroupName } from "../../shared/modes"
 import { EXPERIMENT_IDS } from "../../shared/experiments"
@@ -29,6 +29,11 @@ export function isValidToolName(toolName: string, experiments?: Record<string, b
 	return false
 }
 
+export interface ToolValidationOptions {
+	strictMcp?: boolean
+	mcpAllowlist?: Record<string, readonly string[]>
+}
+
 export function validateToolUse(
 	toolName: ToolName,
 	mode: Mode,
@@ -37,6 +42,7 @@ export function validateToolUse(
 	toolParams?: Record<string, unknown>,
 	experiments?: Record<string, boolean>,
 	includedTools?: string[],
+	options?: ToolValidationOptions,
 ): void {
 	// First, check if the tool name is actually a valid/known tool
 	// This catches completely invalid tool names like "edit_file" that don't exist
@@ -44,6 +50,20 @@ export function validateToolUse(
 		throw new Error(
 			`Unknown tool "${toolName}". This tool does not exist. Please use one of the available tools: ${validToolNames.join(", ")}.`,
 		)
+	}
+
+	const configuredMode = getModeBySlug(mode, customModes ?? [])
+	const restrictedEditGroup = configuredMode?.groups.find(
+		(group) => getGroupName(group) === "edit" && getGroupOptions(group)?.fileRegex,
+	)
+	const resolvedTool = TOOL_ALIASES[toolName] ?? toolName
+	const requiredPairs = EDIT_REQUIRED_PARAM_PAIRS[resolvedTool]
+	if (
+		restrictedEditGroup &&
+		requiredPairs &&
+		requiredPairs.some(([first, second]) => !toolParams?.[first] || !toolParams?.[second])
+	) {
+		throw new Error(`Edit tool "${toolName}" requires its complete path and operation parameter pair.`)
 	}
 
 	// Then check if the tool is allowed for the current mode
@@ -56,10 +76,28 @@ export function validateToolUse(
 			toolParams,
 			experiments,
 			includedTools,
+			options,
 		)
 	) {
 		throw new Error(`Tool "${toolName}" is not allowed in ${mode} mode.`)
 	}
+}
+
+const EDIT_REQUIRED_PARAM_PAIRS: Record<string, readonly (readonly [string, string])[]> = {
+	apply_diff: [["path", "diff"]],
+	write_to_file: [["path", "content"]],
+	edit: [
+		["file_path", "old_string"],
+		["file_path", "new_string"],
+	],
+	search_replace: [
+		["file_path", "old_string"],
+		["file_path", "new_string"],
+	],
+	edit_file: [
+		["file_path", "old_string"],
+		["file_path", "new_string"],
+	],
 }
 
 const EDIT_OPERATION_PARAMS = [
@@ -125,6 +163,7 @@ export function isToolAllowedForMode(
 	toolParams?: Record<string, any>, // All tool parameters
 	experiments?: Record<string, boolean>,
 	includedTools?: string[], // Opt-in tools explicitly included (e.g., from modelInfo)
+	options?: ToolValidationOptions,
 ): boolean {
 	// Resolve alias to canonical name (e.g., "search_and_replace" → "edit")
 	const resolvedTool = TOOL_ALIASES[tool] ?? tool
@@ -156,9 +195,16 @@ export function isToolAllowedForMode(
 		return true
 	}
 
-	// Check if this is a dynamic MCP tool (mcp_serverName_toolName)
-	// These should be allowed if the mcp group is allowed for the mode
+	// Strict orchestration routes must validate dynamic MCP capabilities explicitly.
 	const isDynamicMcpTool = tool.startsWith("mcp_")
+	if (isDynamicMcpTool && options?.strictMcp) {
+		const [, server, ...operationParts] = tool.split("_")
+		const operation = operationParts.join("_")
+		const allowedOperations = options.mcpAllowlist?.[server]
+		if (!allowedOperations?.includes(operation)) {
+			throw new Error(`MCP operation "${server}/${operation}" is not allowlisted.`)
+		}
+	}
 
 	if (experiments && Object.values(EXPERIMENT_IDS).includes(tool as ExperimentId)) {
 		if (!experiments[tool]) {
@@ -202,10 +248,9 @@ export function isToolAllowedForMode(
 			return true
 		}
 
-		// For the edit group, check file regex if specified
+		// For the edit group, validate paths when a complete operation payload is available.
 		if (groupName === "edit" && options.fileRegex) {
 			const filePath = toolParams?.path || toolParams?.file_path
-			// Check if this is an actual edit operation (not just path-only for streaming)
 			const isEditOperation = EDIT_OPERATION_PARAMS.some((param) => toolParams?.[param])
 
 			// Handle single file path validation

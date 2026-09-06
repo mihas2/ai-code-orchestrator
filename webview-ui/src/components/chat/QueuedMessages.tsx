@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import { QueuedMessage } from "@roo-code/types"
+import { QueuedMessage } from "@ai-code-orchestrator/types"
 
 import { Button } from "@src/components/ui"
 

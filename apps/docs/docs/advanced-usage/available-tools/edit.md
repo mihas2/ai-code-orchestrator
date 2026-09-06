@@ -1,11 +1,11 @@
 ---
-description: Replace the first or all occurrences of text using the edit search-and-replace tool in Roo Code.
+description: Replace the first or all occurrences of text using the edit search-and-replace tool in AI Code Orchestrator.
 keywords:
     - edit
     - search and replace
     - file editing
     - text replacement
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - code modifications
 ---
 

@@ -8,13 +8,26 @@
 		"noMatchFound": "未找到任何模式",
 		"editModesConfig": "模式设置",
 		"editGlobalModes": "修改全局模式",
-		"editProjectModes": "编辑项目模式 (.roomodes)",
-		"createModeHelpText": "模式是Roo的专属角色，用于定制其行为。<0>了解如何使用模式</0>或<1>自定义模式。</1>",
+		"editProjectModes": "编辑项目模式 (.agent-modes)",
+		"createModeHelpText": "模式是AI Code Orchestrator的专属角色，用于定制其行为。<0>了解如何使用模式</0>或<1>自定义模式。</1>",
 		"selectMode": "搜索模式"
+	},
+	"reviewer": {
+		"name": "审查者",
+		"description": "对已完成工作的只读质量审查",
+		"readOnlyNotice": "审查者可以读取文件并运行诊断，但不能编辑文件或扩大已声明的范围。",
+		"findingSeverities": "发现严重程度：blocker、major、minor、note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator 是连接用户与专业代理并对结果负责的团队负责人。它负责目标、计划、依赖关系、工作分配、预算、质量关卡、集成和最终结果，并维护精简的汇总状态，而非完整实现记录。",
+		"whenToUse": "适用于需要分解并协调 architect、code、debug 和 reviewer、并行执行独立工作、显式规划依赖、评审、返工、受控集成和质量保证的复杂多步骤工作。",
+		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
 	},
 	"apiConfiguration": {
 		"title": "API配置",
-		"select": "选择要用于此模式的API配置"
+		"select": "选择要用于此模式的API配置",
+		"inheritProfile": "使用活动配置",
+		"inheritModel": "使用配置中的模型"
 	},
 	"tools": {
 		"title": "可用功能",
@@ -49,12 +62,11 @@
 		"title": "模式专属规则（可选）",
 		"resetToDefault": "重置为默认值",
 		"description": "{{modeName}}模式的专属规则",
-		"loadFromFile": "{{mode}}模式的特定自定义指令也可以从工作区中的<span>.roo/rules-{{slug}}/</span>文件夹或全局<0>.roo/rules-{{slug}}/</0>加载（.roorules-{{slug}}和.clinerules-{{slug}}已弃用，即将停止工作）。"
+		"loadFromFile": "{{mode}}模式的特定自定义指令也可以从工作区中的<span>.ai-code-orchestrator/rules-{{slug}}/</span>文件夹或全局<0>.ai-code-orchestrator/rules-{{slug}}/</0>加载（.aicorules-{{slug}}和.clinerules-{{slug}}已弃用，即将停止工作）。"
 	},
 	"exportMode": {
 		"title": "导出模式",
 		"description": "将此模式导出为包含所有规则的 YAML 文件，以便与他人轻松共享。",
-		"export": "导出模式",
 		"exporting": "正在导出..."
 	},
 	"importMode": {
@@ -63,17 +75,17 @@
 		"importing": "导入中...",
 		"global": {
 			"label": "全局",
-			"description": "适用于所有项目。如果导出的模式包含规则文件，则将在全局 .roo/rules-{slug}/ 文件夹中重新创建这些文件。"
+			"description": "适用于所有项目。如果导出的模式包含规则文件，则将在全局 .ai-code-orchestrator/rules-{slug}/ 文件夹中重新创建这些文件。"
 		},
 		"project": {
 			"label": "项目级",
-			"description": "仅在此工作区可用。如果导出的模式包含规则文件，则将在 .roo/rules-{slug}/ 文件夹中重新创建这些文件。"
+			"description": "仅在此工作区可用。如果导出的模式包含规则文件，则将在 .ai-code-orchestrator/rules-{slug}/ 文件夹中重新创建这些文件。"
 		}
 	},
 	"globalCustomInstructions": {
 		"title": "所有模式的自定义指令",
 		"description": "这些指令适用于所有模式。它们提供了一套基础行为，可以通过下面的模式特定指令进行增强。<0>了解更多</0>",
-		"loadFromFile": "指令也可以从工作区中的<span>.roo/rules/</span>文件夹或全局<0>.roo/rules/</0>加载（.roorules和.clinerules已弃用，即将停止工作）。"
+		"loadFromFile": "指令也可以从工作区中的<span>.ai-code-orchestrator/rules/</span>文件夹或全局<0>.ai-code-orchestrator/rules/</0>加载（.aicorules和.clinerules已弃用，即将停止工作）。"
 	},
 	"systemPrompt": {
 		"preview": "预览系统提示词",
@@ -161,7 +173,7 @@
 				"description": "全局可用"
 			},
 			"project": {
-				"label": "项目特定 (.roomodes)",
+				"label": "项目特定 (.agent-modes)",
 				"description": "仅当前项目有效"
 			}
 		},

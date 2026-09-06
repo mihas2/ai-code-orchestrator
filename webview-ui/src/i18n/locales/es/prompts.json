@@ -8,13 +8,26 @@
 		"noMatchFound": "No se encontraron modos",
 		"editModesConfig": "Editar configuración de modos",
 		"editGlobalModes": "Editar modos globales",
-		"editProjectModes": "Editar modos del proyecto (.roomodes)",
-		"createModeHelpText": "Los modos son personas especializadas que adaptan el comportamiento de Roo. <0>Aprende sobre el uso de modos</0> o <1>Personalización de modos.</1>",
+		"editProjectModes": "Editar modos del proyecto (.agent-modes)",
+		"createModeHelpText": "Los modos son personas especializadas que adaptan el comportamiento de AI Code Orchestrator. <0>Aprende sobre el uso de modos</0> o <1>Personalización de modos.</1>",
 		"selectMode": "Buscar modos"
+	},
+	"reviewer": {
+		"name": "Revisor",
+		"description": "Revisión de calidad de trabajos completados en modo de solo lectura",
+		"readOnlyNotice": "El revisor puede leer archivos y ejecutar diagnósticos, pero no puede editar archivos ni ampliar el alcance declarado.",
+		"findingSeverities": "Severidades de los hallazgos: blocker, major, minor, note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator es el líder responsable que conecta al usuario con agentes especializados. Es dueño del objetivo, plan, dependencias, asignación, presupuestos, puertas de calidad, integración y resultado final, y conserva un estado agregado compacto en vez de transcripciones completas.",
+		"whenToUse": "Úsalo para trabajo complejo de varios pasos que requiera descomposición, coordinación entre architect, code, debug y reviewer, paralelismo, dependencias explícitas, revisión, corrección, integración controlada y garantía de calidad.",
+		"customInstructions": "Sigue el ciclo de orquestación: 1) analiza objetivo, restricciones, riesgos, permisos y aceptación; 2) planifica un DAG acíclico con roles, dependencias, ContextContract limitados, artefactos, verificaciones y presupuestos; 3) valida el plan; 4) inicia solo nodos listos y usa new_task exclusivamente mediante el protocolo; 5) supervisa dependencias, paralelismo configurable, presupuestos y ResultContract compactos en puertas de lote; 6) invoca reviewer según reviewPolicy y envía blocker/major a corrección limitada y nueva revisión; 7) integra en una etapa separada y controlada mediante un integrator, con resolución de conflictos y pruebas de extremo a extremo; 8) sintetiza solo tras superar las puertas de calidad. No escribas código: asigna arquitectura, implementación y diagnóstico a architect, code y debug. Entrega contexto limitado y suficiente, no la transcripción raíz, y exige ResultContract concisos. Aplica a cada ejecutor las reglas de sandbox, permisos, secretos, alcance de archivos y seguridad de herramientas."
 	},
 	"apiConfiguration": {
 		"title": "Configuración de API",
-		"select": "Selecciona qué configuración de API usar para este modo"
+		"select": "Selecciona qué configuración de API usar para este modo",
+		"inheritProfile": "Usar perfil activo",
+		"inheritModel": "Usar modelo del perfil"
 	},
 	"tools": {
 		"title": "Herramientas disponibles",
@@ -33,7 +46,7 @@
 	"roleDefinition": {
 		"title": "Definición de rol",
 		"resetToDefault": "Restablecer a valores predeterminados",
-		"description": "Define la experiencia y personalidad de Roo para este modo. Esta descripción determina cómo Roo se presenta y aborda las tareas."
+		"description": "Define la experiencia y personalidad de AI Code Orchestrator para este modo. Esta descripción determina cómo AI Code Orchestrator se presenta y aborda las tareas."
 	},
 	"description": {
 		"title": "Descripción breve (para humanos)",
@@ -49,12 +62,11 @@
 		"title": "Instrucciones personalizadas para el modo (opcional)",
 		"resetToDefault": "Restablecer a valores predeterminados",
 		"description": "Agrega directrices de comportamiento específicas para el modo {{modeName}}.",
-		"loadFromFile": "Las instrucciones personalizadas para el modo {{mode}} también se pueden cargar desde la carpeta <span>.roo/rules-{{slug}}/</span> en tu espacio de trabajo o desde el global <0>.roo/rules-{{slug}}/</0> (.roorules-{{slug}} y .clinerules-{{slug}} están obsoletos y dejarán de funcionar pronto)."
+		"loadFromFile": "Las instrucciones personalizadas para el modo {{mode}} también se pueden cargar desde la carpeta <span>.ai-code-orchestrator/rules-{{slug}}/</span> en tu espacio de trabajo o desde el global <0>.ai-code-orchestrator/rules-{{slug}}/</0> (.aicorules-{{slug}} y .clinerules-{{slug}} están obsoletos y dejarán de funcionar pronto)."
 	},
 	"exportMode": {
 		"title": "Exportar modo",
 		"description": "Exporta este modo a un archivo YAML con todas las reglas incluidas para compartir fácilmente con otros.",
-		"export": "Exportar modo",
 		"exporting": "Exportando..."
 	},
 	"importMode": {
@@ -63,17 +75,17 @@
 		"importing": "Importando...",
 		"global": {
 			"label": "Nivel global",
-			"description": "Disponible en todos los proyectos. Si el modo exportado contenía archivos de reglas, se volverán a crear en la carpeta global .roo/rules-{slug}/."
+			"description": "Disponible en todos los proyectos. Si el modo exportado contenía archivos de reglas, se volverán a crear en la carpeta global .ai-code-orchestrator/rules-{slug}/."
 		},
 		"project": {
 			"label": "Nivel de proyecto",
-			"description": "Solo disponible en este espacio de trabajo. Si el modo exportado contenía archivos de reglas, se volverán a crear en la carpeta .roo/rules-{slug}/."
+			"description": "Solo disponible en este espacio de trabajo. Si el modo exportado contenía archivos de reglas, se volverán a crear en la carpeta .ai-code-orchestrator/rules-{slug}/."
 		}
 	},
 	"globalCustomInstructions": {
 		"title": "Instrucciones personalizadas para todos los modos",
 		"description": "Estas instrucciones se aplican a todos los modos. Proporcionan un conjunto base de comportamientos que pueden ser mejorados por instrucciones específicas de cada modo a continuación. <0>Más información</0>",
-		"loadFromFile": "Las instrucciones también se pueden cargar desde la carpeta <span>.roo/rules/</span> en tu espacio de trabajo o desde el global <0>.roo/rules/</0> (.roorules y .clinerules están obsoletos y dejarán de funcionar pronto)."
+		"loadFromFile": "Las instrucciones también se pueden cargar desde la carpeta <span>.ai-code-orchestrator/rules/</span> en tu espacio de trabajo o desde el global <0>.ai-code-orchestrator/rules/</0> (.aicorules y .clinerules están obsoletos y dejarán de funcionar pronto)."
 	},
 	"systemPrompt": {
 		"preview": "Vista previa de la solicitud del sistema",
@@ -102,7 +114,7 @@
 		"types": {
 			"ENHANCE": {
 				"label": "Mejorar solicitud",
-				"description": "Utiliza la mejora de solicitudes para obtener sugerencias o mejoras personalizadas para tus entradas. Esto asegura que Roo entienda tu intención y proporcione las mejores respuestas posibles. Disponible a través del icono ✨ en el chat."
+				"description": "Utiliza la mejora de solicitudes para obtener sugerencias o mejoras personalizadas para tus entradas. Esto asegura que AI Code Orchestrator entienda tu intención y proporcione las mejores respuestas posibles. Disponible a través del icono ✨ en el chat."
 			},
 			"CONDENSE": {
 				"label": "Condensación de contexto",
@@ -161,13 +173,13 @@
 				"description": "Disponible en todos los espacios de trabajo"
 			},
 			"project": {
-				"label": "Específico del proyecto (.roomodes)",
+				"label": "Específico del proyecto (.agent-modes)",
 				"description": "Solo disponible en este espacio de trabajo, tiene prioridad sobre el global"
 			}
 		},
 		"roleDefinition": {
 			"label": "Definición de rol",
-			"description": "Define la experiencia y personalidad de Roo para este modo."
+			"description": "Define la experiencia y personalidad de AI Code Orchestrator para este modo."
 		},
 		"whenToUse": {
 			"label": "Cuándo usar (opcional)",

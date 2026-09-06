@@ -1,4 +1,4 @@
-import { parametersSchema, defineCustomTool } from "@roo-code/types"
+import { parametersSchema, defineCustomTool } from "@ai-code-orchestrator/types"
 
 // This tool has the same name as the one in fixtures/ to test override behavior.
 export default defineCustomTool({

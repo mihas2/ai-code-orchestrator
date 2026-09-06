@@ -1,4 +1,4 @@
-import type { HistoryItem } from "@roo-code/types"
+import type { HistoryItem } from "@ai-code-orchestrator/types"
 
 /**
  * Extended HistoryItem with display-related fields for search highlighting and subtask indication

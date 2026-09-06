@@ -8,13 +8,26 @@
 		"noMatchFound": "Tidak ada mode yang ditemukan",
 		"editModesConfig": "Edit konfigurasi mode",
 		"editGlobalModes": "Edit Mode Global",
-		"editProjectModes": "Edit Mode Proyek (.roomodes)",
-		"createModeHelpText": "Mode adalah persona khusus yang menyesuaikan perilaku Roo Code. <0>Pelajari tentang Menggunakan Mode</0> atau <1>Menyesuaikan Mode.</1>",
+		"editProjectModes": "Edit Mode Proyek (.agent-modes)",
+		"createModeHelpText": "Mode adalah persona khusus yang menyesuaikan perilaku AI Code Orchestrator. <0>Pelajari tentang Menggunakan Mode</0> atau <1>Menyesuaikan Mode.</1>",
 		"selectMode": "Cari mode"
+	},
+	"reviewer": {
+		"name": "Peninjau",
+		"description": "Tinjauan kualitas pekerjaan yang telah selesai dan hanya-baca",
+		"readOnlyNotice": "Peninjau dapat membaca file dan menjalankan diagnostik, tetapi tidak dapat mengedit file atau memperluas cakupan yang dinyatakan.",
+		"findingSeverities": "Tingkat keparahan temuan: blocker, major, minor, note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator adalah pemimpin tim yang bertanggung jawab dan menghubungkan pengguna dengan agen khusus. Ia memiliki tujuan, rencana, dependensi, alokasi, anggaran, gerbang kualitas, integrasi, dan hasil akhir serta menyimpan status agregat ringkas, bukan transkrip implementasi lengkap.",
+		"whenToUse": "Gunakan untuk pekerjaan kompleks bertahap yang memerlukan dekomposisi, koordinasi architect, code, debug, dan reviewer, paralelisme, dependensi eksplisit, peninjauan, perbaikan, integrasi terkendali, dan jaminan kualitas.",
+		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
 	},
 	"apiConfiguration": {
 		"title": "Konfigurasi API",
-		"select": "Pilih konfigurasi API mana yang akan digunakan untuk mode ini"
+		"select": "Pilih konfigurasi API mana yang akan digunakan untuk mode ini",
+		"inheritProfile": "Gunakan profil aktif",
+		"inheritModel": "Gunakan model profil"
 	},
 	"tools": {
 		"title": "Tools yang Tersedia",
@@ -33,7 +46,7 @@
 	"roleDefinition": {
 		"title": "Definisi Peran",
 		"resetToDefault": "Reset ke default",
-		"description": "Tentukan keahlian dan kepribadian Roo untuk mode ini. Deskripsi ini membentuk bagaimana Roo mempresentasikan dirinya dan mendekati tugas."
+		"description": "Tentukan keahlian dan kepribadian AI Code Orchestrator untuk mode ini. Deskripsi ini membentuk bagaimana AI Code Orchestrator mempresentasikan dirinya dan mendekati tugas."
 	},
 	"description": {
 		"title": "Deskripsi singkat (untuk manusia)",
@@ -49,12 +62,11 @@
 		"title": "Instruksi Kustom Khusus Mode (opsional)",
 		"resetToDefault": "Reset ke default",
 		"description": "Tambahkan panduan perilaku khusus untuk mode {{modeName}}.",
-		"loadFromFile": "Instruksi khusus untuk mode {{mode}} juga dapat dimuat dari folder <span>.roo/rules-{{slug}}/</span> di ruang kerja Anda atau dari global <0>.roo/rules-{{slug}}/</0> (.roorules-{{slug}} dan .clinerules-{{slug}} sudah usang dan akan segera berhenti berfungsi)."
+		"loadFromFile": "Instruksi khusus untuk mode {{mode}} juga dapat dimuat dari folder <span>.ai-code-orchestrator/rules-{{slug}}/</span> di ruang kerja Anda atau dari global <0>.ai-code-orchestrator/rules-{{slug}}/</0> (.aicorules-{{slug}} dan .clinerules-{{slug}} sudah usang dan akan segera berhenti berfungsi)."
 	},
 	"exportMode": {
 		"title": "Ekspor Mode",
 		"description": "Ekspor mode ini ke file YAML dengan semua aturan yang disertakan untuk berbagi dengan mudah dengan orang lain.",
-		"export": "Ekspor Mode",
 		"exporting": "Mengekspor..."
 	},
 	"importMode": {
@@ -67,13 +79,13 @@
 		},
 		"project": {
 			"label": "Tingkat Proyek",
-			"description": "Hanya tersedia di ruang kerja ini. Jika mode yang diekspor berisi file aturan, file tersebut akan dibuat ulang di folder .roo/rules-{slug}/."
+			"description": "Hanya tersedia di ruang kerja ini. Jika mode yang diekspor berisi file aturan, file tersebut akan dibuat ulang di folder .ai-code-orchestrator/rules-{slug}/."
 		}
 	},
 	"globalCustomInstructions": {
 		"title": "Instruksi Kustom untuk Semua Mode",
 		"description": "Instruksi ini berlaku untuk semua mode. Mereka menyediakan set dasar perilaku yang dapat ditingkatkan oleh instruksi khusus mode di bawah. <0>Pelajari lebih lanjut</0>",
-		"loadFromFile": "Instruksi juga dapat dimuat dari folder <span>.roo/rules/</span> di ruang kerja Anda atau dari global <0>.roo/rules/</0> (.roorules dan .clinerules sudah usang dan akan segera berhenti berfungsi)."
+		"loadFromFile": "Instruksi juga dapat dimuat dari folder <span>.ai-code-orchestrator/rules/</span> di ruang kerja Anda atau dari global <0>.ai-code-orchestrator/rules/</0> (.aicorules dan .clinerules sudah usang dan akan segera berhenti berfungsi)."
 	},
 	"systemPrompt": {
 		"preview": "Pratinjau System Prompt",
@@ -102,7 +114,7 @@
 		"types": {
 			"ENHANCE": {
 				"label": "Tingkatkan Prompt",
-				"description": "Gunakan peningkatan prompt untuk mendapatkan saran atau perbaikan yang disesuaikan untuk input Anda. Ini memastikan Roo memahami maksud Anda dan memberikan respons terbaik. Tersedia melalui ikon ✨ di chat."
+				"description": "Gunakan peningkatan prompt untuk mendapatkan saran atau perbaikan yang disesuaikan untuk input Anda. Ini memastikan AI Code Orchestrator memahami maksud Anda dan memberikan respons terbaik. Tersedia melalui ikon ✨ di chat."
 			},
 			"CONDENSE": {
 				"label": "Peringkasan Konteks",
@@ -161,13 +173,13 @@
 				"description": "Tersedia di semua workspace"
 			},
 			"project": {
-				"label": "Khusus proyek (.roomodes)",
+				"label": "Khusus proyek (.agent-modes)",
 				"description": "Hanya tersedia di workspace ini, lebih diutamakan daripada global"
 			}
 		},
 		"roleDefinition": {
 			"label": "Definisi Peran",
-			"description": "Tentukan keahlian dan kepribadian Roo untuk mode ini."
+			"description": "Tentukan keahlian dan kepribadian AI Code Orchestrator untuk mode ini."
 		},
 		"whenToUse": {
 			"label": "Kapan Menggunakan (opsional)",

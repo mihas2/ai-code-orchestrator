@@ -4,14 +4,18 @@ import * as vscode from "vscode"
 
 import delay from "delay"
 
-import { CommandExecutionStatus, DEFAULT_TERMINAL_OUTPUT_PREVIEW_SIZE, PersistedCommandOutput } from "@roo-code/types"
+import {
+	CommandExecutionStatus,
+	DEFAULT_TERMINAL_OUTPUT_PREVIEW_SIZE,
+	PersistedCommandOutput,
+} from "@ai-code-orchestrator/types"
 
 import { Task } from "../task/Task"
 
 import { ToolUse, ToolResponse } from "../../shared/tools"
 import { formatResponse } from "../prompts/responses"
 import { unescapeHtmlEntities } from "../../utils/text-normalization"
-import { ExitCodeDetails, RooTerminalCallbacks, RooTerminalProcess } from "../../integrations/terminal/types"
+import { ExitCodeDetails, AicoTerminalCallbacks, AicoTerminalProcess } from "../../integrations/terminal/types"
 import { TerminalRegistry } from "../../integrations/terminal/TerminalRegistry"
 import { Terminal } from "../../integrations/terminal/Terminal"
 import { OutputInterceptor } from "../../integrations/terminal/OutputInterceptor"
@@ -34,7 +38,7 @@ export function resolveAgentTimeoutMs(timeoutSeconds: number | null | undefined)
 	// In CLI runtime, stdin harnesses expect command lifetime to be governed
 	// solely by commandExecutionTimeout (user setting), not model-provided
 	// background timeouts.
-	return process.env.ROO_CLI_RUNTIME === "1" ? 0 : requestedAgentTimeout
+	return process.env.AICO_CLI_RUNTIME === "1" ? 0 : requestedAgentTimeout
 }
 
 export class ExecuteCommandTool extends BaseTool<"execute_command"> {
@@ -54,11 +58,11 @@ export class ExecuteCommandTool extends BaseTool<"execute_command"> {
 
 			const canonicalCommand = unescapeHtmlEntities(command)
 
-			const ignoredFileAttemptedToAccess = task.rooIgnoreController?.validateCommand(canonicalCommand)
+			const ignoredFileAttemptedToAccess = task.aicoIgnoreController?.validateCommand(canonicalCommand)
 
 			if (ignoredFileAttemptedToAccess) {
-				await task.say("rooignore_error", ignoredFileAttemptedToAccess)
-				pushToolResult(formatResponse.rooIgnoreError(ignoredFileAttemptedToAccess))
+				await task.say("aicoignore_error", ignoredFileAttemptedToAccess)
+				pushToolResult(formatResponse.aicoIgnoreError(ignoredFileAttemptedToAccess))
 				return
 			}
 
@@ -283,8 +287,8 @@ export async function executeCommandInTerminal(
 		resolveOnCompleted = resolve
 	})
 
-	const callbacks: RooTerminalCallbacks = {
-		onLine: async (lines: string, process: RooTerminalProcess) => {
+	const callbacks: AicoTerminalCallbacks = {
+		onLine: async (lines: string, process: AicoTerminalProcess) => {
 			accumulatedOutput += lines
 
 			// Trim accumulated output to prevent unbounded memory growth

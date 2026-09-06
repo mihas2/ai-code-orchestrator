@@ -12,8 +12,14 @@ import path from "path"
 import * as fs from "fs/promises"
 import { isBinaryFile } from "isbinaryfile"
 
-import type { ReadFileParams, ReadFileMode, ReadFileToolParams, FileEntry, LineRange } from "@roo-code/types"
-import { isLegacyReadFileParams, type ClineSayTool } from "@roo-code/types"
+import type {
+	ReadFileParams,
+	ReadFileMode,
+	ReadFileToolParams,
+	FileEntry,
+	LineRange,
+} from "@ai-code-orchestrator/types"
+import { isLegacyReadFileParams, type ClineSayTool } from "@ai-code-orchestrator/types"
 
 import { Task } from "../task/Task"
 import { formatResponse } from "../prompts/responses"
@@ -146,11 +152,11 @@ export class ReadFileTool extends BaseTool<"read_file"> {
 			for (const fileResult of fileResults) {
 				const relPath = fileResult.path
 
-				// RooIgnore validation
-				const accessAllowed = task.rooIgnoreController?.validateAccess(relPath)
+				// AicoIgnore validation
+				const accessAllowed = task.aicoIgnoreController?.validateAccess(relPath)
 				if (!accessAllowed) {
-					await task.say("rooignore_error", relPath)
-					const errorMsg = formatResponse.rooIgnoreError(relPath)
+					await task.say("aicoignore_error", relPath)
+					const errorMsg = formatResponse.aicoIgnoreError(relPath)
 					updateFileResult(relPath, {
 						status: "blocked",
 						error: errorMsg,
@@ -688,11 +694,11 @@ export class ReadFileTool extends BaseTool<"read_file"> {
 			const relPath = entry.path
 			const fullPath = path.resolve(task.cwd, relPath)
 
-			// RooIgnore validation
-			const accessAllowed = task.rooIgnoreController?.validateAccess(relPath)
+			// AicoIgnore validation
+			const accessAllowed = task.aicoIgnoreController?.validateAccess(relPath)
 			if (!accessAllowed) {
-				await task.say("rooignore_error", relPath)
-				const errorMsg = formatResponse.rooIgnoreError(relPath)
+				await task.say("aicoignore_error", relPath)
+				const errorMsg = formatResponse.aicoIgnoreError(relPath)
 				results.push(`File: ${relPath}\nError: ${errorMsg}`)
 				continue
 			}

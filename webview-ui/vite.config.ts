@@ -7,6 +7,7 @@ import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 
 import { sourcemapPlugin } from "./src/vite-plugins/sourcemapPlugin"
+import extensionPackage from "../src/package.json"
 
 function getGitSha() {
 	let gitSha: string | undefined = undefined
@@ -55,7 +56,9 @@ const persistPortPlugin = (): Plugin => ({
 export default defineConfig(({ mode }) => {
 	let outDir = "../src/webview-ui/build"
 
-	const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src", "package.json"), "utf8"))
+	// Keep package metadata in Vite's config dependency graph so changing the
+	// extension version restarts the dev server and refreshes define values.
+	const pkg = extensionPackage
 	const gitSha = getGitSha()
 
 	const define: Record<string, any> = {
@@ -63,11 +66,11 @@ export default defineConfig(({ mode }) => {
 		"process.env.VSCODE_TEXTMATE_DEBUG": JSON.stringify(process.env.VSCODE_TEXTMATE_DEBUG),
 		"process.env.PKG_NAME": JSON.stringify(pkg.name),
 		"process.env.PKG_VERSION": JSON.stringify(pkg.version),
-		"process.env.PKG_OUTPUT_CHANNEL": JSON.stringify("Roo-Code"),
+		"process.env.PKG_OUTPUT_CHANNEL": JSON.stringify("AI Code Orchestrator-Code"),
 		...(gitSha ? { "process.env.PKG_SHA": JSON.stringify(gitSha) } : {}),
 	}
 
-	// TODO: We can use `@roo-code/build` to generate `define` once the
+	// TODO: We can use `@ai-code-orchestrator/build` to generate `define` once the
 	// monorepo is deployed.
 	if (mode === "nightly") {
 		outDir = "../apps/vscode-nightly/build/webview-ui/build"
@@ -78,7 +81,7 @@ export default defineConfig(({ mode }) => {
 
 		define["process.env.PKG_NAME"] = JSON.stringify(nightlyPkg.name)
 		define["process.env.PKG_VERSION"] = JSON.stringify(nightlyPkg.version)
-		define["process.env.PKG_OUTPUT_CHANNEL"] = JSON.stringify("Roo-Code-Nightly")
+		define["process.env.PKG_OUTPUT_CHANNEL"] = JSON.stringify("AI Code Orchestrator-Code-Nightly")
 	}
 
 	const plugins: PluginOption[] = [
@@ -96,11 +99,13 @@ export default defineConfig(({ mode }) => {
 	return {
 		plugins,
 		resolve: {
-			alias: {
-				"@": resolve(__dirname, "./src"),
-				"@src": resolve(__dirname, "./src"),
-				"@roo": resolve(__dirname, "../src/shared"),
-			},
+			alias: [
+				// The generic shared modes module also exposes extension-host helpers.
+				{ find: /^@aico\/modes$/, replacement: resolve(__dirname, "../src/shared/modes-browser.ts") },
+				{ find: "@", replacement: resolve(__dirname, "./src") },
+				{ find: "@src", replacement: resolve(__dirname, "./src") },
+				{ find: "@aico", replacement: resolve(__dirname, "../src/shared") },
+			],
 		},
 		build: {
 			outDir,
@@ -113,9 +118,8 @@ export default defineConfig(({ mode }) => {
 			// Use a single combined CSS bundle so all webviews share styles
 			cssCodeSplit: false,
 			rollupOptions: {
-				// Externalize vscode module - it's imported by file-search.ts which is
-				// dynamically imported by roo-config/index.ts, but should never be bundled
-				// in the webview since it's not available in the browser context
+				// Only the VS Code API is supplied by the webview host. Node core modules
+				// must never be externalized: bare Node imports are not resolvable in a webview.
 				external: ["vscode"],
 				input: {
 					index: resolve(__dirname, "index.html"),

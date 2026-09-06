@@ -1,7 +1,7 @@
 import pWaitFor from "p-wait-for"
 import * as vscode from "vscode"
 
-import type { ClineApiReqInfo } from "@roo-code/types"
+import type { ClineApiReqInfo } from "@ai-code-orchestrator/types"
 
 import { Task } from "../task/Task"
 
@@ -39,8 +39,6 @@ export async function getCheckpointService(task: Task, { interval = 250 }: { int
 	const checkpointTimeoutMs = task.checkpointTimeout * 1000
 
 	const log = (message: string) => {
-		console.log(message)
-
 		try {
 			provider?.log(message)
 		} catch (err) {
@@ -290,7 +288,7 @@ export async function checkpointRestore(
 		// I'd like to revisit this in the future and try to improve the
 		// task flow and the communication between the webview and the
 		// `Task` instance.
-		provider?.cancelTask()
+		provider?.cancelTask(undefined, undefined, true)
 	} catch (err) {
 		provider?.log("[checkpointRestore] disabling checkpoints for this task")
 		task.enableCheckpoints = false

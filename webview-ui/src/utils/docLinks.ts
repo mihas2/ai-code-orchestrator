@@ -4,5 +4,5 @@
  * GitHub is the only extension-facing support destination for now.
  */
 export function buildDocLink(_path: string, _campaign: string): string {
-	return "https://github.com/RooCodeInc/Roo-Code"
+	return "https://github.com/AIOrchestrator/ai-code-orchestrator"
 }

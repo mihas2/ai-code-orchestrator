@@ -1,11 +1,14 @@
 import * as childProcess from "child_process"
+import * as fs from "fs"
+import { createRequire } from "module"
 import * as path from "path"
 import * as readline from "readline"
 
 import * as vscode from "vscode"
 
-import { RooIgnoreController } from "../../core/ignore/RooIgnoreController"
-import { fileExistsAtPath } from "../../utils/fs"
+import { AicoIgnoreController } from "../../core/ignore/AicoIgnoreController"
+
+const runtimeRequire = createRequire(__filename)
 /*
 This file provides functionality to perform regex searches on files using ripgrep.
 Inspired by: https://github.com/DiscreteTom/vscode-ripgrep-utils
@@ -82,18 +85,81 @@ export function truncateLine(line: string, maxLength: number = MAX_LINE_LENGTH):
 /**
  * Get the path to the ripgrep binary within the VSCode installation
  */
-export async function getBinPath(vscodeAppRoot: string): Promise<string | undefined> {
-	const checkPath = async (pkgFolder: string) => {
-		const fullPath = path.join(vscodeAppRoot, pkgFolder, binName)
-		return (await fileExistsAtPath(fullPath)) ? fullPath : undefined
+export async function getBinPath(
+	vscodeAppRoot: string,
+	resolvePackage: (id: string) => string = runtimeRequire.resolve,
+	pathExists: (candidate: string) => boolean = fs.existsSync,
+	readDirectory: (directory: string) => string[] = (directory) => fs.readdirSync(directory),
+): Promise<string | undefined> {
+	const checkedPaths: string[] = []
+	const check = (candidate: string): string | undefined => {
+		checkedPaths.push(candidate)
+		return pathExists(candidate) ? candidate : undefined
 	}
 
-	return (
-		(await checkPath("node_modules/@vscode/ripgrep/bin/")) ||
-		(await checkPath("node_modules/vscode-ripgrep/bin")) ||
-		(await checkPath("node_modules.asar.unpacked/vscode-ripgrep/bin/")) ||
-		(await checkPath("node_modules.asar.unpacked/@vscode/ripgrep/bin/"))
-	)
+	// Packaged VSIX files do not include dependencies (--no-dependencies), so the
+	// build copies ripgrep next to the extension bundle.
+	const bundled = check(path.join(__dirname, "ripgrep", binName))
+	if (bundled) return bundled
+
+	// Resolve from the bundled extension's runtime module location first. This
+	// lets Node follow pnpm links instead of assuming a particular store path.
+	try {
+		const packageEntry = resolvePackage("@vscode/ripgrep")
+		const packageRoot = path.resolve(path.dirname(packageEntry), "..")
+		const resolved = check(path.join(packageRoot, "bin", binName))
+		if (resolved) return resolved
+	} catch (error) {
+		console.error(`Could not resolve @vscode/ripgrep: ${error instanceof Error ? error.message : String(error)}`)
+	}
+
+	// Electron/VS Code installations can place the bundled package under either
+	// app or resources, and packaged extensions may expose it from app.asar.unpacked.
+	const extensionRoots = [path.resolve(__dirname, "../.."), path.resolve(__dirname, "..")]
+	const roots = [vscodeAppRoot, path.dirname(vscodeAppRoot), path.join(vscodeAppRoot, "..", "resources")]
+	const packagePaths = [
+		"node_modules/@vscode/ripgrep/bin",
+		"node_modules/vscode-ripgrep/bin",
+		"node_modules.asar.unpacked/@vscode/ripgrep/bin",
+		"node_modules.asar.unpacked/vscode-ripgrep/bin",
+		"app.asar.unpacked/node_modules/@vscode/ripgrep/bin",
+		"app.asar.unpacked/node_modules/vscode-ripgrep/bin",
+	]
+
+	// VS Code has moved bundled dependencies between app and resources roots.
+	// Check both roots so search keeps working across stable/insiders layouts.
+	for (const root of roots) {
+		for (const packagePath of packagePaths) {
+			const found = check(path.join(root, packagePath, binName))
+			if (found) return found
+		}
+	}
+
+	// Extension Development Host may expose a different appRoot. Use the
+	// extension's installed dependency as a reliable development fallback.
+	for (const root of extensionRoots) {
+		const found = check(path.join(root, "node_modules", "@vscode", "ripgrep", "bin", binName))
+		if (found) return found
+	}
+
+	// Strict pnpm installs may leave the package only in the virtual store.
+	const storeRoots = Array.from(new Set([process.cwd(), ...extensionRoots]))
+	for (const root of storeRoots) {
+		const storePath = path.join(root, "node_modules", ".pnpm")
+		let entries: string[]
+		try {
+			entries = readDirectory(storePath)
+		} catch {
+			continue
+		}
+		for (const entry of entries.filter((name) => name.startsWith("@vscode+ripgrep@"))) {
+			const found = check(path.join(storePath, entry, "node_modules", "@vscode", "ripgrep", "bin", binName))
+			if (found) return found
+		}
+	}
+
+	console.error(`Could not find ripgrep binary. Checked paths:\n${checkedPaths.join("\n")}`)
+	return undefined
 }
 
 async function execRipgrep(bin: string, args: string[]): Promise<string> {
@@ -141,7 +207,7 @@ export async function regexSearchFiles(
 	directoryPath: string,
 	regex: string,
 	filePattern?: string,
-	rooIgnoreController?: RooIgnoreController,
+	aicoIgnoreController?: AicoIgnoreController,
 ): Promise<string> {
 	const vscodeAppRoot = vscode.env.appRoot
 	const rgPath = await getBinPath(vscodeAppRoot)
@@ -220,9 +286,9 @@ export async function regexSearchFiles(
 
 	// console.log(results)
 
-	// Filter results using RooIgnoreController if provided
-	const filteredResults = rooIgnoreController
-		? results.filter((result) => rooIgnoreController.validateAccess(result.file))
+	// Filter results using AicoIgnoreController if provided
+	const filteredResults = aicoIgnoreController
+		? results.filter((result) => aicoIgnoreController.validateAccess(result.file))
 		: results
 
 	return formatResults(filteredResults, cwd)

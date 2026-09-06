@@ -39,7 +39,7 @@ vi.mock("../../../utils/fs", () => ({
 vi.mock("../../prompts/responses", () => ({
 	formatResponse: {
 		toolError: vi.fn((msg: string) => `Error: ${msg}`),
-		rooIgnoreError: vi.fn((filePath: string) => `Access denied: ${filePath}`),
+		aicoIgnoreError: vi.fn((filePath: string) => `Access denied: ${filePath}`),
 		createPrettyPatch: vi.fn(() => "mock-diff"),
 	},
 }))
@@ -113,10 +113,10 @@ describe("editTool", () => {
 				}),
 			}),
 		}
-		mockTask.rooIgnoreController = {
+		mockTask.aicoIgnoreController = {
 			validateAccess: vi.fn().mockReturnValue(true),
 		}
-		mockTask.rooProtectedController = {
+		mockTask.aicoProtectedController = {
 			isWriteProtected: vi.fn().mockReturnValue(false),
 		}
 		mockTask.diffViewProvider = {
@@ -176,7 +176,7 @@ describe("editTool", () => {
 
 		mockedFileExistsAtPath.mockResolvedValue(fileExists)
 		mockedFsReadFile.mockResolvedValue(fileContent)
-		mockTask.rooIgnoreController.validateAccess.mockReturnValue(accessAllowed)
+		mockTask.aicoIgnoreController.validateAccess.mockReturnValue(accessAllowed)
 
 		const defaultParams = {
 			file_path: testFilePath,
@@ -417,7 +417,7 @@ describe("editTool", () => {
 		it("tracks file context after successful edit", async () => {
 			await executeEditTool()
 
-			expect(mockTask.fileContextTracker.trackFileContext).toHaveBeenCalledWith(testFilePath, "roo_edited")
+			expect(mockTask.fileContextTracker.trackFileContext).toHaveBeenCalledWith(testFilePath, "aico_edited")
 		})
 	})
 })

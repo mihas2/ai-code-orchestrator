@@ -8,9 +8,16 @@ import {
 	VSCodeTextField,
 } from "@vscode/webview-ui-toolkit/react"
 import { Trans } from "react-i18next"
-import { ChevronDown, X, Upload, Download } from "lucide-react"
+import { ChevronDown, X, Upload, Download, ChevronsUpDown, Check } from "lucide-react"
 
-import { ModeConfig, GroupEntry, PromptComponent, ToolGroup, modeConfigSchema } from "@roo-code/types"
+import {
+	ModeConfig,
+	GroupEntry,
+	PromptComponent,
+	ToolGroup,
+	modeConfigSchema,
+	type ProviderName,
+} from "@ai-code-orchestrator/types"
 
 import {
 	Mode,
@@ -21,14 +28,18 @@ import {
 	getAllModes,
 	findModeBySlug as findCustomModeBySlug,
 	defaultModeSlug,
-} from "@roo/modes"
-import { TOOL_GROUPS } from "@roo/tools"
+} from "@aico/modes"
+import { TOOL_GROUPS } from "@aico/tools"
 
 import { vscode } from "@src/utils/vscode"
 import { buildDocLink } from "@src/utils/docLinks"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
-import { useExtensionState } from "@src/context/ExtensionStateContext"
+import { ExtensionStateContextType, useExtensionState } from "@src/context/ExtensionStateContext"
+import { SetCachedStateField } from "@src/components/settings/types"
+import { cn } from "@src/lib/utils"
+import { getStaticModelsForProvider } from "@src/components/settings/utils/providerModelConfig"
 import { Section } from "@src/components/settings/Section"
+import { RoleModelSelector } from "@src/components/modes/RoleModelSelector"
 import {
 	Button,
 	Select,
@@ -63,13 +74,37 @@ function getGroupName(group: GroupEntry): ToolGroup {
 	return Array.isArray(group) ? group[0] : group
 }
 
-const ModesView = () => {
+export function getRoleModelOptions(
+	primaryModel: string,
+	provider?: ProviderName,
+	routerModels?: Record<string, Record<string, unknown>>,
+	profileModels: string[] = [],
+): string[] {
+	const staticModels = provider ? getStaticModelsForProvider(provider) : {}
+	const dynamicModels = provider ? routerModels?.[provider] : undefined
+	return Array.from(
+		new Set(
+			[primaryModel, ...profileModels, ...Object.keys(staticModels), ...Object.keys(dynamicModels ?? {})].filter(
+				Boolean,
+			),
+		),
+	).sort()
+}
+
+type ModesViewProps = {
+	roleAssignments?: ExtensionStateContextType["roleAssignments"]
+	setCachedStateField?: SetCachedStateField<"roleAssignments">
+}
+
+const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField }: ModesViewProps = {}) => {
 	const { t } = useAppTranslation()
 
 	const {
 		customModePrompts,
 		listApiConfigMeta,
 		currentApiConfigName,
+		apiConfiguration,
+		roleAssignments: extensionRoleAssignments,
 		mode,
 		customInstructions,
 		setCustomInstructions,
@@ -81,7 +116,30 @@ const ModesView = () => {
 	// 1. Updating the UI immediately when a mode is clicked
 	// 2. Not syncing with the backend mode state (which would cause flickering)
 	// 3. Still sending the mode change to the backend for persistence
-	const [visualMode, setVisualMode] = useState(mode)
+	const [editingRole, setEditingRole] = useState(mode)
+	const roleAssignments = cachedRoleAssignments ?? extensionRoleAssignments
+	const roleAssignment = roleAssignments?.roles[editingRole]
+	const activeProfile = listApiConfigMeta?.find((profile) => profile.name === currentApiConfigName)
+	// A role may point at a different profile than the globally active profile.
+	const selectedProfile =
+		(listApiConfigMeta ?? []).find((profile) => profile.name === roleAssignment?.profileName) ?? activeProfile
+	const selectedProfileName = roleAssignment?.profileName ?? currentApiConfigName
+	const profileProvider = (selectedProfile?.apiProvider ?? apiConfiguration?.apiProvider) as ProviderName | undefined
+	const primaryModel = selectedProfile?.modelId ?? ""
+
+	const updateRoleAssignment = useCallback(
+		(profileName: string | undefined, modelId: string | undefined) => {
+			if (!setCachedStateField) return
+			setCachedStateField("roleAssignments", {
+				schemaVersion: 1,
+				roles: {
+					...(roleAssignments?.roles ?? {}),
+					[editingRole]: { profileName, modelId, inheritPrimary: !modelId },
+				},
+			})
+		},
+		[editingRole, roleAssignments, setCachedStateField],
+	)
 
 	// Build modes fresh each render so search reflects inline rename updates immediately
 	const modes = getAllModes(customModes)
@@ -170,6 +228,7 @@ const ModesView = () => {
 	)
 
 	const switchMode = useCallback((slug: string) => {
+		console.log("[UI] Switching mode to:", slug)
 		vscode.postMessage({
 			type: "mode",
 			text: slug,
@@ -179,18 +238,15 @@ const ModesView = () => {
 	// Handle mode switching with explicit state initialization
 	const handleModeSwitch = useCallback(
 		(modeConfig: ModeConfig) => {
-			if (modeConfig.slug === visualMode) return // Prevent unnecessary updates
+			if (modeConfig.slug === editingRole) return // Prevent unnecessary updates
 
 			// Immediately update visual state for instant feedback
-			setVisualMode(modeConfig.slug)
-
-			// Then send the mode change message to the backend
-			switchMode(modeConfig.slug)
+			setEditingRole(modeConfig.slug)
 
 			// Exit tools edit mode when switching modes
 			setIsToolsEditMode(false)
 		},
-		[visualMode, switchMode],
+		[editingRole],
 	)
 
 	// Refs to track latest state/functions for message handler (which has no dependencies)
@@ -210,11 +266,6 @@ const ModesView = () => {
 	useEffect(() => {
 		switchModeRef.current = switchMode
 	}, [switchMode])
-
-	// Sync visualMode with backend mode changes to prevent desync
-	useEffect(() => {
-		setVisualMode(mode)
-	}, [mode])
 
 	// Handler for popover open state change
 	const onOpenChange = useCallback((open: boolean) => {
@@ -243,12 +294,12 @@ const ModesView = () => {
 	}, [isRenamingMode])
 
 	const handleStartRenameMode = useCallback(() => {
-		const customMode = findModeBySlug(visualMode, customModes)
+		const customMode = findModeBySlug(editingRole, customModes)
 		if (customMode) {
 			setIsRenamingMode(true)
 			setRenameInputValue(customMode.name)
 		}
-	}, [visualMode, customModes, findModeBySlug])
+	}, [editingRole, customModes, findModeBySlug])
 
 	const handleCancelRenameMode = useCallback(() => {
 		setIsRenamingMode(false)
@@ -256,7 +307,7 @@ const ModesView = () => {
 	}, [])
 
 	const handleSaveRenameMode = useCallback(() => {
-		const customMode = findModeBySlug(visualMode, customModes)
+		const customMode = findModeBySlug(editingRole, customModes)
 		const trimmed = renameInputValue.trim()
 		if (!customMode || !trimmed) {
 			setIsRenamingMode(false)
@@ -270,21 +321,21 @@ const ModesView = () => {
 			// simple guard: do nothing if taken
 			return
 		}
-		updateCustomMode(visualMode, {
+		updateCustomMode(editingRole, {
 			...customMode,
 			name: trimmed,
 			source: customMode.source || "global",
 		})
 		// Optimistically reflect rename in UI/search immediately
-		setLocalRenames((prev) => ({ ...prev, [visualMode]: trimmed }))
+		setLocalRenames((prev) => ({ ...prev, [editingRole]: trimmed }))
 		setIsRenamingMode(false)
-	}, [visualMode, customModes, renameInputValue, modes, updateCustomMode, findModeBySlug])
+	}, [editingRole, customModes, renameInputValue, modes, updateCustomMode, findModeBySlug])
 
 	// Helper function to get current mode's config
 	const getCurrentMode = useCallback((): ModeConfig | undefined => {
-		const findMode = (m: ModeConfig): boolean => m.slug === visualMode
+		const findMode = (m: ModeConfig): boolean => m.slug === editingRole
 		return customModes?.find(findMode) || modes.find(findMode)
-	}, [visualMode, customModes, modes])
+	}, [editingRole, customModes, modes])
 
 	// Check if the current mode has rules to export
 	const checkRulesDirectory = useCallback((slug: string) => {
@@ -422,7 +473,7 @@ const ModesView = () => {
 
 		updateCustomMode(newModeSlug, newMode)
 		// Immediately select the newly created mode in the UI
-		setVisualMode(newModeSlug)
+		setEditingRole(newModeSlug)
 		switchMode(newModeSlug)
 		setIsCreateModeDialogOpen(false)
 		resetFormState()
@@ -536,10 +587,11 @@ const ModesView = () => {
 						const all = getAllModes(customModesRef.current)
 						const importedMode = all.find((m) => m.slug === slug)
 						if (importedMode) {
-							handleModeSwitchRef.current(importedMode)
+							setEditingRole(importedMode.slug)
+							switchModeRef.current?.(importedMode.slug)
 						} else {
 							// Fallback: slug not yet in state (race condition) - select default mode
-							setVisualMode(defaultModeSlug)
+							setEditingRole(defaultModeSlug)
 							switchModeRef.current?.(defaultModeSlug)
 						}
 					}
@@ -639,7 +691,7 @@ const ModesView = () => {
 												e.preventDefault() // Prevent blur
 												vscode.postMessage({
 													type: "openFile",
-													text: "./.roomodes",
+													text: "./.agent-modes",
 													values: {
 														create: true,
 														content: JSON.stringify({ customModes: [] }, null, 2),
@@ -724,7 +776,7 @@ const ModesView = () => {
 											className="justify-between grow"
 											data-testid="mode-select-trigger">
 											<div className="truncate">
-												{localRenames[visualMode] ??
+												{localRenames[editingRole] ??
 													getCurrentMode()?.name ??
 													t("prompts:modes.selectMode")}
 											</div>
@@ -829,7 +881,9 @@ const ModesView = () => {
 										size="icon"
 										onClick={handleStartRenameMode}
 										data-testid="rename-mode-button"
-										disabled={!findModeBySlug(visualMode, customModes)}>
+										disabled={
+											editingRole === "orchestrator" || !findModeBySlug(editingRole, customModes)
+										}>
 										<span className="codicon codicon-edit" />
 									</Button>
 								</StandardTooltip>
@@ -840,7 +894,7 @@ const ModesView = () => {
 										variant="ghost"
 										size="icon"
 										onClick={() => {
-											const customMode = findModeBySlug(visualMode, customModes)
+											const customMode = findModeBySlug(editingRole, customModes)
 											if (customMode) {
 												setModeToDelete({
 													slug: customMode.slug,
@@ -855,7 +909,9 @@ const ModesView = () => {
 											}
 										}}
 										data-testid="delete-mode-button"
-										disabled={!findModeBySlug(visualMode, customModes)}>
+										disabled={
+											editingRole === "orchestrator" || !findModeBySlug(editingRole, customModes)
+										}>
 										<span className="codicon codicon-trash" />
 									</Button>
 								</StandardTooltip>
@@ -885,22 +941,19 @@ const ModesView = () => {
 						)}
 					</div>
 
-					{/* API Configuration - Moved Here */}
 					<div className="mb-3">
 						<div className="font-bold mb-1">{t("prompts:apiConfiguration.title")}</div>
 						<div className="text-sm text-vscode-descriptionForeground mb-2">
 							{t("prompts:apiConfiguration.select")}
 						</div>
-						<div className="mb-2">
+						<div className="flex flex-col gap-2">
 							<Select
-								value={currentApiConfigName}
+								value={selectedProfileName}
 								onValueChange={(value) => {
-									vscode.postMessage({
-										type: "loadApiConfiguration",
-										text: value,
-									})
+									// Keep role selection independent from the global provider profile.
+									updateRoleAssignment(value, undefined)
 								}}>
-								<SelectTrigger className="w-full">
+								<SelectTrigger className="w-full" data-testid="role-profile-select">
 									<SelectValue placeholder={t("settings:common.select")} />
 								</SelectTrigger>
 								<SelectContent>
@@ -911,6 +964,25 @@ const ModesView = () => {
 									))}
 								</SelectContent>
 							</Select>
+							<RoleModelSelector
+								provider={profileProvider}
+								apiConfiguration={{
+									...(apiConfiguration ?? {}),
+									...(selectedProfile ?? {}),
+									apiProvider: profileProvider,
+								}}
+								primaryModel={primaryModel}
+								selectedModelId={roleAssignment?.modelId}
+								profileName={selectedProfileName}
+								onModelChange={updateRoleAssignment}
+							/>
+							<div
+								className="text-xs text-vscode-descriptionForeground"
+								data-testid="effective-role-model">
+								{profileProvider
+									? `${selectedProfileName ?? "default"} (${profileProvider}) / ${roleAssignment?.modelId ?? primaryModel}`
+									: ""}
+							</div>
 						</div>
 					</div>
 				</div>
@@ -919,7 +991,7 @@ const ModesView = () => {
 				<div className="mb-4">
 					<div className="flex justify-between items-center mb-1">
 						<div className="font-bold">{t("prompts:roleDefinition.title")}</div>
-						{!findModeBySlug(visualMode, customModes) && (
+						{!findModeBySlug(editingRole, customModes) && (
 							<StandardTooltip content={t("prompts:roleDefinition.resetToDefault")}>
 								<Button
 									variant="ghost"
@@ -942,25 +1014,27 @@ const ModesView = () => {
 					<VSCodeTextArea
 						resize="vertical"
 						value={(() => {
-							const customMode = findModeBySlug(visualMode, customModes)
-							const prompt = customModePrompts?.[visualMode] as PromptComponent
-							return customMode?.roleDefinition ?? prompt?.roleDefinition ?? getRoleDefinition(visualMode)
+							const customMode = findModeBySlug(editingRole, customModes)
+							const prompt = customModePrompts?.[editingRole] as PromptComponent
+							return (
+								customMode?.roleDefinition ?? prompt?.roleDefinition ?? getRoleDefinition(editingRole)
+							)
 						})()}
 						onChange={(e) => {
 							const value =
 								(e as unknown as CustomEvent)?.detail?.target?.value ??
 								((e as any).target as HTMLTextAreaElement).value
-							const customMode = findModeBySlug(visualMode, customModes)
+							const customMode = findModeBySlug(editingRole, customModes)
 							if (customMode) {
 								// For custom modes, update the JSON file
-								updateCustomMode(visualMode, {
+								updateCustomMode(editingRole, {
 									...customMode,
 									roleDefinition: value.trim() || "",
 									source: customMode.source || "global",
 								})
 							} else {
 								// For built-in modes, update the prompts
-								updateAgentPrompt(visualMode, {
+								updateAgentPrompt(editingRole, {
 									roleDefinition: value.trim() || undefined,
 								})
 							}
@@ -975,7 +1049,7 @@ const ModesView = () => {
 				<div className="mb-4">
 					<div className="flex justify-between items-center mb-1">
 						<div className="font-bold">{t("prompts:description.title")}</div>
-						{!findModeBySlug(visualMode, customModes) && (
+						{!findModeBySlug(editingRole, customModes) && (
 							<StandardTooltip content={t("prompts:description.resetToDefault")}>
 								<Button
 									variant="ghost"
@@ -997,25 +1071,25 @@ const ModesView = () => {
 					</div>
 					<VSCodeTextField
 						value={(() => {
-							const customMode = findModeBySlug(visualMode, customModes)
-							const prompt = customModePrompts?.[visualMode] as PromptComponent
-							return customMode?.description ?? prompt?.description ?? getDescription(visualMode)
+							const customMode = findModeBySlug(editingRole, customModes)
+							const prompt = customModePrompts?.[editingRole] as PromptComponent
+							return customMode?.description ?? prompt?.description ?? getDescription(editingRole)
 						})()}
 						onChange={(e) => {
 							const value =
 								(e as unknown as CustomEvent)?.detail?.target?.value ??
 								((e as any).target as HTMLTextAreaElement).value
-							const customMode = findModeBySlug(visualMode, customModes)
+							const customMode = findModeBySlug(editingRole, customModes)
 							if (customMode) {
 								// For custom modes, update the JSON file
-								updateCustomMode(visualMode, {
+								updateCustomMode(editingRole, {
 									...customMode,
 									description: value.trim() || undefined,
 									source: customMode.source || "global",
 								})
 							} else {
 								// For built-in modes, update the prompts
-								updateAgentPrompt(visualMode, {
+								updateAgentPrompt(editingRole, {
 									description: value.trim() || undefined,
 								})
 							}
@@ -1029,7 +1103,7 @@ const ModesView = () => {
 				<div className="mb-4">
 					<div className="flex justify-between items-center mb-1">
 						<div className="font-bold">{t("prompts:whenToUse.title")}</div>
-						{!findModeBySlug(visualMode, customModes) && (
+						{!findModeBySlug(editingRole, customModes) && (
 							<StandardTooltip content={t("prompts:whenToUse.resetToDefault")}>
 								<Button
 									variant="ghost"
@@ -1052,25 +1126,25 @@ const ModesView = () => {
 					<VSCodeTextArea
 						resize="vertical"
 						value={(() => {
-							const customMode = findModeBySlug(visualMode, customModes)
-							const prompt = customModePrompts?.[visualMode] as PromptComponent
-							return customMode?.whenToUse ?? prompt?.whenToUse ?? getWhenToUse(visualMode)
+							const customMode = findModeBySlug(editingRole, customModes)
+							const prompt = customModePrompts?.[editingRole] as PromptComponent
+							return customMode?.whenToUse ?? prompt?.whenToUse ?? getWhenToUse(editingRole)
 						})()}
 						onChange={(e) => {
 							const value =
 								(e as unknown as CustomEvent)?.detail?.target?.value ??
 								((e as any).target as HTMLTextAreaElement).value
-							const customMode = findModeBySlug(visualMode, customModes)
+							const customMode = findModeBySlug(editingRole, customModes)
 							if (customMode) {
 								// For custom modes, update the JSON file
-								updateCustomMode(visualMode, {
+								updateCustomMode(editingRole, {
 									...customMode,
 									whenToUse: value.trim() || undefined,
 									source: customMode.source || "global",
 								})
 							} else {
 								// For built-in modes, update the prompts
-								updateAgentPrompt(visualMode, {
+								updateAgentPrompt(editingRole, {
 									whenToUse: value.trim() || undefined,
 								})
 							}
@@ -1087,7 +1161,7 @@ const ModesView = () => {
 					<div className="mb-4">
 						<div className="flex justify-between items-center mb-1">
 							<div className="font-bold">{t("prompts:tools.title")}</div>
-							{findModeBySlug(visualMode, customModes) && (
+							{findModeBySlug(editingRole, customModes) && (
 								<StandardTooltip
 									content={
 										isToolsEditMode ? t("prompts:tools.doneEditing") : t("prompts:tools.editTools")
@@ -1102,16 +1176,16 @@ const ModesView = () => {
 								</StandardTooltip>
 							)}
 						</div>
-						{!findModeBySlug(visualMode, customModes) && (
+						{!findModeBySlug(editingRole, customModes) && (
 							<div className="text-sm text-vscode-descriptionForeground mb-2">
 								{t("prompts:tools.builtInModesText")}
 							</div>
 						)}
-						{isToolsEditMode && findModeBySlug(visualMode, customModes) ? (
+						{isToolsEditMode && findModeBySlug(editingRole, customModes) ? (
 							<div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
 								{availableGroups.map((group) => {
 									const currentMode = getCurrentMode()
-									const isCustomMode = findModeBySlug(visualMode, customModes)
+									const isCustomMode = findModeBySlug(editingRole, customModes)
 									const customMode = isCustomMode
 									const isGroupEnabled = isCustomMode
 										? customMode?.groups?.some((g) => getGroupName(g) === group)
@@ -1174,7 +1248,7 @@ const ModesView = () => {
 				<div className="mb-2">
 					<div className="flex justify-between items-center mb-1">
 						<div className="font-bold">{t("prompts:customInstructions.title")}</div>
-						{!findModeBySlug(visualMode, customModes) && (
+						{!findModeBySlug(editingRole, customModes) && (
 							<StandardTooltip content={t("prompts:customInstructions.resetToDefault")}>
 								<Button
 									variant="ghost"
@@ -1199,22 +1273,22 @@ const ModesView = () => {
 					<VSCodeTextArea
 						resize="vertical"
 						value={(() => {
-							const customMode = findModeBySlug(visualMode, customModes)
-							const prompt = customModePrompts?.[visualMode] as PromptComponent
+							const customMode = findModeBySlug(editingRole, customModes)
+							const prompt = customModePrompts?.[editingRole] as PromptComponent
 							return (
 								customMode?.customInstructions ??
 								prompt?.customInstructions ??
-								getCustomInstructions(visualMode, customModes)
+								getCustomInstructions(editingRole, customModes)
 							)
 						})()}
 						onChange={(e) => {
 							const value =
 								(e as unknown as CustomEvent)?.detail?.target?.value ??
 								((e as any).target as HTMLTextAreaElement).value
-							const customMode = findModeBySlug(visualMode, customModes)
+							const customMode = findModeBySlug(editingRole, customModes)
 							if (customMode) {
 								// For custom modes, update the JSON file
-								updateCustomMode(visualMode, {
+								updateCustomMode(editingRole, {
 									...customMode,
 									// Preserve empty string; only treat null/undefined as unset
 									customInstructions: value ?? undefined,
@@ -1222,8 +1296,8 @@ const ModesView = () => {
 								})
 							} else {
 								// For built-in modes, update the prompts
-								const existingPrompt = customModePrompts?.[visualMode] as PromptComponent
-								updateAgentPrompt(visualMode, {
+								const existingPrompt = customModePrompts?.[editingRole] as PromptComponent
+								updateAgentPrompt(editingRole, {
 									...existingPrompt,
 									customInstructions: value.trim() || undefined,
 								})
@@ -1251,7 +1325,7 @@ const ModesView = () => {
 											// Open or create an empty file
 											vscode.postMessage({
 												type: "openFile",
-												text: `./.roo/rules-${currentMode.slug}/rules.md`,
+												text: `./.ai-code-orchestrator/rules-${currentMode.slug}/rules.md`,
 												values: {
 													create: true,
 													content: "",
@@ -1352,7 +1426,7 @@ const ModesView = () => {
 										onClick={() =>
 											vscode.postMessage({
 												type: "openFile",
-												text: "./.roo/rules/rules.md",
+												text: "./.ai-code-orchestrator/rules/rules.md",
 												values: {
 													create: true,
 													content: "",
@@ -1679,6 +1753,79 @@ const ModesView = () => {
 				}}
 			/>
 		</div>
+	)
+}
+
+export function RoleModelPicker({
+	models,
+	value,
+	onChange,
+	placeholder,
+	searchPlaceholder,
+	noModelsFound,
+	customModelLabel,
+}: {
+	models: string[]
+	value?: string
+	onChange: (value: string) => void
+	placeholder: string
+	searchPlaceholder: string
+	noModelsFound: string
+	customModelLabel: (model: string) => string
+}) {
+	const [open, setOpen] = useState(false)
+	const [search, setSearch] = useState("")
+	const filtered = models.filter((model) => model.toLowerCase().includes(search.toLowerCase()))
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<Button
+					variant="combobox"
+					role="combobox"
+					aria-expanded={open}
+					className="w-full justify-between"
+					data-testid="role-model-select">
+					<span className="truncate">{value || placeholder}</span>
+					<ChevronsUpDown className="size-4 opacity-50" />
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+				<Command>
+					<CommandInput value={search} onValueChange={setSearch} placeholder={searchPlaceholder} />
+					<CommandList>
+						<CommandEmpty>{noModelsFound}</CommandEmpty>
+						<CommandGroup>
+							{filtered.map((model) => (
+								<CommandItem
+									key={model}
+									value={model}
+									onSelect={() => {
+										onChange(model)
+										setOpen(false)
+										setSearch("")
+									}}>
+									<span className="truncate">{model}</span>
+									<Check
+										className={cn("ml-auto size-4", model === value ? "opacity-100" : "opacity-0")}
+									/>
+								</CommandItem>
+							))}
+						</CommandGroup>
+					</CommandList>
+					{models.length === 0 && search && (
+						<CommandItem
+							value={search}
+							onSelect={() => {
+								onChange(search)
+								setOpen(false)
+								setSearch("")
+							}}>
+							{customModelLabel(search)}
+						</CommandItem>
+					)}
+				</Command>
+			</PopoverContent>
+		</Popover>
 	)
 }
 

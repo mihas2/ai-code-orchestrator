@@ -1,4 +1,4 @@
-// pnpm --filter @roo-code/vscode-webview test src/components/chat/__tests__/ChatView.spec.tsx
+// pnpm --filter @ai-code-orchestrator/vscode-webview test src/components/chat/__tests__/ChatView.spec.tsx
 
 import React from "react"
 import { render, waitFor, act, fireEvent } from "@/utils/test-utils"
@@ -133,17 +133,17 @@ vi.mock("../QueuedMessages", () => ({
 	},
 }))
 
-// Mock RooTips component
-vi.mock("@src/components/welcome/RooTips", () => ({
-	default: function MockRooTips() {
-		return <div data-testid="roo-tips">Tips content</div>
+// Mock AicoTips component
+vi.mock("@src/components/welcome/AicoTips", () => ({
+	default: function MockAicoTips() {
+		return <div data-testid="aico-tips">Tips content</div>
 	},
 }))
 
-// Mock RooHero component
-vi.mock("@src/components/welcome/RooHero", () => ({
-	default: function MockRooHero() {
-		return <div data-testid="roo-hero">Hero content</div>
+// Mock AicoHero component
+vi.mock("@src/components/welcome/AicoHero", () => ({
+	default: function MockAicoHero() {
+		return <div data-testid="aico-hero">Hero content</div>
 	},
 }))
 
@@ -681,7 +681,7 @@ describe("ChatView - Welcome Content Display Tests", () => {
 		expect(queryByTestId("dismissible-upsell")).not.toBeInTheDocument()
 	})
 
-	it("shows RooTips when user has only run 3 tasks in their history", () => {
+	it("shows AicoTips when user has only run 3 tasks in their history", () => {
 		const { queryByTestId } = renderChatView()
 
 		mockPostMessage({
@@ -694,7 +694,7 @@ describe("ChatView - Welcome Content Display Tests", () => {
 		})
 
 		expect(queryByTestId("dismissible-upsell")).not.toBeInTheDocument()
-		expect(queryByTestId("roo-tips")).toBeInTheDocument()
+		expect(queryByTestId("aico-tips")).toBeInTheDocument()
 	})
 
 	it("does not show removed cloud upsell when user has run 6 or more tasks", async () => {
@@ -715,8 +715,8 @@ describe("ChatView - Welcome Content Display Tests", () => {
 
 		await waitFor(() => {
 			expect(queryByTestId("dismissible-upsell")).not.toBeInTheDocument()
-			expect(queryByTestId("roo-tips")).not.toBeInTheDocument()
-			expect(queryByTestId("roo-hero")).toBeInTheDocument()
+			expect(queryByTestId("aico-tips")).not.toBeInTheDocument()
+			expect(queryByTestId("aico-hero")).toBeInTheDocument()
 		})
 	})
 
@@ -742,12 +742,12 @@ describe("ChatView - Welcome Content Display Tests", () => {
 
 		await waitFor(() => {
 			expect(queryByTestId("dismissible-upsell")).not.toBeInTheDocument()
-			expect(queryByTestId("roo-tips")).not.toBeInTheDocument()
-			expect(queryByTestId("roo-hero")).not.toBeInTheDocument()
+			expect(queryByTestId("aico-tips")).not.toBeInTheDocument()
+			expect(queryByTestId("aico-hero")).not.toBeInTheDocument()
 		})
 	})
 
-	it("shows RooTips for newer users", () => {
+	it("shows AicoTips for newer users", () => {
 		const { queryByTestId, getByTestId } = renderChatView()
 
 		mockPostMessage({
@@ -761,10 +761,10 @@ describe("ChatView - Welcome Content Display Tests", () => {
 		})
 
 		expect(queryByTestId("dismissible-upsell")).not.toBeInTheDocument()
-		expect(getByTestId("roo-tips")).toBeInTheDocument()
+		expect(getByTestId("aico-tips")).toBeInTheDocument()
 	})
 
-	it("shows RooTips when user has fewer than 6 tasks", () => {
+	it("shows AicoTips when user has fewer than 6 tasks", () => {
 		const { queryByTestId, getByTestId } = renderChatView()
 
 		mockPostMessage({
@@ -777,7 +777,7 @@ describe("ChatView - Welcome Content Display Tests", () => {
 		})
 
 		expect(queryByTestId("dismissible-upsell")).not.toBeInTheDocument()
-		expect(getByTestId("roo-tips")).toBeInTheDocument()
+		expect(getByTestId("aico-tips")).toBeInTheDocument()
 	})
 })
 

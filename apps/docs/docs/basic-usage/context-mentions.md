@@ -1,7 +1,7 @@
 ---
-description: Learn how to use context mentions (@) in Roo Code to reference files, folders, problems, terminal output, and Git commits for more accurate AI assistance.
+description: Learn how to use context mentions (@) in AI Code Orchestrator to reference files, folders, problems, terminal output, and Git commits for more accurate AI assistance.
 keywords:
-    - "Roo Code context mentions"
+    - "AI Code Orchestrator context mentions"
     - "@ mentions"
     - "file references"
     - "folder mentions"
@@ -12,7 +12,7 @@ keywords:
 
 # Context Mentions
 
-Context mentions are a powerful way to provide Roo Code with specific information about your project, allowing it to perform tasks more accurately and efficiently. You can use mentions to refer to files, folders, problems, and Git commits. Context mentions start with the `@` symbol.
+Context mentions are a powerful way to provide AI Code Orchestrator with specific information about your project, allowing it to perform tasks more accurately and efficiently. You can use mentions to refer to files, folders, problems, and Git commits. Context mentions start with the `@` symbol.
 
 <img src="/img/context-mentions/context-mentions.png" alt="Context Mentions Overview - showing the @ symbol dropdown menu in the chat interface" width="600" />
 
@@ -90,11 +90,11 @@ _Problems mentions import diagnostics directly from VS Code's problems panel._
 | **Groups** | Problems organized by file for better clarity |
 | **Best for** | Fixing errors without manual copying |
 
-For comprehensive details on how Roo Code integrates with VSCode's diagnostics system, see [Diagnostics Integration](/features/diagnostics-integration).
+For comprehensive details on how AI Code Orchestrator integrates with VSCode's diagnostics system, see [Diagnostics Integration](/features/diagnostics-integration).
 
 ### Terminal Mention
 
-<img src="/img/context-mentions/context-mentions-4.png" alt="Terminal mention example showing terminal output being included in Roo's context" width="600" />
+<img src="/img/context-mentions/context-mentions-4.png" alt="Terminal mention example showing terminal output being included in AI Code Orchestrator's context" width="600" />
 
 _Terminal mentions capture recent command output for debugging and analysis._
 
@@ -108,7 +108,7 @@ _Terminal mentions capture recent command output for debugging and analysis._
 
 ### Git Mentions
 
-<img src="/img/context-mentions/context-mentions-5.png" alt="Git commit mention example showing commit details being analyzed by Roo" width="600" />
+<img src="/img/context-mentions/context-mentions-5.png" alt="Git commit mention example showing commit details being analyzed by AI Code Orchestrator" width="600" />
 
 _Git mentions provide commit details and diffs for context-aware version analysis._
 | Type | Format | Provides | Limitations |
@@ -161,7 +161,7 @@ The dropdown automatically suggests:
 - Special keywords (`problems`, `terminal`, `git-changes`)
 - **All currently open files** (regardless of ignore settings or directory filters)
 
-The dropdown respects `.rooignore` by default, hiding ignored files from suggestions. Enable the `showRooIgnoredFiles` setting to include ignored files in the dropdown (they'll appear with a 🔒 indicator). Common directories like `node_modules`, `.git`, `dist`, and `out` are also filtered to reduce noise.
+The dropdown respects `.aicoignore` by default, hiding ignored files from suggestions. Enable the `showAicoIgnoredFiles` setting to include ignored files in the dropdown (they'll appear with a 🔒 indicator). Common directories like `node_modules`, `.git`, `dist`, and `out` are also filtered to reduce noise.
 
 ---
 
@@ -169,12 +169,12 @@ The dropdown respects `.rooignore` by default, hiding ignored files from suggest
 
 ### Ignore File Interactions
 
-| Behavior                | Description                                                                                                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Dropdown filtering**  | The `@` dropdown hides `.rooignore`-matched files by default. Enable `showRooIgnoredFiles` to see them (marked with 🔒).                                     |
-| **`.rooignore` bypass** | File and folder `@mentions` bypass `.rooignore` checks when fetching content for context. Content from ignored files will be included if directly mentioned. |
-| **`.gitignore` bypass** | Similarly, file and folder `@mentions` do not respect `.gitignore` rules when fetching content.                                                              |
-| **Git command respect** | Git-related mentions (`@git-changes`, `@commit-hash`) do respect `.gitignore` since they rely on Git commands.                                               |
+| Behavior                 | Description                                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Dropdown filtering**   | The `@` dropdown hides `.aicoignore`-matched files by default. Enable `showAicoIgnoredFiles` to see them (marked with 🔒).                                    |
+| **`.aicoignore` bypass** | File and folder `@mentions` bypass `.aicoignore` checks when fetching content for context. Content from ignored files will be included if directly mentioned. |
+| **`.gitignore` bypass**  | Similarly, file and folder `@mentions` do not respect `.gitignore` rules when fetching content.                                                               |
+| **Git command respect**  | Git-related mentions (`@git-changes`, `@commit-hash`) do respect `.gitignore` since they rely on Git commands.                                                |
 
 ---
 

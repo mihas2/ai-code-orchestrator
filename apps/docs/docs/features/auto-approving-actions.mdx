@@ -1,8 +1,8 @@
 ---
-description: Learn how to configure auto-approval settings in Roo Code to speed up repetitive tasks while maintaining control over sensitive operations.
+description: Learn how to configure auto-approval settings in AI Code Orchestrator to speed up repetitive tasks while maintaining control over sensitive operations.
 keywords:
   - auto-approval
-  - Roo Code automation
+  - AI Code Orchestrator automation
   - workflow optimization
   - auto-approve settings
   - safe operations
@@ -10,7 +10,7 @@ keywords:
 
 # Auto-Approving Actions
 
-> ⚠️ **SECURITY WARNING:** Auto-approve settings bypass confirmation prompts, giving Roo direct access to your system. This can result in **data loss, file corruption, or worse**. Command line access is particularly dangerous, as it can potentially execute harmful operations that could damage your system or compromise security. Only enable auto-approval for actions you fully trust.
+> ⚠️ **SECURITY WARNING:** Auto-approve settings bypass confirmation prompts, giving AI Code Orchestrator direct access to your system. This can result in **data loss, file corruption, or worse**. Command line access is particularly dangerous, as it can potentially execute harmful operations that could damage your system or compromise security. Only enable auto-approval for actions you fully trust.
 
 Auto-approve settings speed up your workflow by eliminating repetitive confirmation prompts, but they significantly increase security risks.
 
@@ -27,13 +27,13 @@ Auto-approve settings speed up your workflow by eliminating repetitive confirmat
 
 **Default shortcut:** `Cmd+Alt+A` (macOS) / `Ctrl+Alt+A` (Windows/Linux)
 
-**Command Palette:** `roo-cline.toggleAutoApprove`
+**Command Palette:** `ai-code-orchestrator.toggleAutoApprove`
 
 Quickly toggle auto-approve on/off without using the mouse. Both the keyboard shortcut and the Command Palette command toggle the global "Enabled" state while preserving your permission selections.
 
 **Via Command Palette:**
 1. Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
-2. Type "Toggle Auto-Approve" or search for `roo-cline.toggleAutoApprove`
+2. Type "Toggle Auto-Approve" or search for `ai-code-orchestrator.toggleAutoApprove`
 3. Press Enter to toggle the auto-approve state
 
 **To customize the shortcut:**
@@ -63,12 +63,12 @@ The dropdown shows a grid of permission tiles. Controls:
 
 | Permission | What it does | Risk level |
 |------------|--------------|------------|
-| **Read files and directories** | Lets Roo access files without asking | Medium |
-| **Edit files** | Lets Roo modify files without asking | **High** |
+| **Read files and directories** | Lets AI Code Orchestrator access files without asking | Medium |
+| **Edit files** | Lets AI Code Orchestrator modify files without asking | **High** |
 | **Execute approved commands** | Runs whitelisted terminal commands automatically | **High** |
 | **Use the browser** | Allows headless browser interaction | Medium |
-| **Use MCP servers** | Lets Roo use configured MCP services | Medium-High |
-| **Switch modes** | Changes between Roo modes automatically | Low |
+| **Use MCP servers** | Lets AI Code Orchestrator use configured MCP services | Medium-High |
+| **Switch modes** | Changes between AI Code Orchestrator modes automatically | Low |
 | **Create & complete subtasks** | Manages subtasks without confirmation | Low |
 | **Answer follow-up questions** | Selects default answer for follow-up questions| Low |
 
@@ -95,7 +95,7 @@ When to toggle:
 
 The settings panel provides detailed control with important security context:
 
-> **Allow Roo to automatically perform operations without requiring approval. Enable these settings only if you fully trust the AI and understand the associated security risks.**
+> **Allow AI Code Orchestrator to automatically perform operations without requiring approval. Enable these settings only if you fully trust the AI and understand the associated security risks.**
 
 To access these settings:
 
@@ -109,7 +109,7 @@ The settings panel mirrors the same permissions with additional context and safe
 - Outside‑workspace reads/writes require the corresponding outside‑workspace flags in addition to the base permission.
 - Auto‑approve for MCP tools requires both the global "Always approve MCP tools" and each tool's "Always allow". Resource access honors only the global setting.
 - Mode switching is only auto‑approved when the mode-switch permission is enabled (covers switching to another mode and creating new modes).
-- After auto‑writes, Roo waits using the global write‑delay control under Settings → Context Management → Diagnostics.
+- After auto‑writes, AI Code Orchestrator waits using the global write‑delay control under Settings → Context Management → Diagnostics.
 
 ### Read Operations
 
@@ -119,22 +119,22 @@ The settings panel mirrors the same permissions with additional context and safe
 
 **Setting:** "Always approve read-only operations"
 
-**Description:** "When enabled, Roo will automatically view directory contents and read files without requiring you to click the Approve button."
+**Description:** "When enabled, AI Code Orchestrator will automatically view directory contents and read files without requiring you to click the Approve button."
 
 **Additional option:**
-- **Include files outside workspace:** Allow Roo to read files outside the current workspace directory
+- **Include files outside workspace:** Allow AI Code Orchestrator to read files outside the current workspace directory
 
 **Risk level:** Medium
 
-While this setting only allows reading files (not modifying them), it could potentially expose sensitive data. Still recommended as a starting point for most users, but be mindful of what files Roo can access.
+While this setting only allows reading files (not modifying them), it could potentially expose sensitive data. Still recommended as a starting point for most users, but be mindful of what files AI Code Orchestrator can access.
 
 #### Workspace Boundary Protection
 
-By default, Roo can only read files within your current workspace directory. The "Include files outside workspace" option extends read access beyond the workspace boundary. Consider the security implications:
+By default, AI Code Orchestrator can only read files within your current workspace directory. The "Include files outside workspace" option extends read access beyond the workspace boundary. Consider the security implications:
 
-- **Default (unchecked)**: Roo can only read files in your project directory
-- **Enabled**: Roo can read any file on your system that you have access to
-- **Recommendation**: Keep disabled unless you specifically need Roo to access external files
+- **Default (unchecked)**: AI Code Orchestrator can only read files in your project directory
+- **Enabled**: AI Code Orchestrator can read any file on your system that you have access to
+- **Recommendation**: Keep disabled unless you specifically need AI Code Orchestrator to access external files
 :::
 
 ### Write Operations
@@ -149,12 +149,12 @@ By default, Roo can only read files within your current workspace directory. The
 **Write delay control:** Configured under Settings → Context Management → Diagnostics. See [Diagnostics Integration](/features/diagnostics-integration).
 
 **Additional options:**
-- **Include files outside workspace:** Allow Roo to modify files outside the current workspace directory
-- **Include protected files:** Allow Roo to modify files protected by `.roo/` and `.rooignore` directory
+- **Include files outside workspace:** Allow AI Code Orchestrator to modify files outside the current workspace directory
+- **Include protected files:** Allow AI Code Orchestrator to modify files protected by `.ai-code-orchestrator/` and `.aicoignore` directory
 
 **Risk level:** High
 
-This setting allows Roo to modify your files without confirmation. The delay timer is crucial:
+This setting allows AI Code Orchestrator to modify your files without confirmation. The delay timer is crucial:
 - Higher values (2000ms+): Recommended for complex projects where diagnostics take longer
 - Default (1000ms): Suitable for most projects with active diagnostics
 - 0ms: No delay - use when speed is critical
@@ -164,25 +164,25 @@ This setting allows Roo to modify your files without confirmation. The delay tim
 
 The write operations setting includes two important security controls:
 
-1. **Workspace Boundary Protection**: By default, Roo can only modify files within your current workspace. Enable "Include files outside workspace" with extreme caution.
+1. **Workspace Boundary Protection**: By default, AI Code Orchestrator can only modify files within your current workspace. Enable "Include files outside workspace" with extreme caution.
 
-2. **Protected Files**: Roo blocks modification of:
-   - Files in the `.roo/` directory
-   - The `.rooignore` file
+2. **Protected Files**: AI Code Orchestrator blocks modification of:
+   - Files in the `.ai-code-orchestrator/` directory
+   - The `.aicoignore` file
    
    The "Include protected files" option bypasses this protection - use only when you specifically need to modify these files.
 #### Write Delay & Problems Pane Integration
 
 <img src="/img/auto-approving-actions/auto-approving-actions-5.png" alt="VSCode Problems pane showing diagnostic information" width="600" />
 
-*VSCode Problems pane that Roo checks during the write delay*
+*VSCode Problems pane that AI Code Orchestrator checks during the write delay*
 
-When you enable auto-approval for writing files, Roo uses the global write-delay configured under Settings → Context Management → Diagnostics. The delay timer works with VSCode's Problems pane:
+When you enable auto-approval for writing files, AI Code Orchestrator uses the global write-delay configured under Settings → Context Management → Diagnostics. The delay timer works with VSCode's Problems pane:
 
-1. Roo makes a change to your file
+1. AI Code Orchestrator makes a change to your file
 2. VSCode's diagnostic tools analyze the change
 3. The Problems pane updates with any errors or warnings
-4. Roo notices these issues before continuing
+4. AI Code Orchestrator notices these issues before continuing
 
 This works like a human developer pausing to check for errors after changing code. You can adjust the delay time based on:
 
@@ -208,7 +208,7 @@ This setting requires a two-step permission process for security:
 
 **Important:** Both permissions must be active for a tool to auto-approve. This dual-permission system ensures you maintain granular control over which MCP tools can execute without confirmation. Resource retrieval (`access_mcp_resource`) honors only the global setting.
 
-**Permission Storage:** Your MCP tool permissions are saved and will be remembered next time you use Roo Code.
+**Permission Storage:** Your MCP tool permissions are saved and will be remembered next time you use AI Code Orchestrator.
 
 Example workflow:
 - Enable "Always approve MCP tools" in settings
@@ -228,7 +228,7 @@ Example workflow:
 
 **Risk level:** Low
 
-Allows Roo to change between different modes (Code, Architect, etc.) without asking for permission. This primarily affects the AI's behavior rather than system access. Auto-approval also covers switching between modes and creating new modes when this permission is enabled.
+Allows AI Code Orchestrator to change between different modes (Code, Architect, etc.) without asking for permission. This primarily affects the AI's behavior rather than system access. Auto-approval also covers switching between modes and creating new modes when this permission is enabled.
 :::
 
 ### Subtasks
@@ -241,7 +241,7 @@ Allows Roo to change between different modes (Code, Architect, etc.) without ask
 
 **Risk level:** Low
 
-Enables Roo to create and complete subtasks automatically. This relates to workflow organization rather than system access.
+Enables AI Code Orchestrator to create and complete subtasks automatically. This relates to workflow organization rather than system access.
 :::
 
 ### Command Execution
@@ -273,8 +273,8 @@ Configuration
 - Settings JSON (alternative):
 ```json
 {
-  "roo-cline.allowedCommands": ["git", "npm run", "echo"],
-  "roo-cline.deniedCommands": ["git push", "npm publish", "rm", "sudo", "*"]
+  "ai-code-orchestrator.allowedCommands": ["git", "npm run", "echo"],
+  "ai-code-orchestrator.deniedCommands": ["git push", "npm publish", "rm", "sudo", "*"]
 }
 ```
 With both lists defined, the longest‑prefix rule applies; if deny is equally or more specific, it wins.
@@ -299,7 +299,7 @@ Security tip: Be specific with prefixes. Instead of allowing all `python` comman
 
 **Setting:** `Always default answer for follow-up questions`
 
-**Description:** Automatically selects the first AI-suggested answer for a follow-up question after a configurable timeout. This speeds up your workflow by letting Roo proceed without manual intervention.
+**Description:** Automatically selects the first AI-suggested answer for a follow-up question after a configurable timeout. This speeds up your workflow by letting AI Code Orchestrator proceed without manual intervention.
 
 **Timeout slider:** Use the slider to set the wait time from 1 to 300 seconds (Default: 60 seconds)
 
@@ -315,7 +315,7 @@ Security tip: Be specific with prefixes. Instead of allowing all `python` comman
 **Risk level:** Low
 
 **Use cases:**
-- Overnight runs where you want Roo to continue working
+- Overnight runs where you want AI Code Orchestrator to continue working
 - Repetitive tasks where the default suggestions are usually correct
 - Testing workflows where interaction isn't critical
 :::

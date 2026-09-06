@@ -70,8 +70,8 @@ export async function generateImageWithProvider(options: ImageGenerationOptions)
 			headers: {
 				Authorization: `Bearer ${authToken}`,
 				"Content-Type": "application/json",
-				"HTTP-Referer": "https://github.com/RooVetGit/Roo-Code",
-				"X-Title": "Roo Code",
+				"HTTP-Referer": "https://github.com/AicoVetGit/AI Code Orchestrator-Code",
+				"X-Title": "AI Code Orchestrator",
 			},
 			body: JSON.stringify({
 				model,
@@ -216,8 +216,8 @@ export async function generateImageWithImagesApi(options: ImagesApiOptions): Pro
 			headers: {
 				Authorization: `Bearer ${authToken}`,
 				"Content-Type": "application/json",
-				"HTTP-Referer": "https://github.com/RooVetGit/Roo-Code",
-				"X-Title": "Roo Code",
+				"HTTP-Referer": "https://github.com/AicoVetGit/AI Code Orchestrator-Code",
+				"X-Title": "AI Code Orchestrator",
 			},
 			body: JSON.stringify(requestBody),
 		}

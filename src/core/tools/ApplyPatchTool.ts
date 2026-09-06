@@ -1,7 +1,7 @@
 import fs from "fs/promises"
 import path from "path"
 
-import { type ClineSayTool, DEFAULT_WRITE_DELAY_MS } from "@roo-code/types"
+import { type ClineSayTool, DEFAULT_WRITE_DELAY_MS } from "@ai-code-orchestrator/types"
 
 import { getReadablePath } from "../../utils/path"
 import { isPathOutsideWorkspace } from "../../utils/pathUtils"
@@ -108,15 +108,15 @@ export class ApplyPatchTool extends BaseTool<"apply_patch"> {
 				const absolutePath = path.resolve(task.cwd, relPath)
 
 				// Check access permissions
-				const accessAllowed = task.rooIgnoreController?.validateAccess(relPath)
+				const accessAllowed = task.aicoIgnoreController?.validateAccess(relPath)
 				if (!accessAllowed) {
-					await task.say("rooignore_error", relPath)
-					pushToolResult(formatResponse.rooIgnoreError(relPath))
+					await task.say("aicoignore_error", relPath)
+					pushToolResult(formatResponse.aicoIgnoreError(relPath))
 					return
 				}
 
 				// Check if file is write-protected
-				const isWriteProtected = task.rooProtectedController?.isWriteProtected(relPath) || false
+				const isWriteProtected = task.aicoProtectedController?.isWriteProtected(relPath) || false
 
 				if (change.type === "add") {
 					// Create new file
@@ -221,7 +221,7 @@ export class ApplyPatchTool extends BaseTool<"apply_patch"> {
 		}
 
 		// Track file edit operation
-		await task.fileContextTracker.trackFileContext(relPath, "roo_edited" as RecordSource)
+		await task.fileContextTracker.trackFileContext(relPath, "aico_edited" as RecordSource)
 		task.didEditFile = true
 
 		const message = await task.diffViewProvider.pushToolWriteResult(task, task.cwd, true)
@@ -375,16 +375,16 @@ export class ApplyPatchTool extends BaseTool<"apply_patch"> {
 			const moveAbsolutePath = path.resolve(task.cwd, change.movePath)
 
 			// Validate destination path access permissions
-			const moveAccessAllowed = task.rooIgnoreController?.validateAccess(change.movePath)
+			const moveAccessAllowed = task.aicoIgnoreController?.validateAccess(change.movePath)
 			if (!moveAccessAllowed) {
-				await task.say("rooignore_error", change.movePath)
-				pushToolResult(formatResponse.rooIgnoreError(change.movePath))
+				await task.say("aicoignore_error", change.movePath)
+				pushToolResult(formatResponse.aicoIgnoreError(change.movePath))
 				await task.diffViewProvider.reset()
 				return
 			}
 
 			// Check if destination path is write-protected
-			const isMovePathWriteProtected = task.rooProtectedController?.isWriteProtected(change.movePath) || false
+			const isMovePathWriteProtected = task.aicoProtectedController?.isWriteProtected(change.movePath) || false
 			if (isMovePathWriteProtected) {
 				task.consecutiveMistakeCount++
 				task.recordToolError("apply_patch")
@@ -430,7 +430,7 @@ export class ApplyPatchTool extends BaseTool<"apply_patch"> {
 				console.error(`Failed to delete original file after move: ${error}`)
 			}
 
-			await task.fileContextTracker.trackFileContext(change.movePath, "roo_edited" as RecordSource)
+			await task.fileContextTracker.trackFileContext(change.movePath, "aico_edited" as RecordSource)
 		} else {
 			// Save changes to the same file
 			if (isPreventFocusDisruptionEnabled) {
@@ -439,7 +439,7 @@ export class ApplyPatchTool extends BaseTool<"apply_patch"> {
 				await task.diffViewProvider.saveChanges(diagnosticsEnabled, writeDelayMs)
 			}
 
-			await task.fileContextTracker.trackFileContext(relPath, "roo_edited" as RecordSource)
+			await task.fileContextTracker.trackFileContext(relPath, "aico_edited" as RecordSource)
 		}
 
 		task.didEditFile = true

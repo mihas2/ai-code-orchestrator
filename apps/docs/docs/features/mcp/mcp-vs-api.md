@@ -100,16 +100,16 @@ Consider a task requiring multiple services: "Check recent commits, create a JIR
 
 ---
 
-## Why Roo Code Uses MCP
+## Why AI Code Orchestrator Uses MCP
 
-Roo Code leverages MCP to provide:
+AI Code Orchestrator leverages MCP to provide:
 
 1. **Extensibility**: Add unlimited custom tools without waiting for official integration
 2. **Contextual awareness**: Tools can access conversation history and project context
 3. **Simplified integration**: One standard protocol rather than numerous API patterns
 4. **Runtime flexibility**: Discover and use new capabilities on-the-fly
 
-MCP creates a universal connector between Roo Code and external services, with REST APIs often powering those services behind the scenes.
+MCP creates a universal connector between AI Code Orchestrator and external services, with REST APIs often powering those services behind the scenes.
 
 ---
 

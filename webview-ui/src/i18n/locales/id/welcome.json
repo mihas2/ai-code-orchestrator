@@ -9,13 +9,13 @@
 		}
 	},
 	"landing": {
-		"greeting": "Selamat datang di Roo Code!",
-		"introduction": "Dengan berbagai Mode bawaan dan dapat diperluas, Roo Code memungkinkan Anda merencanakan, merancang, coding, debug, dan meningkatkan produktivitas seperti yang belum pernah terjadi sebelumnya.",
-		"getStarted": "Buat Akun Roo"
+		"greeting": "Selamat datang di AI Code Orchestrator!",
+		"introduction": "Dengan berbagai Mode bawaan dan dapat diperluas, AI Code Orchestrator memungkinkan Anda merencanakan, merancang, coding, debug, dan meningkatkan produktivitas seperti yang belum pernah terjadi sebelumnya.",
+		"getStarted": "Buat Akun AI Code Orchestrator"
 	},
 	"providerSignup": {
 		"heading": "Pilih penyedia Anda",
-		"chooseProvider": "Roo memerlukan penyedia LLM untuk bekerja. Pilih satu untuk memulai, Anda dapat menambahkan lebih banyak nanti.",
+		"chooseProvider": "AI Code Orchestrator memerlukan penyedia LLM untuk bekerja. Pilih satu untuk memulai, Anda dapat menambahkan lebih banyak nanti.",
 		"learnMore": "Pelajari lebih lanjut",
 		"useAnotherProvider": "Penyedia Pihak Ketiga",
 		"useAnotherProviderDescription": "Masukkan kunci API dan mulai.",

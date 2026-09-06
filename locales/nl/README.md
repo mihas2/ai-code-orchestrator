@@ -1,72 +1,64 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-cline"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/roocode"><img src="https://img.shields.io/badge/roocode-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
-# Roo Code
 
-> Jouw AI-aangedreven dev-team, rechtstreeks in je editor
+# AI Code Orchestrator
 
-<details>
-  <summary>🌐 Beschikbare talen</summary>
+> Jouw AI-aangedreven ontwikkelteam, rechtstreeks in je editor.
 
-- [English](../../README.md)
-- [Català](../ca/README.md)
-- [Deutsch](../de/README.md)
-- [Español](../es/README.md)
-- [Français](../fr/README.md)
-- [हिंदी](../hi/README.md)
-- [Bahasa Indonesia](../id/README.md)
-- [Italiano](../it/README.md)
-- [日本語](../ja/README.md)
-- [한국어](../ko/README.md)
-- [Nederlands](../nl/README.md)
-- [Polski](../pl/README.md)
-- [Português (BR)](../pt-BR/README.md)
-- [Русский](../ru/README.md)
-- [Türkçe](../tr/README.md)
-- [Tiếng Việt](../vi/README.md)
-- [简体中文](../zh-CN/README.md)
-- [繁體中文](../zh-TW/README.md)
-- ...
-    </details>
+AI Code Orchestrator is een VS Code-extensie en CLI voor het plannen, implementeren, reviewen en uitleggen van software met configureerbare AI-agents. Het combineert chat, code-acties, terminalworkflows, aangepaste rollen, MCP-integraties en multi-agentorkestratie in één werkruimte.
 
----
+## Mogelijkheden
 
-## Wat kan Roo Code voor JOU doen?
+- Code genereren en aanpassen vanuit vereisten in natuurlijke taal
+- Architectuur plannen en werk opdelen in gecoördineerde taken
+- Werk orkestreren als een afhankelijkheidsbewuste DAG met parallelle uitvoerders, reviewfasen, budgetten en gecontroleerde integratie
+- **Contextoptimalisatie** — intelligent contextbeheer vermindert tokengebruik en kosten met behoud van effectiviteit
+- Wijzigingen reviewen, fouten diagnosticeren en bestaande code verbeteren
+- Werken met bestanden, terminals, afbeeldingen en externe MCP-tools
+- Providers zoals Vercel AI Gateway en Unbound, modellen, machtigingen en aangepaste rollen configureren
+- Modellen toewijzen aan afzonderlijke rollen, met automatische overerving van het primaire model wanneer geen override is ingesteld
+- Taken voortzetten vanuit de editor of de opdrachtregel
 
-- Genereer code vanuit natuurlijke taalomschrijvingen
-- Aanpassen met Modi: Code, Architect, Vraag, Debug en Aangepaste Modi
-- Refactor & debug bestaande code
-- Schrijf & update documentatie
-- Beantwoord vragen over je codebase
-- Automatiseer repetitieve taken
-- Gebruik MCP Servers
+## Rollen
 
-## Modi
+AI Code Orchestrator past zich aan het werk aan:
 
-Roo Code past zich aan jouw werkwijze aan, niet andersom:
+- **Code** — wijzigingen implementeren en projectbestanden bewerken
+- **Architect** — systemen, specificaties en migraties ontwerpen
+- **Ask** — vragen beantwoorden en code uitleggen
+- **Debug** — hoofdoorzaken isoleren en oplossingen valideren
+- **Reviewer** — wijzigingen valideren, problemen identificeren en kwaliteit waarborgen
+- **Orchestrator** — afhankelijkheidsbewuste taakkaarten en parallelle agents coördineren; dit is de standaardrol
+- **Custom** — gespecialiseerde workflows voor een team maken
 
-- Code Modus: dagelijks coderen, bewerkingen en bestandsoperaties
-- Architect Modus: plan systemen, specificaties en migraties
-- Vraag Modus: snelle antwoorden, uitleg en documenten
-- Debug Modus: spoor problemen op, voeg logs toe, isoleer de oorzaak
-- Aangepaste Modi: bouw gespecialiseerde modi voor je team of workflow
+Elke rol kan een eigen modelconfiguratie gebruiken. Als er geen modelspecifieke rol is toegewezen, wordt het primaire model overgenomen. Zo kun je mogelijkheden, snelheid en kosten binnen een workflow eenvoudig balanceren.
 
-Meer info: [Modi gebruiken](https://roocodeinc.github.io/Roo-Code/basic-usage/using-modes) • [Aangepaste modi](https://roocodeinc.github.io/Roo-Code/advanced-usage/custom-modes)
+## Documentatie
 
-## Hulpbronnen
+De projectdocumentatie, inclusief de orkestratiespecificatie, staat in [`apps/docs`](../../apps/docs).
 
-- **[Documentatie](https://roocodeinc.github.io/Roo-Code/):** De officiële gids voor het installeren, configureren en beheersen van Roo Code.
-- **[GitHub Issues](https://github.com/RooCodeInc/Roo-Code/issues):** Meld bugs en volg de ontwikkeling.
+## Installatie
 
----
+Installeer de **AI Code Orchestrator**-extensie vanuit de VS Code Marketplace of bouw lokaal een VSIX:
 
-## Disclaimer
+```bash
+pnpm install
+pnpm vsix
+```
 
-**Let op**: Roo Code, Inc. geeft **geen** verklaringen of garanties met betrekking tot enige code, modellen of andere tools die worden geleverd of beschikbaar worden gesteld in verband met Roo Code, enige geassocieerde tools van derden, of enige resulterende output. U aanvaardt **alle risico's** die gepaard gaan met het gebruik van dergelijke tools of output; dergelijke tools worden geleverd op een **"AS IS"** en **"AS AVAILABLE"** basis. Dergelijke risico's kunnen omvatten, maar zijn niet beperkt tot, inbreuk op intellectueel eigendom, cyberkwetsbaarheden of -aanvallen, vooringenomenheid, onnauwkeurigheden, fouten, defecten, virussen, downtime, verlies of beschadiging van eigendommen, en/of persoonlijk letsel. U bent als enige verantwoordelijk voor uw gebruik van dergelijke tools of output (inclusief, maar niet beperkt tot, de wettigheid, geschiktheid en resultaten daarvan).
+Tijdens de ontwikkeling is de CLI beschikbaar vanuit de monorepo:
 
----
+```bash
+pnpm --filter @ai-code-orchestrator/cli dev
+```
+
+De packagescope en legacy-opdracht-ID's blijven behouden voor compatibiliteit met bestaande integraties.
+
+## Naamsvermelding
+
+AI Code Orchestrator is gebaseerd op [Roo Code](https://github.com/RooCodeInc/Roo-Code). De implementatie behoudt geselecteerde compatibele API's en identifiers, zodat bestaande integraties blijven werken.
 
 ## Licentie
 
-[Apache 2.0 © 2025 Roo Code, Inc.](../../LICENSE)
+[Apache 2.0](../../LICENSE)

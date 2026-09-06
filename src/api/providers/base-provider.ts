@@ -1,8 +1,8 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 
-import type { ModelInfo } from "@roo-code/types"
+import type { ModelInfo } from "@ai-code-orchestrator/types"
 
-import type { ApiHandler, ApiHandlerCreateMessageMetadata } from "../index"
+import type { ApiHandler, ApiHandlerCreateMessageMetadata, ProviderCapabilities } from "../index"
 import { ApiStream } from "../transform/stream"
 import { countTokens } from "../../utils/countTokens"
 import { isMcpTool } from "../../utils/mcp-name"
@@ -18,6 +18,10 @@ export abstract class BaseProvider implements ApiHandler {
 	): ApiStream
 
 	abstract getModel(): { id: string; info: ModelInfo }
+
+	getCapabilities(): ProviderCapabilities {
+		return { promptCaching: false, contextCaching: false, structuredOutput: false, toolCalling: true }
+	}
 
 	/**
 	 * Converts an array of tools to be compatible with OpenAI's strict mode.

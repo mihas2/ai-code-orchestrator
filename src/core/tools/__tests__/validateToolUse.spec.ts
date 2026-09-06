@@ -1,6 +1,6 @@
 // npx vitest run src/core/tools/__tests__/validateToolUse.spec.ts
 
-import type { ModeConfig } from "@roo-code/types"
+import type { ModeConfig } from "@ai-code-orchestrator/types"
 
 import { modes } from "../../../shared/modes"
 import { TOOL_GROUPS } from "../../../shared/tools"
@@ -172,6 +172,39 @@ describe("mode-validator", () => {
 	})
 
 	describe("validateToolUse", () => {
+		it("rejects incomplete edit payloads when an edit group is file-restricted", () => {
+			const restrictedModes: ModeConfig[] = [
+				{
+					slug: "restricted-edit",
+					name: "Restricted Edit",
+					roleDefinition: "Restricted editor",
+					groups: [["edit", { fileRegex: "^src/" }]] as const,
+				},
+			]
+
+			expect(() =>
+				validateToolUse("apply_diff", "restricted-edit", restrictedModes, {}, { path: "src/app.ts" }),
+			).toThrow("requires")
+		})
+
+		it("rejects unknown MCP operations in strict mode", () => {
+			expect(() =>
+				validateToolUse("mcp_server_unknown" as any, codeMode, [], {}, undefined, undefined, undefined, {
+					strictMcp: true,
+					mcpAllowlist: { server: ["known"] },
+				}),
+			).toThrow("not allowlisted")
+		})
+
+		it("allows an explicitly allowlisted MCP operation in strict mode", () => {
+			expect(() =>
+				validateToolUse("mcp_server_known" as any, codeMode, [], {}, undefined, undefined, undefined, {
+					strictMcp: true,
+					mcpAllowlist: { server: ["known"] },
+				}),
+			).not.toThrow()
+		})
+
 		it("throws error for unknown/invalid tools", () => {
 			// Unknown tools should throw with a specific "Unknown tool" error
 			expect(() => validateToolUse("unknown_tool" as any, "architect", [])).toThrow(

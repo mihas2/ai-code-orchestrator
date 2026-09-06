@@ -1,6 +1,7 @@
 {
-	"name": "@roo-code/build",
-	"description": "ESBuild utilities for Roo Code.",
+	"name": "@ai-code-orchestrator/build",
+	"version": "1.1.4",
+	"description": "ESBuild utilities for AI Code Orchestrator.",
 	"private": true,
 	"type": "module",
 	"main": "./dist/index.js",
@@ -16,8 +17,8 @@
 		"zod": "^3.25.61"
 	},
 	"devDependencies": {
-		"@roo-code/config-eslint": "workspace:^",
-		"@roo-code/config-typescript": "workspace:^",
+		"@ai-code-orchestrator/config-eslint": "workspace:^",
+		"@ai-code-orchestrator/config-typescript": "workspace:^",
 		"@types/node": "20.x",
 		"vitest": "^3.2.3"
 	}

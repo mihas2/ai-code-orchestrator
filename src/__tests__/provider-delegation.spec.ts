@@ -1,7 +1,7 @@
 // npx vitest run __tests__/provider-delegation.spec.ts
 
 import { describe, it, expect, vi } from "vitest"
-import { RooCodeEventName } from "@roo-code/types"
+import { AiCodeOrchestratorEventName } from "@ai-code-orchestrator/types"
 import { ClineProvider } from "../core/webview/ClineProvider"
 
 describe("ClineProvider.delegateParentAndOpenChild()", () => {
@@ -64,11 +64,19 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 		// Invariant: parent closed before child creation
 		expect(removeClineFromStack).toHaveBeenCalledTimes(1)
 		// Child task is created with startTask: false and initialStatus: "active"
-		expect(createTask).toHaveBeenCalledWith("Do something", undefined, parentTask, {
-			initialTodos: [],
-			initialStatus: "active",
-			startTask: false,
-		})
+		expect(createTask).toHaveBeenCalledWith(
+			"Do something",
+			undefined,
+			parentTask,
+			expect.objectContaining({
+				initialTodos: [],
+				initialStatus: "active",
+				startTask: false,
+				workspacePath: undefined,
+			}),
+			undefined,
+			undefined,
+		)
 
 		// Metadata persistence - parent gets "delegated" status (child status is set at creation via initialStatus)
 		expect(updateTaskHistory).toHaveBeenCalledTimes(1)
@@ -89,7 +97,7 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 		expect(childStart).toHaveBeenCalledTimes(1)
 
 		// Event emission (provider-level)
-		expect(providerEmit).toHaveBeenCalledWith(RooCodeEventName.TaskDelegated, "parent-1", "child-1")
+		expect(providerEmit).toHaveBeenCalledWith(AiCodeOrchestratorEventName.TaskDelegated, "parent-1", "child-1")
 
 		// Mode switch
 		expect(handleModeSwitch).toHaveBeenCalledWith("code")

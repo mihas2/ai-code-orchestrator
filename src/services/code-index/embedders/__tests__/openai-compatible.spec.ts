@@ -220,6 +220,24 @@ describe("OpenAICompatibleEmbedder", () => {
 			})
 		})
 
+		it("should request float encoding and preserve numeric arrays", async () => {
+			embedder = new OpenAICompatibleEmbedder(testBaseUrl, testApiKey, testModelId, undefined, true)
+			const embeddings = [0.1, 0.2, 0.3]
+			mockEmbeddingsCreate.mockResolvedValue({
+				data: [{ embedding: embeddings }],
+				usage: { prompt_tokens: 1, total_tokens: 1 },
+			})
+
+			const result = await embedder.createEmbeddings(["Hello world"])
+
+			expect(mockEmbeddingsCreate).toHaveBeenCalledWith({
+				input: ["Hello world"],
+				model: testModelId,
+				encoding_format: "float",
+			})
+			expect(result.embeddings[0]).toBe(embeddings)
+		})
+
 		it("should handle missing usage data gracefully", async () => {
 			const testTexts = ["Hello world"]
 			const mockResponse = {
@@ -973,6 +991,47 @@ describe("OpenAICompatibleEmbedder", () => {
 				input: ["test"],
 				model: testModelId,
 				encoding_format: "base64",
+			})
+		})
+
+		it("should validate float responses and request float encoding", async () => {
+			embedder = new OpenAICompatibleEmbedder(testBaseUrl, testApiKey, testModelId, undefined, true, 3)
+			const embedding = [0.1, 0.2, 0.3]
+			mockEmbeddingsCreate.mockResolvedValue({ data: [{ embedding }] })
+
+			expect(await embedder.validateConfiguration()).toEqual({ valid: true })
+			expect(mockEmbeddingsCreate).toHaveBeenCalledWith({
+				input: ["test"],
+				model: testModelId,
+				encoding_format: "float",
+			})
+		})
+
+		it("should reject a response with the wrong embedding dimension", async () => {
+			embedder = new OpenAICompatibleEmbedder(testBaseUrl, testApiKey, testModelId, undefined, true, 4)
+			mockEmbeddingsCreate.mockResolvedValue({ data: [{ embedding: [0.1, 0.2, 0.3] }] })
+
+			expect(await embedder.validateConfiguration()).toEqual({
+				valid: false,
+				error: "embeddings:validation.invalidResponse",
+			})
+		})
+
+		it("should validate a base64 response with the expected dimension", async () => {
+			embedder = new OpenAICompatibleEmbedder(testBaseUrl, testApiKey, testModelId, undefined, false, 3)
+			const base64Embedding = Buffer.from(new Float32Array([0.1, 0.2, 0.3]).buffer).toString("base64")
+			mockEmbeddingsCreate.mockResolvedValue({ data: [{ embedding: base64Embedding }] })
+
+			expect(await embedder.validateConfiguration()).toEqual({ valid: true })
+		})
+
+		it("should reject an empty embedding response", async () => {
+			embedder = new OpenAICompatibleEmbedder(testBaseUrl, testApiKey, testModelId)
+			mockEmbeddingsCreate.mockResolvedValue({ data: [{ embedding: [] }] })
+
+			expect(await embedder.validateConfiguration()).toEqual({
+				valid: false,
+				error: "embeddings:validation.invalidResponse",
 			})
 		})
 

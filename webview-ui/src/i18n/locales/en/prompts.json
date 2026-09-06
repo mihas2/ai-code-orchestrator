@@ -1,20 +1,33 @@
 {
-	"title": "Modes",
+	"title": "Roles",
 	"done": "Done",
 	"modes": {
-		"title": "Modes",
-		"createNewMode": "Create new mode",
+		"title": "Roles",
+		"createNewMode": "Create new role",
 		"importMode": "Import Mode",
 		"editModesConfig": "Edit modes configuration",
 		"editGlobalModes": "Edit Global Modes",
-		"editProjectModes": "Edit Project Modes (.roomodes)",
-		"createModeHelpText": "Modes are specialized personas that tailor Roo's behavior. <0>Learn about Using Modes</0> or <1>Customizing Modes.</1>",
-		"selectMode": "Search modes",
-		"noMatchFound": "No modes found"
+		"editProjectModes": "Edit Project Modes (.agent-modes)",
+		"createModeHelpText": "Roles are specialized personas that tailor AI Orchestrator's behavior. <0>Learn about Using Roles</0> or <1>Customizing Roles.</1>",
+		"selectMode": "Search roles",
+		"noMatchFound": "No roles found"
+	},
+	"reviewer": {
+		"name": "Reviewer",
+		"description": "Read-only quality review of completed work",
+		"readOnlyNotice": "Reviewer can read files and run diagnostics, but cannot edit files or expand the declared scope.",
+		"findingSeverities": "Finding severities: blocker, major, minor, note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator is the accountable team lead linking the user with specialized agents. It owns the goal, plan, dependencies, allocation, budgets, quality gates, integration, and final result; delegates contracted work to architect, code, debug, reviewer, improver, and integrator roles; and retains compact aggregate state rather than full implementation transcripts.",
+		"whenToUse": "Use for complex multi-step work requiring decomposition and coordination across architect, code, debug, and reviewer roles, parallel execution of independent work, explicit dependency planning, review, remediation, controlled integration, and quality assurance.",
+		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
 	},
 	"apiConfiguration": {
 		"title": "API Configuration",
-		"select": "Select which API configuration to use for this mode"
+		"select": "Select the API profile and model for this role",
+		"inheritProfile": "Use active profile",
+		"inheritModel": "Use profile model"
 	},
 	"tools": {
 		"title": "Available Tools",
@@ -33,7 +46,7 @@
 	"roleDefinition": {
 		"title": "Role Definition",
 		"resetToDefault": "Reset to default",
-		"description": "Define Roo's expertise and personality for this mode. This description shapes how Roo presents itself and approaches tasks."
+		"description": "Define AI Orchestrator's expertise and personality for this mode. This description shapes how AI Orchestrator presents itself and approaches tasks."
 	},
 	"description": {
 		"title": "Short description (for humans)",
@@ -42,18 +55,18 @@
 	},
 	"whenToUse": {
 		"title": "When to Use (optional)",
-		"description": "Guidance for Roo for when this mode should be used. This helps the Orchestrator choose the right mode for a task.",
+		"description": "Guidance for AI Orchestrator for when this mode should be used. This helps the Orchestrator choose the right mode for a task.",
 		"resetToDefault": "Reset to default 'When to Use' description"
 	},
 	"customInstructions": {
 		"title": "Mode-specific Custom Instructions (optional)",
 		"resetToDefault": "Reset to default",
 		"description": "Add behavioral guidelines specific to {{modeName}} mode.",
-		"loadFromFile": "Custom instructions specific to {{mode}} mode can also be loaded from the <span>.roo/rules-{{slug}}/</span> folder in your workspace or from the global <0>.roo/rules-{{slug}}/</0> (.roorules-{{slug}} and .clinerules-{{slug}} are deprecated and will stop working soon)."
+		"loadFromFile": "Custom instructions specific to {{mode}} mode can also be loaded from the <span>.ai-code-orchestrator/rules-{{slug}}/</span> folder in your workspace or from the global <0>.ai-code-orchestrator/rules-{{slug}}/</0> (.aicorules-{{slug}} and .clinerules-{{slug}} are deprecated and will stop working soon)."
 	},
 	"exportMode": {
 		"title": "Export Mode",
-		"description": "Export this mode with rules from the .roo/rules-{{slug}}/ folder combined into a shareable YAML file. The original files remain unchanged.",
+		"description": "Export this mode with rules from the .ai-code-orchestrator/rules-{{slug}}/ folder combined into a shareable YAML file. The original files remain unchanged.",
 		"exporting": "Exporting..."
 	},
 	"importMode": {
@@ -62,17 +75,17 @@
 		"importing": "Importing...",
 		"global": {
 			"label": "Global Level",
-			"description": "Available across all projects. If the exported mode contained rules files, they will be recreated in the global .roo/rules-{slug}/ folder."
+			"description": "Available across all projects. If the exported mode contained rules files, they will be recreated in the global .ai-code-orchestrator/rules-{slug}/ folder."
 		},
 		"project": {
 			"label": "Project Level",
-			"description": "Only available in this workspace. If the exported mode contained rules files, they will be recreated in .roo/rules-{slug}/ folder."
+			"description": "Only available in this workspace. If the exported mode contained rules files, they will be recreated in .ai-code-orchestrator/rules-{slug}/ folder."
 		}
 	},
 	"globalCustomInstructions": {
 		"title": "Custom Instructions for All Modes",
 		"description": "These instructions apply to all modes. They provide a base set of behaviors that can be enhanced by mode-specific instructions below. <0>Learn more</0>",
-		"loadFromFile": "Instructions can also be loaded from the <span>.roo/rules/</span> folder in your workspace or from the global <0>.roo/rules/</0> (.roorules and .clinerules are deprecated and will stop working soon)."
+		"loadFromFile": "Instructions can also be loaded from the <span>.ai-code-orchestrator/rules/</span> folder in your workspace or from the global <0>.ai-code-orchestrator/rules/</0> (.aicorules and .clinerules are deprecated and will stop working soon)."
 	},
 	"systemPrompt": {
 		"preview": "Preview System Prompt",
@@ -101,7 +114,7 @@
 		"types": {
 			"ENHANCE": {
 				"label": "Enhance Prompt",
-				"description": "Use prompt enhancement to get tailored suggestions or improvements for your inputs. This ensures Roo understands your intent and provides the best possible responses. Available via the ✨ icon in chat."
+				"description": "Use prompt enhancement to get tailored suggestions or improvements for your inputs. This ensures AI Orchestrator understands your intent and provides the best possible responses. Available via the ✨ icon in chat."
 			},
 			"CONDENSE": {
 				"label": "Context Condensing",
@@ -160,13 +173,13 @@
 				"description": "Available in all workspaces"
 			},
 			"project": {
-				"label": "Project-specific (.roomodes)",
+				"label": "Project-specific (.agent-modes)",
 				"description": "Only available in this workspace, takes precedence over global"
 			}
 		},
 		"roleDefinition": {
 			"label": "Role Definition",
-			"description": "Define Roo's expertise and personality for this mode."
+			"description": "Define AI Orchestrator's expertise and personality for this mode."
 		},
 		"description": {
 			"label": "Short description (for humans)",
@@ -174,7 +187,7 @@
 		},
 		"whenToUse": {
 			"label": "When to Use (optional)",
-			"description": "Guidance for Roo for when this mode should be used. This helps the Orchestrator choose the right mode for a task."
+			"description": "Guidance for AI Orchestrator for when this mode should be used. This helps the Orchestrator choose the right mode for a task."
 		},
 		"tools": {
 			"label": "Available Tools",

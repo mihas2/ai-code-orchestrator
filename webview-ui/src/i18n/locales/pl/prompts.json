@@ -8,13 +8,26 @@
 		"noMatchFound": "Nie znaleziono trybów",
 		"editModesConfig": "Edytuj konfigurację trybów",
 		"editGlobalModes": "Edytuj tryby globalne",
-		"editProjectModes": "Edytuj tryby projektu (.roomodes)",
-		"createModeHelpText": "Tryby to wyspecjalizowane persony, które dostosowują zachowanie Roo. <0>Dowiedz się o używaniu trybów</0> lub <1>dostosowywaniu trybów.</1>",
+		"editProjectModes": "Edytuj tryby projektu (.agent-modes)",
+		"createModeHelpText": "Tryby to wyspecjalizowane persony, które dostosowują zachowanie AI Code Orchestrator. <0>Dowiedz się o używaniu trybów</0> lub <1>dostosowywaniu trybów.</1>",
 		"selectMode": "Szukaj trybów"
+	},
+	"reviewer": {
+		"name": "Recenzent",
+		"description": "Tylko do odczytu: kontrola jakości ukończonej pracy",
+		"readOnlyNotice": "Recenzent może czytać pliki i uruchamiać diagnostykę, ale nie może edytować plików ani rozszerzać zadeklarowanego zakresu.",
+		"findingSeverities": "Ważność ustaleń: blocker, major, minor, note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator jest odpowiedzialnym liderem zespołu łączącym użytkownika ze wyspecjalizowanymi agentami. Odpowiada za cel, plan, zależności, przydział, budżety, bramki jakości, integrację i wynik końcowy oraz przechowuje zwięzły stan zbiorczy zamiast pełnych transkrypcji.",
+		"whenToUse": "Używaj do złożonych, wieloetapowych prac wymagających dekompozycji, koordynacji architect, code, debug i reviewer, równoległości, jawnych zależności, przeglądu, poprawek, kontrolowanej integracji i zapewnienia jakości.",
+		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
 	},
 	"apiConfiguration": {
 		"title": "Konfiguracja API",
-		"select": "Wybierz, której konfiguracji API użyć dla tego trybu"
+		"select": "Wybierz, której konfiguracji API użyć dla tego trybu",
+		"inheritProfile": "Użyj aktywnego profilu",
+		"inheritModel": "Użyj modelu profilu"
 	},
 	"tools": {
 		"title": "Dostępne narzędzia",
@@ -33,7 +46,7 @@
 	"roleDefinition": {
 		"title": "Definicja roli",
 		"resetToDefault": "Przywróć domyślne",
-		"description": "Zdefiniuj wiedzę specjalistyczną i osobowość Roo dla tego trybu. Ten opis kształtuje, jak Roo prezentuje się i podchodzi do zadań."
+		"description": "Zdefiniuj wiedzę specjalistyczną i osobowość AI Code Orchestrator dla tego trybu. Ten opis kształtuje, jak AI Code Orchestrator prezentuje się i podchodzi do zadań."
 	},
 	"description": {
 		"title": "Krótki opis (dla ludzi)",
@@ -49,12 +62,11 @@
 		"title": "Niestandardowe instrukcje dla trybu (opcjonalne)",
 		"resetToDefault": "Przywróć domyślne",
 		"description": "Dodaj wytyczne dotyczące zachowania specyficzne dla trybu {{modeName}}.",
-		"loadFromFile": "Niestandardowe instrukcje specyficzne dla trybu {{mode}} można również załadować z folderu <span>.roo/rules-{{slug}}/</span> w twoim obszarze roboczym lub z globalnego <0>.roo/rules-{{slug}}/</0> (.roorules-{{slug}} i .clinerules-{{slug}} są przestarzałe i wkrótce przestaną działać)."
+		"loadFromFile": "Niestandardowe instrukcje specyficzne dla trybu {{mode}} można również załadować z folderu <span>.ai-code-orchestrator/rules-{{slug}}/</span> w twoim obszarze roboczym lub z globalnego <0>.ai-code-orchestrator/rules-{{slug}}/</0> (.aicorules-{{slug}} i .clinerules-{{slug}} są przestarzałe i wkrótce przestaną działać)."
 	},
 	"exportMode": {
 		"title": "Eksportuj tryb",
 		"description": "Eksportuj ten tryb do pliku YAML ze wszystkimi regułami w celu łatwego udostępniania innym.",
-		"export": "Eksportuj tryb",
 		"exporting": "Eksportowanie..."
 	},
 	"importMode": {
@@ -67,13 +79,13 @@
 		},
 		"project": {
 			"label": "Poziom projektu",
-			"description": "Dostępne tylko w tym obszarze roboczym. Jeśli wyeksportowany tryb zawierał pliki reguł, zostaną one odtworzone w folderze .roo/rules-{slug}/."
+			"description": "Dostępne tylko w tym obszarze roboczym. Jeśli wyeksportowany tryb zawierał pliki reguł, zostaną one odtworzone w folderze .ai-code-orchestrator/rules-{slug}/."
 		}
 	},
 	"globalCustomInstructions": {
 		"title": "Niestandardowe instrukcje dla wszystkich trybów",
 		"description": "Te instrukcje dotyczą wszystkich trybów. Zapewniają podstawowy zestaw zachowań, które mogą być rozszerzone przez instrukcje specyficzne dla trybów poniżej. <0>Dowiedz się więcej</0>",
-		"loadFromFile": "Instrukcje można również załadować z folderu <span>.roo/rules/</span> w twoim obszarze roboczym lub z globalnego <0>.roo/rules/</0> (.roorules i .clinerules są przestarzałe i wkrótce przestaną działać)."
+		"loadFromFile": "Instrukcje można również załadować z folderu <span>.ai-code-orchestrator/rules/</span> w twoim obszarze roboczym lub z globalnego <0>.ai-code-orchestrator/rules/</0> (.aicorules i .clinerules są przestarzałe i wkrótce przestaną działać)."
 	},
 	"systemPrompt": {
 		"preview": "Podgląd podpowiedzi systemowej",
@@ -102,7 +114,7 @@
 		"types": {
 			"ENHANCE": {
 				"label": "Ulepsz podpowiedź",
-				"description": "Użyj ulepszenia podpowiedzi, aby uzyskać dostosowane sugestie lub ulepszenia dla swoich danych wejściowych. Zapewnia to, że Roo rozumie Twoje intencje i dostarcza najlepsze możliwe odpowiedzi. Dostępne za pośrednictwem ikony ✨ w czacie."
+				"description": "Użyj ulepszenia podpowiedzi, aby uzyskać dostosowane sugestie lub ulepszenia dla swoich danych wejściowych. Zapewnia to, że AI Code Orchestrator rozumie Twoje intencje i dostarcza najlepsze możliwe odpowiedzi. Dostępne za pośrednictwem ikony ✨ w czacie."
 			},
 			"CONDENSE": {
 				"label": "Kondensacja kontekstu",
@@ -161,13 +173,13 @@
 				"description": "Dostępny we wszystkich obszarach roboczych"
 			},
 			"project": {
-				"label": "Specyficzny dla projektu (.roomodes)",
+				"label": "Specyficzny dla projektu (.agent-modes)",
 				"description": "Dostępny tylko w tym obszarze roboczym, ma pierwszeństwo przed globalnym"
 			}
 		},
 		"roleDefinition": {
 			"label": "Definicja roli",
-			"description": "Zdefiniuj wiedzę specjalistyczną i osobowość Roo dla tego trybu."
+			"description": "Zdefiniuj wiedzę specjalistyczną i osobowość AI Code Orchestrator dla tego trybu."
 		},
 		"whenToUse": {
 			"label": "Kiedy używać (opcjonalne)",

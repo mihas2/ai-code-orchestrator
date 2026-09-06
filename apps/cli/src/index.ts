@@ -7,8 +7,10 @@ import { run, listCommands, listModes, listModels, listSessions, upgrade } from 
 const program = new Command()
 
 program
-	.name("roo")
-	.description("Roo Code CLI - starts an interactive session by default, use -p/--print for non-interactive output")
+	.name("aico")
+	.description(
+		"AI Code Orchestrator CLI - starts an interactive session by default, use -p/--print for non-interactive output",
+	)
 	.version(VERSION)
 	.enablePositionalOptions()
 	.passThroughOptions()
@@ -121,7 +123,7 @@ applyListOptions(listCommand.command("sessions").description("List task sessions
 
 program
 	.command("upgrade")
-	.description("Upgrade Roo Code CLI to the latest version")
+	.description("Upgrade AI Code Orchestrator CLI to the latest version")
 	.action(async () => {
 		await runUpgradeAction(() => upgrade())
 	})

@@ -10,24 +10,24 @@ import { appendImages } from "@src/utils/imageUtils"
 import { getCostBreakdownIfNeeded } from "@src/utils/costFormatting"
 import { batchConsecutive } from "@src/utils/batchConsecutive"
 
-import type { ClineAsk, ClineSayTool, ClineMessage, ExtensionMessage, AudioType } from "@roo-code/types"
-import { isRetiredProvider } from "@roo-code/types"
+import type { ClineAsk, ClineSayTool, ClineMessage, ExtensionMessage, AudioType } from "@ai-code-orchestrator/types"
+import { isRetiredProvider } from "@ai-code-orchestrator/types"
 
-import { findLast } from "@roo/array"
-import { SuggestionItem } from "@roo-code/types"
-import { combineApiRequests } from "@roo/combineApiRequests"
-import { combineCommandSequences } from "@roo/combineCommandSequences"
-import { getApiMetrics } from "@roo/getApiMetrics"
-import { getAllModes } from "@roo/modes"
-import { ProfileValidator } from "@roo/ProfileValidator"
-import { getLatestTodo } from "@roo/todo"
+import { findLast } from "@aico/array"
+import { SuggestionItem } from "@ai-code-orchestrator/types"
+import { combineApiRequests } from "@aico/combineApiRequests"
+import { combineCommandSequences } from "@aico/combineCommandSequences"
+import { getApiMetrics } from "@aico/getApiMetrics"
+import { defaultModeSlug, getAllModes } from "@aico/modes"
+import { ProfileValidator } from "@aico/ProfileValidator"
+import { getLatestTodo } from "@aico/todo"
 
 import { vscode } from "@src/utils/vscode"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { useSelectedModel } from "@src/components/ui/hooks/useSelectedModel"
-import RooHero from "@src/components/welcome/RooHero"
-import RooTips from "@src/components/welcome/RooTips"
+import AicoHero from "@src/components/welcome/AicoHero"
+import AicoTips from "@src/components/welcome/AicoTips"
 import { StandardTooltip, Button } from "@src/components/ui"
 import VersionIndicator from "../common/VersionIndicator"
 import HistoryPreview from "../history/HistoryPreview"
@@ -70,12 +70,14 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	const {
 		clineMessages: messages,
+		currentTaskId,
+		currentTaskInstanceId,
 		currentTaskItem,
 		currentTaskTodos,
 		taskHistory,
 		apiConfiguration,
 		organizationAllowList,
-		mode,
+		runtimeMode: mode = defaultModeSlug,
 		setMode,
 		alwaysAllowModeSwitch,
 		customModes,
@@ -501,7 +503,17 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		}
 	}, [])
 
+	const taskIdentity =
+		currentTaskId && currentTaskInstanceId ? `${currentTaskId}.${currentTaskInstanceId}` : undefined
+	const streamingTaskIdentityRef = useRef<string | undefined>(undefined)
 	const isStreaming = useMemo(() => {
+		// Do not reuse message-derived streaming state while switching tasks. The
+		// old task's messages can remain in state for one render after identity changes.
+		if (streamingTaskIdentityRef.current !== taskIdentity) {
+			streamingTaskIdentityRef.current = taskIdentity
+			return false
+		}
+
 		// Checking clineAsk isn't enough since messages effect may be called
 		// again for a tool for example, set clineAsk to its value, and if the
 		// next message is not an ask then it doesn't reset. This is likely due
@@ -543,7 +555,27 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		}
 
 		return false
-	}, [modifiedMessages, clineAsk, enableButtons, primaryButtonText])
+	}, [modifiedMessages, clineAsk, enableButtons, primaryButtonText, taskIdentity])
+
+	const loggedTaskIdentityRef = useRef<string | undefined>(taskIdentity)
+	useEffect(() => {
+		const oldId = loggedTaskIdentityRef.current
+		if (oldId !== taskIdentity) {
+			// Identity changes never initiate cancellation. This log makes regressions explicit.
+			const shouldSendCancel = false
+			console.log(
+				"[ChatView] taskId changed:",
+				oldId,
+				"->",
+				taskIdentity,
+				"isStreaming:",
+				isStreaming,
+				"sending cancel:",
+				shouldSendCancel,
+			)
+			loggedTaskIdentityRef.current = taskIdentity
+		}
+	}, [taskIdentity, isStreaming])
 
 	const markFollowUpAsAnswered = useCallback(() => {
 		const lastFollowUpMessage = messagesRef.current.findLast((msg: ClineMessage) => msg.ask === "followup")
@@ -640,6 +672,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 								type: "askResponse",
 								askResponse: "messageResponse",
 								text,
+								taskId: currentTaskId,
+								instanceId: currentTaskInstanceId,
 								images,
 							})
 							break
@@ -647,7 +681,14 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					}
 				} else {
 					// This is a new message in an ongoing task.
-					vscode.postMessage({ type: "askResponse", askResponse: "messageResponse", text, images })
+					vscode.postMessage({
+						type: "askResponse",
+						askResponse: "messageResponse",
+						text,
+						images,
+						taskId: currentTaskId,
+						instanceId: currentTaskInstanceId,
+					})
 				}
 
 				handleChatReset()
@@ -660,6 +701,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			isStreaming,
 			messageQueue.length,
 			apiConfiguration?.apiProvider,
+			currentTaskId,
+			currentTaskInstanceId,
 		], // messagesRef and clineAskRef are stable
 	)
 
@@ -685,9 +728,23 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	// Handle stop button click from textarea
 	const handleStopTask = useCallback(() => {
-		vscode.postMessage({ type: "cancelTask" })
+		const latestTaskId = currentTaskId
+		if (!latestTaskId || latestTaskId !== currentTaskId) {
+			console.warn(
+				`[ChatView] Race condition prevented: UI taskId=${currentTaskId}, State taskId=${latestTaskId}`,
+			)
+			return
+		}
+
+		console.log("[ChatView] sending cancelTask from ChatTextArea stop click, stack:", new Error().stack)
+		console.log("[ChatView] sending cancelTask with:", {
+			type: "cancelTask",
+			taskId: currentTaskId,
+			instanceId: currentTaskInstanceId,
+		})
+		vscode.postMessage({ type: "cancelTask", taskId: currentTaskId, instanceId: currentTaskInstanceId })
 		setDidClickCancel(true)
-	}, [setDidClickCancel])
+	}, [currentTaskId, currentTaskInstanceId, setDidClickCancel])
 
 	// Handle enqueue button click from textarea
 	const handleEnqueueCurrentMessage = useCallback(() => {
@@ -721,9 +778,16 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				case "mistake_limit_reached":
 					// Only send text/images if they exist
 					if (trimmedInput || (images && images.length > 0)) {
+						console.log("[ChatView] sending cancelTask/askResponse with:", {
+							type: "askResponse",
+							taskId: currentTaskId,
+							instanceId: currentTaskInstanceId,
+						})
 						vscode.postMessage({
 							type: "askResponse",
 							askResponse: "yesButtonClicked",
+							taskId: currentTaskId,
+							instanceId: currentTaskInstanceId,
 							text: trimmedInput,
 							images: images,
 						})
@@ -731,7 +795,17 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						setInputValue("")
 						setSelectedImages([])
 					} else {
-						vscode.postMessage({ type: "askResponse", askResponse: "yesButtonClicked" })
+						console.log("[ChatView] sending cancelTask/askResponse with:", {
+							type: "askResponse",
+							taskId: currentTaskId,
+							instanceId: currentTaskInstanceId,
+						})
+						vscode.postMessage({
+							type: "askResponse",
+							askResponse: "yesButtonClicked",
+							taskId: currentTaskId,
+							instanceId: currentTaskInstanceId,
+						})
 					}
 					break
 				case "resume_task":
@@ -747,9 +821,16 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					} else {
 						// Only send text/images if they exist
 						if (trimmedInput || (images && images.length > 0)) {
+							console.log("[ChatView] sending cancelTask/askResponse with:", {
+								type: "askResponse",
+								taskId: currentTaskId,
+								instanceId: currentTaskInstanceId,
+							})
 							vscode.postMessage({
 								type: "askResponse",
 								askResponse: "yesButtonClicked",
+								taskId: currentTaskId,
+								instanceId: currentTaskInstanceId,
 								text: trimmedInput,
 								images: images,
 							})
@@ -757,7 +838,17 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							setInputValue("")
 							setSelectedImages([])
 						} else {
-							vscode.postMessage({ type: "askResponse", askResponse: "yesButtonClicked" })
+							console.log("[ChatView] sending cancelTask/askResponse with:", {
+								type: "askResponse",
+								taskId: currentTaskId,
+								instanceId: currentTaskInstanceId,
+							})
+							vscode.postMessage({
+								type: "askResponse",
+								askResponse: "yesButtonClicked",
+								taskId: currentTaskId,
+								instanceId: currentTaskInstanceId,
+							})
 						}
 					}
 					break
@@ -777,21 +868,17 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			setPrimaryButtonText(undefined)
 			setSecondaryButtonText(undefined)
 		},
-		[clineAsk, startNewTask, currentTaskItem?.parentTaskId],
+		[clineAsk, startNewTask, currentTaskItem?.parentTaskId, currentTaskId, currentTaskInstanceId],
 	)
 
 	const handleSecondaryButtonClick = useCallback(
 		(text?: string, images?: string[]) => {
-			// Mark that user has responded
+			// Mark that the user responded. Streaming state alone must not turn an
+			// invoke/secondary-button event into cancelTask: stale button state can
+			// survive task delegation and invokes are also used programmatically.
 			userRespondedRef.current = true
 
 			const trimmedInput = text?.trim()
-
-			if (isStreaming) {
-				vscode.postMessage({ type: "cancelTask" })
-				setDidClickCancel(true)
-				return
-			}
 
 			switch (clineAsk) {
 				case "api_req_failed":
@@ -807,6 +894,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						vscode.postMessage({
 							type: "askResponse",
 							askResponse: "noButtonClicked",
+							taskId: currentTaskId,
+							instanceId: currentTaskInstanceId,
 							text: trimmedInput,
 							images: images,
 						})
@@ -815,7 +904,12 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						setSelectedImages([])
 					} else {
 						// Responds to the API with a "This operation failed" and lets it try again
-						vscode.postMessage({ type: "askResponse", askResponse: "noButtonClicked" })
+						vscode.postMessage({
+							type: "askResponse",
+							askResponse: "noButtonClicked",
+							taskId: currentTaskId,
+							instanceId: currentTaskInstanceId,
+						})
 					}
 					break
 				case "command_output":
@@ -826,7 +920,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			setClineAsk(undefined)
 			setEnableButtons(false)
 		},
-		[clineAsk, startNewTask, isStreaming, setDidClickCancel],
+		[clineAsk, startNewTask, currentTaskId, currentTaskInstanceId],
 	)
 
 	const { info: model } = useSelectedModel(apiConfiguration)
@@ -1333,6 +1427,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	const switchToMode = useCallback(
 		(modeSlug: string): void => {
+			console.log("[UI] Switching mode to:", modeSlug)
 			// Update local state and notify extension to sync mode change.
 			setMode(modeSlug)
 
@@ -1381,10 +1476,19 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		[handleSendMessage, setInputValue, switchToMode, alwaysAllowModeSwitch, clineAsk, markFollowUpAsAnswered],
 	)
 
-	const handleBatchFileResponse = useCallback((response: { [key: string]: boolean }) => {
-		// Handle batch file response, e.g., for file uploads
-		vscode.postMessage({ type: "askResponse", askResponse: "objectResponse", text: JSON.stringify(response) })
-	}, [])
+	const handleBatchFileResponse = useCallback(
+		(response: { [key: string]: boolean }) => {
+			// Handle batch file response, e.g., for file uploads
+			vscode.postMessage({
+				type: "askResponse",
+				askResponse: "objectResponse",
+				text: JSON.stringify(response),
+				taskId: currentTaskId,
+				instanceId: currentTaskInstanceId,
+			})
+		},
+		[currentTaskId, currentTaskInstanceId],
+	)
 
 	// Cancel backend auto-approval timeout when FollowUpSuggest's countdown effect cleans up.
 	// This is called when auto-approve is toggled off, a suggestion is clicked, or the component unmounts.
@@ -1613,9 +1717,9 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							className="absolute top-2 right-3 z-10"
 						/>
 						<div className="flex flex-col gap-4 w-full">
-							<RooHero />
-							{/* Show RooTips when authenticated or when user is new */}
-							{taskHistory.length < 6 && <RooTips />}
+							<AicoHero />
+							{/* Show AicoTips when authenticated or when user is new */}
+							{taskHistory.length < 6 && <AicoTips />}
 							{/* Everyone should see their task history if any */}
 							{taskHistory.length > 0 && <HistoryPreview />}
 						</div>
@@ -1752,8 +1856,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					<WarningRow
 						title={t("chat:retiredProvider.title")}
 						message={t(
-							apiConfiguration?.apiProvider === "roo"
-								? "chat:retiredProvider.rooMessage"
+							apiConfiguration?.apiProvider === "aico"
+								? "chat:retiredProvider.aicoMessage"
 								: "chat:retiredProvider.message",
 						)}
 						actionText={t("chat:retiredProvider.openSettings")}
@@ -1792,7 +1896,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				</div>
 			)}
 
-			<div id="roo-portal" />
+			<div id="aico-portal" />
 		</div>
 	)
 }

@@ -1,7 +1,7 @@
 {
-	"name": "@roo-code/core",
-	"description": "Platform agnostic core functionality for Roo Code.",
-	"version": "0.0.1",
+	"name": "@ai-code-orchestrator/core",
+	"description": "Platform agnostic core functionality for AI Code Orchestrator.",
+	"version": "1.1.4",
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",
@@ -15,7 +15,7 @@
 		"clean": "rimraf .turbo"
 	},
 	"dependencies": {
-		"@roo-code/types": "workspace:^",
+		"@ai-code-orchestrator/types": "workspace:^",
 		"esbuild": "^0.25.0",
 		"execa": "^9.5.2",
 		"ignore": "^7.0.3",
@@ -23,8 +23,8 @@
 		"zod": "^3.25.61"
 	},
 	"devDependencies": {
-		"@roo-code/config-eslint": "workspace:^",
-		"@roo-code/config-typescript": "workspace:^",
+		"@ai-code-orchestrator/config-eslint": "workspace:^",
+		"@ai-code-orchestrator/config-typescript": "workspace:^",
 		"@types/node": "^24.1.0",
 		"vitest": "^3.2.3"
 	}

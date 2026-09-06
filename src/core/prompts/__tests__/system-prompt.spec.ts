@@ -45,7 +45,7 @@ vi.mock("fs/promises")
 
 import * as vscode from "vscode"
 
-import { ModeConfig } from "@roo-code/types"
+import { ModeConfig } from "@ai-code-orchestrator/types"
 
 import { SYSTEM_PROMPT } from "../system"
 import { McpHub } from "../../../services/mcp/McpHub"
@@ -79,7 +79,7 @@ __setMockImplementation(
 		globalCustomInstructions: string,
 		cwd: string,
 		mode: string,
-		options?: { language?: string; rooIgnoreInstructions?: string; settings?: Record<string, any> },
+		options?: { language?: string; aicoIgnoreInstructions?: string; settings?: Record<string, any> },
 	) => {
 		const sections = []
 
@@ -226,7 +226,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 		)
 
 		expect(prompt).toMatchFileSnapshot("./__snapshots__/system-prompt/consistent-system-prompt.snap")
@@ -247,7 +247,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 		)
 
 		expect(prompt).toMatchFileSnapshot("./__snapshots__/system-prompt/with-mcp-hub-provided.snap")
@@ -266,7 +266,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 		)
 
 		expect(prompt).toMatchFileSnapshot("./__snapshots__/system-prompt/with-undefined-mcp-hub.snap")
@@ -312,7 +312,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			undefined, // experiments
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 		)
 
 		expect(prompt).toContain("Language Preference:")
@@ -369,7 +369,7 @@ describe("SYSTEM_PROMPT", () => {
 			"Global instructions", // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 		)
 
 		// Role definition should be at the top
@@ -403,7 +403,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			undefined, // experiments
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 		)
 
 		// Role definition from promptComponent should be at the top
@@ -432,7 +432,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			undefined, // experiments
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 		)
 
 		// Should use the default mode's role definition
@@ -458,7 +458,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 			settings, // settings
 		)
 
@@ -486,12 +486,12 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 			settings, // settings
 		)
 
-		// update_todo_list is still referenced by mode instructions, but tool catalogs are not embedded.
-		expect(prompt).toContain("update_todo_list")
+		// Native tools are supplied out-of-band; the prompt enforces tool use without embedding a catalog.
+		expect(prompt).toContain("You must call at least one tool per assistant response")
 		expect(prompt).not.toContain("## update_todo_list")
 	})
 
@@ -514,12 +514,12 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 			settings, // settings
 		)
 
-		// update_todo_list is still referenced by mode instructions, but tool catalogs are not embedded.
-		expect(prompt).toContain("update_todo_list")
+		// Native tools are supplied out-of-band; the prompt enforces tool use without embedding a catalog.
+		expect(prompt).toContain("You must call at least one tool per assistant response")
 		expect(prompt).not.toContain("## update_todo_list")
 	})
 
@@ -542,7 +542,7 @@ describe("SYSTEM_PROMPT", () => {
 			undefined, // globalCustomInstructions
 			experiments,
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // aicoIgnoreInstructions
 			settings, // settings
 		)
 
@@ -567,8 +567,8 @@ describe("SYSTEM_PROMPT", () => {
 		expect(prompt).not.toContain("Usage:")
 		expect(prompt).not.toContain("Examples:")
 
-		// Should still contain role definition and other non-XML sections
-		expect(prompt).toContain(modes[0].roleDefinition)
+		// Should still contain the selected mode's role definition and other non-XML sections
+		expect(prompt).toContain(modes.find((mode) => mode.slug === defaultModeSlug)!.roleDefinition)
 		expect(prompt).toContain("CAPABILITIES")
 		expect(prompt).toContain("RULES")
 		expect(prompt).toContain("SYSTEM INFORMATION")

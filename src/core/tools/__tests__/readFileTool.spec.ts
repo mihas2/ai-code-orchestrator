@@ -3,7 +3,7 @@
  *
  * These tests cover:
  * - Input validation (missing path parameter)
- * - RooIgnore blocking
+ * - AicoIgnore blocking
  * - Directory read error handling
  * - Binary file handling (images, PDF, DOCX, unsupported)
  * - Image memory limits
@@ -83,9 +83,9 @@ vi.mock("../../prompts/responses", () => ({
 			(feedback?: string) =>
 				`The user approved this operation and responded with the message:\n<user_message>\n${feedback}\n</user_message>`,
 		),
-		rooIgnoreError: vi.fn(
+		aicoIgnoreError: vi.fn(
 			(filePath: string) =>
-				`Access to ${filePath} is blocked by the .rooignore file settings. You must try to continue in the task without using this file, or ask the user to update the .rooignore file.`,
+				`Access to ${filePath} is blocked by the .aicoignore file settings. You must try to continue in the task without using this file, or ask the user to update the .aicoignore file.`,
 		),
 		toolResult: vi.fn((text: string, images?: string[]) => {
 			if (images && images.length > 0) {
@@ -129,13 +129,13 @@ const mockedProcessImageFile = vi.mocked(processImageFile)
 
 interface MockTaskOptions {
 	supportsImages?: boolean
-	rooIgnoreAllowed?: boolean
+	aicoIgnoreAllowed?: boolean
 	maxImageFileSize?: number
 	maxTotalImageSize?: number
 }
 
 function createMockTask(options: MockTaskOptions = {}) {
-	const { supportsImages = false, rooIgnoreAllowed = true, maxImageFileSize = 5, maxTotalImageSize = 20 } = options
+	const { supportsImages = false, aicoIgnoreAllowed = true, maxImageFileSize = 5, maxTotalImageSize = 20 } = options
 
 	return {
 		cwd: "/test/workspace",
@@ -151,8 +151,8 @@ function createMockTask(options: MockTaskOptions = {}) {
 		say: vi.fn().mockResolvedValue(undefined),
 		sayAndCreateMissingParamError: vi.fn().mockResolvedValue("Missing required parameter: path"),
 		recordToolError: vi.fn(),
-		rooIgnoreController: {
-			validateAccess: vi.fn().mockReturnValue(rooIgnoreAllowed),
+		aicoIgnoreController: {
+			validateAccess: vi.fn().mockReturnValue(aicoIgnoreAllowed),
 		},
 		fileContextTracker: {
 			trackFileContext: vi.fn().mockResolvedValue(undefined),
@@ -279,16 +279,16 @@ describe("ReadFileTool", () => {
 		})
 	})
 
-	describe("RooIgnore handling", () => {
-		it("should block access to rooignore-protected files", async () => {
-			const mockTask = createMockTask({ rooIgnoreAllowed: false })
+	describe("AicoIgnore handling", () => {
+		it("should block access to aicoignore-protected files", async () => {
+			const mockTask = createMockTask({ aicoIgnoreAllowed: false })
 			const callbacks = createMockCallbacks()
 
 			await readFileTool.execute({ path: "secret.env" }, mockTask as any, callbacks)
 
-			expect(mockTask.say).toHaveBeenCalledWith("rooignore_error", "secret.env")
-			expect(formatResponse.rooIgnoreError).toHaveBeenCalledWith("secret.env")
-			expect(callbacks.pushToolResult).toHaveBeenCalledWith(expect.stringContaining("blocked by the .rooignore"))
+			expect(mockTask.say).toHaveBeenCalledWith("aicoignore_error", "secret.env")
+			expect(formatResponse.aicoIgnoreError).toHaveBeenCalledWith("secret.env")
+			expect(callbacks.pushToolResult).toHaveBeenCalledWith(expect.stringContaining("blocked by the .aicoignore"))
 		})
 	})
 

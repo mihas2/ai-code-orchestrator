@@ -37,7 +37,7 @@ vi.mock("../diagnosticsHandler", () => ({
 	generateErrorDiagnostics: vi.fn().mockResolvedValue({ success: true, filePath: "/tmp/diagnostics.json" }),
 }))
 
-import type { ModelRecord } from "@roo-code/types"
+import type { ModelRecord } from "@ai-code-orchestrator/types"
 
 import { webviewMessageHandler } from "../webviewMessageHandler"
 import type { ClineProvider } from "../ClineProvider"
@@ -148,7 +148,7 @@ import * as fsUtils from "../../../utils/fs"
 import { getWorkspacePath } from "../../../utils/path"
 import { ensureSettingsDirectoryExists } from "../../../utils/globalContext"
 import { generateErrorDiagnostics } from "../diagnosticsHandler"
-import type { ModeConfig } from "@roo-code/types"
+import type { ModeConfig } from "@ai-code-orchestrator/types"
 
 vi.mock("../../../utils/fs")
 vi.mock("../../../utils/path")
@@ -217,14 +217,18 @@ describe("webviewMessageHandler - image mentions", () => {
 	it("should resolve image mentions for askResponse payloads", async () => {
 		const mockHandleWebviewAskResponse = vi.fn()
 		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue({
+			taskId: "test-task-id",
+			instanceId: "test-instance-id",
 			cwd: "/mock/workspace",
-			rooIgnoreController: undefined,
+			aicoIgnoreController: undefined,
 			handleWebviewAskResponse: mockHandleWebviewAskResponse,
 		} as any)
 
 		await webviewMessageHandler(mockClineProvider, {
 			type: "askResponse",
 			askResponse: "messageResponse",
+			taskId: "test-task-id",
+			instanceId: "test-instance-id",
 			text: "See @/img.png",
 			images: [],
 		})
@@ -597,12 +601,12 @@ describe("webviewMessageHandler - deleteCustomMode", () => {
 		vi.clearAllMocks()
 		vi.mocked(getWorkspacePath).mockReturnValue("/mock/workspace")
 		vi.mocked(vscode.window.showErrorMessage).mockResolvedValue(undefined)
-		vi.mocked(ensureSettingsDirectoryExists).mockResolvedValue("/mock/global/storage/.roo")
+		vi.mocked(ensureSettingsDirectoryExists).mockResolvedValue("/mock/global/storage/.ai-code-orchestrator")
 	})
 
 	it("should delete a project mode and its rules folder", async () => {
 		const slug = "test-project-mode"
-		const rulesFolderPath = path.join("/mock/workspace", ".roo", `rules-${slug}`)
+		const rulesFolderPath = path.join("/mock/workspace", ".ai-code-orchestrator", `rules-${slug}`)
 
 		vi.mocked(mockClineProvider.customModesManager.getCustomModes).mockResolvedValue([
 			{
@@ -627,7 +631,7 @@ describe("webviewMessageHandler - deleteCustomMode", () => {
 	it("should delete a global mode and its rules folder", async () => {
 		const slug = "test-global-mode"
 		const homeDir = os.homedir()
-		const rulesFolderPath = path.join(homeDir, ".roo", `rules-${slug}`)
+		const rulesFolderPath = path.join(homeDir, ".ai-code-orchestrator", `rules-${slug}`)
 
 		vi.mocked(mockClineProvider.customModesManager.getCustomModes).mockResolvedValue([
 			{
@@ -673,7 +677,7 @@ describe("webviewMessageHandler - deleteCustomMode", () => {
 
 	it("should handle errors when deleting rules folder", async () => {
 		const slug = "test-mode-error"
-		const rulesFolderPath = path.join("/mock/workspace", ".roo", `rules-${slug}`)
+		const rulesFolderPath = path.join("/mock/workspace", ".ai-code-orchestrator", `rules-${slug}`)
 		const error = new Error("Permission denied")
 
 		vi.mocked(mockClineProvider.customModesManager.getCustomModes).mockResolvedValue([
@@ -832,21 +836,21 @@ describe("webviewMessageHandler - requestCommands", () => {
 			{
 				name: "skill-slug-entry",
 				description: "Primary skill slug",
-				path: "/mock/.roo/skills/skill-slug-entry/SKILL.md",
+				path: "/mock/.ai-code-orchestrator/skills/skill-slug-entry/SKILL.md",
 				source: "project",
 				modeSlugs: ["code"],
 			},
 			{
 				name: "skill-slug-entry",
 				description: "Duplicate skill slug",
-				path: "/mock/.roo/skills/duplicate-skill/SKILL.md",
+				path: "/mock/.ai-code-orchestrator/skills/duplicate-skill/SKILL.md",
 				source: "global",
 				modeSlugs: ["code"],
 			},
 			{
 				name: "another-skill-slug",
 				description: "Another skill-generated command",
-				path: "/mock/.roo/skills/another-skill-slug/SKILL.md",
+				path: "/mock/.ai-code-orchestrator/skills/another-skill-slug/SKILL.md",
 				source: "global",
 				modeSlugs: ["code"],
 			},
@@ -869,13 +873,13 @@ describe("webviewMessageHandler - requestCommands", () => {
 				{
 					name: "skill-slug-entry",
 					source: "project",
-					filePath: "/mock/.roo/skills/skill-slug-entry/SKILL.md",
+					filePath: "/mock/.ai-code-orchestrator/skills/skill-slug-entry/SKILL.md",
 					description: "Primary skill slug",
 				},
 				{
 					name: "another-skill-slug",
 					source: "global",
-					filePath: "/mock/.roo/skills/another-skill-slug/SKILL.md",
+					filePath: "/mock/.ai-code-orchestrator/skills/another-skill-slug/SKILL.md",
 					description: "Another skill-generated command",
 				},
 			]),
@@ -890,7 +894,7 @@ describe("webviewMessageHandler - requestCommands", () => {
 				name: "deploy",
 				content: "existing command",
 				source: "project",
-				filePath: "/mock/workspace/.roo/commands/deploy.md",
+				filePath: "/mock/workspace/.ai-code-orchestrator/commands/deploy.md",
 				description: "Deploy command",
 				argumentHint: "staging | production",
 			},
@@ -906,14 +910,14 @@ describe("webviewMessageHandler - requestCommands", () => {
 			{
 				name: "deploy",
 				description: "Deploy skill",
-				path: "/mock/.roo/skills/deploy/SKILL.md",
+				path: "/mock/.ai-code-orchestrator/skills/deploy/SKILL.md",
 				source: "global",
 				modeSlugs: ["code"],
 			},
 			{
 				name: "skill-only",
 				description: "Skill-generated command",
-				path: "/mock/.roo/skills/skill-only/SKILL.md",
+				path: "/mock/.ai-code-orchestrator/skills/skill-only/SKILL.md",
 				source: "project",
 				modeSlugs: ["code"],
 			},
@@ -933,14 +937,14 @@ describe("webviewMessageHandler - requestCommands", () => {
 				{
 					name: "deploy",
 					source: "project",
-					filePath: "/mock/workspace/.roo/commands/deploy.md",
+					filePath: "/mock/workspace/.ai-code-orchestrator/commands/deploy.md",
 					description: "Deploy command",
 					argumentHint: "staging | production",
 				},
 				{
 					name: "skill-only",
 					source: "project",
-					filePath: "/mock/.roo/skills/skill-only/SKILL.md",
+					filePath: "/mock/.ai-code-orchestrator/skills/skill-only/SKILL.md",
 					description: "Skill-generated command",
 				},
 			]),

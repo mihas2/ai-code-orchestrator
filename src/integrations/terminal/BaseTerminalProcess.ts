@@ -1,8 +1,11 @@
 import { EventEmitter } from "events"
 
-import type { RooTerminalProcess, RooTerminalProcessEvents, ExitCodeDetails } from "./types"
+import type { AicoTerminalProcess, AicoTerminalProcessEvents, ExitCodeDetails } from "./types"
 
-export abstract class BaseTerminalProcess extends EventEmitter<RooTerminalProcessEvents> implements RooTerminalProcess {
+export abstract class BaseTerminalProcess
+	extends EventEmitter<AicoTerminalProcessEvents>
+	implements AicoTerminalProcess
+{
 	public command: string = ""
 
 	public isHot: boolean = false
@@ -174,7 +177,7 @@ export abstract class BaseTerminalProcess extends EventEmitter<RooTerminalProces
 
 	// These markers indicate the command is some kind of local dev
 	// server recompiling the app, which we want to wait for output
-	// of before sending request to Roo Code.
+	// of before sending request to AI Code Orchestrator.
 	private static compilingMarkers = ["compiling", "building", "bundling", "transpiling", "generating", "starting"]
 
 	private static compilingMarkerNullifiers = [

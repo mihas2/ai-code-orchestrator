@@ -8,13 +8,26 @@
 		"noMatchFound": "モードが見つかりません",
 		"editModesConfig": "モード設定を編集",
 		"editGlobalModes": "グローバルモードを編集",
-		"editProjectModes": "プロジェクトモードを編集 (.roomodes)",
-		"createModeHelpText": "モードはRooの振る舞いを調整する専門的なペルソナです。<0>モードの使用について学ぶ</0>か、<1>モードのカスタマイズについて学ぶ</1>。",
+		"editProjectModes": "プロジェクトモードを編集 (.agent-modes)",
+		"createModeHelpText": "モードはAI Code Orchestratorの振る舞いを調整する専門的なペルソナです。<0>モードの使用について学ぶ</0>か、<1>モードのカスタマイズについて学ぶ</1>。",
 		"selectMode": "モードを検索"
+	},
+	"reviewer": {
+		"name": "レビュアー",
+		"description": "完了した作業の読み取り専用品質レビュー",
+		"readOnlyNotice": "レビュアーはファイルの読み取りと診断の実行はできますが、ファイルの編集や宣言された範囲の拡大はできません。",
+		"findingSeverities": "指摘の重大度: blocker、major、minor、note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator は、ユーザーと専門エージェントを結ぶ、結果に責任を持つチームリードです。目標、計画、依存関係、作業配分、予算、品質ゲート、統合、最終結果を所有し、実装の全記録ではなく簡潔な集約状態を保持します。",
+		"whenToUse": "architect、code、debug、reviewer の分解と調整、独立作業の並列化、明示的な依存関係、レビュー、修正、制御された統合、品質保証が必要な複雑な複数段階の作業で使用します。",
+		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
 	},
 	"apiConfiguration": {
 		"title": "API設定",
-		"select": "このモードで使用するAPI設定を選択してください"
+		"select": "このモードで使用するAPI設定を選択してください",
+		"inheritProfile": "アクティブなプロファイルを使用",
+		"inheritModel": "プロファイルのモデルを使用"
 	},
 	"tools": {
 		"title": "利用可能なツール",
@@ -33,7 +46,7 @@
 	"roleDefinition": {
 		"title": "役割の定義",
 		"resetToDefault": "デフォルトにリセット",
-		"description": "このモードのRooの専門知識と個性を定義します。この説明は、Rooが自身をどのように表現し、タスクにどのように取り組むかを形作ります。"
+		"description": "このモードのAI Code Orchestratorの専門知識と個性を定義します。この説明は、AI Code Orchestratorが自身をどのように表現し、タスクにどのように取り組むかを形作ります。"
 	},
 	"description": {
 		"title": "短い説明（人間向け）",
@@ -49,12 +62,11 @@
 		"title": "モード固有のカスタム指示（オプション）",
 		"resetToDefault": "デフォルトにリセット",
 		"description": "{{modeName}}モードに特化した行動ガイドラインを追加します。",
-		"loadFromFile": "{{mode}}モード固有のカスタム指示は、ワークスペースの<span>.roo/rules-{{slug}}/</span>フォルダまたはグローバル<0>.roo/rules-{{slug}}/</0>からも読み込むことができます（.roorules-{{slug}}と.clinerules-{{slug}}は非推奨で、まもなく動作しなくなります）。"
+		"loadFromFile": "{{mode}}モード固有のカスタム指示は、ワークスペースの<span>.ai-code-orchestrator/rules-{{slug}}/</span>フォルダまたはグローバル<0>.ai-code-orchestrator/rules-{{slug}}/</0>からも読み込むことができます（.aicorules-{{slug}}と.clinerules-{{slug}}は非推奨で、まもなく動作しなくなります）。"
 	},
 	"exportMode": {
 		"title": "モードをエクスポート",
 		"description": "このモードをすべてのルールを含むYAMLファイルにエクスポートして、他のユーザーと簡単に共有できます。",
-		"export": "モードをエクスポート",
 		"exporting": "エクスポート中..."
 	},
 	"importMode": {
@@ -67,13 +79,13 @@
 		},
 		"project": {
 			"label": "プロジェクトレベル",
-			"description": "このワークスペースでのみ利用可能です。エクスポートされたモードにルールファイルが含まれていた場合、それらは.roo/rules-{slug}/フォルダに再作成されます。"
+			"description": "このワークスペースでのみ利用可能です。エクスポートされたモードにルールファイルが含まれていた場合、それらは.ai-code-orchestrator/rules-{slug}/フォルダに再作成されます。"
 		}
 	},
 	"globalCustomInstructions": {
 		"title": "すべてのモードのカスタム指示",
 		"description": "これらの指示はすべてのモードに適用されます。モード固有の指示で強化できる基本的な動作セットを提供します。<0>詳細はこちら</0>",
-		"loadFromFile": "指示は、ワークスペースの<span>.roo/rules/</span>フォルダまたはグローバル<0>.roo/rules/</0>からも読み込むことができます（.roorulesと.clinerulesは非推奨で、まもなく動作しなくなります）。"
+		"loadFromFile": "指示は、ワークスペースの<span>.ai-code-orchestrator/rules/</span>フォルダまたはグローバル<0>.ai-code-orchestrator/rules/</0>からも読み込むことができます（.aicorulesと.clinerulesは非推奨で、まもなく動作しなくなります）。"
 	},
 	"systemPrompt": {
 		"preview": "システムプロンプトのプレビュー",
@@ -102,7 +114,7 @@
 		"types": {
 			"ENHANCE": {
 				"label": "プロンプトを強化",
-				"description": "プロンプト強化を使用して、入力に合わせたカスタマイズされた提案や改善を得ることができます。これにより、Rooがあなたの意図を理解し、最適な回答を提供できます。チャットの✨アイコンから利用できます。"
+				"description": "プロンプト強化を使用して、入力に合わせたカスタマイズされた提案や改善を得ることができます。これにより、AI Code Orchestratorがあなたの意図を理解し、最適な回答を提供できます。チャットの✨アイコンから利用できます。"
 			},
 			"CONDENSE": {
 				"label": "コンテキスト圧縮",
@@ -161,13 +173,13 @@
 				"description": "すべてのワークスペースで利用可能"
 			},
 			"project": {
-				"label": "プロジェクト固有 (.roomodes)",
+				"label": "プロジェクト固有 (.agent-modes)",
 				"description": "このワークスペースでのみ使用可能、グローバルよりも優先"
 			}
 		},
 		"roleDefinition": {
 			"label": "役割の定義",
-			"description": "このモードのRooの専門知識と個性を定義します。"
+			"description": "このモードのAI Code Orchestratorの専門知識と個性を定義します。"
 		},
 		"whenToUse": {
 			"label": "使用タイミング（オプション）",

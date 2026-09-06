@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 
-import { CodeActionId, CodeActionName } from "@roo-code/types"
+import { CodeActionId, CodeActionName } from "@ai-code-orchestrator/types"
 
 import { getCodeActionCommand } from "../utils/commands"
 import { EditorUtils } from "../integrations/editor/EditorUtils"

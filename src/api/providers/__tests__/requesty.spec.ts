@@ -58,9 +58,9 @@ describe("RequestyHandler", () => {
 			baseURL: "https://router.requesty.ai/v1",
 			apiKey: mockOptions.requestyApiKey,
 			defaultHeaders: {
-				"HTTP-Referer": "https://github.com/RooVetGit/Roo-Cline",
-				"X-Title": "Roo Code",
-				"User-Agent": `RooCode/${Package.version}`,
+				"HTTP-Referer": "https://github.com/AicoVetGit/AI Code Orchestrator-Cline",
+				"X-Title": "AI Code Orchestrator",
+				"User-Agent": `AiCodeOrchestrator/${Package.version}`,
 			},
 		})
 	})
@@ -73,9 +73,9 @@ describe("RequestyHandler", () => {
 			baseURL: "https://custom.requesty.ai/v1",
 			apiKey: mockOptions.requestyApiKey,
 			defaultHeaders: {
-				"HTTP-Referer": "https://github.com/RooVetGit/Roo-Cline",
-				"X-Title": "Roo Code",
-				"User-Agent": `RooCode/${Package.version}`,
+				"HTTP-Referer": "https://github.com/AicoVetGit/AI Code Orchestrator-Cline",
+				"X-Title": "AI Code Orchestrator",
+				"User-Agent": `AiCodeOrchestrator/${Package.version}`,
 			},
 		})
 	})

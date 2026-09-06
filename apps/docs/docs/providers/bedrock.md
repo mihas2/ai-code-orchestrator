@@ -1,10 +1,10 @@
 ---
 sidebar_label: AWS Bedrock
-description: Use Amazon Bedrock with Roo Code to access Claude, Llama, and other foundation models through AWS. Configure credentials and VPC endpoints.
+description: Use Amazon Bedrock with AI Code Orchestrator to access Claude, Llama, and other foundation models through AWS. Configure credentials and VPC endpoints.
 keywords:
     - aws bedrock
     - amazon bedrock
-    - roo code
+    - AI Code Orchestrator
     - api provider
     - claude bedrock
     - llama bedrock
@@ -13,9 +13,9 @@ keywords:
     - vpc endpoint
 ---
 
-# Using AWS Bedrock With Roo Code
+# Using AWS Bedrock With AI Code Orchestrator
 
-Roo Code supports accessing models through Amazon Bedrock, a fully managed service that makes a selection of high-performing foundation models (FMs) from leading AI companies available via a single API.
+AI Code Orchestrator supports accessing models through Amazon Bedrock, a fully managed service that makes a selection of high-performing foundation models (FMs) from leading AI companies available via a single API.
 
 **Website:** [https://aws.amazon.com/bedrock/](https://aws.amazon.com/bedrock/)
 
@@ -48,17 +48,17 @@ You have two main options for configuring AWS credentials:
 
 ## Available Models
 
-Roo Code supports all foundation models available through Amazon Bedrock.
+AI Code Orchestrator supports all foundation models available through Amazon Bedrock.
 
 For the complete, up-to-date model list with IDs and capabilities, see [AWS Bedrock's supported models documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html).
 
-**Important:** Use the _model ID_ when configuring Roo Code, not the model name.
+**Important:** Use the _model ID_ when configuring AI Code Orchestrator, not the model name.
 
 ---
 
-## Configuration in Roo Code
+## Configuration in AI Code Orchestrator
 
-1.  **Open Roo Code Settings:** Click the gear icon (<Codicon name="gear" />) in the Roo Code panel.
+1.  **Open AI Code Orchestrator Settings:** Click the gear icon (<Codicon name="gear" />) in the AI Code Orchestrator panel.
 2.  **Select Provider:** Choose "Bedrock" from the "API Provider" dropdown.
 3.  **Select Authentication Method:**
     - **AWS Credentials:**
@@ -80,7 +80,7 @@ For the complete, up-to-date model list with IDs and capabilities, see [AWS Bedr
 
 ## Reasoning Budget for Claude Models
 
-Roo Code supports using the reasoning budget (extended thinking) for Anthropic's Claude models on Bedrock. This allows the model to "think" more before responding, which can be useful for complex tasks.
+AI Code Orchestrator supports using the reasoning budget (extended thinking) for Anthropic's Claude models on Bedrock. This allows the model to "think" more before responding, which can be useful for complex tasks.
 
 To enable the reasoning budget:
 

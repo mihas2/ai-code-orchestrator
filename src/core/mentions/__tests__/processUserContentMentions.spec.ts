@@ -11,13 +11,13 @@ vi.mock("../index", () => ({
 
 describe("processUserContentMentions", () => {
 	let mockFileContextTracker: FileContextTracker
-	let mockRooIgnoreController: any
+	let mockAicoIgnoreController: any
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 
 		mockFileContextTracker = {} as FileContextTracker
-		mockRooIgnoreController = {}
+		mockAicoIgnoreController = {}
 
 		// Default mock implementation - returns ParseMentionsResult object
 		vi.mocked(parseMentions).mockImplementation(async (text) => ({
@@ -171,8 +171,8 @@ describe("processUserContentMentions", () => {
 		})
 	})
 
-	describe("showRooIgnoredFiles parameter", () => {
-		it("should default showRooIgnoredFiles to false", async () => {
+	describe("showAicoIgnoredFiles parameter", () => {
+		it("should default showAicoIgnoredFiles to false", async () => {
 			const userContent = [
 				{
 					type: "text" as const,
@@ -191,7 +191,7 @@ describe("processUserContentMentions", () => {
 				"/test",
 				mockFileContextTracker,
 				undefined,
-				false, // showRooIgnoredFiles should default to false
+				false, // showAicoIgnoredFiles should default to false
 				true, // includeDiagnosticMessages
 				50, // maxDiagnosticMessages
 				undefined,
@@ -199,7 +199,7 @@ describe("processUserContentMentions", () => {
 			)
 		})
 
-		it("should respect showRooIgnoredFiles when explicitly set to false", async () => {
+		it("should respect showAicoIgnoredFiles when explicitly set to false", async () => {
 			const userContent = [
 				{
 					type: "text" as const,
@@ -211,7 +211,7 @@ describe("processUserContentMentions", () => {
 				userContent,
 				cwd: "/test",
 				fileContextTracker: mockFileContextTracker,
-				showRooIgnoredFiles: false,
+				showAicoIgnoredFiles: false,
 			})
 
 			expect(parseMentions).toHaveBeenCalledWith(

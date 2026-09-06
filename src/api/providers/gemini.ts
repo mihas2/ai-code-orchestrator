@@ -9,8 +9,8 @@ import {
 } from "@google/genai"
 import type { JWTInput } from "google-auth-library"
 
-import { type ModelInfo, type GeminiModelId, geminiDefaultModelId, geminiModels } from "@roo-code/types"
-import { safeJsonParse } from "@roo-code/core"
+import { type ModelInfo, type GeminiModelId, geminiDefaultModelId, geminiModels } from "@ai-code-orchestrator/types"
+import { safeJsonParse } from "@ai-code-orchestrator/core"
 
 import type { ApiHandlerOptions } from "../../shared/api"
 

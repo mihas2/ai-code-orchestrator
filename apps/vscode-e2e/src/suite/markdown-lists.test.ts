@@ -1,6 +1,6 @@
 import * as assert from "assert"
 
-import { RooCodeEventName, type ClineMessage } from "@roo-code/types"
+import { AiCodeOrchestratorEventName, type ClineMessage } from "@ai-code-orchestrator/types"
 
 import { waitUntilCompleted } from "./utils"
 import { setDefaultSuiteTimeout } from "./test-utils"
@@ -13,7 +13,7 @@ suite("Markdown List Rendering", function () {
 
 		const messages: ClineMessage[] = []
 
-		api.on(RooCodeEventName.Message, ({ message }: { message: ClineMessage }) => {
+		api.on(AiCodeOrchestratorEventName.Message, ({ message }: { message: ClineMessage }) => {
 			if (message.type === "say" && message.partial === false) {
 				messages.push(message)
 			}
@@ -50,7 +50,7 @@ suite("Markdown List Rendering", function () {
 
 		const messages: ClineMessage[] = []
 
-		api.on(RooCodeEventName.Message, ({ message }: { message: ClineMessage }) => {
+		api.on(AiCodeOrchestratorEventName.Message, ({ message }: { message: ClineMessage }) => {
 			if (message.type === "say" && message.partial === false) {
 				messages.push(message)
 			}
@@ -87,7 +87,7 @@ suite("Markdown List Rendering", function () {
 
 		const messages: ClineMessage[] = []
 
-		api.on(RooCodeEventName.Message, ({ message }: { message: ClineMessage }) => {
+		api.on(AiCodeOrchestratorEventName.Message, ({ message }: { message: ClineMessage }) => {
 			if (message.type === "say" && message.partial === false) {
 				messages.push(message)
 			}
@@ -139,7 +139,7 @@ suite("Markdown List Rendering", function () {
 
 		const messages: ClineMessage[] = []
 
-		api.on(RooCodeEventName.Message, ({ message }: { message: ClineMessage }) => {
+		api.on(AiCodeOrchestratorEventName.Message, ({ message }: { message: ClineMessage }) => {
 			if (message.type === "say" && message.partial === false) {
 				messages.push(message)
 			}

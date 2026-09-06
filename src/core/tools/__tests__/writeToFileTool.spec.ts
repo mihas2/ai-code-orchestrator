@@ -34,7 +34,7 @@ vi.mock("../../../utils/fs", () => ({
 vi.mock("../../prompts/responses", () => ({
 	formatResponse: {
 		toolError: vi.fn((msg) => `Error: ${msg}`),
-		rooIgnoreError: vi.fn((path) => `Access denied: ${path}`),
+		aicoIgnoreError: vi.fn((path) => `Access denied: ${path}`),
 		createPrettyPatch: vi.fn(() => "mock-diff"),
 	},
 }))
@@ -74,8 +74,8 @@ vi.mock("vscode", () => ({
 	},
 }))
 
-vi.mock("../../ignore/RooIgnoreController", () => ({
-	RooIgnoreController: class {
+vi.mock("../../ignore/AicoIgnoreController", () => ({
+	AicoIgnoreController: class {
 		initialize() {
 			return Promise.resolve()
 		}
@@ -132,7 +132,7 @@ describe("writeToFileTool", () => {
 				}),
 			}),
 		}
-		mockCline.rooIgnoreController = {
+		mockCline.aicoIgnoreController = {
 			validateAccess: vi.fn().mockReturnValue(true),
 		}
 		mockCline.diffViewProvider = {
@@ -204,7 +204,7 @@ describe("writeToFileTool", () => {
 		const accessAllowed = options.accessAllowed ?? true
 
 		mockedFileExistsAtPath.mockResolvedValue(fileExists)
-		mockCline.rooIgnoreController.validateAccess.mockReturnValue(accessAllowed)
+		mockCline.aicoIgnoreController.validateAccess.mockReturnValue(accessAllowed)
 
 		// Create a tool use object
 		const toolUse: ToolUse = {
@@ -236,10 +236,10 @@ describe("writeToFileTool", () => {
 	}
 
 	describe("access control", () => {
-		it("validates and allows access when rooIgnoreController permits", async () => {
+		it("validates and allows access when aicoIgnoreController permits", async () => {
 			await executeWriteFileTool({}, { accessAllowed: true })
 
-			expect(mockCline.rooIgnoreController.validateAccess).toHaveBeenCalledWith(testFilePath)
+			expect(mockCline.aicoIgnoreController.validateAccess).toHaveBeenCalledWith(testFilePath)
 			expect(mockCline.diffViewProvider.open).toHaveBeenCalledWith(testFilePath)
 		})
 	})
@@ -279,13 +279,8 @@ describe("writeToFileTool", () => {
 		)
 
 		it.skipIf(process.platform === "win32")(
-			"creates parent directories when path has stabilized (partial)",
+			"creates parent directories on the first partial with a known path",
 			async () => {
-				// First call - path not yet stabilized
-				await executeWriteFileTool({}, { fileExists: false, isPartial: true })
-				expect(mockedCreateDirectoriesForFile).not.toHaveBeenCalled()
-
-				// Second call with same path - path is now stabilized
 				await executeWriteFileTool({}, { fileExists: false, isPartial: true })
 				expect(mockedCreateDirectoriesForFile).toHaveBeenCalledWith(absoluteFilePath)
 			},
@@ -365,7 +360,7 @@ describe("writeToFileTool", () => {
 			expect(mockCline.diffViewProvider.update).toHaveBeenCalledWith(testContent, true)
 			expect(mockAskApproval).toHaveBeenCalled()
 			expect(mockCline.diffViewProvider.saveChanges).toHaveBeenCalled()
-			expect(mockCline.fileContextTracker.trackFileContext).toHaveBeenCalledWith(testFilePath, "roo_edited")
+			expect(mockCline.fileContextTracker.trackFileContext).toHaveBeenCalledWith(testFilePath, "aico_edited")
 			expect(mockCline.didEditFile).toBe(true)
 		})
 
@@ -399,15 +394,13 @@ describe("writeToFileTool", () => {
 			expect(mockCline.diffViewProvider.open).not.toHaveBeenCalled()
 		})
 
-		it("streams content updates during partial execution after path stabilizes", async () => {
-			// First call - path not yet stabilized, early return (no file operations)
+		it("streams content feedback before editor updates", async () => {
 			await executeWriteFileTool({}, { isPartial: true })
-			expect(mockCline.ask).not.toHaveBeenCalled()
-			expect(mockCline.diffViewProvider.open).not.toHaveBeenCalled()
-
-			// Second call with same path - path is now stabilized, file operations proceed
-			await executeWriteFileTool({}, { isPartial: true })
-			expect(mockCline.ask).toHaveBeenCalled()
+			const [kind, payload, partial, progress] = mockCline.ask.mock.calls[0]
+			expect(kind).toBe("tool")
+			expect(JSON.parse(payload).content).toBe(testContent)
+			expect(partial).toBe(true)
+			expect(progress).toEqual(expect.objectContaining({ text: expect.any(String) }))
 			expect(mockCline.diffViewProvider.open).toHaveBeenCalledWith(testFilePath)
 			expect(mockCline.diffViewProvider.update).toHaveBeenCalledWith(testContent, false)
 		})
@@ -455,11 +448,7 @@ describe("writeToFileTool", () => {
 		it("handles partial streaming errors after path stabilizes", async () => {
 			mockCline.diffViewProvider.open.mockRejectedValue(new Error("Open failed"))
 
-			// First call - path not yet stabilized, no error yet
-			await executeWriteFileTool({}, { isPartial: true })
-			expect(mockHandleError).not.toHaveBeenCalled()
-
-			// Second call with same path - path is now stabilized, error occurs
+			// A known path is handled immediately, so the mocked editor error occurs on the first partial.
 			await executeWriteFileTool({}, { isPartial: true })
 			expect(mockHandleError).toHaveBeenCalledWith("handling partial write_to_file", expect.any(Error))
 		})

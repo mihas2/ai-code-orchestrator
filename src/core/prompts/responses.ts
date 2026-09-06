@@ -1,8 +1,8 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import * as path from "path"
 import * as diff from "diff"
-import { RooIgnoreController, LOCK_TEXT_SYMBOL } from "../ignore/RooIgnoreController"
-import { RooProtectedController } from "../protect/RooProtectedController"
+import { AicoIgnoreController, LOCK_TEXT_SYMBOL } from "../ignore/AicoIgnoreController"
+import { AicoProtectedController } from "../protect/AicoProtectedController"
 
 export const formatResponse = {
 	toolDenied: () =>
@@ -30,28 +30,28 @@ export const formatResponse = {
 			error,
 		}),
 
-	rooIgnoreError: (path: string) =>
+	aicoIgnoreError: (path: string) =>
 		JSON.stringify({
 			status: "error",
 			type: "access_denied",
-			message: "Access blocked by .rooignore",
+			message: "Access blocked by .aicoignore",
 			path,
-			suggestion: "Try to continue without this file, or ask the user to update the .rooignore file",
+			suggestion: "Try to continue without this file, or ask the user to update the .aicoignore file",
 		}),
 
 	noToolsUsed: () => {
 		const instructions = getToolInstructionsReminder()
 
-		return `[ERROR] You did not use a tool in your previous response! Please retry with a tool use.
+		return `[ERROR] Your previous assistant response contained text/reasoning but no native tool call. Retry now and emit a tool call as the entire assistant action; do not explain the retry in prose.
 
 ${instructions}
 
-# Next Steps
+# Choose the required tool now
+- If the user's task is complete, call attempt_completion and put the final result in its parameters.
+- If essential information is missing, call ask_followup_question and put the question and 2-4 actionable options in its parameters.
+- Otherwise, call the most relevant inspection or execution tool for the next concrete step.
 
-If you have completed the user's task, use the attempt_completion tool.
-If you require additional information from the user, use the ask_followup_question tool.
-Otherwise, if you have not completed the task and do not need additional information, then proceed with the next step of the task.
-(This is an automated message, so do not respond to it conversationally.)`
+This is an automated message. Do not respond conversationally or return another text-only answer.`
 	},
 
 	tooManyMistakes: (feedback?: string) =>
@@ -118,9 +118,9 @@ Otherwise, if you have not completed the task and do not need additional informa
 		absolutePath: string,
 		files: string[],
 		didHitLimit: boolean,
-		rooIgnoreController: RooIgnoreController | undefined,
-		showRooIgnoredFiles: boolean,
-		rooProtectedController?: RooProtectedController,
+		aicoIgnoreController: AicoIgnoreController | undefined,
+		showAicoIgnoredFiles: boolean,
+		aicoProtectedController?: AicoProtectedController,
 	): string => {
 		const sorted = files
 			.map((file) => {
@@ -150,43 +150,43 @@ Otherwise, if you have not completed the task and do not need additional informa
 				return aParts.length - bParts.length
 			})
 
-		let rooIgnoreParsed: string[] = sorted
+		let aicoIgnoreParsed: string[] = sorted
 
-		if (rooIgnoreController) {
-			rooIgnoreParsed = []
+		if (aicoIgnoreController) {
+			aicoIgnoreParsed = []
 			for (const filePath of sorted) {
 				// path is relative to absolute path, not cwd
 				// validateAccess expects either path relative to cwd or absolute path
 				// otherwise, for validating against ignore patterns like "assets/icons", we would end up with just "icons", which would result in the path not being ignored.
 				const absoluteFilePath = path.resolve(absolutePath, filePath)
-				const isIgnored = !rooIgnoreController.validateAccess(absoluteFilePath)
+				const isIgnored = !aicoIgnoreController.validateAccess(absoluteFilePath)
 
 				if (isIgnored) {
 					// If file is ignored and we're not showing ignored files, skip it
-					if (!showRooIgnoredFiles) {
+					if (!showAicoIgnoredFiles) {
 						continue
 					}
 					// Otherwise, mark it with a lock symbol
-					rooIgnoreParsed.push(LOCK_TEXT_SYMBOL + " " + filePath)
+					aicoIgnoreParsed.push(LOCK_TEXT_SYMBOL + " " + filePath)
 				} else {
 					// Check if file is write-protected (only for non-ignored files)
-					const isWriteProtected = rooProtectedController?.isWriteProtected(absoluteFilePath) || false
+					const isWriteProtected = aicoProtectedController?.isWriteProtected(absoluteFilePath) || false
 					if (isWriteProtected) {
-						rooIgnoreParsed.push("🛡️ " + filePath)
+						aicoIgnoreParsed.push("🛡️ " + filePath)
 					} else {
-						rooIgnoreParsed.push(filePath)
+						aicoIgnoreParsed.push(filePath)
 					}
 				}
 			}
 		}
 		if (didHitLimit) {
-			return `${rooIgnoreParsed.join(
+			return `${aicoIgnoreParsed.join(
 				"\n",
 			)}\n\n(File list truncated. Use list_files on specific subdirectories if you need to explore further.)`
-		} else if (rooIgnoreParsed.length === 0 || (rooIgnoreParsed.length === 1 && rooIgnoreParsed[0] === "")) {
+		} else if (aicoIgnoreParsed.length === 0 || (aicoIgnoreParsed.length === 1 && aicoIgnoreParsed[0] === "")) {
 			return "No files found."
 		} else {
-			return rooIgnoreParsed.join("\n")
+			return aicoIgnoreParsed.join("\n")
 		}
 	},
 
@@ -218,7 +218,7 @@ const formatImagesIntoBlocks = (images?: string[]): Anthropic.ImageBlockParam[] 
 
 const toolUseInstructionsReminderNative = `# Reminder: Instructions for Tool Use
 
-Tools are invoked using the platform's native tool calling mechanism. Each tool requires specific parameters as defined in the tool descriptions. Refer to the tool definitions provided in your system instructions for the correct parameter structure and usage examples.
+Tools are invoked using the platform's native tool calling mechanism. A valid assistant turn must contain a native tool call, not a prose description of a call and not hidden XML. Choose the tool that performs the next concrete action. Use attempt_completion only after the user's task is fully complete, and use ask_followup_question only when essential information is missing. Put reasoning or progress context in the selected tool's parameters when supported.
 
 Always ensure you provide all required parameters for the tool you wish to use.`
 

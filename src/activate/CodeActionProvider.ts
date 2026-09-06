@@ -1,17 +1,17 @@
 import * as vscode from "vscode"
 
-import { CodeActionName, CodeActionId } from "@roo-code/types"
+import { CodeActionName, CodeActionId } from "@ai-code-orchestrator/types"
 import { Package } from "../shared/package"
 
 import { getCodeActionCommand } from "../utils/commands"
 import { EditorUtils } from "../integrations/editor/EditorUtils"
 
 export const TITLES: Record<CodeActionName, string> = {
-	EXPLAIN: "Explain with Roo Code",
-	FIX: "Fix with Roo Code",
-	IMPROVE: "Improve with Roo Code",
-	ADD_TO_CONTEXT: "Add to Roo Code",
-	NEW_TASK: "New Roo Code Task",
+	EXPLAIN: "Explain with AI Code Orchestrator",
+	FIX: "Fix with AI Code Orchestrator",
+	IMPROVE: "Improve with AI Code Orchestrator",
+	ADD_TO_CONTEXT: "Add to AI Code Orchestrator",
+	NEW_TASK: "New AI Code Orchestrator Task",
 } as const
 
 export class CodeActionProvider implements vscode.CodeActionProvider {

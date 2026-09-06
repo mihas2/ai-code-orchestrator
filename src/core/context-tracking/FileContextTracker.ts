@@ -10,16 +10,16 @@ import type { FileMetadataEntry, RecordSource, TaskMetadata } from "./FileContex
 import { ClineProvider } from "../webview/ClineProvider"
 
 // This class is responsible for tracking file operations that may result in stale context.
-// If a user modifies a file outside of Roo, the context may become stale and need to be updated.
-// We do not want Roo to reload the context every time a file is modified, so we use this class merely
-// to inform Roo that the change has occurred, and tell Roo to reload the file before making
-// any changes to it. This fixes an issue with diff editing, where Roo was unable to complete a diff edit.
+// If a user modifies a file outside of AI Code Orchestrator, the context may become stale and need to be updated.
+// We do not want AI Code Orchestrator to reload the context every time a file is modified, so we use this class merely
+// to inform AI Code Orchestrator that the change has occurred, and tell AI Code Orchestrator to reload the file before making
+// any changes to it. This fixes an issue with diff editing, where AI Code Orchestrator was unable to complete a diff edit.
 
 // FileContextTracker
 //
 // This class is responsible for tracking file operations.
-// If the full contents of a file are passed to Roo via a tool, mention, or edit, the file is marked as active.
-// If a file is modified outside of Roo, we detect and track this change to prevent stale context.
+// If the full contents of a file are passed to AI Code Orchestrator via a tool, mention, or edit, the file is marked as active.
+// If a file is modified outside of AI Code Orchestrator, we detect and track this change to prevent stale context.
 export class FileContextTracker {
 	readonly taskId: string
 	private providerRef: WeakRef<ClineProvider>
@@ -65,9 +65,9 @@ export class FileContextTracker {
 		// Track file changes
 		watcher.onDidChange(() => {
 			if (this.recentlyEditedByRoo.has(filePath)) {
-				this.recentlyEditedByRoo.delete(filePath) // This was an edit by Roo, no need to inform Roo
+				this.recentlyEditedByRoo.delete(filePath) // This was an edit by AI Code Orchestrator, no need to inform AI Code Orchestrator
 			} else {
-				this.recentlyModifiedFiles.add(filePath) // This was a user edit, we will inform Roo
+				this.recentlyModifiedFiles.add(filePath) // This was a user edit, we will inform AI Code Orchestrator
 				this.trackFileContext(filePath, "user_edited") // Update the task metadata with file tracking
 			}
 		})
@@ -77,7 +77,7 @@ export class FileContextTracker {
 	}
 
 	// Tracks a file operation in metadata and sets up a watcher for the file
-	// This is the main entry point for FileContextTracker and is called when a file is passed to Roo via a tool, mention, or edit.
+	// This is the main entry point for FileContextTracker and is called when a file is passed to AI Code Orchestrator via a tool, mention, or edit.
 	async trackFileContext(filePath: string, operation: RecordSource) {
 		try {
 			const cwd = this.getCwd()
@@ -165,8 +165,8 @@ export class FileContextTracker {
 				path: filePath,
 				record_state: "active",
 				record_source: source,
-				roo_read_date: getLatestDateForField(filePath, "roo_read_date"),
-				roo_edit_date: getLatestDateForField(filePath, "roo_edit_date"),
+				aico_read_date: getLatestDateForField(filePath, "aico_read_date"),
+				aico_edit_date: getLatestDateForField(filePath, "aico_edit_date"),
 				user_edit_date: getLatestDateForField(filePath, "user_edit_date"),
 			}
 
@@ -177,18 +177,18 @@ export class FileContextTracker {
 					this.recentlyModifiedFiles.add(filePath)
 					break
 
-				// roo_edited: Roo has edited the file
-				case "roo_edited":
-					newEntry.roo_read_date = now
-					newEntry.roo_edit_date = now
+				// aico_edited: AI Code Orchestrator has edited the file
+				case "aico_edited":
+					newEntry.aico_read_date = now
+					newEntry.aico_edit_date = now
 					this.checkpointPossibleFiles.add(filePath)
 					this.markFileAsEditedByRoo(filePath)
 					break
 
-				// read_tool/file_mentioned: Roo has read the file via a tool or file mention
+				// read_tool/file_mentioned: AI Code Orchestrator has read the file via a tool or file mention
 				case "read_tool":
 				case "file_mentioned":
-					newEntry.roo_read_date = now
+					newEntry.aico_read_date = now
 					break
 			}
 
@@ -207,7 +207,7 @@ export class FileContextTracker {
 	}
 
 	/**
-	 * Gets a list of unique file paths that Roo has read during this task.
+	 * Gets a list of unique file paths that AI Code Orchestrator has read during this task.
 	 * Files are sorted by most recently read first, so if there's a character
 	 * budget during folded context generation, the most relevant (recent) files
 	 * are prioritized.
@@ -220,25 +220,25 @@ export class FileContextTracker {
 			const metadata = await this.getTaskMetadata(this.taskId)
 
 			const readEntries = metadata.files_in_context.filter((entry) => {
-				// Only include files that were read by Roo (not user edits)
+				// Only include files that were read by AI Code Orchestrator (not user edits)
 				const isReadByRoo = entry.record_source === "read_tool" || entry.record_source === "file_mentioned"
 				if (!isReadByRoo) {
 					return false
 				}
 
 				// If sinceTimestamp is provided, only include files read after that time
-				if (sinceTimestamp && entry.roo_read_date) {
-					return entry.roo_read_date >= sinceTimestamp
+				if (sinceTimestamp && entry.aico_read_date) {
+					return entry.aico_read_date >= sinceTimestamp
 				}
 
 				return true
 			})
 
-			// Sort by roo_read_date descending (most recent first)
+			// Sort by aico_read_date descending (most recent first)
 			// Entries without a date go to the end
 			readEntries.sort((a, b) => {
-				const dateA = a.roo_read_date ?? 0
-				const dateB = b.roo_read_date ?? 0
+				const dateA = a.aico_read_date ?? 0
+				const dateB = b.aico_read_date ?? 0
 				return dateB - dateA
 			})
 
@@ -254,7 +254,7 @@ export class FileContextTracker {
 
 			return uniquePaths
 		} catch (error) {
-			console.error("Failed to get files read by Roo:", error)
+			console.error("Failed to get files read by AI Code Orchestrator:", error)
 			return []
 		}
 	}
@@ -265,7 +265,7 @@ export class FileContextTracker {
 		return files
 	}
 
-	// Marks a file as edited by Roo to prevent false positives in file watchers
+	// Marks a file as edited by AI Code Orchestrator to prevent false positives in file watchers
 	markFileAsEditedByRoo(filePath: string): void {
 		this.recentlyEditedByRoo.add(filePath)
 	}

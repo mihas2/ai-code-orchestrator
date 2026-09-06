@@ -9,13 +9,13 @@
 		}
 	},
 	"landing": {
-		"greeting": "Benvingut a Roo Code!",
-		"introduction": "Amb una gamma de Modes integrats i ampliables, Roo Code et permet planificar, arquitectar, codificar, depurar i augmentar la teva productivitat com mai abans.",
+		"greeting": "Benvingut a AI Code Orchestrator!",
+		"introduction": "Amb una gamma de Modes integrats i ampliables, AI Code Orchestrator et permet planificar, arquitectar, codificar, depurar i augmentar la teva productivitat com mai abans.",
 		"getStarted": "Get Started"
 	},
 	"providerSignup": {
 		"heading": "Tria el teu proveïdor",
-		"chooseProvider": "Roo necessita un proveïdor de LLM per funcionar. Tria-ne un per començar, pots afegir-ne més tard.",
+		"chooseProvider": "AI Code Orchestrator necessita un proveïdor de LLM per funcionar. Tria-ne un per començar, pots afegir-ne més tard.",
 		"learnMore": "Més informació",
 		"useAnotherProvider": "Proveïdor de tercers",
 		"useAnotherProviderDescription": "Entra una clau API i comença.",

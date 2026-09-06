@@ -6,6 +6,12 @@ import * as path from "path"
 describe("dist assets", () => {
 	const distPath = path.join(__dirname, "../dist")
 
+	it("should have the ripgrep binary", () => {
+		expect(
+			fs.existsSync(path.join(distPath, "ripgrep", process.platform.startsWith("win") ? "rg.exe" : "rg")),
+		).toBe(true)
+	})
+
 	describe("tiktoken", () => {
 		it("should have tiktoken wasm file", () => {
 			expect(fs.existsSync(path.join(distPath, "tiktoken_bg.wasm"))).toBe(true)

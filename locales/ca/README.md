@@ -1,72 +1,64 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-cline"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/roocode"><img src="https://img.shields.io/badge/roocode-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
-# Roo Code
 
-> El teu equip de desenvolupament impulsat per IA, directament al teu editor
+# AI Code Orchestrator
 
-<details>
-  <summary>🌐 Idiomes disponibles</summary>
+> El teu equip de desenvolupament impulsat per IA, directament al teu editor.
 
-- [English](../../README.md)
-- [Català](../ca/README.md)
-- [Deutsch](../de/README.md)
-- [Español](../es/README.md)
-- [Français](../fr/README.md)
-- [हिंदी](../hi/README.md)
-- [Bahasa Indonesia](../id/README.md)
-- [Italiano](../it/README.md)
-- [日本語](../ja/README.md)
-- [한국어](../ko/README.md)
-- [Nederlands](../nl/README.md)
-- [Polski](../pl/README.md)
-- [Português (BR)](../pt-BR/README.md)
-- [Русский](../ru/README.md)
-- [Türkçe](../tr/README.md)
-- [Tiếng Việt](../vi/README.md)
-- [简体中文](../zh-CN/README.md)
-- [繁體中文](../zh-TW/README.md)
-- ...
-    </details>
+AI Code Orchestrator és una extensió de VS Code i una CLI per planificar, implementar, revisar i explicar programari amb agents d'IA configurables. Combina xat, accions de codi, fluxos de treball del terminal, rols personalitzats, integracions MCP i orquestració multiagent en un sol espai de treball.
 
----
+## Funcionalitats
 
-## Què pot fer Roo Code per TU?
+- Generar i modificar codi a partir de requisits en llenguatge natural
+- Planificar l'arquitectura i dividir el treball en tasques coordinades
+- Orquestrar el treball com un DAG conscient de les dependències, amb executors paral·lels, fases de revisió, pressupostos i integració controlada
+- **Optimització del context** — la gestió intel·ligent del context redueix l'ús de tokens i els costos sense perdre efectivitat
+- Revisar canvis, diagnosticar errors i millorar el codi existent
+- Treballar amb fitxers, terminals, imatges i eines MCP externes
+- Configurar proveïdors com Vercel AI Gateway i Unbound, models, permisos i rols personalitzats
+- Assignar models a rols individuals, amb herència automàtica del model principal si no es configura cap substitució
+- Continuar les tasques des de l'editor o la línia d'ordres
 
-- Generar codi a partir de descripcions en llenguatge natural
-- Adaptar-se amb modes: Codi, Arquitecte, Pregunta, Depuració i Modes personalitzats
-- Refactoritzar i depurar codi existent
-- Escriure i actualitzar documentació
-- Respondre preguntes sobre la teva base de codi
-- Automatitzar tasques repetitives
-- Utilitzar servidors MCP
+## Rols
 
-## Modes
+AI Code Orchestrator s'adapta a la feina que tens entre mans:
 
-Roo Code s'adapta a la teva manera de treballar, no a l'inrevés:
+- **Code** — implementar canvis i treballar amb els fitxers del projecte
+- **Architect** — dissenyar sistemes, especificacions i migracions
+- **Ask** — respondre preguntes i explicar codi
+- **Debug** — aïllar les causes arrel i validar les correccions
+- **Reviewer** — validar els canvis, identificar problemes i garantir la qualitat
+- **Orchestrator** — coordinar gràfics de tasques amb dependències i agents paral·lels; és el rol predeterminat
+- **Custom** — crear fluxos de treball especialitzats per a un equip
 
-- Mode Codi: codificació diària, edicions i operacions de fitxers
-- Mode Arquitecte: planificar sistemes, especificacions i migracions
-- Mode Pregunta: respostes ràpides, explicacions i documents
-- Mode Depuració: rastrejar problemes, afegir registres, aïllar les causes arrel
-- Modes personalitzats: crea modes especialitzats per al teu equip o flux de treball
+Cada rol pot utilitzar la seva pròpia configuració de model. Quan no s'assigna cap model específic al rol, hereta el model principal, cosa que facilita equilibrar capacitat, velocitat i cost.
 
-Més informació: [Ús de Modes](https://roocodeinc.github.io/Roo-Code/basic-usage/using-modes) • [Modes personalitzats](https://roocodeinc.github.io/Roo-Code/advanced-usage/custom-modes)
+## Documentació
 
-## Recursos
+La documentació del projecte, inclosa l'especificació d'orquestració, és a [`apps/docs`](../../apps/docs).
 
-- **[Documentació](https://roocodeinc.github.io/Roo-Code/):** La guia oficial per instal·lar, configurar i dominar Roo Code.
-- **[Incidències de GitHub](https://github.com/RooCodeInc/Roo-Code/issues):** Informa d'errors i segueix el desenvolupament.
+## Instal·lació
 
----
+Instal·la l'extensió **AI Code Orchestrator** des del VS Code Marketplace o crea un VSIX localment:
 
-## Avís legal
+```bash
+pnpm install
+pnpm vsix
+```
 
-**Tingueu en compte** que Roo Code, Inc **no** fa cap representació ni garantia pel que fa a cap codi, model o altres eines proporcionades o posades a disposició en relació amb Roo Code, qualsevol eina de tercers associada, o qualsevol resultat. Assumiu **tots els riscos** associats amb l'ús d'aquestes eines o resultats; aquestes eines es proporcionen **"TAL QUAL"** i **"SEGONS DISPONIBILITAT"**. Aquests riscos poden incloure, sense limitació, infraccions de propietat intel·lectual, vulnerabilitats o atacs cibernètics, biaix, inexactituds, errors, defectes, virus, temps d'inactivitat, pèrdua o dany de propietat i/o lesions personals. Sou l'únic responsable del vostre ús d'aquestes eines o resultats (incloent, sense limitació, la legalitat, idoneïtat i resultats dels mateixos).
+Durant el desenvolupament, la CLI està disponible des del monorepo:
 
----
+```bash
+pnpm --filter @ai-code-orchestrator/cli dev
+```
+
+L'àmbit dels paquets i els identificadors d'ordres antics es conserven per mantenir la compatibilitat amb les integracions existents.
+
+## Atribució
+
+AI Code Orchestrator es basa en [Roo Code](https://github.com/RooCodeInc/Roo-Code). La implementació conserva algunes API i identificadors compatibles perquè les integracions existents continuïn funcionant.
 
 ## Llicència
 
-[Apache 2.0 © 2025 Roo Code, Inc.](../../LICENSE)
+[Apache 2.0](../../LICENSE)

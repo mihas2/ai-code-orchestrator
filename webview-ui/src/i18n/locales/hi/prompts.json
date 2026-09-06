@@ -8,13 +8,26 @@
 		"noMatchFound": "कोई मोड नहीं मिला",
 		"editModesConfig": "मोड कॉन्फ़िगरेशन संपादित करें",
 		"editGlobalModes": "ग्लोबल मोड्स संपादित करें",
-		"editProjectModes": "प्रोजेक्ट मोड्स संपादित करें (.roomodes)",
-		"createModeHelpText": "मोड विशेष व्यक्तित्व हैं जो Roo के व्यवहार को अनुकूलित करते हैं। <0>मोड का उपयोग करने के बारे में जानें</0> या <1>मोड को अनुकूलित करना।</1>",
+		"editProjectModes": "प्रोजेक्ट मोड्स संपादित करें (.agent-modes)",
+		"createModeHelpText": "मोड विशेष व्यक्तित्व हैं जो AI Code Orchestrator के व्यवहार को अनुकूलित करते हैं। <0>मोड का उपयोग करने के बारे में जानें</0> या <1>मोड को अनुकूलित करना।</1>",
 		"selectMode": "मोड खोजें"
+	},
+	"reviewer": {
+		"name": "समीक्षक",
+		"description": "पूर्ण किए गए कार्य की केवल-पठन गुणवत्ता समीक्षा",
+		"readOnlyNotice": "समीक्षक फ़ाइलें पढ़ सकता है और डायग्नोस्टिक्स चला सकता है, लेकिन फ़ाइलों को संपादित नहीं कर सकता या घोषित दायरा बढ़ा नहीं सकता।",
+		"findingSeverities": "निष्कर्षों की गंभीरता: blocker, major, minor, note"
+	},
+	"orchestrator": {
+		"roleDefinition": "AI Orchestrator उपयोगकर्ता और विशेषज्ञ एजेंटों को जोड़ने वाला उत्तरदायी टीम लीड है। यह लक्ष्य, योजना, निर्भरताओं, कार्य-वितरण, बजट, गुणवत्ता गेट, एकीकरण और अंतिम परिणाम का स्वामी है तथा पूर्ण ट्रांसक्रिप्ट के बजाय संक्षिप्त समग्र स्थिति रखता है।",
+		"whenToUse": "जटिल बहु-चरणीय कार्य के लिए उपयोग करें जिसमें architect, code, debug और reviewer के बीच विघटन व समन्वय, समानांतर निष्पादन, स्पष्ट निर्भरताएँ, समीक्षा, सुधार, नियंत्रित एकीकरण और गुणवत्ता आश्वासन चाहिए।",
+		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
 	},
 	"apiConfiguration": {
 		"title": "API कॉन्फ़िगरेशन",
-		"select": "इस मोड के लिए किस API कॉन्फ़िगरेशन का उपयोग करना है, चुनें"
+		"select": "इस मोड के लिए किस API कॉन्फ़िगरेशन का उपयोग करना है, चुनें",
+		"inheritProfile": "सक्रिय प्रोफ़ाइल का उपयोग करें",
+		"inheritModel": "प्रोफ़ाइल मॉडल का उपयोग करें"
 	},
 	"tools": {
 		"title": "उपलब्ध टूल्स",
@@ -33,7 +46,7 @@
 	"roleDefinition": {
 		"title": "भूमिका परिभाषा",
 		"resetToDefault": "डिफ़ॉल्ट पर रीसेट करें",
-		"description": "इस मोड के लिए Roo की विशेषज्ञता और व्यक्तित्व परिभाषित करें। यह विवरण Roo के स्वयं को प्रस्तुत करने और कार्यों से निपटने के तरीके को आकार देता है।"
+		"description": "इस मोड के लिए AI Code Orchestrator की विशेषज्ञता और व्यक्तित्व परिभाषित करें। यह विवरण AI Code Orchestrator के स्वयं को प्रस्तुत करने और कार्यों से निपटने के तरीके को आकार देता है।"
 	},
 	"description": {
 		"title": "संक्षिप्त विवरण (मनुष्यों के लिए)",
@@ -49,12 +62,11 @@
 		"title": "मोड-विशिष्ट कस्टम निर्देश (वैकल्पिक)",
 		"resetToDefault": "डिफ़ॉल्ट पर रीसेट करें",
 		"description": "{{modeName}} मोड के लिए विशिष्ट व्यवहार दिशानिर्देश जोड़ें।",
-		"loadFromFile": "{{mode}} मोड के लिए विशिष्ट कस्टम निर्देश आपके कार्यक्षेत्र में <span>.roo/rules-{{slug}}/</span> फ़ोल्डर से या वैश्विक <0>.roo/rules-{{slug}}/</0> से भी लोड किए जा सकते हैं (.roorules-{{slug}} और .clinerules-{{slug}} पुराने हैं और जल्द ही काम करना बंद कर देंगे)।"
+		"loadFromFile": "{{mode}} मोड के लिए विशिष्ट कस्टम निर्देश आपके कार्यक्षेत्र में <span>.ai-code-orchestrator/rules-{{slug}}/</span> फ़ोल्डर से या वैश्विक <0>.ai-code-orchestrator/rules-{{slug}}/</0> से भी लोड किए जा सकते हैं (.aicorules-{{slug}} और .clinerules-{{slug}} पुराने हैं और जल्द ही काम करना बंद कर देंगे)।"
 	},
 	"exportMode": {
 		"title": "मोड निर्यात करें",
 		"description": "इस मोड को सभी नियमों के साथ एक YAML फ़ाइल में निर्यात करें ताकि दूसरों के साथ आसानी से साझा किया जा सके।",
-		"export": "मोड निर्यात करें",
 		"exporting": "निर्यात हो रहा है..."
 	},
 	"importMode": {
@@ -67,13 +79,13 @@
 		},
 		"project": {
 			"label": "परियोजना स्तर",
-			"description": "केवल इस कार्यक्षेत्र में उपलब्ध। यदि निर्यात किए गए मोड में नियम फाइलें थीं, तो उन्हें .roo/rules-{slug}/ फ़ोल्डर में फिर से बनाया जाएगा।"
+			"description": "केवल इस कार्यक्षेत्र में उपलब्ध। यदि निर्यात किए गए मोड में नियम फाइलें थीं, तो उन्हें .ai-code-orchestrator/rules-{slug}/ फ़ोल्डर में फिर से बनाया जाएगा।"
 		}
 	},
 	"globalCustomInstructions": {
 		"title": "सभी मोड्स के लिए कस्टम निर्देश",
 		"description": "ये निर्देश सभी मोड्स पर लागू होते हैं। वे व्यवहारों का एक आधार सेट प्रदान करते हैं जिन्हें नीचे दिए गए मोड-विशिष्ट निर्देशों द्वारा बढ़ाया जा सकता है। <0>और जानें</0>",
-		"loadFromFile": "निर्देश आपके कार्यक्षेत्र में <span>.roo/rules/</span> फ़ोल्डर से या वैश्विक <0>.roo/rules/</0> से भी लोड किए जा सकते हैं (.roorules और .clinerules पुराने हैं और जल्द ही काम करना बंद कर देंगे)।"
+		"loadFromFile": "निर्देश आपके कार्यक्षेत्र में <span>.ai-code-orchestrator/rules/</span> फ़ोल्डर से या वैश्विक <0>.ai-code-orchestrator/rules/</0> से भी लोड किए जा सकते हैं (.aicorules और .clinerules पुराने हैं और जल्द ही काम करना बंद कर देंगे)।"
 	},
 	"systemPrompt": {
 		"preview": "सिस्टम प्रॉम्प्ट का पूर्वावलोकन",
@@ -102,7 +114,7 @@
 		"types": {
 			"ENHANCE": {
 				"label": "प्रॉम्प्ट बढ़ाएँ",
-				"description": "अपने इनपुट के लिए अनुकूलित सुझाव या सुधार प्राप्त करने के लिए प्रॉम्प्ट वृद्धि का उपयोग करें। यह सुनिश्चित करता है कि Roo आपके इरादे को समझता है और सर्वोत्तम संभव प्रतिक्रियाएँ प्रदान करता है। चैट में ✨ आइकन के माध्यम से उपलब्ध है।"
+				"description": "अपने इनपुट के लिए अनुकूलित सुझाव या सुधार प्राप्त करने के लिए प्रॉम्प्ट वृद्धि का उपयोग करें। यह सुनिश्चित करता है कि AI Code Orchestrator आपके इरादे को समझता है और सर्वोत्तम संभव प्रतिक्रियाएँ प्रदान करता है। चैट में ✨ आइकन के माध्यम से उपलब्ध है।"
 			},
 			"CONDENSE": {
 				"label": "संदर्भ संघनन",
@@ -161,13 +173,13 @@
 				"description": "सभी वर्कस्पेस में उपलब्ध"
 			},
 			"project": {
-				"label": "प्रोजेक्ट-विशिष्ट (.roomodes)",
+				"label": "प्रोजेक्ट-विशिष्ट (.agent-modes)",
 				"description": "केवल इस वर्कस्पेस में उपलब्ध, ग्लोबल पर प्राथमिकता रखता है"
 			}
 		},
 		"roleDefinition": {
 			"label": "भूमिका परिभाषा",
-			"description": "इस मोड के लिए Roo की विशेषज्ञता और व्यक्तित्व परिभाषित करें।"
+			"description": "इस मोड के लिए AI Code Orchestrator की विशेषज्ञता और व्यक्तित्व परिभाषित करें।"
 		},
 		"whenToUse": {
 			"label": "कब उपयोग करें (वैकल्पिक)",

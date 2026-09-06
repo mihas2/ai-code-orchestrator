@@ -1,4 +1,4 @@
-name: Code QA Roo Code
+name: Code QA AI Code Orchestrator
 
 on:
     workflow_dispatch:

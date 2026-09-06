@@ -1,6 +1,6 @@
 {
-	"name": "@roo-code/docs",
-	"version": "0.0.0",
+	"name": "@ai-code-orchestrator/docs",
+	"version": "1.1.4",
 	"private": true,
 	"scripts": {
 		"docusaurus": "docusaurus",

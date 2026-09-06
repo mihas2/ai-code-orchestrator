@@ -1,11 +1,11 @@
 ---
-description: Replace a uniquely-identified occurrence of text in a file using the search_replace tool in Roo Code.
+description: Replace a uniquely-identified occurrence of text in a file using the search_replace tool in AI Code Orchestrator.
 keywords:
     - search_replace
     - search and replace
     - file editing
     - text replacement
-    - Roo Code tools
+    - AI Code Orchestrator tools
     - code modifications
 ---
 

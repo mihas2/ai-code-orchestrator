@@ -1,5 +1,5 @@
 {
-	"greeting": "Benvingut a Roo Code",
+	"greeting": "Benvingut a AI Code Orchestrator",
 	"task": {
 		"title": "Tasca",
 		"expand": "Expandir tasca",
@@ -90,10 +90,10 @@
 	"enqueueMessage": "Afegeix el missatge a la cua (s'enviarà quan acabi la tasca actual)",
 	"scrollToBottom": "Desplaça't al final del xat",
 	"scrollToLatestCheckpoint": "Desplaça't al checkpoint anterior",
-	"about": "Roo Code és tot un equip de desenvolupament d'IA al teu editor.",
+	"about": "AI Code Orchestrator és tot un equip de desenvolupament d'IA al teu editor.",
 	"docs": "Consulta els nostres <DocsLink>documents</DocsLink> per a més informació.",
 	"onboarding": "La teva llista de tasques en aquest espai de treball està buida.",
-	"rooTips": {
+	"AicoTips": {
 		"customizableModes": {
 			"title": "Modes personalitzables",
 			"description": "Persones especialitzades que es mantenen en la tasca i compleixen."
@@ -121,7 +121,7 @@
 	"modeSelector": {
 		"title": "Modes",
 		"settings": "Configuració de Modes",
-		"description": "Personalitats especialitzades que adapten el comportament de Roo.",
+		"description": "Personalitats especialitzades que adapten el comportament de AI Code Orchestrator.",
 		"searchPlaceholder": "Cerca modes...",
 		"noResults": "No s'han trobat resultats"
 	},
@@ -135,7 +135,7 @@
 	"diffError": {
 		"title": "Edició fallida"
 	},
-	"troubleMessage": "Roo està tenint problemes...",
+	"troubleMessage": "AI Code Orchestrator està tenint problemes...",
 	"apiRequest": {
 		"title": "Sol·licitud API",
 		"failed": "Sol·licitud API ha fallat",
@@ -177,44 +177,40 @@
 		},
 		"current": "Actual"
 	},
-	"instructions": {
-		"wantsToFetch": "Roo vol obtenir instruccions detallades per ajudar amb la tasca actual."
-	},
+	"instructions": {},
 	"fileOperations": {
-		"wantsToRead": "Roo vol llegir aquest fitxer",
-		"wantsToReadOutsideWorkspace": "Roo vol llegir aquest fitxer fora de l'espai de treball",
-		"didRead": "Roo ha llegit aquest fitxer",
-		"wantsToEdit": "Roo vol editar aquest fitxer",
-		"wantsToEditOutsideWorkspace": "Roo vol editar aquest fitxer fora de l'espai de treball",
-		"wantsToEditProtected": "Roo vol editar un fitxer de configuració protegit",
-		"wantsToCreate": "Roo vol crear un nou fitxer",
-		"wantsToSearchReplace": "Roo vol realitzar cerca i substitució en aquest fitxer",
-		"didSearchReplace": "Roo ha realitzat cerca i substitució en aquest fitxer",
-		"wantsToInsert": "Roo vol inserir contingut en aquest fitxer",
-		"wantsToInsertWithLineNumber": "Roo vol inserir contingut a la línia {{lineNumber}} d'aquest fitxer",
-		"wantsToInsertAtEnd": "Roo vol afegir contingut al final d'aquest fitxer",
-		"wantsToReadAndXMore": "En Roo vol llegir aquest fitxer i {{count}} més",
-		"wantsToReadMultiple": "Roo vol llegir diversos fitxers",
-		"wantsToApplyBatchChanges": "Roo vol aplicar canvis a múltiples fitxers",
-		"wantsToGenerateImage": "Roo vol generar una imatge",
-		"wantsToGenerateImageOutsideWorkspace": "Roo vol generar una imatge fora de l'espai de treball",
-		"wantsToGenerateImageProtected": "Roo vol generar una imatge en una ubicació protegida",
-		"didGenerateImage": "Roo ha generat una imatge"
+		"wantsToRead": "AI Code Orchestrator vol llegir aquest fitxer",
+		"wantsToReadOutsideWorkspace": "AI Code Orchestrator vol llegir aquest fitxer fora de l'espai de treball",
+		"didRead": "AI Code Orchestrator ha llegit aquest fitxer",
+		"wantsToEdit": "AI Code Orchestrator vol editar aquest fitxer",
+		"wantsToEditOutsideWorkspace": "AI Code Orchestrator vol editar aquest fitxer fora de l'espai de treball",
+		"wantsToEditProtected": "AI Code Orchestrator vol editar un fitxer de configuració protegit",
+		"wantsToCreate": "AI Code Orchestrator vol crear un nou fitxer",
+		"wantsToInsert": "AI Code Orchestrator vol inserir contingut en aquest fitxer",
+		"wantsToInsertWithLineNumber": "AI Code Orchestrator vol inserir contingut a la línia {{lineNumber}} d'aquest fitxer",
+		"wantsToInsertAtEnd": "AI Code Orchestrator vol afegir contingut al final d'aquest fitxer",
+		"wantsToReadAndXMore": "En AI Code Orchestrator vol llegir aquest fitxer i {{count}} més",
+		"wantsToReadMultiple": "AI Code Orchestrator vol llegir diversos fitxers",
+		"wantsToApplyBatchChanges": "AI Code Orchestrator vol aplicar canvis a múltiples fitxers",
+		"wantsToGenerateImage": "AI Code Orchestrator vol generar una imatge",
+		"wantsToGenerateImageOutsideWorkspace": "AI Code Orchestrator vol generar una imatge fora de l'espai de treball",
+		"wantsToGenerateImageProtected": "AI Code Orchestrator vol generar una imatge en una ubicació protegida",
+		"didGenerateImage": "AI Code Orchestrator ha generat una imatge"
 	},
 	"directoryOperations": {
-		"wantsToViewTopLevel": "Roo vol veure els fitxers de nivell superior en aquest directori",
-		"didViewTopLevel": "Roo ha vist els fitxers de nivell superior en aquest directori",
-		"wantsToViewRecursive": "Roo vol veure recursivament tots els fitxers en aquest directori",
-		"didViewRecursive": "Roo ha vist recursivament tots els fitxers en aquest directori",
-		"wantsToSearch": "Roo vol cercar en aquest directori <code>{{regex}}</code>",
-		"didSearch": "Roo ha cercat en aquest directori <code>{{regex}}</code>",
-		"wantsToSearchOutsideWorkspace": "Roo vol cercar en aquest directori (fora de l'espai de treball) <code>{{regex}}</code>",
-		"didSearchOutsideWorkspace": "Roo ha cercat en aquest directori (fora de l'espai de treball) <code>{{regex}}</code>",
-		"wantsToViewTopLevelOutsideWorkspace": "Roo vol veure els fitxers de nivell superior en aquest directori (fora de l'espai de treball)",
-		"didViewTopLevelOutsideWorkspace": "Roo ha vist els fitxers de nivell superior en aquest directori (fora de l'espai de treball)",
-		"wantsToViewRecursiveOutsideWorkspace": "Roo vol veure recursivament tots els fitxers en aquest directori (fora de l'espai de treball)",
-		"didViewRecursiveOutsideWorkspace": "Roo ha vist recursivament tots els fitxers en aquest directori (fora de l'espai de treball)",
-		"wantsToViewMultipleDirectories": "Roo vol veure diversos directoris"
+		"wantsToViewTopLevel": "AI Code Orchestrator vol veure els fitxers de nivell superior en aquest directori",
+		"didViewTopLevel": "AI Code Orchestrator ha vist els fitxers de nivell superior en aquest directori",
+		"wantsToViewRecursive": "AI Code Orchestrator vol veure recursivament tots els fitxers en aquest directori",
+		"didViewRecursive": "AI Code Orchestrator ha vist recursivament tots els fitxers en aquest directori",
+		"wantsToSearch": "AI Code Orchestrator vol cercar en aquest directori <code>{{regex}}</code>",
+		"didSearch": "AI Code Orchestrator ha cercat en aquest directori <code>{{regex}}</code>",
+		"wantsToSearchOutsideWorkspace": "AI Code Orchestrator vol cercar en aquest directori (fora de l'espai de treball) <code>{{regex}}</code>",
+		"didSearchOutsideWorkspace": "AI Code Orchestrator ha cercat en aquest directori (fora de l'espai de treball) <code>{{regex}}</code>",
+		"wantsToViewTopLevelOutsideWorkspace": "AI Code Orchestrator vol veure els fitxers de nivell superior en aquest directori (fora de l'espai de treball)",
+		"didViewTopLevelOutsideWorkspace": "AI Code Orchestrator ha vist els fitxers de nivell superior en aquest directori (fora de l'espai de treball)",
+		"wantsToViewRecursiveOutsideWorkspace": "AI Code Orchestrator vol veure recursivament tots els fitxers en aquest directori (fora de l'espai de treball)",
+		"didViewRecursiveOutsideWorkspace": "AI Code Orchestrator ha vist recursivament tots els fitxers en aquest directori (fora de l'espai de treball)",
+		"wantsToViewMultipleDirectories": "AI Code Orchestrator vol veure diversos directoris"
 	},
 	"commandOutput": "Sortida de la comanda",
 	"commandExecution": {
@@ -236,33 +232,32 @@
 	"response": "Resposta",
 	"arguments": "Arguments",
 	"text": {
-		"rooSaid": "En Roo ha dit"
+		"aicoSaid": "En AI Code Orchestrator ha dit"
 	},
 	"feedback": {
 		"youSaid": "Has dit"
 	},
 	"mcp": {
-		"wantsToUseTool": "Roo vol utilitzar una eina al servidor MCP {{serverName}}",
-		"wantsToAccessResource": "Roo vol accedir a un recurs al servidor MCP {{serverName}}"
+		"wantsToUseTool": "AI Code Orchestrator vol utilitzar una eina al servidor MCP {{serverName}}",
+		"wantsToAccessResource": "AI Code Orchestrator vol accedir a un recurs al servidor MCP {{serverName}}"
 	},
 	"modes": {
-		"wantsToSwitch": "Roo vol canviar a mode <code>{{mode}}</code>",
-		"wantsToSwitchWithReason": "Roo vol canviar a mode <code>{{mode}}</code> perquè: {{reason}}",
-		"didSwitch": "Roo ha canviat a mode <code>{{mode}}</code>",
-		"didSwitchWithReason": "Roo ha canviat a mode <code>{{mode}}</code> perquè: {{reason}}"
+		"wantsToSwitch": "AI Code Orchestrator vol canviar a mode <code>{{mode}}</code>",
+		"wantsToSwitchWithReason": "AI Code Orchestrator vol canviar a mode <code>{{mode}}</code> perquè: {{reason}}",
+		"didSwitch": "AI Code Orchestrator ha canviat a mode <code>{{mode}}</code>",
+		"didSwitchWithReason": "AI Code Orchestrator ha canviat a mode <code>{{mode}}</code> perquè: {{reason}}"
 	},
 	"subtasks": {
-		"wantsToCreate": "Roo vol crear una nova subtasca en mode <code>{{mode}}</code>",
-		"wantsToFinish": "Roo vol finalitzar aquesta subtasca",
+		"wantsToCreate": "AI Code Orchestrator vol crear una nova subtasca en mode <code>{{mode}}</code>",
+		"wantsToFinish": "AI Code Orchestrator vol finalitzar aquesta subtasca",
 		"newTaskContent": "Instruccions de la subtasca",
-		"completionContent": "Subtasca completada",
 		"resultContent": "Resultats de la subtasca",
 		"defaultResult": "Si us plau, continua amb la següent tasca.",
 		"completionInstructions": "Subtasca completada! Pots revisar els resultats i suggerir correccions o següents passos. Si tot sembla correcte, confirma per tornar el resultat a la tasca principal.",
 		"goToSubtask": "Veure tasca"
 	},
 	"questions": {
-		"hasQuestion": "Roo té una pregunta"
+		"hasQuestion": "AI Code Orchestrator té una pregunta"
 	},
 	"taskCompleted": "Tasca completada",
 	"modelResponseIncomplete": "Resposta del model incompleta",
@@ -278,7 +273,7 @@
 		"copyToClipboard": "Copiar al porta-retalls",
 		"copied": "Copiat!",
 		"diagnostics": "Obtenir informació d'error detallada",
-		"proxyProvider": "Sembla que estàs utilitzant un proveïdor basat en proxy. Assegura't de comprovar els seus registres i de garantir que no estàs reescrivint les sol·licituds de Roo."
+		"proxyProvider": "Sembla que estàs utilitzant un proveïdor basat en proxy. Assegura't de comprovar els seus registres i de garantir que no estàs reescrivint les sol·licituds de AI Code Orchestrator."
 	},
 	"powershell": {
 		"issues": "Sembla que estàs tenint problemes amb Windows PowerShell, si us plau consulta aquesta documentació per a més informació."
@@ -287,7 +282,6 @@
 		"tooltipManage": "Gestiona la configuració d'aprovació automàtica",
 		"tooltipStatus": "Aprovació automàtica activada per a: {{toggles}}",
 		"title": "Aprovació automàtica",
-		"toggle": "Commuta l'aprovació automàtica",
 		"all": "Tot",
 		"none": "Cap",
 		"description": "Executa aquestes accions sense demanar permís. Activa-ho només per a accions de confiança.",
@@ -321,26 +315,26 @@
 		}
 	},
 	"skill": {
-		"wantsToLoad": "En Roo vol carregar una habilitat",
-		"didLoad": "En Roo ha carregat una habilitat"
+		"wantsToLoad": "En AI Code Orchestrator vol carregar una habilitat",
+		"didLoad": "En AI Code Orchestrator ha carregat una habilitat"
 	},
 	"followUpSuggest": {
 		"copyToInput": "Copiar a l'entrada (o Shift + clic)",
 		"timerPrefix": "Aprovació automàtica habilitada. Seleccionant en {{seconds}}s…"
 	},
 	"announcement": {
-		"title": "Roo Code {{version}} Llançat",
-		"support": "Si us plau, dona suport a Roo Code fent una estrella al nostre <githubLink>GitHub</githubLink>.",
+		"title": "AI Code Orchestrator {{version}} Llançat",
+		"support": "Si us plau, dona suport a AI Code Orchestrator fent una estrella al nostre <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
-			"title": "L'última versió de Roo Code",
-			"intro": "Aquesta és l'última versió de Roo Code. <announcementLink>Com vam anunciar fa unes setmanes</announcementLink>, hem decidit centrar-nos en <roomoteLink>Roomote</roomoteLink>, la nostra plataforma d'agents al núvol, que creiem que és el futur del desenvolupament de programari. Moltes gràcies pel teu suport durant aquest darrer any aproximadament.",
-			"continuity": "Aquesta extensió hauria de continuar funcionant indefinidament, però no rebrà correccions d'errors, noves funcionalitats ni actualitzacions de models.",
-			"alternatives": "Si vols utilitzar una extensió, et recomanem donar un cop d'ull a <zooCodeLink>ZooCode</zooCodeLink> (un fork comunitari de Roo Code) i <clineLink>Cline</clineLink> (d'on va començar originalment Roo Code).",
-			"signoff": "Feliç programació!"
+			"title": "AI Code Orchestrator {{version}}",
+			"intro": "AI Code Orchestrator {{version}} millora la selecció de models per rol. Els models assignats als rols ara tenen prioritat de manera coherent tant a la interfície del xat com durant l’execució de tasques, i els rols sense model assignat hereten el model principal.",
+			"continuity": "Aquesta versió també corregeix la selecció del model quan es configura una assignació de rol sense nom de perfil.",
+			"alternatives": "La selecció de models per rol ara és coherent des de la configuració fins a l’execució.",
+			"signoff": "Bona programació!"
 		},
 		"release": {
 			"heading": "Què hi ha de nou:",
-			"gpt55": "GPT-5.5 via OpenAI Codex: S'ha afegit suport per a GPT-5.5 al proveïdor OpenAI Codex perquè puguis utilitzar el model més recent directament des de Roo Code.",
+			"gpt55": "GPT-5.5 via OpenAI Codex: S'ha afegit suport per a GPT-5.5 al proveïdor OpenAI Codex perquè puguis utilitzar el model més recent directament des de AI Code Orchestrator.",
 			"claudeOpus47": "Claude Opus 4.7 a Vertex AI: S'ha afegit Claude Opus 4.7 al proveïdor Vertex AI, el nou model de raonament emblemàtic d'Anthropic.",
 			"checkpointNav": "Navegació per Checkpoints Anteriors: S'han afegit controls al xat per tornar enrere pels checkpoints previs, amb suport complet d'i18n."
 		},
@@ -366,24 +360,24 @@
 	"profileViolationWarning": "El perfil actual no és compatible amb la configuració de la teva organització",
 	"shellIntegration": {
 		"title": "Advertència d'execució d'ordres",
-		"description": "La teva ordre s'està executant sense la integració de shell del terminal VSCode. Per suprimir aquest advertiment, pots desactivar la integració de shell a la secció <strong>Terminal</strong> de la <settingsLink>configuració de Roo Code</settingsLink> o solucionar problemes d'integració del terminal VSCode utilitzant l'enllaç a continuació.",
+		"description": "La teva ordre s'està executant sense la integració de shell del terminal VSCode. Per suprimir aquest advertiment, pots desactivar la integració de shell a la secció <strong>Terminal</strong> de la <settingsLink>configuració de AI Code Orchestrator</settingsLink> o solucionar problemes d'integració del terminal VSCode utilitzant l'enllaç a continuació.",
 		"troubleshooting": "Fes clic aquí per a la documentació d'integració de shell."
 	},
 	"ask": {
 		"autoApprovedRequestLimitReached": {
 			"title": "S'ha arribat al límit de sol·licituds aprovades automàticament",
-			"description": "Roo ha arribat al límit aprovat automàticament de {{count}} sol·licitud(s) d'API. Vols reiniciar el comptador i continuar amb la tasca?",
+			"description": "AI Code Orchestrator ha arribat al límit aprovat automàticament de {{count}} sol·licitud(s) d'API. Vols reiniciar el comptador i continuar amb la tasca?",
 			"button": "Reiniciar i continuar"
 		},
 		"autoApprovedCostLimitReached": {
 			"title": "S'ha arribat al límit de cost d'aprovació automàtica",
 			"button": "Restableix i continua",
-			"description": "Roo ha arribat al límit de cost aprovat automàticament de ${{count}}. Vols restablir el cost i continuar amb la tasca?"
+			"description": "AI Code Orchestrator ha arribat al límit de cost aprovat automàticament de ${{count}}. Vols restablir el cost i continuar amb la tasca?"
 		}
 	},
 	"codebaseSearch": {
-		"wantsToSearch": "Roo vol cercar a la base de codi <code>{{query}}</code>",
-		"wantsToSearchWithPath": "Roo vol cercar a la base de codi <code>{{query}}</code> a <code>{{path}}</code>",
+		"wantsToSearch": "AI Code Orchestrator vol cercar a la base de codi <code>{{query}}</code>",
+		"wantsToSearchWithPath": "AI Code Orchestrator vol cercar a la base de codi <code>{{query}}</code> a <code>{{path}}</code>",
 		"didSearch_one": "S'ha trobat 1 resultat",
 		"didSearch_other": "S'han trobat {{count}} resultats",
 		"resultTooltip": "Puntuació de similitud: {{score}} (fes clic per obrir el fitxer)"
@@ -454,8 +448,8 @@
 		"clickToEdit": "Feu clic per editar el missatge"
 	},
 	"slashCommand": {
-		"wantsToRun": "Roo vol executar una comanda slash",
-		"didRun": "Roo ha executat una comanda slash"
+		"wantsToRun": "AI Code Orchestrator vol executar una comanda slash",
+		"didRun": "AI Code Orchestrator ha executat una comanda slash"
 	},
 	"contextMenu": {
 		"noResults": "Sense resultats",
@@ -480,12 +474,12 @@
 		"openMcpSettings": "Obrir configuració de MCP"
 	},
 	"readCommandOutput": {
-		"title": "Roo read command output"
+		"title": "AI Code Orchestrator read command output"
 	},
 	"retiredProvider": {
 		"title": "Proveïdor ja no compatible",
 		"message": "This provider is no longer supported. Please select a different provider in your API profile settings.",
 		"openSettings": "Obrir configuració",
-		"rooMessage": "As part of our decision to sunset the Roo Code extension, we also ended the Roo Code Router, which only existed to support the extension. Sorry about the hassle."
+		"aicoMessage": "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
 	}
 }

@@ -35,8 +35,9 @@ import {
 	type ProviderSettings,
 	type ExperimentId,
 	DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
+	DEFAULT_ORCHESTRATION_SETTINGS,
 	ImageGenerationProvider,
-} from "@roo-code/types"
+} from "@ai-code-orchestrator/types"
 
 import { vscode } from "@src/utils/vscode"
 import { cn } from "@src/lib/utils"
@@ -78,6 +79,7 @@ import { SlashCommandsSettings } from "./SlashCommandsSettings"
 import { SkillsSettings } from "./SkillsSettings"
 import { UISettings } from "./UISettings"
 import ModesView from "../modes/ModesView"
+import { OrchestrationSettings } from "./OrchestrationSettings"
 import McpView from "../mcp/McpView"
 import { WorktreesView } from "../worktrees/WorktreesView"
 import { SettingsSearch } from "./SettingsSearch"
@@ -182,7 +184,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		terminalZshP10k,
 		terminalZdotdir,
 		writeDelayMs,
-		showRooIgnoredFiles,
+		showAicoIgnoredFiles,
 		enableSubfolderRules,
 		maxImageFileSize,
 		maxTotalImageSize,
@@ -201,6 +203,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		includeCurrentTime,
 		includeCurrentCost,
 		maxGitStatusFiles,
+		orchestrationSettings,
+		roleAssignments,
 	} = cachedState
 
 	const apiConfiguration = useMemo(() => cachedState.apiConfiguration ?? {}, [cachedState.apiConfiguration])
@@ -387,7 +391,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					mcpEnabled,
 					maxOpenTabsContext: Math.min(Math.max(0, maxOpenTabsContext ?? 20), 500),
 					maxWorkspaceFiles: Math.min(Math.max(0, maxWorkspaceFiles ?? 200), 500),
-					showRooIgnoredFiles: showRooIgnoredFiles ?? true,
+					showAicoIgnoredFiles: showAicoIgnoredFiles ?? true,
 					enableSubfolderRules: enableSubfolderRules ?? false,
 					maxImageFileSize: maxImageFileSize ?? 5,
 					maxTotalImageSize: maxTotalImageSize ?? 20,
@@ -409,6 +413,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					openRouterImageGenerationSelectedModel,
 					experiments,
 					customSupportPrompts,
+					orchestrationSettings,
+					roleAssignments,
 				},
 			})
 
@@ -511,7 +517,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			{ id: "language", icon: Globe },
 			{ id: "about", icon: Info },
 		],
-		[], // No dependencies needed now
+		[],
 	)
 
 	// Update target section logic to set active tab
@@ -819,7 +825,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 								listApiConfigMeta={listApiConfigMeta ?? []}
 								maxOpenTabsContext={maxOpenTabsContext}
 								maxWorkspaceFiles={maxWorkspaceFiles ?? 200}
-								showRooIgnoredFiles={showRooIgnoredFiles}
+								showAicoIgnoredFiles={showAicoIgnoredFiles}
 								enableSubfolderRules={enableSubfolderRules}
 								maxImageFileSize={maxImageFileSize}
 								maxTotalImageSize={maxTotalImageSize}
@@ -852,8 +858,19 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 							/>
 						)}
 
-						{/* Modes Section */}
-						{renderTab === "modes" && <ModesView />}
+						{/* Roles Section */}
+						{renderTab === "modes" && (
+							<>
+								<ModesView
+									roleAssignments={roleAssignments}
+									setCachedStateField={setCachedStateField}
+								/>
+								<OrchestrationSettings
+									value={orchestrationSettings ?? DEFAULT_ORCHESTRATION_SETTINGS}
+									onChange={(next) => setCachedStateField("orchestrationSettings", next)}
+								/>
+							</>
+						)}
 
 						{/* MCP Section */}
 						{renderTab === "mcp" && <McpView />}

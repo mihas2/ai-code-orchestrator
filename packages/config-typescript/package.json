@@ -1,5 +1,6 @@
 {
-	"name": "@roo-code/config-typescript",
+	"name": "@ai-code-orchestrator/config-typescript",
+	"version": "1.1.4",
 	"private": true,
 	"publishConfig": {
 		"access": "public"

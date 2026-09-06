@@ -3,17 +3,17 @@ import path from "path"
 import * as os from "os"
 import { Dirent } from "fs"
 
-import { isLanguage } from "@roo-code/types"
+import { isLanguage } from "@ai-code-orchestrator/types"
 
 import type { SystemPromptSettings } from "../types"
 
 import { LANGUAGES } from "../../../shared/language"
 import {
-	getRooDirectoriesForCwd,
-	getAllRooDirectoriesForCwd,
+	getAicoDirectoriesForCwd,
+	getAllAicoDirectoriesForCwd,
 	getAgentsDirectoriesForCwd,
-	getGlobalRooDirectory,
-} from "../../../services/roo-config"
+	getGlobalAicoDirectory,
+} from "../../../services/aico-config"
 
 /**
  * Safely read a file and return its trimmed content
@@ -206,11 +206,13 @@ function formatDirectoryContent(files: Array<{ filename: string; content: string
 export async function loadRuleFiles(cwd: string, enableSubfolderRules: boolean = false): Promise<string> {
 	const rules: string[] = []
 	// Use recursive discovery only if enableSubfolderRules is true
-	const rooDirectories = enableSubfolderRules ? await getAllRooDirectoriesForCwd(cwd) : getRooDirectoriesForCwd(cwd)
+	const aicoDirectories = enableSubfolderRules
+		? await getAllAicoDirectoriesForCwd(cwd)
+		: getAicoDirectoriesForCwd(cwd)
 
-	// Check for .roo/rules/ directories in order (global, project-local, and optionally subfolders)
-	for (const rooDir of rooDirectories) {
-		const rulesDir = path.join(rooDir, "rules")
+	// Check for .ai-code-orchestrator/rules/ directories in order (global, project-local, and optionally subfolders)
+	for (const aicoDir of aicoDirectories) {
+		const rulesDir = path.join(aicoDir, "rules")
 		if (await directoryExists(rulesDir)) {
 			const files = await readTextFilesFromDirectory(rulesDir)
 			if (files.length > 0) {
@@ -220,13 +222,13 @@ export async function loadRuleFiles(cwd: string, enableSubfolderRules: boolean =
 		}
 	}
 
-	// If we found rules in .roo/rules/ directories, return them
+	// If we found rules in .ai-code-orchestrator/rules/ directories, return them
 	if (rules.length > 0) {
-		return "\n# Rules from .roo directories:\n\n" + rules.join("\n\n")
+		return "\n# Rules from .ai-code-orchestrator directories:\n\n" + rules.join("\n\n")
 	}
 
-	// Fall back to existing behavior for legacy .roorules/.clinerules files
-	const ruleFiles = [".roorules", ".clinerules"]
+	// Fall back to existing behavior for legacy .aicorules/.clinerules files
+	const ruleFiles = [".aicorules", ".clinerules"]
 
 	for (const file of ruleFiles) {
 		const content = await safeReadFile(path.join(cwd, file))
@@ -345,7 +347,7 @@ async function loadAgentRulesFile(cwd: string): Promise<string> {
 }
 
 /**
- * Load all AGENTS.md files from project root and optionally subdirectories with .roo folders
+ * Load all AGENTS.md files from project root and optionally subdirectories with .ai-code-orchestrator folders
  * Returns combined content with clear path headers for each file
  *
  * @param cwd - Current working directory (project root)
@@ -364,7 +366,7 @@ async function loadAllAgentRulesFiles(cwd: string, enableSubfolderRules: boolean
 		return agentRules.join("\n\n")
 	}
 
-	// When enabled, load from root and all subdirectories with .roo folders
+	// When enabled, load from root and all subdirectories with .ai-code-orchestrator folders
 	const directories = await getAgentsDirectoriesForCwd(cwd)
 
 	for (const directory of directories) {
@@ -386,7 +388,7 @@ export async function addCustomInstructions(
 	mode: string,
 	options: {
 		language?: string
-		rooIgnoreInstructions?: string
+		aicoIgnoreInstructions?: string
 		settings?: SystemPromptSettings
 	} = {},
 ): Promise<string> {
@@ -402,13 +404,13 @@ export async function addCustomInstructions(
 	if (mode) {
 		const modeRules: string[] = []
 		// Use recursive discovery only if enableSubfolderRules is true
-		const rooDirectories = enableSubfolderRules
-			? await getAllRooDirectoriesForCwd(cwd)
-			: getRooDirectoriesForCwd(cwd)
+		const aicoDirectories = enableSubfolderRules
+			? await getAllAicoDirectoriesForCwd(cwd)
+			: getAicoDirectoriesForCwd(cwd)
 
-		// Check for .roo/rules-${mode}/ directories in order (global, project-local, and optionally subfolders)
-		for (const rooDir of rooDirectories) {
-			const modeRulesDir = path.join(rooDir, `rules-${mode}`)
+		// Check for .ai-code-orchestrator/rules-${mode}/ directories in order (global, project-local, and optionally subfolders)
+		for (const aicoDir of aicoDirectories) {
+			const modeRulesDir = path.join(aicoDir, `rules-${mode}`)
 			if (await directoryExists(modeRulesDir)) {
 				const files = await readTextFilesFromDirectory(modeRulesDir)
 				if (files.length > 0) {
@@ -418,16 +420,16 @@ export async function addCustomInstructions(
 			}
 		}
 
-		// If we found mode-specific rules in .roo/rules-${mode}/ directories, use them
+		// If we found mode-specific rules in .ai-code-orchestrator/rules-${mode}/ directories, use them
 		if (modeRules.length > 0) {
 			modeRuleContent = "\n" + modeRules.join("\n\n")
 			usedRuleFile = `rules-${mode} directories`
 		} else {
 			// Fall back to existing behavior for legacy files
-			const rooModeRuleFile = `.roorules-${mode}`
-			modeRuleContent = await safeReadFile(path.join(cwd, rooModeRuleFile))
+			const aicoModeRuleFile = `.aicorules-${mode}`
+			modeRuleContent = await safeReadFile(path.join(cwd, aicoModeRuleFile))
 			if (modeRuleContent) {
-				usedRuleFile = rooModeRuleFile
+				usedRuleFile = aicoModeRuleFile
 			} else {
 				const clineModeRuleFile = `.clinerules-${mode}`
 				modeRuleContent = await safeReadFile(path.join(cwd, clineModeRuleFile))
@@ -461,19 +463,19 @@ export async function addCustomInstructions(
 
 	// Add mode-specific rules first if they exist
 	if (modeRuleContent && modeRuleContent.trim()) {
-		if (usedRuleFile.includes(path.join(".roo", `rules-${mode}`))) {
+		if (usedRuleFile.includes(path.join(".ai-code-orchestrator", `rules-${mode}`))) {
 			rules.push(modeRuleContent.trim())
 		} else {
 			rules.push(`# Rules from ${usedRuleFile}:\n${modeRuleContent}`)
 		}
 	}
 
-	if (options.rooIgnoreInstructions) {
-		rules.push(options.rooIgnoreInstructions)
+	if (options.aicoIgnoreInstructions) {
+		rules.push(options.aicoIgnoreInstructions)
 	}
 
 	// Add AGENTS.md content if enabled (default: true)
-	// Load from root and optionally subdirectories with .roo folders based on enableSubfolderRules setting
+	// Load from root and optionally subdirectories with .ai-code-orchestrator folders based on enableSubfolderRules setting
 	if (options.settings?.useAgentRules !== false) {
 		const agentRulesContent = await loadAllAgentRulesFiles(cwd, enableSubfolderRules)
 		if (agentRulesContent && agentRulesContent.trim()) {

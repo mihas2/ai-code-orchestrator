@@ -1,4 +1,4 @@
-import type { PromptComponent } from "@roo-code/types"
+import type { PromptComponent } from "@ai-code-orchestrator/types"
 
 import { getModeSelection, modes } from "../modes"
 

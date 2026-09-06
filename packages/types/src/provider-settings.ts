@@ -70,7 +70,7 @@ export const isInternalProvider = (key: string): key is InternalProvider =>
 /**
  * CustomProvider
  *
- * Custom providers are completely configurable within Roo Code settings.
+ * Custom providers are completely configurable within AI Code Orchestrator settings.
  */
 
 export const customProviders = ["openai"] as const
@@ -141,7 +141,7 @@ export const retiredProviderNames = [
 	"groq",
 	"huggingface",
 	"io-intelligence",
-	"roo",
+	"aico",
 ] as const
 
 export const retiredProviderNamesSchema = z.enum(retiredProviderNames)
@@ -173,6 +173,21 @@ export type ProviderSettingsEntry = z.infer<typeof providerSettingsEntrySchema>
  */
 
 const baseProviderSettingsSchema = z.object({
+	// Optional so existing provider profiles remain valid and inherit defaults.
+	profileRoleModelSettings: z
+		.object({
+			schemaVersion: z.literal(1).default(1),
+			roleModels: z
+				.record(
+					z.string(),
+					z.object({
+						modelId: z.string().min(1).optional(),
+						inheritPrimary: z.boolean().default(true),
+					}),
+				)
+				.default({}),
+		})
+		.optional(),
 	includeMaxTokens: z.boolean().optional(),
 	todoListEnabled: z.boolean().optional(),
 	modelTemperature: z.number().nullish(),
@@ -482,8 +497,15 @@ export const modelIdKeys = [
 export type ModelIdKey = (typeof modelIdKeys)[number]
 
 export const getModelId = (settings: ProviderSettings): string | undefined => {
-	const modelIdKey = modelIdKeys.find((key) => settings[key])
-	return modelIdKey ? settings[modelIdKey] : undefined
+	// A profile can retain model fields from a previous provider. Only read the
+	// field belonging to the current provider to avoid routing with stale data.
+	const modelIdKey =
+		settings.apiProvider === "openai"
+			? "openAiModelId"
+			: settings.apiProvider && settings.apiProvider in modelIdKeysByProvider
+				? modelIdKeysByProvider[settings.apiProvider as TypicalProvider]
+				: "apiModelId"
+	return settings[modelIdKey]
 }
 
 /**

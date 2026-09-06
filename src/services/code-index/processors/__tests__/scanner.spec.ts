@@ -48,7 +48,13 @@ vi.mock("vscode", () => ({
 	},
 }))
 
-vi.mock("../../../../core/ignore/RooIgnoreController")
+vi.mock("../../../../core/ignore/AicoIgnoreController", () => ({
+	AicoIgnoreController: vi.fn().mockImplementation(() => ({
+		initialize: vi.fn().mockResolvedValue(undefined),
+		filterPaths: vi.fn((paths: string[]) => paths),
+		dispose: vi.fn(),
+	})),
+}))
 vi.mock("ignore")
 
 // Override the Jest-based mock with a vitest-compatible version

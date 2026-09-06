@@ -9,13 +9,13 @@
 		}
 	},
 	"landing": {
-		"greeting": "Roo Code'a Hoş Geldin!",
-		"introduction": "Yerleşik ve genişletilebilir Modlar yelpazesiyle Roo Code, daha önce hiç olmadığı gibi planlama, mimari tasarım, kodlama, hata ayıklama ve üretkenliğini artırmanı sağlar.",
-		"getStarted": "Roo Hesabı Oluştur"
+		"greeting": "AI Code Orchestrator'a Hoş Geldin!",
+		"introduction": "Yerleşik ve genişletilebilir Modlar yelpazesiyle AI Code Orchestrator, daha önce hiç olmadığı gibi planlama, mimari tasarım, kodlama, hata ayıklama ve üretkenliğini artırmanı sağlar.",
+		"getStarted": "AI Code Orchestrator Hesabı Oluştur"
 	},
 	"providerSignup": {
 		"heading": "Sağlayıcınızı seçin",
-		"chooseProvider": "Roo'nun çalışması için bir LLM sağlayıcısına ihtiyacı var. Başlamak için bir tane seç, sonra daha fazlasını ekleyebilirsin.",
+		"chooseProvider": "AI Code Orchestrator'nun çalışması için bir LLM sağlayıcısına ihtiyacı var. Başlamak için bir tane seç, sonra daha fazlasını ekleyebilirsin.",
 		"learnMore": "Daha fazla bilgi",
 		"useAnotherProvider": "Üçüncü taraf Sağlayıcı",
 		"useAnotherProviderDescription": "Bir API anahtarı gir ve başla.",

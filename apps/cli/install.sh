@@ -1,19 +1,19 @@
 #!/bin/sh
-# Roo Code CLI Installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/RooCodeInc/Roo-Code/main/apps/cli/install.sh | sh
+# AI Code Orchestrator CLI Installer
+# Usage: curl -fsSL https://raw.githubusercontent.com/AIOrchestrator/ai-code-orchestrator/main/apps/cli/install.sh | sh
 #
 # Environment variables:
-#   ROO_INSTALL_DIR   - Installation directory (default: ~/.roo/cli)
-#   ROO_BIN_DIR       - Binary symlink directory (default: ~/.local/bin)
-#   ROO_VERSION       - Specific version to install (default: latest)
-#   ROO_LOCAL_TARBALL - Path to local tarball to install (skips download)
+#   AICO_INSTALL_DIR   - Installation directory (default: ~/.ai-code-orchestrator/cli)
+#   AICO_BIN_DIR       - Binary symlink directory (default: ~/.local/bin)
+#   AICO_VERSION       - Specific version to install (default: latest)
+#   AICO_LOCAL_TARBALL - Path to local tarball to install (skips download)
 
 set -e
 
 # Configuration
-INSTALL_DIR="${ROO_INSTALL_DIR:-$HOME/.roo/cli}"
-BIN_DIR="${ROO_BIN_DIR:-$HOME/.local/bin}"
-REPO="RooCodeInc/Roo-Code"
+INSTALL_DIR="${AICO_INSTALL_DIR:-$HOME/.ai-code-orchestrator/cli}"
+BIN_DIR="${AICO_BIN_DIR:-$HOME/.local/bin}"
+REPO="AIOrchestrator/ai-code-orchestrator"
 MIN_NODE_VERSION=20
 
 # Color output (only if terminal supports it)
@@ -85,14 +85,14 @@ detect_platform() {
 # Get latest release version or use specified version
 get_version() {
     # Skip version fetch if using local tarball
-    if [ -n "$ROO_LOCAL_TARBALL" ]; then
-        VERSION="${ROO_VERSION:-local}"
+    if [ -n "$AICO_LOCAL_TARBALL" ]; then
+        VERSION="${AICO_VERSION:-local}"
         info "Using local tarball (version: $VERSION)"
         return
     fi
     
-    if [ -n "$ROO_VERSION" ]; then
-        VERSION="$ROO_VERSION"
+    if [ -n "$AICO_VERSION" ]; then
+        VERSION="$AICO_VERSION"
         info "Using specified version: $VERSION"
         return
     fi
@@ -168,19 +168,19 @@ if (latestVersion) {
 
 # Download and extract
 download_and_install() {
-    TARBALL="roo-cli-${PLATFORM}.tar.gz"
+    TARBALL="aico-cli-${PLATFORM}.tar.gz"
     
     # Create temp directory
     TMP_DIR=$(mktemp -d)
     trap "rm -rf $TMP_DIR" EXIT
     
     # Use local tarball if provided, otherwise download
-    if [ -n "$ROO_LOCAL_TARBALL" ]; then
-        if [ ! -f "$ROO_LOCAL_TARBALL" ]; then
-            error "Local tarball not found: $ROO_LOCAL_TARBALL"
+    if [ -n "$AICO_LOCAL_TARBALL" ]; then
+        if [ ! -f "$AICO_LOCAL_TARBALL" ]; then
+            error "Local tarball not found: $AICO_LOCAL_TARBALL"
         fi
-        info "Using local tarball: $ROO_LOCAL_TARBALL"
-        cp "$ROO_LOCAL_TARBALL" "$TMP_DIR/$TARBALL"
+        info "Using local tarball: $AICO_LOCAL_TARBALL"
+        cp "$AICO_LOCAL_TARBALL" "$TMP_DIR/$TARBALL"
     else
         URL="https://github.com/$REPO/releases/download/cli-v${VERSION}/${TARBALL}"
         
@@ -242,7 +242,7 @@ Available at: https://github.com/$REPO/releases"
     fi
     
     # Make executable
-    chmod +x "$INSTALL_DIR/bin/roo"
+    chmod +x "$INSTALL_DIR/bin/aico"
     
     # Also make ripgrep executable if it exists
     if [ -f "$INSTALL_DIR/bin/rg" ]; then
@@ -255,12 +255,12 @@ setup_bin() {
     mkdir -p "$BIN_DIR"
     
     # Remove old symlink if exists
-    if [ -L "$BIN_DIR/roo" ] || [ -f "$BIN_DIR/roo" ]; then
-        rm -f "$BIN_DIR/roo"
+    if [ -L "$BIN_DIR/aico" ] || [ -f "$BIN_DIR/aico" ]; then
+        rm -f "$BIN_DIR/aico"
     fi
     
-    ln -sf "$INSTALL_DIR/bin/roo" "$BIN_DIR/roo"
-    info "Created symlink: $BIN_DIR/roo"
+    ln -sf "$INSTALL_DIR/bin/aico" "$BIN_DIR/aico"
+    info "Created symlink: $BIN_DIR/aico"
 }
 
 # Check if bin dir is in PATH and provide instructions
@@ -305,28 +305,28 @@ check_path() {
 
 # Verify installation
 verify_install() {
-    if [ -x "$BIN_DIR/roo" ]; then
+    if [ -x "$BIN_DIR/aico" ]; then
         info "Verifying installation..."
         # Just check if it runs without error
-        "$BIN_DIR/roo" --version >/dev/null 2>&1 || true
+        "$BIN_DIR/aico" --version >/dev/null 2>&1 || true
     fi
 }
 
 # Print success message
 print_success() {
     echo ""
-    printf "${GREEN}${BOLD}✓ Roo Code CLI installed successfully!${NC}\n"
+    printf "${GREEN}${BOLD}✓ AI Code Orchestrator CLI installed successfully!${NC}\n"
     echo ""
     echo "  Installation: $INSTALL_DIR"
-    echo "  Binary: $BIN_DIR/roo"
+    echo "  Binary: $BIN_DIR/aico"
     echo "  Version: $VERSION"
     echo ""
     echo "  ${BOLD}Get started:${NC}"
-    echo "    roo --help"
+    echo "    aico --help"
     echo ""
     echo "  ${BOLD}Example:${NC}"
     echo "    export OPENROUTER_API_KEY=sk-or-v1-..."
-    echo "    cd ~/my-project && roo \"What is this project?\""
+    echo "    cd ~/my-project && aico \"What is this project?\""
     echo ""
 }
 
@@ -335,7 +335,7 @@ main() {
     echo ""
     printf "${BLUE}${BOLD}"
     echo "  ╭─────────────────────────────────╮"
-    echo "  │     Roo Code CLI Installer      │"
+    echo "  │     AI Code Orchestrator CLI Installer      │"
     echo "  ╰─────────────────────────────────╯"
     printf "${NC}"
     echo ""

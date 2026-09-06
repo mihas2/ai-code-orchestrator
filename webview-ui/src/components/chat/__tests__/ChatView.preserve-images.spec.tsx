@@ -81,9 +81,9 @@ vi.mock("@/components/common/DismissibleUpsell", () => ({
 
 // Mock QueuedMessages component
 
-// Mock RooTips component
+// Mock AicoTips component
 
-// Mock RooHero component
+// Mock AicoHero component
 
 // Mock i18n
 vi.mock("react-i18next", () => ({

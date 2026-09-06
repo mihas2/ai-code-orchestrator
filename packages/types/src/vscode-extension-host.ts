@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import type { GlobalSettings, RooCodeSettings } from "./global-settings.js"
+import type { GlobalSettings, AiCodeOrchestratorSettings } from "./global-settings.js"
 import type { ProviderSettings, ProviderSettingsEntry } from "./provider-settings.js"
 import type { HistoryItem } from "./history.js"
 import type { ModeConfig, PromptComponent } from "./mode.js"
@@ -65,7 +65,7 @@ export interface ExtensionMessage {
 		| "condenseTaskContextStarted"
 		| "condenseTaskContextResponse"
 		| "singleRouterModelFetchResponse"
-		| "rooCreditBalance"
+		| "aicoCreditBalance"
 		| "indexingStatusUpdate"
 		| "indexCleared"
 		| "codebaseIndexConfig"
@@ -92,6 +92,8 @@ export interface ExtensionMessage {
 		| "folderSelected"
 		| "skills"
 		| "fileContent"
+		| "orchestrationSnapshot"
+		| "orchestrationEvent"
 	text?: string
 	/** For fileContent: { path, content, error? } */
 	fileContent?: { path: string; content: string | null; error?: string }
@@ -285,11 +287,17 @@ export type ExtensionState = Pick<
 	| "requestDelaySeconds"
 	| "showWorktreesInHomeScreen"
 	| "disabledTools"
+	| "orchestrationSettings"
+	| "roleAssignments"
 > & {
+	defaultMode?: string
+	runtimeMode?: string
+	runtimeApiConfigName?: string
 	lockApiConfigAcrossModes?: boolean
 	version: string
 	clineMessages: ClineMessage[]
 	currentTaskId?: string
+	currentTaskInstanceId?: string
 	currentTaskItem?: HistoryItem
 	currentTaskTodos?: TodoItem[] // Initial todos for the current task
 	apiConfiguration: ProviderSettings
@@ -304,7 +312,7 @@ export type ExtensionState = Pick<
 	checkpointTimeout: number // Timeout for checkpoint initialization in seconds (default: 15)
 	maxOpenTabsContext: number // Maximum number of VSCode open tabs to include in context (0-500)
 	maxWorkspaceFiles: number // Maximum number of files to include in current working directory details (0-500)
-	showRooIgnoredFiles: boolean // Whether to show .rooignore'd files in listings
+	showAicoIgnoredFiles: boolean // Whether to show .aicoignore'd files in listings
 	enableSubfolderRules: boolean // Whether to load rules from subdirectories
 	maxReadFileLine?: number // Maximum line limit for read_file tool (-1 for default)
 	maxImageFileSize: number // Maximum size of image files to process in MB
@@ -521,8 +529,26 @@ export interface WebviewMessage {
 		| "moveSkill"
 		| "updateSkillModes"
 		| "openSkillFile"
+		| "orchestrationSnapshot"
+		| "orchestrationPause"
+		| "orchestrationResume"
+		| "orchestrationCancel"
+		| "orchestrationRetry"
+		| "orchestrationReview"
+		| "orchestrationOpenTask"
+		| "orchestrationViewDiff"
+		| "orchestrationApprovePlan"
+		| "orchestrationApproveIntegration"
+		| "updateOrchestrationSettings"
 	text?: string
+	/** Orchestration run identifier, with nodeId required for retry. */
+	orchestrationSettings?: import("./orchestration.js").OrchestrationSettings
+	role?: string
+	roleAssignment?: import("./orchestration.js").RoleAssignments["roles"][string]
+	orchestrationRunId?: string
+	orchestrationNodeId?: string
 	taskId?: string
+	instanceId?: string
 	editedMessageContent?: string
 	tab?: "settings" | "history" | "mcp" | "modes" | "chat"
 	disabled?: boolean
@@ -600,6 +626,7 @@ export interface WebviewMessage {
 		codebaseIndexEmbedderModelId: string
 		codebaseIndexEmbedderModelDimension?: number // Generic dimension for all providers
 		codebaseIndexOpenAiCompatibleBaseUrl?: string
+		codebaseIndexOpenAiCompatibleUseFloatEncoding?: boolean
 		codebaseIndexBedrockRegion?: string
 		codebaseIndexBedrockProfile?: string
 		codebaseIndexSearchMaxResults?: number
@@ -615,9 +642,9 @@ export interface WebviewMessage {
 		codebaseIndexVercelAiGatewayApiKey?: string
 		codebaseIndexOpenRouterApiKey?: string
 	}
-	updatedSettings?: RooCodeSettings
+	updatedSettings?: AiCodeOrchestratorSettings
 	/** Task configuration applied via `createTask()`. */
-	taskConfiguration?: RooCodeSettings
+	taskConfiguration?: AiCodeOrchestratorSettings
 	// Worktree properties
 	worktreePath?: string
 	worktreeBranch?: string

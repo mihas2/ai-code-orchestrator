@@ -1,4 +1,4 @@
-import { RooCodeEventName, ProviderSettings, TokenUsage, ToolUsage } from "@roo-code/types"
+import { AiCodeOrchestratorEventName, ProviderSettings, TokenUsage, ToolUsage } from "@ai-code-orchestrator/types"
 
 import { Task } from "../Task"
 import { ClineProvider } from "../../webview/ClineProvider"
@@ -11,8 +11,16 @@ vi.mock("../../../integrations/terminal/TerminalRegistry", () => ({
 		releaseTerminalsForTask: vi.fn(),
 	},
 }))
-vi.mock("../../ignore/RooIgnoreController")
-vi.mock("../../protect/RooProtectedController")
+vi.mock("../../ignore/AicoIgnoreController", () => ({
+	AicoIgnoreController: vi.fn().mockImplementation(() => ({
+		initialize: vi.fn().mockResolvedValue(undefined),
+		filterPaths: vi.fn((paths: string[]) => paths),
+		validateAccess: vi.fn().mockReturnValue(true),
+		validateCommand: vi.fn().mockReturnValue(undefined),
+		dispose: vi.fn(),
+	})),
+}))
+vi.mock("../../protect/AicoProtectedController")
 vi.mock("../../context-tracking/FileContextTracker")
 vi.mock("../../../integrations/editor/DiffViewProvider")
 vi.mock("../../tools/ToolRepetitionDetector")
@@ -105,7 +113,7 @@ describe("Task token usage throttling", () => {
 
 		// Should emit immediately on first change
 		expect(emitSpy).toHaveBeenCalledWith(
-			RooCodeEventName.TaskTokenUsageUpdated,
+			AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
 			task.taskId,
 			expect.any(Object),
 			expect.any(Object),
@@ -151,7 +159,7 @@ describe("Task token usage throttling", () => {
 		})
 
 		const firstEmitCount = emitSpy.mock.calls.filter(
-			(call) => call[0] === RooCodeEventName.TaskTokenUsageUpdated,
+			(call) => call[0] === AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
 		).length
 
 		// Second message immediately after - should NOT emit due to throttle
@@ -164,7 +172,7 @@ describe("Task token usage throttling", () => {
 		})
 
 		const secondEmitCount = emitSpy.mock.calls.filter(
-			(call) => call[0] === RooCodeEventName.TaskTokenUsageUpdated,
+			(call) => call[0] === AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
 		).length
 
 		// Should still be the same count (throttled)
@@ -180,7 +188,7 @@ describe("Task token usage throttling", () => {
 		})
 
 		const thirdEmitCount = emitSpy.mock.calls.filter(
-			(call) => call[0] === RooCodeEventName.TaskTokenUsageUpdated,
+			(call) => call[0] === AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
 		).length
 
 		// Should have emitted again after throttle period
@@ -206,7 +214,7 @@ describe("Task token usage throttling", () => {
 
 		// Should emit with toolUsage as third parameter
 		expect(emitSpy).toHaveBeenCalledWith(
-			RooCodeEventName.TaskTokenUsageUpdated,
+			AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
 			task.taskId,
 			expect.any(Object), // tokenUsage
 			task.toolUsage, // toolUsage
@@ -238,8 +246,10 @@ describe("Task token usage throttling", () => {
 
 		// Should have emitted TaskTokenUsageUpdated before TaskAborted
 		const calls = emitSpy.mock.calls
-		const tokenUsageUpdateIndex = calls.findIndex((call) => call[0] === RooCodeEventName.TaskTokenUsageUpdated)
-		const taskAbortedIndex = calls.findIndex((call) => call[0] === RooCodeEventName.TaskAborted)
+		const tokenUsageUpdateIndex = calls.findIndex(
+			(call) => call[0] === AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
+		)
+		const taskAbortedIndex = calls.findIndex((call) => call[0] === AiCodeOrchestratorEventName.TaskAborted)
 
 		// Should have both events
 		expect(tokenUsageUpdateIndex).toBeGreaterThanOrEqual(0)
@@ -352,7 +362,7 @@ describe("Task token usage throttling", () => {
 		})
 
 		const firstEmitCount = emitSpy.mock.calls.filter(
-			(call) => call[0] === RooCodeEventName.TaskTokenUsageUpdated,
+			(call) => call[0] === AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
 		).length
 
 		// Wait for throttle period and add another message
@@ -365,7 +375,7 @@ describe("Task token usage throttling", () => {
 		})
 
 		const secondEmitCount = emitSpy.mock.calls.filter(
-			(call) => call[0] === RooCodeEventName.TaskTokenUsageUpdated,
+			(call) => call[0] === AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
 		).length
 
 		// Should not have emitted again since token usage didn't change
@@ -409,7 +419,7 @@ describe("Task token usage throttling", () => {
 		})
 
 		const firstEmitCount = emitSpy.mock.calls.filter(
-			(call) => call[0] === RooCodeEventName.TaskTokenUsageUpdated,
+			(call) => call[0] === AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
 		).length
 
 		// Wait for throttle period
@@ -429,7 +439,7 @@ describe("Task token usage throttling", () => {
 		})
 
 		const secondEmitCount = emitSpy.mock.calls.filter(
-			(call) => call[0] === RooCodeEventName.TaskTokenUsageUpdated,
+			(call) => call[0] === AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
 		).length
 
 		// Should have emitted because tool usage changed even though token usage didn't
@@ -491,7 +501,7 @@ describe("Task token usage throttling", () => {
 
 		// Should emit due to tool usage change
 		expect(emitSpy).toHaveBeenCalledWith(
-			RooCodeEventName.TaskTokenUsageUpdated,
+			AiCodeOrchestratorEventName.TaskTokenUsageUpdated,
 			task.taskId,
 			expect.any(Object),
 			task.toolUsage,

@@ -7,7 +7,7 @@ import type { ClientModule } from "@docusaurus/types"
  * browser finishes its native anchor scroll. This client module fills that gap
  * by explicitly scrolling to the hash target after hydration settles.
  *
- * @see https://linear.app/roocode/issue/CLO-805
+ * @see https://linear.app/aicodeorchestrator/issue/CLO-805
  */
 const scrollToAnchorModule: ClientModule = {
 	onRouteDidUpdate({ location, previousLocation }) {

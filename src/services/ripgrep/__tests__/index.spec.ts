@@ -1,6 +1,6 @@
 // npx vitest run src/services/ripgrep/__tests__/index.spec.ts
 
-import { truncateLine } from "../index"
+import { getBinPath, truncateLine } from "../index"
 
 describe("Ripgrep line truncation", () => {
 	// The default MAX_LINE_LENGTH is 500 in the implementation
@@ -46,5 +46,45 @@ describe("Ripgrep line truncation", () => {
 
 		expect(truncated.length).toEqual(customLength + " [truncated...]".length)
 		expect(truncated).toContain("[truncated...]")
+	})
+})
+
+describe("Ripgrep binary resolution", () => {
+	it("uses the package resolver before appRoot fallbacks", async () => {
+		const resolved = await getBinPath(
+			"/vscode",
+			() => "/workspace/package/lib/index.js",
+			(candidate) => candidate.endsWith("/bin/rg"),
+			() => [],
+		)
+		expect(resolved).toBe("/workspace/package/bin/rg")
+	})
+
+	it("uses the pnpm store when the package link is absent", async () => {
+		const storeBinary = `${process.cwd()}/node_modules/.pnpm/@vscode+ripgrep@1.17.0/node_modules/@vscode/ripgrep/bin/rg`
+		const resolved = await getBinPath(
+			"/vscode",
+			() => {
+				throw new Error("missing link")
+			},
+			(candidate) => candidate === storeBinary,
+			(directory) => (directory === `${process.cwd()}/node_modules/.pnpm` ? ["@vscode+ripgrep@1.17.0"] : []),
+		)
+		expect(resolved).toBe(storeBinary)
+	})
+
+	it("logs every checked path when no binary exists", async () => {
+		const error = vi.spyOn(console, "error").mockImplementation(() => undefined)
+		await getBinPath(
+			"/vscode",
+			() => {
+				throw new Error("missing")
+			},
+			() => false,
+			() => ["@vscode+ripgrep@1.17.0"],
+		)
+		const checkedLog = error.mock.calls.find(([message]) => message.includes("Checked paths:"))?.[0]
+		expect(checkedLog).toContain("/node_modules/.pnpm/@vscode+ripgrep@1.17.0/")
+		error.mockRestore()
 	})
 })

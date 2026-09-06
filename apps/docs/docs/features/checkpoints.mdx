@@ -1,5 +1,5 @@
 ---
-description: Learn how to use checkpoints in Roo Code to save your progress, revert changes, and manage your coding workflow with confidence.
+description: Learn how to use checkpoints in AI Code Orchestrator to save your progress, revert changes, and manage your coding workflow with confidence.
 keywords:
   - checkpoints
   - save progress
@@ -11,7 +11,7 @@ keywords:
 
 # Checkpoints
 
-Checkpoints automatically version your workspace files during Roo Code tasks, enabling non-destructive exploration of AI suggestions and easy recovery from unwanted changes.
+Checkpoints automatically version your workspace files during AI Code Orchestrator tasks, enabling non-destructive exploration of AI suggestions and easy recovery from unwanted changes.
 
 Checkpoints let you:
 - Safely experiment with AI-suggested changes
@@ -33,14 +33,14 @@ Checkpoints let you:
 
 ## Configuration Options
 
-Access checkpoint settings in Roo Code settings under the "Checkpoints" section:
+Access checkpoint settings in AI Code Orchestrator settings under the "Checkpoints" section:
 
 1. Open Settings by clicking the gear icon <Codicon name="gear" /> → Checkpoints
 2. Configure checkpoint behavior:
    - Check or uncheck the "Enable automatic checkpoints" checkbox
    - Adjust the "Checkpoint initialization timeout" (10-60 seconds, default: 30s)
 
-   <img src="/img/checkpoints/checkpoints.png" alt="Checkpoint settings in Roo Code configuration" width="500" />
+   <img src="/img/checkpoints/checkpoints.png" alt="Checkpoint settings in AI Code Orchestrator configuration" width="500" />
 
 #### Checkpoint Initialization Timeout
 
@@ -55,7 +55,7 @@ Controls how long the system waits for checkpoint initialization to complete bef
 
 ## How Checkpoints Work
 
-Roo Code captures snapshots of your project's state using a shadow Git repository, separate from your main version control system. These snapshots, called checkpoints, are automatically created **before** file modifications occur, ensuring you can always undo unwanted changes. Checkpoints are recorded when tasks begin and before file modifications. They are not automatically created before command execution.
+AI Code Orchestrator captures snapshots of your project's state using a shadow Git repository, separate from your main version control system. These snapshots, called checkpoints, are automatically created **before** file modifications occur, ensuring you can always undo unwanted changes. Checkpoints are recorded when tasks begin and before file modifications. They are not automatically created before command execution.
 
 Checkpoints are stored as Git commits in the shadow repository, capturing:
 
@@ -120,7 +120,7 @@ To restore a project to a previous checkpoint state:
 
 ### Limitations and Considerations
 
-- **Scope**: Checkpoints only capture changes made during active Roo Code tasks
+- **Scope**: Checkpoints only capture changes made during active AI Code Orchestrator tasks
 - **External changes**: Modifications made outside of tasks (manual edits, other tools) aren't included
 - **Large files**: Very large binary files may impact performance
 - **Unsaved work**: Restoration will overwrite any unsaved changes in your workspace
@@ -146,7 +146,7 @@ The checkpoint system consists of:
 
 ### Restoration Process
 
-When restoration executes, Roo Code:
+When restoration executes, AI Code Orchestrator:
 - Performs a hard reset to the specified checkpoint commit
 - Copies all files from the shadow repository to your workspace
 - Updates internal checkpoint tracking state
@@ -190,13 +190,13 @@ The checkpoint system respects `.gitignore` patterns in your workspace:
 
 Patterns defined in your workspace's `.gitattributes` for Git LFS are read and added to checkpoint exclusions. This helps avoid tracking large LFS-managed assets in the shadow repository.
 
-#### .rooignore Behavior
+#### .aicoignore Behavior
 
-The `.rooignore` file (which controls AI access to files) is separate from checkpoint tracking:
-- Files excluded by `.rooignore` but not by `.gitignore` will still be checkpointed
+The `.aicoignore` file (which controls AI access to files) is separate from checkpoint tracking:
+- Files excluded by `.aicoignore` but not by `.gitignore` will still be checkpointed
 - Changes to AI-inaccessible files can still be restored through checkpoints
 
-This separation is intentional, as `.rooignore` limits which files the AI can access, not which files should be tracked for version history.
+This separation is intentional, as `.aicoignore` limits which files the AI can access, not which files should be tracked for version history.
 
 #### Nested Git Repositories
 

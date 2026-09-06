@@ -1,7 +1,7 @@
 ---
-description: Learn how to effectively communicate with Roo Code using natural language. Best practices for typing requests, examples, and common pitfalls to avoid.
+description: Learn how to effectively communicate with AI Code Orchestrator using natural language. Best practices for typing requests, examples, and common pitfalls to avoid.
 keywords:
-    - Roo Code requests
+    - AI Code Orchestrator requests
     - natural language AI
     - typing commands
     - AI communication
@@ -11,15 +11,15 @@ keywords:
 
 # Typing Your Requests
 
-Roo Code is designed to understand natural language. You don't need to use any special commands or syntax to communicate with it. Just type your request in plain English, as if you were talking to a human developer.
+AI Code Orchestrator is designed to understand natural language. You don't need to use any special commands or syntax to communicate with it. Just type your request in plain English, as if you were talking to a human developer.
 
-<img src="/img/typing-your-requests/naturally.gif" alt="Example of typing a request in Roo Code" width="600" />
+<img src="/img/typing-your-requests/naturally.gif" alt="Example of typing a request in AI Code Orchestrator" width="600" />
 
 ---
 
 ## Effective Request Strategies
 
-Clearly state what you want Roo Code to do. Avoid vague or ambiguous language.
+Clearly state what you want AI Code Orchestrator to do. Avoid vague or ambiguous language.
 
 | Strategy             | Implementation                                                                             |
 | -------------------- | ------------------------------------------------------------------------------------------ |

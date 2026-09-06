@@ -1,86 +1,86 @@
 import { z } from "zod"
 
-import { rooCodeSettingsSchema } from "./global-settings.js"
+import { aiCodeOrchestratorSettingsSchema } from "./global-settings.js"
 
 /**
- * Roo CLI stdin commands
+ * AI Code Orchestrator CLI stdin commands
  */
 
-export const rooCliCommandNames = ["start", "message", "cancel", "ping", "shutdown"] as const
+export const aicoCliCommandNames = ["start", "message", "cancel", "ping", "shutdown"] as const
 
-export const rooCliCommandNameSchema = z.enum(rooCliCommandNames)
+export const aicoCliCommandNameSchema = z.enum(aicoCliCommandNames)
 
-export type RooCliCommandName = z.infer<typeof rooCliCommandNameSchema>
+export type AicoCliCommandName = z.infer<typeof aicoCliCommandNameSchema>
 
-export const rooCliCommandBaseSchema = z.object({
-	command: rooCliCommandNameSchema,
+export const aicoCliCommandBaseSchema = z.object({
+	command: aicoCliCommandNameSchema,
 	requestId: z.string().min(1),
 })
 
-export type RooCliCommandBase = z.infer<typeof rooCliCommandBaseSchema>
+export type AicoCliCommandBase = z.infer<typeof aicoCliCommandBaseSchema>
 
-const rooCliSessionIdSchema = z
+const aicoCliSessionIdSchema = z
 	.string()
 	.trim()
 	.regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
 
-export const rooCliStartCommandSchema = rooCliCommandBaseSchema.extend({
+export const aicoCliStartCommandSchema = aicoCliCommandBaseSchema.extend({
 	command: z.literal("start"),
 	prompt: z.string(),
-	taskId: rooCliSessionIdSchema.optional(),
+	taskId: aicoCliSessionIdSchema.optional(),
 	images: z.array(z.string()).optional(),
-	configuration: rooCodeSettingsSchema.optional(),
+	configuration: aiCodeOrchestratorSettingsSchema.optional(),
 })
 
-export type RooCliStartCommand = z.infer<typeof rooCliStartCommandSchema>
+export type AicoCliStartCommand = z.infer<typeof aicoCliStartCommandSchema>
 
-export const rooCliMessageCommandSchema = rooCliCommandBaseSchema.extend({
+export const aicoCliMessageCommandSchema = aicoCliCommandBaseSchema.extend({
 	command: z.literal("message"),
 	prompt: z.string(),
 	images: z.array(z.string()).optional(),
 })
 
-export type RooCliMessageCommand = z.infer<typeof rooCliMessageCommandSchema>
+export type AicoCliMessageCommand = z.infer<typeof aicoCliMessageCommandSchema>
 
-export const rooCliCancelCommandSchema = rooCliCommandBaseSchema.extend({
+export const aicoCliCancelCommandSchema = aicoCliCommandBaseSchema.extend({
 	command: z.literal("cancel"),
 })
 
-export type RooCliCancelCommand = z.infer<typeof rooCliCancelCommandSchema>
+export type AicoCliCancelCommand = z.infer<typeof aicoCliCancelCommandSchema>
 
-export const rooCliPingCommandSchema = rooCliCommandBaseSchema.extend({
+export const aicoCliPingCommandSchema = aicoCliCommandBaseSchema.extend({
 	command: z.literal("ping"),
 })
 
-export type RooCliPingCommand = z.infer<typeof rooCliPingCommandSchema>
+export type AicoCliPingCommand = z.infer<typeof aicoCliPingCommandSchema>
 
-export const rooCliShutdownCommandSchema = rooCliCommandBaseSchema.extend({
+export const aicoCliShutdownCommandSchema = aicoCliCommandBaseSchema.extend({
 	command: z.literal("shutdown"),
 })
 
-export type RooCliShutdownCommand = z.infer<typeof rooCliShutdownCommandSchema>
+export type AicoCliShutdownCommand = z.infer<typeof aicoCliShutdownCommandSchema>
 
-export const rooCliInputCommandSchema = z.discriminatedUnion("command", [
-	rooCliStartCommandSchema,
-	rooCliMessageCommandSchema,
-	rooCliCancelCommandSchema,
-	rooCliPingCommandSchema,
-	rooCliShutdownCommandSchema,
+export const aicoCliInputCommandSchema = z.discriminatedUnion("command", [
+	aicoCliStartCommandSchema,
+	aicoCliMessageCommandSchema,
+	aicoCliCancelCommandSchema,
+	aicoCliPingCommandSchema,
+	aicoCliShutdownCommandSchema,
 ])
 
-export type RooCliInputCommand = z.infer<typeof rooCliInputCommandSchema>
+export type AicoCliInputCommand = z.infer<typeof aicoCliInputCommandSchema>
 
 /**
- * Roo CLI stream-json output
+ * AI Code Orchestrator CLI stream-json output
  */
 
-export const rooCliOutputFormats = ["text", "json", "stream-json"] as const
+export const aicoCliOutputFormats = ["text", "json", "stream-json"] as const
 
-export const rooCliOutputFormatSchema = z.enum(rooCliOutputFormats)
+export const aicoCliOutputFormatSchema = z.enum(aicoCliOutputFormats)
 
-export type RooCliOutputFormat = z.infer<typeof rooCliOutputFormatSchema>
+export type AicoCliOutputFormat = z.infer<typeof aicoCliOutputFormatSchema>
 
-export const rooCliEventTypes = [
+export const aicoCliEventTypes = [
 	"system",
 	"control",
 	"queue",
@@ -93,42 +93,42 @@ export const rooCliEventTypes = [
 	"result",
 ] as const
 
-export const rooCliEventTypeSchema = z.enum(rooCliEventTypes)
+export const aicoCliEventTypeSchema = z.enum(aicoCliEventTypes)
 
-export type RooCliEventType = z.infer<typeof rooCliEventTypeSchema>
+export type AicoCliEventType = z.infer<typeof aicoCliEventTypeSchema>
 
-export const rooCliControlSubtypes = ["ack", "done", "error"] as const
+export const aicoCliControlSubtypes = ["ack", "done", "error"] as const
 
-export const rooCliControlSubtypeSchema = z.enum(rooCliControlSubtypes)
+export const aicoCliControlSubtypeSchema = z.enum(aicoCliControlSubtypes)
 
-export type RooCliControlSubtype = z.infer<typeof rooCliControlSubtypeSchema>
+export type AicoCliControlSubtype = z.infer<typeof aicoCliControlSubtypeSchema>
 
-export const rooCliQueueItemSchema = z.object({
+export const aicoCliQueueItemSchema = z.object({
 	id: z.string().min(1),
 	text: z.string().optional(),
 	imageCount: z.number().optional(),
 	timestamp: z.number().optional(),
 })
 
-export type RooCliQueueItem = z.infer<typeof rooCliQueueItemSchema>
+export type AicoCliQueueItem = z.infer<typeof aicoCliQueueItemSchema>
 
-export const rooCliToolUseSchema = z.object({
+export const aicoCliToolUseSchema = z.object({
 	name: z.string(),
 	input: z.record(z.unknown()).optional(),
 })
 
-export type RooCliToolUse = z.infer<typeof rooCliToolUseSchema>
+export type AicoCliToolUse = z.infer<typeof aicoCliToolUseSchema>
 
-export const rooCliToolResultSchema = z.object({
+export const aicoCliToolResultSchema = z.object({
 	name: z.string(),
 	output: z.string().optional(),
 	error: z.string().optional(),
 	exitCode: z.number().optional(),
 })
 
-export type RooCliToolResult = z.infer<typeof rooCliToolResultSchema>
+export type AicoCliToolResult = z.infer<typeof aicoCliToolResultSchema>
 
-export const rooCliCostSchema = z.object({
+export const aicoCliCostSchema = z.object({
 	totalCost: z.number().optional(),
 	inputTokens: z.number().optional(),
 	outputTokens: z.number().optional(),
@@ -136,14 +136,14 @@ export const rooCliCostSchema = z.object({
 	cacheReads: z.number().optional(),
 })
 
-export type RooCliCost = z.infer<typeof rooCliCostSchema>
+export type AicoCliCost = z.infer<typeof aicoCliCostSchema>
 
-export const rooCliStreamEventSchema = z
+export const aicoCliStreamEventSchema = z
 	.object({
-		type: rooCliEventTypeSchema.optional(),
+		type: aicoCliEventTypeSchema.optional(),
 		subtype: z.string().optional(),
 		requestId: z.string().optional(),
-		command: rooCliCommandNameSchema.optional(),
+		command: aicoCliCommandNameSchema.optional(),
 		taskId: z.string().optional(),
 		code: z.string().optional(),
 		content: z.string().optional(),
@@ -151,32 +151,32 @@ export const rooCliStreamEventSchema = z
 		id: z.number().optional(),
 		done: z.boolean().optional(),
 		queueDepth: z.number().optional(),
-		queue: z.array(rooCliQueueItemSchema).optional(),
+		queue: z.array(aicoCliQueueItemSchema).optional(),
 		schemaVersion: z.number().optional(),
 		protocol: z.string().optional(),
 		capabilities: z.array(z.string()).optional(),
-		tool_use: rooCliToolUseSchema.optional(),
-		tool_result: rooCliToolResultSchema.optional(),
-		cost: rooCliCostSchema.optional(),
+		tool_use: aicoCliToolUseSchema.optional(),
+		tool_result: aicoCliToolResultSchema.optional(),
+		cost: aicoCliCostSchema.optional(),
 	})
 	.passthrough()
 
-export type RooCliStreamEvent = z.infer<typeof rooCliStreamEventSchema>
+export type AicoCliStreamEvent = z.infer<typeof aicoCliStreamEventSchema>
 
-export const rooCliControlEventSchema = rooCliStreamEventSchema.extend({
+export const aicoCliControlEventSchema = aicoCliStreamEventSchema.extend({
 	type: z.literal("control"),
-	subtype: rooCliControlSubtypeSchema,
+	subtype: aicoCliControlSubtypeSchema,
 	requestId: z.string().min(1),
 })
 
-export type RooCliControlEvent = z.infer<typeof rooCliControlEventSchema>
+export type AicoCliControlEvent = z.infer<typeof aicoCliControlEventSchema>
 
-export const rooCliFinalOutputSchema = z.object({
+export const aicoCliFinalOutputSchema = z.object({
 	type: z.literal("result"),
 	success: z.boolean(),
 	content: z.string().optional(),
-	cost: rooCliCostSchema.optional(),
-	events: z.array(rooCliStreamEventSchema),
+	cost: aicoCliCostSchema.optional(),
+	events: z.array(aicoCliStreamEventSchema),
 })
 
-export type RooCliFinalOutput = z.infer<typeof rooCliFinalOutputSchema>
+export type AicoCliFinalOutput = z.infer<typeof aicoCliFinalOutputSchema>

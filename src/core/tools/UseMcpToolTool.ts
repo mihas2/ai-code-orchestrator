@@ -1,4 +1,4 @@
-import type { ClineAskUseMcpServer, McpExecutionStatus } from "@roo-code/types"
+import type { ClineAskUseMcpServer, McpExecutionStatus } from "@ai-code-orchestrator/types"
 
 import { Task } from "../task/Task"
 import { formatResponse } from "../prompts/responses"

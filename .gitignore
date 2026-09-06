@@ -23,8 +23,12 @@ AGENTS.local.md
 # Test environment
 .test_env
 .vscode-test/
+.vscode/aico-debug-user-data/
+.vscode/aico-debug-extensions/
 
 # Docs
+# Documentation build artifacts
+docs/
 docs/_site/
 
 # Dotenv
@@ -46,7 +50,7 @@ logs
 .idea/
 .qodo/
 .vercel
-.roo/mcp.json
+.ai-code-orchestrator/mcp.json
 
 # Qdrant
 qdrant_storage/
@@ -54,4 +58,8 @@ qdrant_storage/
 # Architect plans
 plans/
 
-roo-cli-*.tar.gz*
+aico-cli-*.tar.gz*
+
+# pnpm local artifacts
+/global/
+/package-manager-store/

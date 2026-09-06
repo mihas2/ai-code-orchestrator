@@ -3,6 +3,12 @@
 import type * as vscode from "vscode"
 
 vi.mock("vscode", () => ({
+	RelativePattern: class RelativePattern {
+		constructor(
+			public readonly base: string,
+			public readonly pattern: string,
+		) {}
+	},
 	window: {
 		createOutputChannel: vi.fn().mockReturnValue({
 			appendLine: vi.fn(),
@@ -13,6 +19,9 @@ vi.mock("vscode", () => ({
 			onDidChangeTabs: vi.fn(),
 		},
 		onDidChangeActiveTextEditor: vi.fn(),
+	},
+	Uri: {
+		file: vi.fn((path: string) => ({ fsPath: path })),
 	},
 	workspace: {
 		registerTextDocumentContentProvider: vi.fn(),
@@ -150,7 +159,7 @@ vi.mock("../core/webview/ClineProvider", async () => {
 			{
 				// Static method used by extension.ts
 				getVisibleInstance: vi.fn().mockReturnValue(mockInstance),
-				sideBarId: "roo-cline-sidebar",
+				sideBarId: "ai-code-orchestrator-sidebar",
 			},
 		),
 	}

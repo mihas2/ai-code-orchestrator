@@ -1,7 +1,10 @@
 // npx vitest run src/api/providers/fetchers/__tests__/vercel-ai-gateway.spec.ts
 
 import axios from "axios"
-import { VERCEL_AI_GATEWAY_VISION_ONLY_MODELS, VERCEL_AI_GATEWAY_VISION_AND_TOOLS_MODELS } from "@roo-code/types"
+import {
+	VERCEL_AI_GATEWAY_VISION_ONLY_MODELS,
+	VERCEL_AI_GATEWAY_VISION_AND_TOOLS_MODELS,
+} from "@ai-code-orchestrator/types"
 
 import { getVercelAiGatewayModels, parseVercelAiGatewayModel } from "../vercel-ai-gateway"
 
@@ -112,8 +115,7 @@ describe("Vercel AI Gateway Fetchers", () => {
 			consoleErrorSpy.mockRestore()
 		})
 
-		it("continues processing with partially valid schema", async () => {
-			const consoleErrorSpy = vitest.spyOn(console, "error").mockImplementation(() => {})
+		it("ignores unknown root metadata while processing valid entries", async () => {
 			const invalidResponse = {
 				data: {
 					invalid_root: "response",
@@ -140,9 +142,32 @@ describe("Vercel AI Gateway Fetchers", () => {
 
 			const models = await getVercelAiGatewayModels()
 
-			expect(consoleErrorSpy).toHaveBeenCalled()
 			expect(models["anthropic/claude-sonnet-4"]).toBeDefined()
-			consoleErrorSpy.mockRestore()
+		})
+
+		it("keeps valid models when another entry is missing gateway metadata", async () => {
+			mockedAxios.get.mockResolvedValueOnce({
+				data: {
+					object: "list",
+					data: [
+						{
+							id: "anthropic/claude-sonnet-4",
+							type: "language",
+							description: "Claude Sonnet 4",
+							pricing: { input: "3.00", output: "15.00" },
+						},
+						{ id: undefined, type: "language" },
+					],
+				},
+			})
+
+			const models = await getVercelAiGatewayModels()
+
+			expect(models["anthropic/claude-sonnet-4"]).toMatchObject({
+				contextWindow: 200000,
+				maxTokens: 8192,
+			})
+			expect(models["anthropic/claude-3.5-haiku"]).toBeUndefined()
 		})
 	})
 

@@ -1,7 +1,7 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import OpenAI from "openai"
 
-import { isRetiredProvider, type ProviderSettings, type ModelInfo } from "@roo-code/types"
+import { isRetiredProvider, type ProviderSettings, type ModelInfo } from "@ai-code-orchestrator/types"
 
 import { ApiStream } from "./transform/stream"
 
@@ -43,7 +43,7 @@ export interface SingleCompletionHandler {
 export interface ApiHandlerCreateMessageMetadata {
 	/**
 	 * Task ID used for tracking and provider-specific features:
-	 * - Roo: Sent as X-Roo-Task-ID header
+	 * - AI Code Orchestrator: Sent as X-AI Code Orchestrator-Task-ID header
 	 * - Requesty: Sent as trace_id
 	 */
 	taskId: string
@@ -88,7 +88,17 @@ export interface ApiHandlerCreateMessageMetadata {
 	allowedFunctionNames?: string[]
 }
 
+export interface ProviderCapabilities {
+	promptCaching: boolean
+	contextCaching: boolean
+	structuredOutput: boolean
+	toolCalling: boolean
+}
+
 export interface ApiHandler {
+	/** Non-agentic completion used by bounded, machine-readable control-plane calls. */
+	completePrompt?(prompt: string): Promise<string>
+
 	createMessage(
 		systemPrompt: string,
 		messages: Anthropic.Messages.MessageParam[],
@@ -96,6 +106,8 @@ export interface ApiHandler {
 	): ApiStream
 
 	getModel(): { id: string; info: ModelInfo }
+	/** Capabilities used by orchestration to select safe context optimizations. */
+	getCapabilities?(): ProviderCapabilities
 
 	/**
 	 * Counts tokens for content blocks
@@ -110,11 +122,20 @@ export interface ApiHandler {
 
 export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 	const { apiProvider, ...options } = configuration
+	console.log(
+		`[model-debug:buildApiHandler] provider=${apiProvider ?? "unset"} model=${configuration.apiModelId ?? configuration.openRouterModelId ?? configuration.openAiModelId ?? "unset"}`,
+	)
+
+	// Compatibility fallback for legacy configurations using the shared model field.
+	const normalizedOptions =
+		apiProvider === "openai" && options.openAiModelId == null && configuration.apiModelId != null
+			? { ...options, openAiModelId: configuration.apiModelId }
+			: options
 
 	if (apiProvider && isRetiredProvider(apiProvider)) {
 		const retiredProviderMessage =
-			apiProvider === "roo"
-				? "As part of our decision to sunset the Roo Code extension, we also ended the Roo Code Router, which only existed to support the extension. Sorry about the hassle."
+			apiProvider === "aico"
+				? "As part of our decision to sunset the AI Code Orchestrator extension, we also ended the AI Code Orchestrator Router, which only existed to support the extension. Sorry about the hassle."
 				: "This provider is no longer supported."
 
 		throw new Error(`${retiredProviderMessage}\n\nPlease select a different provider in your API profile settings.`)
@@ -132,7 +153,7 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 				? new AnthropicVertexHandler(options)
 				: new VertexHandler(options)
 		case "openai":
-			return new OpenAiHandler(options)
+			return new OpenAiHandler(normalizedOptions)
 		case "ollama":
 			return new NativeOllamaHandler(options)
 		case "lmstudio":

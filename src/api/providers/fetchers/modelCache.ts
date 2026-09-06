@@ -5,8 +5,8 @@ import * as fsSync from "fs"
 import NodeCache from "node-cache"
 import { z } from "zod"
 
-import type { ProviderName, ModelRecord } from "@roo-code/types"
-import { modelInfoSchema } from "@roo-code/types"
+import type { ProviderName, ModelRecord } from "@ai-code-orchestrator/types"
+import { modelInfoSchema } from "@ai-code-orchestrator/types"
 
 import { safeWriteJson } from "../../../utils/safeWriteJson"
 

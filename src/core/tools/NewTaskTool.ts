@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 
-import { TodoItem } from "@roo-code/types"
+import { TodoItem } from "@ai-code-orchestrator/types"
 
 import { Task } from "../task/Task"
 import { getModeBySlug } from "../../shared/modes"
@@ -109,12 +109,19 @@ export class NewTaskTool extends BaseTool<"new_task"> {
 				return
 			}
 
-			// Delegate parent and open child as sole active task
+			// Clear approval UI before the active task changes.
+			await task.say("user_feedback", "Delegating to child task...", undefined, false)
+			await provider.postStateToWebview()
+			await new Promise((resolve) => setTimeout(resolve, 50))
+
+			// Delegate parent and open child as sole active task. The selected mode is
+			// also the role key used by model routing.
 			const child = await (provider as any).delegateParentAndOpenChild({
 				parentTaskId: task.taskId,
 				message: unescapedMessage,
 				initialTodos: todoItems,
 				mode,
+				explicitRole: mode,
 			})
 
 			// Reflect delegation in tool result (no pause/unpause, no wait)
@@ -137,8 +144,12 @@ export class NewTaskTool extends BaseTool<"new_task"> {
 			content: message ?? "",
 			todos: todos,
 		})
+		const toolProgressStatus = {
+			icon: "pencil",
+			text: message ? `Writing task brief (${message.length} chars)` : "Writing task brief",
+		}
 
-		await task.ask("tool", partialMessage, block.partial).catch(() => {})
+		await task.ask("tool", partialMessage, block.partial, toolProgressStatus).catch(() => {})
 	}
 }
 
