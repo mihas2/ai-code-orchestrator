@@ -51,6 +51,23 @@ export async function coordinateIntegration(input: IntegrationCoordinatorInput):
 			message: "Integration approval is required",
 		}
 	const paths = input.artifacts.map((a) => a.path)
+	const writeScopes = input.node.inputContract?.fileScopes?.write ?? input.node.inputContract?.fileScopes?.include
+	const outOfScope = writeScopes
+		? paths.filter(
+				(artifactPath) =>
+					!writeScopes.some(
+						(scope) => scope === artifactPath || artifactPath.startsWith(`${scope.replace(/\/$/, "")}/`),
+					),
+			)
+		: []
+	if (outOfScope.length)
+		return {
+			nodeId: input.node.nodeId,
+			status: "blocked",
+			artifactRefs: input.artifacts.map((a) => a.ref),
+			conflictRefs: outOfScope,
+			message: `Artifact paths are outside node scope: ${outOfScope.join(", ")}`,
+		}
 	const duplicatePaths = paths.filter((path, index) => paths.indexOf(path) !== index)
 	if (duplicatePaths.length)
 		return {

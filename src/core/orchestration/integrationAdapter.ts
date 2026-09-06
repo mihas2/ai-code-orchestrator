@@ -44,11 +44,19 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 		if (current !== base) conflicts.add("base_revision")
 
 		const prepared = await Promise.all(input.artifacts.map((artifact) => this.prepare(artifact)))
+		const writeScopes = input.node?.inputContract.fileScopes.write ?? input.node?.inputContract.fileScopes.include
 		const seen = new Set<string>()
 		const integrated = this.integratedPaths.get(input.run.runId) ?? new Set<string>()
 		for (const item of prepared) {
 			if (item.artifact.baseHash && item.artifact.baseHash !== base) conflicts.add(`base:${item.artifact.ref}`)
 			for (const changedPath of item.paths) {
+				if (
+					writeScopes &&
+					!writeScopes.some(
+						(scope) => scope === changedPath || changedPath.startsWith(`${scope.replace(/\/$/, "")}/`),
+					)
+				)
+					conflicts.add(`scope:${changedPath}`)
 				if (seen.has(changedPath) || integrated.has(changedPath)) conflicts.add(`path:${changedPath}`)
 				seen.add(changedPath)
 			}
@@ -73,7 +81,8 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 			const checked = await this.check(input)
 			if (!checked.safe) throw new Error(`Unsafe integration: ${checked.conflicts.join(", ")}`)
 			const prepared = await Promise.all(input.artifacts.map((artifact) => this.prepare(artifact)))
-			for (const item of prepared) await this.git(["apply", "--index", "--whitespace=error-all", item.patchPath])
+			// A single git invocation applies the complete patch set atomically to both index and worktree.
+			await this.git(["apply", "--index", "--whitespace=error-all", ...prepared.map((item) => item.patchPath)])
 			const paths = this.integratedPaths.get(input.run.runId) ?? new Set<string>()
 			for (const item of prepared) for (const changedPath of item.paths) paths.add(changedPath)
 			this.integratedPaths.set(input.run.runId, paths)
