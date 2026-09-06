@@ -1,3 +1,4 @@
+import fs from "fs"
 import path from "path"
 import { z } from "zod"
 
@@ -97,26 +98,41 @@ function candidateJson(text: string): string[] {
 	return [...new Set(candidates)]
 }
 
+function realpathWithMissingLeaf(file: string): string {
+	let current = file
+	const suffix: string[] = []
+	while (!fs.existsSync(current)) {
+		const parent = path.dirname(current)
+		if (parent === current) throw new Error(`scope_violation: ${file}`)
+		suffix.unshift(path.basename(current))
+		current = parent
+	}
+	return path.join(fs.realpathSync.native(current), ...suffix)
+}
+
 function normalizeRelative(file: string, cwd: string): string {
+	const workspace = fs.existsSync(cwd) ? fs.realpathSync.native(cwd) : path.resolve(cwd)
 	const absolute = path.resolve(cwd, file)
 	const relative = path.relative(cwd, absolute).split(path.sep).join("/")
 	if (!relative || relative === "." || relative.startsWith("../") || path.isAbsolute(relative))
+		throw new Error(`scope_violation: ${file}`)
+	const real = realpathWithMissingLeaf(absolute)
+	const realRelative = path.relative(workspace, real)
+	if (
+		!realRelative ||
+		realRelative === "." ||
+		realRelative.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(realRelative)
+	)
 		throw new Error(`scope_violation: ${file}`)
 	return relative
 }
 
 function matchesScope(file: string, scope: string): boolean {
-	const normalized = scope
-		.replace(/^\.\//, "")
-		.replace(/\\/g, "/")
-		.replace(/\*\*.*$/, "")
-		.replace(/\*.*$/, "")
-	return (
-		scope === "." ||
-		normalized === "" ||
-		file === normalized.replace(/\/$/, "") ||
-		file.startsWith(normalized.endsWith("/") ? normalized : `${normalized}/`)
-	)
+	const normalized = scope.replace(/^\.\//, "").replace(/\\/g, "/").replace(/\/$/, "")
+	if (scope === "." || normalized === "") return true
+	if (/[!*?\[\]{}()]/.test(normalized)) return path.matchesGlob(file, normalized)
+	return file === normalized || file.startsWith(`${normalized}/`)
 }
 
 function enforceScopes(result: ResultContract, scopes: FileScopes, cwd: string): ResultContract {
