@@ -53,11 +53,22 @@ export interface ResultContractExtraction {
 	artifactRefs: string[]
 }
 
-const secretPattern =
-	/(?:\b(?:api[_-]?key|access[_-]?token|auth[_-]?token|secret|password)\b\s*[:=]\s*|\bBearer\s+)([^\s,;"']+)/gi
+const pemPrivateKeyPattern = /-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?-----END [^-]*PRIVATE KEY-----/gi
+const envSecretPattern =
+	/\b([A-Z][A-Z0-9_]*(?:API[_-]?KEY|ACCESS[_-]?TOKEN|AUTH[_-]?TOKEN|SECRET|PASSWORD|PRIVATE[_-]?KEY)[A-Z0-9_]*)([ \t]*=[ \t]*)[^\r\n",}]*/g
+const namedSecretPattern = /\b(?:api[_-]?key|access[_-]?token|auth[_-]?token|secret|password)\b\s*[:=]\s*([^\s,;"']+)/gi
+const bearerPattern = /\bBearer\s+([^\s,;"']+)/gi
+const querySecretPattern = /([?&](?:x-api-key|api_key)=)([^&#\s]+)/gi
+const jwtPattern = /\b(?:eyJ[A-Za-z0-9_-]{8,}|[A-Za-z0-9_-]{16,})\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g
 
 export function redactResultSecrets(value: string): string {
-	return value.replace(secretPattern, (match, secret: string) => match.replace(secret, "[REDACTED]"))
+	return value
+		.replace(pemPrivateKeyPattern, "[REDACTED]")
+		.replace(envSecretPattern, (_match, key: string, separator: string) => `${key}${separator}[REDACTED]`)
+		.replace(namedSecretPattern, "[REDACTED]")
+		.replace(bearerPattern, (_match, secret: string) => `Bearer [REDACTED]`)
+		.replace(querySecretPattern, (_match, prefix: string) => `${prefix}[REDACTED]`)
+		.replace(jwtPattern, "[REDACTED]")
 }
 
 function candidateJson(text: string): string[] {
