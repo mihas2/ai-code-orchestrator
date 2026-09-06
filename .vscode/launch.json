@@ -11,6 +11,7 @@
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
+				"--folder-uri=${workspaceFolder}",
 				"--extensionDevelopmentPath=${workspaceFolder}/src",
 				"--user-data-dir=${workspaceFolder}/.vscode/aico-debug-user-data",
 				"--extensions-dir=${workspaceFolder}/.vscode/aico-debug-extensions"
