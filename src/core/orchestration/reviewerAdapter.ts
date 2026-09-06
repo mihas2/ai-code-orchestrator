@@ -17,14 +17,25 @@ export type ReviewerRunner = (input: {
 	result: Readonly<ResultContract>
 	artifacts: readonly ArtifactDescriptor[]
 	idempotencyKey: string
+	diff?: string
+	acceptanceCriteria: readonly string[]
 }) => Promise<ReviewFinding[]>
 
 /** Bridges the orchestration review contract to the host's reviewer execution. */
 export class ReviewerAdapter implements ReviewAdapter {
-	constructor(private readonly runner: ReviewerRunner = async () => []) {}
+	constructor(private readonly runner?: ReviewerRunner) {}
 
 	async review(input: Parameters<ReviewAdapter["review"]>[0]): Promise<ReviewResult> {
-		const findings = await this.runner(input)
+		if (!this.runner) {
+			if (input.run.settingsSnapshot.reviewPolicy === "off")
+				return { findings: [], artifactRefs: input.artifacts.map((a) => a.ref) }
+			throw new Error("ReviewerRunner is not configured")
+		}
+		const findings = await this.runner({
+			...input,
+			diff: undefined,
+			acceptanceCriteria: input.node.inputContract.acceptanceCriteria,
+		})
 		return {
 			findings: findings.map((finding) => ({
 				...finding,

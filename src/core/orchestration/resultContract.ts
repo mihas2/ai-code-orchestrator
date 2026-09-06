@@ -25,6 +25,23 @@ export const resultContractSchema = z
 		risks: z.array(z.string()),
 		openQuestions: z.array(z.string()),
 		nextActions: z.array(z.string()),
+		findings: z
+			.array(
+				z
+					.object({
+						id: z.string().min(1),
+						severity: z.enum(["blocker", "major", "minor", "note"]),
+						message: z.string().min(1),
+						title: z.string().min(1).optional(),
+						file: z.string().min(1).optional(),
+						line: z.number().int().positive().optional(),
+						evidence: z.string().optional(),
+						recommendation: z.string().optional(),
+						acceptanceCriterionRef: z.string().optional(),
+					})
+					.strict(),
+			)
+			.optional(),
 	})
 	.strict()
 
@@ -169,4 +186,4 @@ export function extractResultContract(input: {
 	throw new Error(`result_contract_invalid: ${validationError || "no valid JSON object found"}`)
 }
 
-export const RESULT_CONTRACT_INSTRUCTION = `Begin work immediately by calling the most relevant native inspection or execution tool; do not reply with a text-only plan or reasoning. Every assistant turn must contain a native tool call. Use attempt_completion only after the objective is complete. Your final attempt_completion response MUST end with one JSON ResultContract object (plain or fenced JSON) with exactly these fields: contractVersion=1; status (completed|partial|failed); summary; filesRead; filesChanged; artifactRefs; tests [{command,passed,exitCode?,outputRef?}]; assumptions; risks; openQuestions; nextActions. Report workspace-relative paths only and only within the declared file scopes. Do not include credentials, tokens, passwords, or secret values. Missing or invalid JSON makes the worker result fail.`
+export const RESULT_CONTRACT_INSTRUCTION = `Begin work immediately by calling the most relevant native inspection or execution tool; do not reply with a text-only plan or reasoning. Every assistant turn must contain a native tool call. Use attempt_completion only after the objective is complete. Your final attempt_completion response MUST end with one JSON ResultContract object (plain or fenced JSON) with exactly these fields: contractVersion=1; status (completed|partial|failed); summary; filesRead; filesChanged; artifactRefs; tests [{command,passed,exitCode?,outputRef?}]; assumptions; risks; openQuestions; nextActions; optional findings [{id,severity,message,title?,file?,line?,evidence?,recommendation?,acceptanceCriterionRef?}] for reviewer-role workers. Report workspace-relative paths only and only within the declared file scopes. Do not include credentials, tokens, passwords, or secret values. Missing or invalid JSON makes the worker result fail.`

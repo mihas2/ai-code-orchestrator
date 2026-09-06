@@ -1391,7 +1391,16 @@ export class ClineProvider
 				},
 				{
 					integration: new GitIntegrationAdapter(this.cwd),
-					review: new ReviewerAdapter(),
+					review: new ReviewerAdapter(async ({ result }) =>
+						(result.findings ?? []).map((finding) => ({
+							...finding,
+							provenance: {
+								artifactRefs: [],
+								conflictRefs: [],
+								detectedAt: Date.now(),
+							},
+						})),
+					),
 					synthesis: new OrchestrationSynthesisAdapter(),
 					route: { resolve: ({ node }) => this.resolveOrchestrationRoute(node) },
 				},

@@ -72,6 +72,18 @@ export interface ResultContract {
 	risks: string[]
 	openQuestions: string[]
 	nextActions: string[]
+	/** Structured review findings reported by reviewer-role workers. */
+	findings?: Array<{
+		id: string
+		severity: ReviewSeverity
+		message: string
+		title?: string
+		file?: string
+		line?: number
+		evidence?: string
+		recommendation?: string
+		acceptanceCriterionRef?: string
+	}>
 }
 export interface BudgetUsage {
 	inputTokens: number
@@ -207,6 +219,13 @@ export interface OrchestrationExecutor {
 	readonly maxParallel?: number
 	start(input: { run: OrchestrationRun; node: OrchestrationNode; idempotencyKey: string }): Promise<ExecutionHandle>
 	recover?(run: OrchestrationRun, node: OrchestrationNode): Promise<ExecutionHandle | undefined>
+	review?(input: {
+		run: Readonly<OrchestrationRun>
+		node: Readonly<OrchestrationNode>
+		result: Readonly<ResultContract>
+		artifacts: readonly ArtifactDescriptor[]
+		idempotencyKey: string
+	}): Promise<ReviewFinding[]>
 }
 export interface ArtifactDescriptor {
 	ref: string
