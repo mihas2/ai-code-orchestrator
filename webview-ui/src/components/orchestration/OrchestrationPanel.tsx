@@ -39,14 +39,17 @@ const TaskRow = ({ node, runId, nodeTitles }: { node: TaskNode; runId: string; n
 	const maxAttempts = node.maxAttempts ?? 1
 	const retrying = attempt > 1
 	const role = node.role || "task"
+	const taskName = node.title || node.nodeId
 	const budget = node.inputContract?.tokenBudget
 	const dependencies = (node.dependsOn ?? []).map((id) => nodeTitles.get(id) || id)
 	const payloadText = node.payload === undefined ? undefined : truncatePayload(formatPayload(node.payload))
 
 	return (
 		<li
+			role="listitem"
+			aria-label={`${taskName}, ${status}`}
 			data-active={active}
-			className={`flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1.5 ${active ? "border border-vscode-focusBorder bg-vscode-list-activeSelectionBackground" : "bg-vscode-list-hoverBackground"} ${retrying ? "border-l-2 border-l-vscode-charts-yellow" : ""}`}>
+			className={`flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1.5 focus-within:outline focus-within:outline-2 focus-within:outline-vscode-focusBorder ${active ? "border border-vscode-focusBorder bg-vscode-list-activeSelectionBackground" : "bg-vscode-list-hoverBackground"} ${retrying ? "border-l-2 border-l-vscode-charts-yellow" : ""}`}>
 			<span
 				className="min-w-0 flex-1 truncate border-l-2 border-vscode-tree-indentGuidesStroke pl-2"
 				style={{ paddingLeft: `${(node.dependsOn?.length ?? 0) * 16 + 8}px` }}>
@@ -80,8 +83,15 @@ const TaskRow = ({ node, runId, nodeTitles }: { node: TaskNode; runId: string; n
 				<Button
 					variant="ghost"
 					size="sm"
-					aria-label={`${expanded ? "Hide" : "Show"} payload for ${node.title || node.nodeId}`}
-					onClick={() => setExpanded((value) => !value)}>
+					tabIndex={0}
+					aria-label={`${expanded ? "Collapse" : "Expand"} payload for ${taskName}`}
+					onClick={() => setExpanded((value) => !value)}
+					onKeyDown={(event) => {
+						if (event.key === "Enter" || event.key === " ") {
+							event.preventDefault()
+							setExpanded((value) => !value)
+						}
+					}}>
 					{expanded ? "Hide payload" : "Payload"}
 				</Button>
 			)}
@@ -89,7 +99,8 @@ const TaskRow = ({ node, runId, nodeTitles }: { node: TaskNode; runId: string; n
 				<Button
 					variant="ghost"
 					size="sm"
-					aria-label={`Cancel ${node.title || node.nodeId}`}
+					tabIndex={0}
+					aria-label={`Cancel task ${taskName}`}
 					onClick={() =>
 						vscode.postMessage({
 							type: "orchestrationCancel",
@@ -122,11 +133,14 @@ const OrchestrationPanel = () => {
 
 	return (
 		<section
-			className="mx-3 my-2 rounded border border-vscode-panel-border bg-vscode-editor-background p-3"
-			aria-label="Orchestration">
+			role="region"
+			aria-labelledby="orchestration-heading"
+			className="mx-3 my-2 rounded border border-vscode-panel-border bg-vscode-editor-background p-3">
 			<header className="mb-2 flex items-center justify-between gap-2">
 				<div>
-					<h2 className="text-base font-semibold">Orchestration</h2>
+					<h2 id="orchestration-heading" className="text-base font-semibold">
+						Orchestration
+					</h2>
 					<p className="text-xs opacity-70">
 						Run {orchestrationSnapshot.run.runId} · {orchestrationSnapshot.run.status}
 					</p>
@@ -134,6 +148,7 @@ const OrchestrationPanel = () => {
 				<Button
 					variant="destructive"
 					size="sm"
+					tabIndex={0}
 					aria-label="Cancel orchestration"
 					onClick={() =>
 						vscode.postMessage({
@@ -144,10 +159,14 @@ const OrchestrationPanel = () => {
 					Cancel run
 				</Button>
 			</header>
+			<div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+				Orchestration status: {orchestrationSnapshot.run.status}. {orderedNodes.length} task
+				{orderedNodes.length === 1 ? "" : "s"}.
+			</div>
 			{orderedNodes.length === 0 ? (
 				<p className="text-sm opacity-70">No tasks</p>
 			) : (
-				<ul className="m-0 flex list-none flex-col gap-1 p-0">
+				<ul role="list" aria-label="Orchestration tasks" className="m-0 flex list-none flex-col gap-1 p-0">
 					{orderedNodes.map((node) => (
 						<TaskRow
 							key={node.nodeId}
