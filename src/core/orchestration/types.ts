@@ -25,6 +25,16 @@ export type NodeStatus =
 	| "canceled"
 export type TerminalNodeStatus = Extract<NodeStatus, "integrated" | "failed" | "canceled">
 
+export interface NodeLog {
+	nodeId: string
+	status: "completed" | "failed" | "rejected" | "dispatching" | "canceled"
+	timestamp: number
+	stdout?: string
+	stderr?: string
+	error?: string
+	reason?: string
+}
+
 export interface ErrorRecord {
 	code: string
 	message: string
@@ -201,6 +211,8 @@ export interface ChildEvent {
 	result?: ResultContract
 	usage?: Partial<BudgetUsage>
 	error?: ErrorRecord
+	stdout?: string
+	stderr?: string
 }
 export interface ExecutionHandle {
 	taskId: string
@@ -306,11 +318,17 @@ export interface IntegrationAdapter {
 		run: Readonly<OrchestrationRun>
 		node: Readonly<OrchestrationNode>
 		artifacts: readonly ArtifactDescriptor[]
+		parentArtifacts?: readonly ArtifactDescriptor[]
+		parentNodeId?: string
+		childNodeId?: string
 	}): Promise<{ safe: boolean; conflicts: string[]; currentBaseHash?: string }>
 	integrate(input: {
 		run: Readonly<OrchestrationRun>
 		node: Readonly<OrchestrationNode>
 		artifacts: readonly ArtifactDescriptor[]
+		parentArtifacts?: readonly ArtifactDescriptor[]
+		parentNodeId?: string
+		childNodeId?: string
 		idempotencyKey: string
 	}): Promise<{ artifactRefs: string[] }>
 }

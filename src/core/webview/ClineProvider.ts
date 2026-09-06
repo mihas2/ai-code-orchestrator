@@ -1381,6 +1381,19 @@ export class ClineProvider
 					}
 				},
 			}
+			const reviewer = new ReviewerAdapter(
+				async ({ result }) =>
+					(result.findings ?? []).map((finding) => ({
+						...finding,
+						provenance: {
+							artifactRefs: [],
+							conflictRefs: [],
+							detectedAt: Date.now(),
+						},
+					})),
+				this.context,
+			)
+			await reviewer.restoreState(this.context)
 			this.orchestrationService = new OrchestrationService(
 				new GlobalStateOrchestrationPersistence(this.context.globalState),
 				executor,
@@ -1391,16 +1404,7 @@ export class ClineProvider
 				},
 				{
 					integration: new GitIntegrationAdapter(this.cwd),
-					review: new ReviewerAdapter(async ({ result }) =>
-						(result.findings ?? []).map((finding) => ({
-							...finding,
-							provenance: {
-								artifactRefs: [],
-								conflictRefs: [],
-								detectedAt: Date.now(),
-							},
-						})),
-					),
+					review: reviewer,
 					synthesis: new OrchestrationSynthesisAdapter(),
 					route: { resolve: ({ node }) => this.resolveOrchestrationRoute(node) },
 				},

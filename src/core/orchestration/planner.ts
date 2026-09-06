@@ -38,13 +38,8 @@ function within(path: string, allowed: readonly string[]) {
 		(root) => root === "." || path === root || path.startsWith(root.endsWith("/") ? root : `${root}/`),
 	)
 }
-export function extractPlannerJson(raw: string): string {
-	const start = raw.search(/[\[{]/)
-	if (start === -1) throw new Error("Planner returned malformed JSON: no JSON object or array found")
-
-	const opening = raw[start]
-	const closing = opening === "{" ? "}" : "]"
-	let depth = 0
+function extractBalancedJson(raw: string, start: number): string | undefined {
+	const stack: string[] = []
 	let inString = false
 	let escaped = false
 	for (let i = start; i < raw.length; i++) {
@@ -59,78 +54,119 @@ export function extractPlannerJson(raw: string): string {
 			inString = true
 			continue
 		}
-		if (char === opening) depth++
-		else if (char === closing && --depth === 0) return raw.slice(start, i + 1)
+		if (char === "{" || char === "[") stack.push(char === "{" ? "}" : "]")
+		else if (char === "}" || char === "]") {
+			if (stack.at(-1) !== char) return undefined
+			stack.pop()
+			if (stack.length === 0) return raw.slice(start, i + 1)
+		}
 	}
-	throw new Error("Planner returned malformed JSON: incomplete JSON value")
+	return undefined
+}
+
+function plannerJsonCandidates(raw: string): string[] {
+	const candidates: string[] = []
+	for (let i = 0; i < raw.length; i++) {
+		if (raw[i] !== "{" && raw[i] !== "[") continue
+		const candidate = extractBalancedJson(raw, i)
+		if (candidate) {
+			candidates.push(candidate)
+			i += candidate.length - 1
+		}
+	}
+	return candidates
+}
+
+export function extractPlannerJson(raw: string): string {
+	const start = raw.search(/[\[{]/)
+	if (start === -1) throw new Error("Planner returned malformed JSON: no JSON object or array found")
+	const candidate = extractBalancedJson(raw, start)
+	if (!candidate) throw new Error("Planner returned malformed JSON: incomplete JSON value")
+	return candidate
 }
 
 export function parseAndValidatePlan(raw: string, limits: PlannerLimits): PlanNodeInput[] {
-	let value: unknown
-	try {
-		value = JSON.parse(extractPlannerJson(raw))
-	} catch (error) {
-		if (error instanceof Error && error.message.startsWith("Planner returned malformed JSON")) throw error
-		throw new Error("Planner returned malformed JSON: invalid JSON value")
+	const candidates = plannerJsonCandidates(raw)
+	if (candidates.length === 0) {
+		throw new Error(
+			raw.search(/[\[{]/) === -1
+				? "Planner returned malformed JSON: no JSON object or array found"
+				: "Planner returned malformed JSON: incomplete JSON value",
+		)
 	}
-	const parsed = planSchema.safeParse(value)
-	if (!parsed.success)
-		throw new Error(`Planner returned invalid plan: ${parsed.error.issues.map((i) => i.path.join(".")).join(", ")}`)
-	const issues: string[] = []
-	for (const n of parsed.data.nodes) {
-		if (!limits.modes.includes(n.mode)) issues.push(`unsupported_mode:${n.mode}`)
-		if (limits.maxChildTokens !== undefined && n.tokenBudget > limits.maxChildTokens)
-			issues.push(`child_budget:${n.id}`)
-		for (const p of [...n.fileScopes.include, ...(n.fileScopes.write ?? []), ...n.fileScopes.exclude]) {
-			if (unsafe.test(p) || !within(p, limits.allowedScopes)) issues.push(`unsafe_scope:${n.id}:${p}`)
+	let lastError: Error | undefined
+	for (const candidate of candidates) {
+		let value: unknown
+		try {
+			value = JSON.parse(candidate)
+		} catch {
+			lastError = new Error("Planner returned malformed JSON: invalid JSON value")
+			continue
 		}
-	}
-	if (
-		limits.maxRunTokens !== undefined &&
-		parsed.data.nodes.reduce((s, n) => s + n.tokenBudget, 0) > limits.maxRunTokens
-	)
-		issues.push("run_budget")
-	const dag = validateDag(
-		parsed.data.nodes.map((n) => ({
-			nodeId: n.id,
-			role: n.role,
-			mode: n.mode,
-			title: n.objective.slice(0, 120),
-			objective: n.objective,
-			dependsOn: n.dependencies,
-			inputContract: { fileScopes: n.fileScopes } as ContextContract,
-		})),
-	)
-	issues.push(...dag.map((i) => i.code))
-	if (issues.length) throw new Error(`Planner plan rejected: ${issues.join(", ")}`)
-	return parsed.data.nodes.map(
-		(n) =>
-			({
+		const parsed = planSchema.safeParse(value)
+		if (!parsed.success) {
+			lastError = new Error(
+				`Planner returned invalid plan: ${parsed.error.issues.map((i) => i.path.join(".")).join(", ")}`,
+			)
+			continue
+		}
+		const issues: string[] = []
+		for (const n of parsed.data.nodes) {
+			if (!limits.modes.includes(n.mode)) issues.push(`unsupported_mode:${n.mode}`)
+			if (limits.maxChildTokens !== undefined && n.tokenBudget > limits.maxChildTokens)
+				issues.push(`child_budget:${n.id}`)
+			for (const p of [...n.fileScopes.include, ...(n.fileScopes.write ?? []), ...n.fileScopes.exclude]) {
+				if (unsafe.test(p) || !within(p, limits.allowedScopes)) issues.push(`unsafe_scope:${n.id}:${p}`)
+			}
+		}
+		if (
+			limits.maxRunTokens !== undefined &&
+			parsed.data.nodes.reduce((s, n) => s + n.tokenBudget, 0) > limits.maxRunTokens
+		)
+			issues.push("run_budget")
+		const dag = validateDag(
+			parsed.data.nodes.map((n) => ({
 				nodeId: n.id,
 				role: n.role,
 				mode: n.mode,
 				title: n.objective.slice(0, 120),
 				objective: n.objective,
 				dependsOn: n.dependencies,
-				inputContract: {
-					contractVersion: 1,
-					runId: "",
-					nodeId: n.id,
-					goal: "",
-					objective: n.objective,
-					acceptanceCriteria: n.acceptanceCriteria,
-					constraints: n.constraints,
-					mode: n.mode,
-					fileScopes: n.fileScopes,
-					dependencySummaries: [],
-					relevantFacts: [],
-					allowedTools: [],
-					outputRequirements: ["Return a verified ResultContract"],
-					tokenBudget: n.tokenBudget,
-					parentContextDigest: "",
-				},
-			}) as PlanNodeInput,
-	)
+				inputContract: { fileScopes: n.fileScopes } as ContextContract,
+			})),
+		)
+		issues.push(...dag.map((i) => i.code))
+		if (issues.length) {
+			lastError = new Error(`Planner plan rejected: ${issues.join(", ")}`)
+			continue
+		}
+		return parsed.data.nodes.map((n) => ({
+			nodeId: n.id,
+			role: n.role,
+			mode: n.mode,
+			title: n.objective.slice(0, 120),
+			objective: n.objective,
+			dependsOn: n.dependencies,
+			inputContract: {
+				contractVersion: 1,
+				runId: "",
+				nodeId: n.id,
+				goal: "",
+				objective: n.objective,
+				acceptanceCriteria: n.acceptanceCriteria,
+				constraints: n.constraints,
+				mode: n.mode,
+				fileScopes: n.fileScopes,
+				dependencySummaries: [],
+				relevantFacts: [],
+				allowedTools: [],
+				outputRequirements: ["Return a verified ResultContract"],
+				tokenBudget: n.tokenBudget,
+				parentContextDigest: "",
+			},
+		}))
+	}
+	throw lastError ?? new Error("Planner returned malformed JSON: invalid JSON value")
 }
 export function redactPlannerContext(text: string, maxChars = 12000) {
 	return text.replace(/(?:api[_-]?key|token|secret|password)\s*[:=]\s*\S+/gi, "[REDACTED]").slice(0, maxChars)

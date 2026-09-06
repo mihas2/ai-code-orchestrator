@@ -1,4 +1,5 @@
 import { coordinateIntegration, reviewBlocks, synthesizeSnapshot } from "./reviewIntegration"
+import { LogAggregator } from "./logAggregator"
 import type {
 	ChildEvent,
 	ExecutionHandle,
@@ -9,17 +10,27 @@ import type {
 	StartOrchestrationInput,
 	OrchestrationEvent,
 	NodeStatus,
+	NodeLog,
 } from "./types"
 import type { OrchestrationPersistence } from "./persistence"
 import { validateDag } from "./dag"
 import { assertNodeTransition, assertRunTransition } from "./transitions"
-import { createBudget, reconcileBudget, reserveBudget } from "./budget"
+import { createBudget, reconcileBudget, reserveBudget, validateUsage } from "./budget"
 
 export interface OrchestratorAdapters {
 	review?: import("./types").ReviewAdapter
 	integration?: import("./types").IntegrationAdapter
 	synthesis?: import("./types").SynthesisAdapter
 	route?: import("./types").RouteCapabilityValidator
+	logger?: (level: "error", entry: { event: string; cycle: string[] }) => void
+}
+
+export class DagValidationError extends Error {
+	readonly error = "Cyclic dependency detected"
+	constructor(readonly cycle: string[]) {
+		super("Cyclic dependency detected")
+		this.name = "DagValidationError"
+	}
 }
 
 export interface OrchestratorService {
@@ -41,6 +52,7 @@ const terminalNode = new Set<NodeStatus>(["integrated", "failed", "canceled"])
 
 export class OrchestrationService implements OrchestratorService {
 	private snapshots = new Map<string, OrchestrationSnapshot>()
+	private logAggregators = new Map<string, LogAggregator>()
 	private handles = new Map<string, ExecutionHandle>()
 	private watchdogs = new Map<string, ReturnType<typeof setTimeout>>()
 	private eventKeys = new Map<string, Set<string>>()
@@ -56,13 +68,32 @@ export class OrchestrationService implements OrchestratorService {
 		private readonly adapters: OrchestratorAdapters = {},
 	) {}
 
+	getLogAggregator(runId: string): LogAggregator {
+		let aggregator = this.logAggregators.get(runId)
+		if (!aggregator) {
+			aggregator = new LogAggregator(runId)
+			this.logAggregators.set(runId, aggregator)
+		}
+		return aggregator
+	}
+
+	private recordNodeLog(runId: string, nodeId: string, log: Omit<NodeLog, "nodeId">) {
+		this.getLogAggregator(runId).addNodeLog(nodeId, { nodeId, ...log })
+	}
+
 	async start(input: StartOrchestrationInput): Promise<OrchestrationRun> {
 		const existing = await this.persistence.load(input.runId)
 		if (existing) {
 			this.snapshots.set(input.runId, existing)
+			this.getLogAggregator(input.runId)
 			return existing.run
 		}
 		const issues = validateDag(input.nodes)
+		const cycle = issues.find((issue) => issue.code === "cycle")
+		if (cycle) {
+			this.adapters.logger?.("error", { event: "dag_cycle_detected", cycle: cycle.nodeIds })
+			throw new DagValidationError(cycle.nodeIds)
+		}
 		if (issues.length) throw new Error(`Invalid orchestration plan: ${issues.map((i) => i.code).join(", ")}`)
 		const now = input.now ?? Date.now()
 		const run: OrchestrationRun = {
@@ -101,6 +132,7 @@ export class OrchestrationService implements OrchestratorService {
 		}))
 		const snapshot: OrchestrationSnapshot = { run, nodes, events: [], capturedAt: now }
 		this.snapshots.set(run.runId, snapshot)
+		this.getLogAggregator(run.runId)
 		await this.saveEvent(snapshot, "orchestrationStarted", { status: run.status }, `run:${run.runId}:started`)
 		await this.transitionRun(snapshot, "planned", "planReady")
 		if (input.settings.requirePlanApproval) snapshot.pendingApproval = "plan"
@@ -257,8 +289,30 @@ export class OrchestrationService implements OrchestratorService {
 			n.artifactRefs = [...new Set(e.result.artifactRefs)]
 		}
 		if (e.error) n.error = e.error
-		if (e.usage) n.usage = e.usage
-		if (e.usage) reconcileBudget(s.run.budget, reserved, 0, e.usage)
+		if (e.status === "integrated")
+			this.recordNodeLog(e.runId, e.nodeId, {
+				status: "completed",
+				timestamp: Date.now(),
+				stdout: e.stdout,
+				stderr: e.stderr,
+			})
+		else if (e.status === "failed")
+			this.recordNodeLog(e.runId, e.nodeId, {
+				status: "failed",
+				timestamp: Date.now(),
+				error: e.error?.message,
+				stdout: e.stdout,
+				stderr: e.stderr,
+			})
+		if (e.usage) {
+			n.usage = Object.fromEntries(
+				Object.entries(e.usage).map(([key, value]) => [
+					key,
+					typeof value === "number" ? validateUsage(value) : value,
+				]),
+			) as typeof e.usage
+		}
+		if (e.usage) reconcileBudget(s.run.budget, reserved, 0, n.usage ?? {})
 		else reconcileBudget(s.run.budget, reserved, 0, {})
 		s.run.activeNodeIds = s.run.activeNodeIds.filter((x) => x !== n.nodeId)
 		this.handles.delete(n.nodeId)
@@ -270,7 +324,7 @@ export class OrchestrationService implements OrchestratorService {
 		if (
 			(s.run.budget.tokenLimit !== undefined && usedTokens > s.run.budget.tokenLimit) ||
 			(s.run.budget.costLimit !== undefined &&
-				e.usage?.cost !== undefined &&
+				n.usage?.cost !== undefined &&
 				(s.run.budget.used.cost ?? 0) > s.run.budget.costLimit)
 		) {
 			s.run.status = "failed"
@@ -444,6 +498,11 @@ export class OrchestrationService implements OrchestratorService {
 		n.status = "failed"
 		n.error = error
 		n.timestamps.failed = Date.now()
+		this.recordNodeLog(s.run.runId, n.nodeId, {
+			status: "failed",
+			timestamp: n.timestamps.failed,
+			error: error?.message,
+		})
 		s.run.activeNodeIds = s.run.activeNodeIds.filter((x) => x !== n.nodeId)
 		if (releaseReservation) reconcileBudget(s.run.budget, n.inputContract.tokenBudget, 0, {})
 		await this.saveEvent(
@@ -465,6 +524,11 @@ export class OrchestrationService implements OrchestratorService {
 			) {
 				n.status = "blocked"
 				n.timestamps.blocked = Date.now()
+				this.recordNodeLog(s.run.runId, n.nodeId, {
+					status: "rejected",
+					timestamp: n.timestamps.blocked,
+					reason: "Blocked by failed dependency",
+				})
 			}
 	}
 	private async reviewNode(s: OrchestrationSnapshot, n: OrchestrationNode) {

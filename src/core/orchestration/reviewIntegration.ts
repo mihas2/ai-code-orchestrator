@@ -37,6 +37,9 @@ export interface IntegrationCoordinatorInput {
 	adapter: IntegrationAdapter
 	approved: boolean
 	baseHash?: string
+	parentArtifacts?: readonly ArtifactDescriptor[]
+	parentNodeId?: string
+	childNodeId?: string
 }
 
 /** Performs all cheap safety checks before allowing an adapter to mutate the workspace. */
@@ -50,7 +53,7 @@ export async function coordinateIntegration(input: IntegrationCoordinatorInput):
 			conflictRefs,
 			message: "Integration approval is required",
 		}
-	const paths = input.artifacts.map((a) => a.path)
+	const paths = input.artifacts.map((a) => a.path).filter(Boolean)
 	const writeScopes = input.node.inputContract?.fileScopes?.write ?? input.node.inputContract?.fileScopes?.include
 	const outOfScope = writeScopes
 		? paths.filter(
@@ -93,7 +96,12 @@ export async function coordinateIntegration(input: IntegrationCoordinatorInput):
 			status: "blocked",
 			artifactRefs: input.artifacts.map((a) => a.ref),
 			conflictRefs: checked.conflicts,
-			message: "Integration adapter reported a conflict; artifacts were preserved",
+			message: checked.conflicts.some((conflict) => conflict.startsWith("parent_child:"))
+				? `Conflicting artifacts detected: ${checked.conflicts
+						.filter((conflict) => conflict.startsWith("parent_child:"))
+						.map((conflict) => conflict.slice("parent_child:".length))
+						.join(", ")}`
+				: "Integration adapter reported a conflict; artifacts were preserved",
 		}
 	try {
 		return {
