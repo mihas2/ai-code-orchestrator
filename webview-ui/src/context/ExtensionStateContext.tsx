@@ -28,6 +28,25 @@ import { experimentDefault } from "@aico/experiments"
 import { vscode } from "@src/utils/vscode"
 import { convertTextMateToHljs } from "@src/utils/textMateToHljs"
 
+export interface OrchestrationEventState {
+	eventId: string
+	idempotencyKey: string
+	runId: string
+	nodeId?: string
+	sequence: number
+	timestamp: number
+	type: string
+	payload: Record<string, unknown>
+}
+
+export interface OrchestrationSnapshotState {
+	run: { runId: string; status: string; [key: string]: unknown }
+	nodes: Array<Record<string, unknown>>
+	events: OrchestrationEventState[]
+	capturedAt: number
+	[key: string]: unknown
+}
+
 export interface ExtensionStateContextType extends ExtensionState {
 	historyPreviewCollapsed?: boolean // Add the new state property
 	didHydrateState: boolean
@@ -116,6 +135,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	autoCondenseContextPercent: number
 	setAutoCondenseContextPercent: (value: number) => void
 	routerModels?: RouterModels
+	orchestrationEvents: OrchestrationEventState[]
+	orchestrationSnapshot?: OrchestrationSnapshotState
 	includeDiagnosticMessages?: boolean
 	setIncludeDiagnosticMessages: (value: boolean) => void
 	maxDiagnosticMessages?: number
@@ -252,6 +273,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	const [commands, setCommands] = useState<Command[]>([])
 	const [mcpServers, setMcpServers] = useState<McpServer[]>([])
 	const [currentCheckpoint, setCurrentCheckpoint] = useState<string>()
+	const [orchestrationEvents, setOrchestrationEvents] = useState<OrchestrationEventState[]>([])
+	const [orchestrationSnapshot, setOrchestrationSnapshot] = useState<OrchestrationSnapshotState>()
 	const [extensionRouterModels, setExtensionRouterModels] = useState<RouterModels | undefined>(undefined)
 	const [alwaysAllowFollowupQuestions, setAlwaysAllowFollowupQuestions] = useState(false) // Add state for follow-up questions auto-approve
 	const [followupAutoApproveTimeoutMs, setFollowupAutoApproveTimeoutMs] = useState<number | undefined>(undefined) // Will be set from global settings
@@ -373,6 +396,21 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					setCurrentCheckpoint(message.text)
 					break
 				}
+				case "orchestrationEvent": {
+					const event = message.payload as OrchestrationEventState | undefined
+					if (!event?.eventId || !event.runId) break
+					setOrchestrationEvents((previous) => {
+						if (previous.some((item) => item.eventId === event.eventId)) return previous
+						return [...previous, event].sort((a, b) => a.sequence - b.sequence).slice(-500)
+					})
+					console.debug("[ExtensionStateContext] Orchestration event:", event)
+					break
+				}
+				case "orchestrationSnapshot": {
+					const snapshot = message.payload as OrchestrationSnapshotState | undefined
+					if (snapshot?.run?.runId && Array.isArray(snapshot.nodes)) setOrchestrationSnapshot(snapshot)
+					break
+				}
 				case "listApiConfig": {
 					setListApiConfigMeta(message.listApiConfig ?? [])
 					break
@@ -440,6 +478,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		theme,
 		mcpServers,
 		currentCheckpoint,
+		orchestrationEvents,
+		orchestrationSnapshot,
 		filePaths,
 		openedTabs,
 		commands,

@@ -1,4 +1,4 @@
-import { render, screen, act } from "@/utils/test-utils"
+import { render, screen, act, waitFor } from "@/utils/test-utils"
 
 import {
 	type ProviderSettings,
@@ -182,6 +182,57 @@ describe("ExtensionStateContext", () => {
 				modelTemperature: 0.7, // Should add this from partial update
 			}),
 		)
+	})
+})
+
+describe("orchestration event consumer", () => {
+	const event = {
+		eventId: "event-1",
+		idempotencyKey: "run-1:started",
+		runId: "run-1",
+		sequence: 1,
+		timestamp: 100,
+		type: "orchestrationStarted",
+		payload: { status: "planned" },
+	}
+
+	it("stores orchestration events and snapshots received from the extension", async () => {
+		const Consumer = () => {
+			const { orchestrationEvents, orchestrationSnapshot } = useExtensionState()
+			return (
+				<div data-testid="orchestration-state">
+					{JSON.stringify({ orchestrationEvents, orchestrationSnapshot })}
+				</div>
+			)
+		}
+
+		render(
+			<ExtensionStateContextProvider>
+				<Consumer />
+			</ExtensionStateContextProvider>,
+		)
+
+		act(() => {
+			window.postMessage({ type: "orchestrationEvent", payload: event }, "*")
+			window.postMessage(
+				{
+					type: "orchestrationSnapshot",
+					payload: {
+						run: { runId: "run-1", status: "planned" },
+						nodes: [],
+						events: [event],
+						capturedAt: 100,
+					},
+				},
+				"*",
+			)
+		})
+
+		await waitFor(() => {
+			const state = JSON.parse(screen.getByTestId("orchestration-state").textContent!)
+			expect(state.orchestrationEvents).toEqual([event])
+			expect(state.orchestrationSnapshot.run.runId).toBe("run-1")
+		})
 	})
 })
 
