@@ -164,24 +164,21 @@ export class CustomModesManager {
 				try {
 					// Try parsing the original content as JSON (not the cleaned content)
 					return JSON.parse(content)
-				} catch (jsonError) {
-					// JSON also failed, show the original YAML error
+				} catch {
+					// JSON also failed, report and preserve the YAML parse failure.
 					const errorMsg = yamlError instanceof Error ? yamlError.message : String(yamlError)
 					console.error(`[CustomModesManager] Failed to parse YAML from ${filePath}:`, errorMsg)
 
 					const lineMatch = errorMsg.match(/at line (\d+)/)
 					const line = lineMatch ? lineMatch[1] : "unknown"
 					vscode.window.showErrorMessage(t("common:customModes.errors.yamlParseError", { line }))
-
-					// Return empty object to prevent duplicate error handling
-					return {}
+					throw yamlError
 				}
 			}
 
-			// For non-.agent-modes files, just log and return empty object
 			const errorMsg = yamlError instanceof Error ? yamlError.message : String(yamlError)
 			console.error(`[CustomModesManager] Failed to parse YAML from ${filePath}:`, errorMsg)
-			return {}
+			throw yamlError
 		}
 	}
 
@@ -480,14 +477,7 @@ export class CustomModesManager {
 			content = yaml.stringify({ customModes: [] }, { lineWidth: 0 })
 		}
 
-		let settings
-
-		try {
-			settings = this.parseYamlSafely(content, filePath)
-		} catch (error) {
-			// Error already logged in parseYamlSafely
-			settings = { customModes: [] }
-		}
+		let settings = this.parseYamlSafely(content, filePath)
 
 		// Ensure settings is an object and has customModes property
 		if (!settings || typeof settings !== "object") {

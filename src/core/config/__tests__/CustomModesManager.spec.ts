@@ -772,7 +772,7 @@ describe("CustomModesManager", () => {
 	})
 
 	describe("updateModesInFile", () => {
-		it("handles corrupted YAML content gracefully", async () => {
+		it("rejects corrupted YAML without overwriting the source file", async () => {
 			const corruptedYaml = "customModes: [invalid yaml content"
 			;(fs.readFile as Mock).mockResolvedValue(corruptedYaml)
 
@@ -784,20 +784,8 @@ describe("CustomModesManager", () => {
 				source: "global",
 			}
 
-			await manager.updateCustomMode("test-mode", newMode)
-
-			// Verify that a valid YAML structure was written
-			const writeCall = (fs.writeFile as Mock).mock.calls[0]
-			const writtenContent = yaml.parse(writeCall[1])
-			expect(writtenContent).toEqual({
-				customModes: [
-					expect.objectContaining({
-						slug: "test-mode",
-						name: "Test Mode",
-						roleDefinition: "Test Role",
-					}),
-				],
-			})
+			await expect(manager.updateCustomMode("test-mode", newMode)).rejects.toThrow()
+			expect(fs.writeFile).not.toHaveBeenCalled()
 		})
 
 		describe("importModeWithRules", () => {
