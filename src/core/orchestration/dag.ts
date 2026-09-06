@@ -11,6 +11,7 @@ export function validateDag(nodes: readonly PlanNodeInput[]): DagIssue[] {
 		if (byId.has(n.nodeId)) issues.push({ code: "duplicate_node", nodeIds: [n.nodeId] })
 		else byId.set(n.nodeId, n)
 	}
+	// Explicit dependsOn takes priority; fileScopes are used only when dependsOn is empty.
 	for (const n of nodes)
 		for (const d of n.dependsOn ?? [])
 			if (!byId.has(d)) issues.push({ code: "missing_dependency", nodeIds: [n.nodeId, d] })

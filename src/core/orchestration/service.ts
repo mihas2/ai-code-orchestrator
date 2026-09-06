@@ -20,6 +20,15 @@ export interface OrchestratorAdapters {
 	integration?: import("./types").IntegrationAdapter
 	synthesis?: import("./types").SynthesisAdapter
 	route?: import("./types").RouteCapabilityValidator
+	logger?: (level: "error", entry: { event: string; cycle: string[] }) => void
+}
+
+export class DagValidationError extends Error {
+	readonly error = "Cyclic dependency detected"
+	constructor(readonly cycle: string[]) {
+		super("Cyclic dependency detected")
+		this.name = "DagValidationError"
+	}
 }
 
 export interface OrchestratorService {
@@ -63,6 +72,11 @@ export class OrchestrationService implements OrchestratorService {
 			return existing.run
 		}
 		const issues = validateDag(input.nodes)
+		const cycle = issues.find((issue) => issue.code === "cycle")
+		if (cycle) {
+			this.adapters.logger?.("error", { event: "dag_cycle_detected", cycle: cycle.nodeIds })
+			throw new DagValidationError(cycle.nodeIds)
+		}
 		if (issues.length) throw new Error(`Invalid orchestration plan: ${issues.map((i) => i.code).join(", ")}`)
 		const now = input.now ?? Date.now()
 		const run: OrchestrationRun = {
