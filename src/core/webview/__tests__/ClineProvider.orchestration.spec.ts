@@ -59,6 +59,7 @@ function providerBoundary(enabled: boolean, mode: string) {
 		},
 		getMode: vi.fn(async () => mode),
 		getCustomModes: vi.fn(async () => []),
+		customModesManager: { getCustomModes: vi.fn(async () => []) },
 		resolveOrchestrationRoute: vi.fn(async () => ({
 			profileId: "default-id",
 			provider: "openrouter",
@@ -184,6 +185,17 @@ describe("ClineProvider orchestration route resolution", () => {
 			profileId: "a",
 			modelId: "model-A",
 		})
+	})
+
+	it("logs when an unknown role falls back to the default role", async () => {
+		const provider = routeProvider(
+			{ currentApiConfigName: "A", roleAssignments: { roles: { worker: { profileName: "A" } } } },
+			{ A: { id: "a", name: "A", apiProvider: "openrouter", openRouterModelId: "model-A" } },
+		)
+		await provider.resolveOrchestrationRoute({ role: "future-role", mode: "code" })
+		expect(provider.outputChannel.appendLine).toHaveBeenCalledWith(
+			"Unknown role 'future-role' not found in available modes, falling back to default 'worker'",
+		)
 	})
 
 	it("fails closed when an orchestration assignment profile is unavailable", async () => {

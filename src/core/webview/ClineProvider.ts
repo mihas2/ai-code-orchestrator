@@ -1093,8 +1093,11 @@ export class ClineProvider
 		)
 		let nodes: ReturnType<typeof parseAndValidatePlan>
 		try {
+			const customModes = await this.customModesManager.getCustomModes()
 			nodes = parseAndValidatePlan(raw, {
 				modes: DEFAULT_MODES.map((m) => m.slug),
+				roles: [...DEFAULT_MODES.map((m) => m.slug), ...customModes.map((m) => m.slug)],
+				logger: (_level, message) => this.log(message),
 				allowedScopes: [".", this.cwd],
 				maxChildTokens: settings.maxChildTokens,
 				maxRunTokens: settings.maxRunTokens,
@@ -1163,6 +1166,14 @@ export class ClineProvider
 		nodeId?: string
 	}): Promise<import("@ai-code-orchestrator/types").ModelRoute> {
 		const state = await this.getState()
+		const availableModes = [...DEFAULT_MODES, ...(await this.customModesManager.getCustomModes())]
+		const knownRole = availableModes.some((mode) => mode.slug === node.role)
+		const fallbackRole = node.role === "orchestrator" || node.mode === "orchestrator" ? "orchestrator" : "worker"
+		if (!knownRole) {
+			this.log(
+				`Unknown role '${node.role}' not found in available modes, falling back to default '${fallbackRole}'`,
+			)
+		}
 		this.log(
 			`[Orchestration route] Resolving role='${node.role}' mode='${node.mode ?? "unset"}' nodeId='${node.nodeId ?? "unset"}' ` +
 				`activeProfile='${state.currentApiConfigName ?? "default"}' assignments=${JSON.stringify(Object.keys(state.roleAssignments?.roles ?? {}))}`,
@@ -1171,7 +1182,6 @@ export class ClineProvider
 		// orchestration plans identify nodes by role. Check both canonical and legacy
 		// keys before falling back to the built-in orchestration roles.
 		const assignments = state.roleAssignments?.roles
-		const fallbackRole = node.role === "orchestrator" || node.mode === "orchestrator" ? "orchestrator" : "worker"
 		const assignmentEntries = [
 			["node.role", node.role, assignments?.[node.role]],
 			["node.nodeId", node.nodeId, assignments?.[node.nodeId ?? ""]],
