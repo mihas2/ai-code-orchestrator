@@ -15,7 +15,7 @@ import type {
 import type { OrchestrationPersistence } from "./persistence"
 import { validateDag } from "./dag"
 import { assertNodeTransition, assertRunTransition } from "./transitions"
-import { createBudget, reconcileBudget, reserveBudget } from "./budget"
+import { createBudget, reconcileBudget, reserveBudget, validateUsage } from "./budget"
 
 export interface OrchestratorAdapters {
 	review?: import("./types").ReviewAdapter
@@ -304,8 +304,15 @@ export class OrchestrationService implements OrchestratorService {
 				stdout: e.stdout,
 				stderr: e.stderr,
 			})
-		if (e.usage) n.usage = e.usage
-		if (e.usage) reconcileBudget(s.run.budget, reserved, 0, e.usage)
+		if (e.usage) {
+			n.usage = Object.fromEntries(
+				Object.entries(e.usage).map(([key, value]) => [
+					key,
+					typeof value === "number" ? validateUsage(value) : value,
+				]),
+			) as typeof e.usage
+		}
+		if (e.usage) reconcileBudget(s.run.budget, reserved, 0, n.usage ?? {})
 		else reconcileBudget(s.run.budget, reserved, 0, {})
 		s.run.activeNodeIds = s.run.activeNodeIds.filter((x) => x !== n.nodeId)
 		this.handles.delete(n.nodeId)
@@ -317,7 +324,7 @@ export class OrchestrationService implements OrchestratorService {
 		if (
 			(s.run.budget.tokenLimit !== undefined && usedTokens > s.run.budget.tokenLimit) ||
 			(s.run.budget.costLimit !== undefined &&
-				e.usage?.cost !== undefined &&
+				n.usage?.cost !== undefined &&
 				(s.run.budget.used.cost ?? 0) > s.run.budget.costLimit)
 		) {
 			s.run.status = "failed"
