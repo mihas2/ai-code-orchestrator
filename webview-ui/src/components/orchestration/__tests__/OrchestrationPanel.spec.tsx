@@ -18,21 +18,32 @@ const snapshot = {
 		{
 			nodeId: "parent",
 			title: "Main task",
+			role: "orchestrator",
 			status: "completed",
 			dependsOn: [],
 			attempt: 1,
 			maxAttempts: 3,
+			inputContract: { tokenBudget: 100 },
 			payload: { input: "value" },
 		},
 		{
 			nodeId: "child",
 			title: "Active subtask",
+			role: "worker",
 			status: "running",
 			dependsOn: ["parent"],
 			attempt: 2,
 			maxAttempts: 3,
 		},
-		{ nodeId: "failed", title: "Failed task", status: "failed", dependsOn: [], attempt: 1, maxAttempts: 1 },
+		{
+			nodeId: "failed",
+			title: "Failed task",
+			role: "reviewer",
+			status: "failed",
+			dependsOn: [],
+			attempt: 1,
+			maxAttempts: 1,
+		},
 	],
 	events: [],
 	capturedAt: 1,
@@ -54,6 +65,22 @@ describe("OrchestrationPanel", () => {
 		expect(screen.getByText("Active subtask")).toBeInTheDocument()
 		expect(screen.getByText("running")).toBeInTheDocument()
 		expect(screen.getByText("Active subtask").closest("li")).toHaveAttribute("data-active", "true")
+	})
+
+	it("shows role badges and task settings", () => {
+		vi.mocked(useExtensionState).mockReturnValue({ orchestrationSnapshot: snapshot } as never)
+		render(<OrchestrationPanel />)
+		expect(screen.getByLabelText("Task role: orchestrator")).toBeInTheDocument()
+		expect(screen.getByLabelText("Task role: worker")).toBeInTheDocument()
+		expect(screen.getByLabelText("Task role: reviewer")).toBeInTheDocument()
+		expect(screen.getByText("Budget 100")).toBeInTheDocument()
+		expect(screen.getAllByText("Max retries 2")).toHaveLength(2)
+	})
+
+	it("shows dependencies", () => {
+		vi.mocked(useExtensionState).mockReturnValue({ orchestrationSnapshot: snapshot } as never)
+		render(<OrchestrationPanel />)
+		expect(screen.getByText("Depends on: Main task")).toBeInTheDocument()
 	})
 
 	it("shows attempts and expands task payload", () => {
