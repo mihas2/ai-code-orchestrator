@@ -1,5 +1,9 @@
 import { DEFAULT_MODES } from "../mode.js"
 
+const architect = DEFAULT_MODES.find((mode) => mode.slug === "architect")
+const ask = DEFAULT_MODES.find((mode) => mode.slug === "ask")
+const code = DEFAULT_MODES.find((mode) => mode.slug === "code")
+const debug = DEFAULT_MODES.find((mode) => mode.slug === "debug")
 const reviewer = DEFAULT_MODES.find((mode) => mode.slug === "reviewer")
 
 describe("default orchestrator mode", () => {
@@ -41,5 +45,39 @@ describe("default reviewer mode", () => {
 			expect(roleDefinition.toLowerCase()).not.toContain(restriction)
 			expect(customInstructions.toLowerCase()).toContain(restriction)
 		}
+	})
+})
+
+describe("default implementation and planning mode contracts", () => {
+	it("code has boundary and result-format instructions", () => {
+		expect(code).toBeDefined()
+		expect(code?.customInstructions).toBeTruthy()
+		expect(code?.customInstructions).toMatch(/boundary/i)
+		expect(code?.customInstructions).toMatch(/format/i)
+	})
+
+	it("debug has result-format and unavailable-user instructions", () => {
+		expect(debug).toBeDefined()
+		expect(debug?.customInstructions).toMatch(/format/i)
+		expect(debug?.customInstructions).toMatch(/unavailable/i)
+	})
+
+	it("ask keeps its constraints out of the role definition", () => {
+		expect(ask).toBeDefined()
+		const roleDefinition = ask?.roleDefinition.toLowerCase() ?? ""
+		const customInstructions = ask?.customInstructions?.toLowerCase() ?? ""
+		const constraints = ["do not switch", "without making changes"]
+
+		for (const constraint of constraints) {
+			expect(customInstructions).toContain(constraint)
+			expect(roleDefinition).not.toContain(constraint)
+		}
+	})
+
+	it("architect instructions remain planning-only", () => {
+		expect(architect).toBeDefined()
+		const instructions = architect?.customInstructions ?? ""
+		expect(instructions).toMatch(/plan|planning/i)
+		expect(instructions).not.toMatch(/implement the solution|write code|modify code/i)
 	})
 })
