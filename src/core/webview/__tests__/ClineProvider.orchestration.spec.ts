@@ -185,6 +185,41 @@ describe("ClineProvider orchestration route resolution", () => {
 			modelId: "model-A",
 		})
 	})
+
+	it("fails closed when an orchestration assignment profile is unavailable", async () => {
+		const provider = routeProvider(
+			{
+				currentApiConfigName: "A",
+				roleAssignments: { roles: { worker: { profileName: "deleted-profile" } } },
+			},
+			{ A: { id: "a", name: "A", apiProvider: "openrouter", openRouterModelId: "model-A" } },
+		)
+
+		await expect(provider.resolveOrchestrationRoute({ role: "worker" })).rejects.toThrow(
+			"Orchestration profile 'deleted-profile' for role 'worker' could not be resolved",
+		)
+	})
+})
+
+describe("ClineProvider profile resolution context policy", () => {
+	it("preserves non-orchestration fallback for an unavailable assigned profile", async () => {
+		const provider = providerBoundary(true, "code") as any
+		provider.getState = vi.fn(async () => ({ currentApiConfigName: "active" }))
+		provider.providerSettingsManager.getProfile = vi.fn(async () => {
+			throw new Error("not found")
+		})
+
+		await expect(
+			provider.resolveEffectiveApiConfiguration({
+				mode: "code",
+				baseApiConfiguration: { apiProvider: "openrouter", openRouterModelId: "active-model" },
+				state: {
+					currentApiConfigName: "active",
+					roleAssignments: { roles: { code: { profileName: "deleted-profile" } } },
+				},
+			}),
+		).resolves.toMatchObject({ isRoleSpecificConfig: false })
+	})
 })
 
 describe("ClineProvider orchestration boundary", () => {

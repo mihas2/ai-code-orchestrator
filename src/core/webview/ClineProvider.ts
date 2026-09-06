@@ -1123,6 +1123,40 @@ export class ClineProvider
 		})
 	}
 
+	private async resolveAssignedProfile({
+		profileName,
+		profileId,
+		activeProfileName,
+		role,
+		orchestration = false,
+	}: {
+		profileName?: string
+		profileId?: string
+		activeProfileName: string
+		role: string
+		orchestration?: boolean
+	}): Promise<ProviderSettings & { id?: string; name?: string }> {
+		try {
+			return profileName
+				? await this.providerSettingsManager.getProfile({ name: profileName })
+				: profileId
+					? await this.providerSettingsManager.getProfile({ id: profileId })
+					: await this.providerSettingsManager.getProfile({ name: activeProfileName })
+		} catch (error) {
+			const requestedProfile = profileName ?? profileId
+			if (orchestration && requestedProfile) {
+				throw new Error(
+					`Orchestration profile '${requestedProfile}' for role '${role}' could not be resolved: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			}
+			if (!requestedProfile) throw error
+			this.log(
+				`Profile '${requestedProfile}' for role '${role}' could not be loaded; falling back to active profile '${activeProfileName}': ${error instanceof Error ? error.message : String(error)}`,
+			)
+			return await this.providerSettingsManager.getProfile({ name: activeProfileName })
+		}
+	}
+
 	private async resolveOrchestrationRoute(node: {
 		role: string
 		mode?: string
@@ -1155,20 +1189,14 @@ export class ClineProvider
 		const activeProfileName: string = state.currentApiConfigName ?? "default"
 		const assignedProfileId = state.modeApiConfigs?.[node.mode ?? node.role]
 		const profileRef = assignment?.profileName
-		let profile: ProviderSettings & { id?: string; name?: string }
-		try {
-			// A role assignment is canonical. modeApiConfigs is only a compatibility fallback.
-			profile = profileRef
-				? await this.providerSettingsManager.getProfile({ name: profileRef })
-				: assignedProfileId
-					? await this.providerSettingsManager.getProfile({ id: assignedProfileId })
-					: await this.providerSettingsManager.getProfile({ name: activeProfileName })
-		} catch (error) {
-			this.log(
-				`[Orchestration route] Profile '${profileRef ?? assignedProfileId ?? activeProfileName}' for role '${node.role}' could not be loaded; falling back to active profile '${activeProfileName}': ${error instanceof Error ? error.message : String(error)}`,
-			)
-			profile = await this.providerSettingsManager.getProfile({ name: activeProfileName })
-		}
+		// A role assignment is canonical. modeApiConfigs is only a compatibility fallback.
+		const profile = await this.resolveAssignedProfile({
+			profileName: profileRef,
+			profileId: assignedProfileId,
+			activeProfileName,
+			role: node.role,
+			orchestration: true,
+		})
 		const profileName = profile.name ?? activeProfileName
 		this.log(
 			`[Orchestration route] Loaded profile='${profileName}' id='${profile.id ?? "unset"}' ` +
@@ -2982,9 +3010,20 @@ export class ClineProvider
 		const assignment = assignments?.[roleToUse]
 		if (!assignment) return { effectiveApiConfiguration: snapshot, isRoleSpecificConfig: false }
 
-		const profile: ProviderSettings & { id?: string; name?: string } = assignment.profileName
-			? await this.providerSettingsManager.getProfile({ name: assignment.profileName })
-			: baseApiConfiguration
+		let profile: ProviderSettings & { id?: string; name?: string }
+		if (assignment.profileName) {
+			try {
+				profile = await this.resolveAssignedProfile({
+					profileName: assignment.profileName,
+					activeProfileName: currentState.currentApiConfigName ?? "default",
+					role: roleToUse,
+				})
+			} catch {
+				return { effectiveApiConfiguration: snapshot, isRoleSpecificConfig: false }
+			}
+		} else {
+			profile = baseApiConfiguration
+		}
 		if (!profile?.apiProvider) return { effectiveApiConfiguration: snapshot, isRoleSpecificConfig: false }
 
 		const route = (await import("@ai-code-orchestrator/types")).resolveModelRoute({
