@@ -27,7 +27,11 @@ describe("planner adapter", () => {
 	])("extracts %s", (_, raw) => expect(parseAndValidatePlan(raw, limits)[0].nodeId).toBe("a"))
 	it("extracts arrays while preserving nested strings", () =>
 		expect(extractPlannerJson('prefix ["} ]", {"ok": true}] suffix')).toBe('["} ]", {"ok": true}]'))
-	it("rejects empty and malformed JSON", () => {
+	it("uses the second balanced JSON candidate when the first is invalid", () => {
+		const raw = `{"version":1,"nodes":[]}\n${plan()}`
+		expect(parseAndValidatePlan(raw, limits)[0].nodeId).toBe("a")
+	})
+	it("rejects completely invalid input", () => {
 		expect(() => parseAndValidatePlan("", limits)).toThrow("malformed JSON")
 		expect(() => parseAndValidatePlan("{", limits)).toThrow("malformed JSON")
 	})
