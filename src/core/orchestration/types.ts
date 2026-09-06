@@ -306,11 +306,17 @@ export interface IntegrationAdapter {
 		run: Readonly<OrchestrationRun>
 		node: Readonly<OrchestrationNode>
 		artifacts: readonly ArtifactDescriptor[]
+		parentArtifacts?: readonly ArtifactDescriptor[]
+		parentNodeId?: string
+		childNodeId?: string
 	}): Promise<{ safe: boolean; conflicts: string[]; currentBaseHash?: string }>
 	integrate(input: {
 		run: Readonly<OrchestrationRun>
 		node: Readonly<OrchestrationNode>
 		artifacts: readonly ArtifactDescriptor[]
+		parentArtifacts?: readonly ArtifactDescriptor[]
+		parentNodeId?: string
+		childNodeId?: string
 		idempotencyKey: string
 	}): Promise<{ artifactRefs: string[] }>
 }

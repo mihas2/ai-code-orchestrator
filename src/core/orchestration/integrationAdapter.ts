@@ -37,6 +37,9 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 		run: Readonly<OrchestrationRun>
 		node?: Readonly<import("./types").OrchestrationNode>
 		artifacts: readonly ArtifactDescriptor[]
+		parentArtifacts?: readonly ArtifactDescriptor[]
+		parentNodeId?: string
+		childNodeId?: string
 	}): Promise<{ safe: boolean; conflicts: string[]; currentBaseHash?: string }> {
 		const base = await this.captureBase(input.run)
 		const current = await this.git(["rev-parse", "HEAD"])
@@ -44,6 +47,9 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 		if (current !== base) conflicts.add("base_revision")
 
 		const prepared = await Promise.all(input.artifacts.map((artifact) => this.prepare(artifact)))
+		const parentPrepared = await Promise.all(
+			(input.parentArtifacts ?? []).map((artifact) => this.prepare(artifact)),
+		)
 		const writeScopes = input.node?.inputContract.fileScopes.write ?? input.node?.inputContract.fileScopes.include
 		const seen = new Set<string>()
 		const integrated = this.integratedPaths.get(input.run.runId) ?? new Set<string>()
@@ -53,18 +59,35 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 				if (
 					writeScopes &&
 					!writeScopes.some(
-						(scope) => scope === changedPath || changedPath.startsWith(`${scope.replace(/\/$/, "")}/`),
+						(scope) =>
+							scope === "." ||
+							scope === changedPath ||
+							changedPath.startsWith(`${scope.replace(/\/$/, "")}/`),
 					)
 				)
 					conflicts.add(`scope:${changedPath}`)
 				if (seen.has(changedPath) || integrated.has(changedPath)) conflicts.add(`path:${changedPath}`)
 				seen.add(changedPath)
 			}
-			try {
-				await this.git(["apply", "--check", "--whitespace=error-all", item.patchPath])
-			} catch {
-				conflicts.add(`patch:${item.artifact.ref}`)
+			if (item.paths.length) {
+				try {
+					await this.git(["apply", "--check", "--whitespace=error-all", item.patchPath])
+				} catch {
+					conflicts.add(`patch:${item.artifact.ref}`)
+				}
 			}
+		}
+		const parentPaths = new Set(parentPrepared.flatMap((item) => item.paths))
+		const conflictingPaths = [
+			...new Set(prepared.flatMap((item) => item.paths.filter((changedPath) => parentPaths.has(changedPath)))),
+		]
+		if (conflictingPaths.length) {
+			console.warn("Conflicting artifacts detected", {
+				parentNodeId: input.parentNodeId,
+				childNodeId: input.childNodeId ?? input.node?.nodeId,
+				conflictingPaths,
+			})
+			for (const changedPath of conflictingPaths) conflicts.add(`parent_child:${changedPath}`)
 		}
 		return { safe: conflicts.size === 0, conflicts: [...conflicts], currentBaseHash: current }
 	}
@@ -73,6 +96,9 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 		run: Readonly<OrchestrationRun>
 		node: Readonly<import("./types").OrchestrationNode>
 		artifacts: readonly ArtifactDescriptor[]
+		parentArtifacts?: readonly ArtifactDescriptor[]
+		parentNodeId?: string
+		childNodeId?: string
 		idempotencyKey: string
 	}): Promise<{ artifactRefs: string[] }> {
 		const previous = this.completed.get(input.idempotencyKey)
@@ -81,12 +107,18 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 			const checked = await this.check(input)
 			if (!checked.safe) throw new Error(`Unsafe integration: ${checked.conflicts.join(", ")}`)
 			const prepared = await Promise.all(input.artifacts.map((artifact) => this.prepare(artifact)))
-			// A single git invocation applies the complete patch set atomically to both index and worktree.
-			await this.git(["apply", "--index", "--whitespace=error-all", ...prepared.map((item) => item.patchPath)])
+			const nonEmpty = prepared.filter((item) => item.paths.length > 0)
+			if (nonEmpty.length)
+				await this.git([
+					"apply",
+					"--index",
+					"--whitespace=error-all",
+					...nonEmpty.map((item) => item.patchPath),
+				])
 			const paths = this.integratedPaths.get(input.run.runId) ?? new Set<string>()
 			for (const item of prepared) for (const changedPath of item.paths) paths.add(changedPath)
 			this.integratedPaths.set(input.run.runId, paths)
-			const refs = prepared.map((item) => item.artifact.ref)
+			const refs = prepared.filter((item) => item.paths.length > 0).map((item) => item.artifact.ref)
 			this.completed.set(input.idempotencyKey, refs)
 			return { artifactRefs: refs }
 		}
@@ -103,21 +135,19 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 		if (!artifact.preserved) throw new Error(`Artifact is not preserved: ${artifact.ref}`)
 		const patchPath = path.resolve(this.cwd, artifact.ref)
 		const relativePatchPath = path.relative(this.cwd, patchPath)
-		if (!relativePatchPath || relativePatchPath.startsWith(`..${path.sep}`) || path.isAbsolute(relativePatchPath)) {
+		if (!relativePatchPath || relativePatchPath.startsWith(`..${path.sep}`) || path.isAbsolute(relativePatchPath))
 			throw new Error(`Unsafe artifact reference: ${artifact.ref}`)
-		}
 		const stat = await fs.stat(patchPath)
 		if (!stat.isFile()) throw new Error(`Artifact is not a file: ${artifact.ref}`)
 		const contents = await fs.readFile(patchPath)
 		const hash = createHash("sha256").update(contents).digest("hex")
 		if (artifact.resultHash && artifact.resultHash !== hash)
 			throw new Error(`Artifact hash mismatch: ${artifact.ref}`)
-		const output = await this.git(["apply", "--numstat", patchPath])
+		const output = contents.length ? await this.git(["apply", "--numstat", patchPath]) : ""
 		const paths = output
 			.split("\n")
 			.map((line) => line.split("\t").at(-1)?.trim())
 			.filter((value): value is string => Boolean(value))
-		if (!paths.length) throw new Error(`Artifact contains no changes: ${artifact.ref}`)
 		for (const changedPath of paths)
 			if (unsafePath.test(changedPath) || path.isAbsolute(changedPath))
 				throw new Error(`Unsafe artifact path: ${changedPath}`)
