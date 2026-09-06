@@ -22,7 +22,24 @@ export interface OrchestratorAdapters {
 	integration?: import("./types").IntegrationAdapter
 	synthesis?: import("./types").SynthesisAdapter
 	route?: import("./types").RouteCapabilityValidator
-	logger?: (level: "error", entry: { event: string; cycle: string[] }) => void
+	logger?: (
+		level: "error",
+		entry: {
+			event: string
+			cycle?: string[]
+			runId?: string
+			expectedRootTaskId?: string
+			actualRootTaskId?: string
+		},
+	) => void
+}
+
+export class OrchestrationOwnershipError extends Error {
+	readonly code = "orchestration_run_ownership_denied"
+	constructor(readonly runId: string) {
+		super("Orchestration run does not belong to the requesting task tree")
+		this.name = "OrchestrationOwnershipError"
+	}
 }
 
 export class DagValidationError extends Error {
@@ -38,9 +55,9 @@ export interface OrchestratorService {
 	dispatch(runId: string): Promise<void>
 	handleChildEvent(event: ChildEvent): Promise<void>
 	approvePlan(runId: string): Promise<void>
-	approveIntegration(runId: string): Promise<void>
-	retryNode(runId: string, nodeId: string): Promise<void>
-	cancel(runId: string, reason?: string): Promise<void>
+	approveIntegration(runId: string, expectedRootTaskId: string): Promise<void>
+	retryNode(runId: string, nodeId: string, expectedRootTaskId: string): Promise<void>
+	cancel(runId: string, expectedRootTaskId: string, reason?: string): Promise<void>
 	pause(runId: string): Promise<void>
 	resume(runId: string): Promise<void>
 	getSnapshot(runId: string): Promise<OrchestrationSnapshot>
@@ -371,8 +388,8 @@ export class OrchestrationService implements OrchestratorService {
 		await this.persist(s)
 		await this.dispatch(id)
 	}
-	async approveIntegration(id: string) {
-		const s = await this.require(id)
+	async approveIntegration(id: string, expectedRootTaskId: string) {
+		const s = await this.require(id, expectedRootTaskId, true)
 		if (s.pendingApproval !== "integration") throw new Error("Integration is not awaiting approval")
 		delete s.pendingApproval
 		await this.finishIfReady(s)
@@ -387,8 +404,8 @@ export class OrchestrationService implements OrchestratorService {
 		await this.persist(s)
 	}
 
-	async retryNode(id: string, nid: string) {
-		const s = await this.require(id),
+	async retryNode(id: string, nid: string, expectedRootTaskId: string) {
+		const s = await this.require(id, expectedRootTaskId, true),
 			n = s.nodes.find((x) => x.nodeId === nid)
 		if (
 			!n ||
@@ -402,8 +419,8 @@ export class OrchestrationService implements OrchestratorService {
 		await this.persist(s)
 		await this.dispatch(id)
 	}
-	async cancel(id: string, reason?: string) {
-		const s = await this.require(id)
+	async cancel(id: string, expectedRootTaskId: string, reason?: string) {
+		const s = await this.require(id, expectedRootTaskId, true)
 		if (terminalRun.has(s.run.status)) return
 		s.run.cancellationRequested = true
 		s.run.status = "canceled"
@@ -710,13 +727,22 @@ export class OrchestrationService implements OrchestratorService {
 		s.capturedAt = Date.now()
 		await this.persistence.save(s)
 	}
-	private async require(id: string) {
+	private async require(id: string, expectedRootTaskId?: string, enforceOwnership = false) {
 		let s = this.snapshots.get(id)
 		if (!s) {
 			s = await this.persistence.load(id)
 			if (s) this.snapshots.set(id, s)
 		}
 		if (!s) throw new Error("Unknown orchestration run")
+		if (enforceOwnership && (!expectedRootTaskId || s.run.rootTaskId !== expectedRootTaskId)) {
+			this.adapters.logger?.("error", {
+				event: "orchestration_run_ownership_denied",
+				runId: id,
+				expectedRootTaskId,
+				actualRootTaskId: s.run.rootTaskId,
+			})
+			throw new OrchestrationOwnershipError(id)
+		}
 		return s
 	}
 }

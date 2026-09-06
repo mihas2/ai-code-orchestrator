@@ -157,8 +157,8 @@ describe("OrchestrationService", () => {
 		})
 		await recovered.recover()
 		expect(store.get().nodes[0].status).toBe("running")
-		await recovered.cancel("r")
-		await recovered.cancel("r")
+		await recovered.cancel("r", "root")
+		await recovered.cancel("r", "root")
 		expect(cancel).toHaveBeenCalledTimes(1)
 		expect(store.get().nodes.every((n) => ["canceled", "integrated", "failed"].includes(n.status))).toBe(true)
 	})
@@ -220,7 +220,7 @@ describe("OrchestrationService", () => {
 			result,
 			usage: { outputTokens: 1 },
 		})
-		await service.approveIntegration("r")
+		await service.approveIntegration("r", "root")
 		await service.dispatch("r")
 		await service.handleChildEvent({
 			runId: "r",
@@ -230,7 +230,7 @@ describe("OrchestrationService", () => {
 			result,
 			usage: { outputTokens: 1 },
 		})
-		await service.approveIntegration("r")
+		await service.approveIntegration("r", "root")
 		const snapshot = store.get()
 		expect(snapshot.run.status).toBe("completed")
 		expect(integration.integrate).toHaveBeenCalledTimes(2)
@@ -280,7 +280,7 @@ describe("OrchestrationService", () => {
 		await service.handleChildEvent({ runId: "r", nodeId: "a", idempotencyKey: "a-2", status: "integrated", result })
 		expect(["failed", "running"]).toContain(store.get().nodes[0].status)
 		expect(store.get().nodes[0].attempt).toBe(2)
-		await expect(service.retryNode("r", "a")).rejects.toThrow()
+		await expect(service.retryNode("r", "a", "root")).rejects.toThrow()
 	})
 
 	it("accepts minor and note findings without rework", async () => {
