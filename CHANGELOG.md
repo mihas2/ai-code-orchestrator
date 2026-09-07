@@ -1,5 +1,25 @@
 # AI Code Orchestrator
 
+## [1.2.0] - 2026-09-07
+
+### Added
+
+- Added the orchestration runtime with DAG-based task decomposition, delegation, parallel execution, retries, watchdogs, worker isolation, and configurable budget limits.
+- Added reviewer integration with persistent reviewer state and specialized reviewer role support.
+- Added transactional integration with rollback, write-scope and conflict detection, secret redaction, and run ownership checks.
+- Added orchestration runtime UI with DAG visualization, task hierarchy, retry and payload details, controls, and accessibility improvements.
+- Added comprehensive unit, integration, and end-to-end test coverage for orchestration, role assignment, persistence, security, and UI behavior.
+
+### Changed
+
+- Unified role configuration schemas and validation, including role-specific model assignment and prompt contracts.
+- Improved planner JSON parsing, persistence migration and event compaction, log aggregation, and orchestration diagnostics.
+
+### Fixed
+
+- Fixed orchestration recovery, timeout cleanup, invalid tool-use handling, and fail-closed profile behavior.
+- Fixed snapshot and delegation-related test regressions.
+
 ## 1.1.4
 
 ### Patch Changes

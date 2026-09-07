@@ -18,7 +18,7 @@ function findVersion(): string {
 		dir = path.dirname(dir)
 	}
 
-	return "1.1.4"
+	return "1.2.0"
 }
 
 export const VERSION = findVersion()
