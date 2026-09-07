@@ -1,5 +1,11 @@
 # AI Code Orchestrator
 
+## [1.2.1] - 2026-09-07
+
+### Fixed
+
+- Removed the duplicate model name from the task card header; the active model remains visible in the selector below the chat.
+
 ## [1.2.0] - 2026-09-07
 
 ### Added

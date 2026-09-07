@@ -38,7 +38,12 @@ vi.mock("@vscode/webview-ui-toolkit/react", () => ({
 // Create a variable to hold the mock state
 const mockExtensionState: {
 	apiConfiguration: ProviderSettings
-	currentTaskItem: { id: string } | null
+	currentTaskItem: { id: string; apiConfigName?: string } | null
+	runtimeApiConfigName?: string
+	listApiConfigMeta?: Array<{ name: string; modelId?: string; id: string }>
+	roleAssignments?: { roles?: Record<string, { modelId?: string }> }
+	runtimeMode?: string
+	mode?: string
 	clineMessages: any[]
 } = {
 	apiConfiguration: {
@@ -48,6 +53,9 @@ const mockExtensionState: {
 	} as ProviderSettings,
 	currentTaskItem: { id: "test-task-id" },
 	clineMessages: [],
+	runtimeApiConfigName: "global",
+	listApiConfigMeta: [],
+	mode: "code",
 }
 
 // Mock the ExtensionStateContext
@@ -107,6 +115,21 @@ describe("TaskHeader", () => {
 			</QueryClientProvider>,
 		)
 	}
+
+	it("does not display global or role-assigned model names", () => {
+		mockExtensionState.runtimeApiConfigName = "task-profile"
+		mockExtensionState.listApiConfigMeta = [{ id: "task-profile-id", name: "task-profile", modelId: "fallback" }]
+		mockExtensionState.roleAssignments = { roles: { code: { modelId: "gpt-5.6-sol" } } }
+		mockExtensionState.apiConfiguration = {
+			apiProvider: "anthropic",
+			apiModelId: "cc/claude-opus-4-8",
+		} as ProviderSettings
+
+		renderTaskHeader()
+
+		expect(screen.queryByText("gpt-5.6-sol")).not.toBeInTheDocument()
+		expect(screen.queryByText("cc/claude-opus-4-8")).not.toBeInTheDocument()
+	})
 
 	it("should display cost when totalCost is greater than 0", () => {
 		renderTaskHeader()
