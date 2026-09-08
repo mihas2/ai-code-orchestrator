@@ -23,8 +23,8 @@ import { codeParser } from "./parser"
 import { CacheManager } from "../cache-manager"
 import { generateNormalizedAbsolutePath, generateRelativeFilePath } from "../shared/get-relative-path"
 import { isPathInIgnoredDirectory } from "../../glob/ignore-utils"
-import { sanitizeErrorMessage } from "../shared/validation-helpers"
 import { Package } from "../../../shared/package"
+import { retryIndexApiOperation } from "../shared/api-retry"
 
 /**
  * Implementation of the file watcher interface
@@ -38,6 +38,7 @@ export class FileWatcher implements IFileWatcher {
 	private readonly BATCH_DEBOUNCE_DELAY_MS = 500
 	private readonly FILE_PROCESSING_CONCURRENCY_LIMIT = 10
 	private readonly batchSegmentThreshold: number
+	private readonly abortController = new AbortController()
 
 	private readonly _onDidStartBatchProcessing = new vscode.EventEmitter<string[]>()
 	private readonly _onBatchProgressUpdate = new vscode.EventEmitter<{
@@ -121,6 +122,7 @@ export class FileWatcher implements IFileWatcher {
 	 * Disposes the file watcher
 	 */
 	dispose(): void {
+		this.abortController.abort()
 		this.fileWatcher?.dispose()
 		if (this.batchProcessDebounceTimer) {
 			clearTimeout(this.batchProcessDebounceTimer)
@@ -314,7 +316,27 @@ export class FileWatcher implements IFileWatcher {
 		batchResults: FileProcessingResult[],
 		overallBatchError?: Error,
 	): Promise<Error | undefined> {
-		return overallBatchError
+		if (overallBatchError || pointsForBatchUpsert.length === 0) return overallBatchError
+
+		try {
+			await retryIndexApiOperation(() => this.vectorStore!.upsertPoints(pointsForBatchUpsert), {
+				signal: this.abortController.signal,
+				onRetry: ({ attempt, delayMs, reason }) =>
+					console.warn(
+						`[FileWatcher] Retry batch in ${Math.ceil(delayMs / 1000)}s (attempt ${attempt}): ${reason}`,
+					),
+			})
+			for (const file of successfullyProcessedForUpsert) {
+				await this.cacheManager.updateHash(file.path, file.newHash || "")
+				batchResults.push({ path: file.path, status: "success", newHash: file.newHash })
+			}
+			return undefined
+		} catch (error) {
+			const finalError = error instanceof Error ? error : new Error(String(error))
+			for (const file of successfullyProcessedForUpsert)
+				batchResults.push({ path: file.path, status: "error", error: finalError })
+			return finalError
+		}
 	}
 
 	private async processBatch(
@@ -465,7 +487,13 @@ export class FileWatcher implements IFileWatcher {
 			let pointsToUpsert: PointStruct[] = []
 			if (this.embedder && blocks.length > 0) {
 				const texts = blocks.map((block) => block.content)
-				const { embeddings } = await this.embedder.createEmbeddings(texts)
+				const { embeddings } = await retryIndexApiOperation(() => this.embedder!.createEmbeddings(texts), {
+					signal: this.abortController.signal,
+					onRetry: ({ attempt, delayMs, reason }) =>
+						console.warn(
+							`[FileWatcher] Retry embeddings in ${Math.ceil(delayMs / 1000)}s (attempt ${attempt}): ${reason}`,
+						),
+				})
 
 				pointsToUpsert = blocks.map((block, index) => {
 					const normalizedAbsolutePath = generateNormalizedAbsolutePath(block.file_path, this.workspacePath)

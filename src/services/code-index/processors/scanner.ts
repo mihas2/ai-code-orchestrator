@@ -19,14 +19,12 @@ import {
 	MAX_FILE_SIZE_BYTES,
 	MAX_LIST_FILES_LIMIT_CODE_INDEX,
 	BATCH_SEGMENT_THRESHOLD,
-	MAX_BATCH_RETRIES,
-	INITIAL_RETRY_DELAY_MS,
 	PARSING_CONCURRENCY,
 	BATCH_PROCESSING_CONCURRENCY,
 	MAX_PENDING_BATCHES,
 } from "../constants"
 import { isPathInIgnoredDirectory } from "../../glob/ignore-utils"
-import { sanitizeErrorMessage } from "../shared/validation-helpers"
+import { retryIndexApiOperation } from "../shared/api-retry"
 import { Package } from "../../../shared/package"
 
 export class DirectoryScanner implements IDirectoryScanner {
@@ -209,6 +207,7 @@ export class DirectoryScanner implements IDirectoryScanner {
 												scanWorkspace,
 												onError,
 												onBlocksIndexed,
+												signal,
 											),
 										)
 										activeBatchPromises.add(batchPromise)
@@ -294,7 +293,15 @@ export class DirectoryScanner implements IDirectoryScanner {
 
 				// Queue final batch processing
 				const batchPromise = batchLimiter(() =>
-					this.processBatch(batchBlocks, batchTexts, batchFileInfos, scanWorkspace, onError, onBlocksIndexed),
+					this.processBatch(
+						batchBlocks,
+						batchTexts,
+						batchFileInfos,
+						scanWorkspace,
+						onError,
+						onBlocksIndexed,
+						signal,
+					),
 				)
 				activeBatchPromises.add(batchPromise)
 
@@ -375,106 +382,58 @@ export class DirectoryScanner implements IDirectoryScanner {
 		scanWorkspace: string,
 		onError?: (error: Error) => void,
 		onBlocksIndexed?: (indexedCount: number) => void,
+		signal?: AbortSignal,
 	): Promise<void> {
 		if (batchBlocks.length === 0) return
 
-		let attempts = 0
-		let success = false
-		let lastError: Error | null = null
-
-		while (attempts < MAX_BATCH_RETRIES && !success) {
-			attempts++
-			try {
-				// --- Deletion Step ---
-				const uniqueFilePaths = [
-					...new Set(
-						batchFileInfos
-							.filter((info) => !info.isNew) // Only modified files (not new)
-							.map((info) => info.filePath),
-					),
-				]
-				if (uniqueFilePaths.length > 0) {
-					try {
-						await this.qdrantClient.deletePointsByMultipleFilePaths(uniqueFilePaths)
-					} catch (deleteError: any) {
-						const errorMessage = deleteError instanceof Error ? deleteError.message : String(deleteError)
-
-						console.error(
-							`[DirectoryScanner] Failed to delete points for ${uniqueFilePaths.length} files before upsert in workspace ${scanWorkspace}:`,
-							deleteError,
-						)
-
-						// Re-throw with workspace context
-						throw new Error(
-							`Failed to delete points for ${uniqueFilePaths.length} files. Workspace: ${scanWorkspace}. ${errorMessage}`,
-							{ cause: deleteError },
-						)
+		try {
+			await retryIndexApiOperation(
+				async () => {
+					const uniqueFilePaths = [
+						...new Set(batchFileInfos.filter((info) => !info.isNew).map((info) => info.filePath)),
+					]
+					if (uniqueFilePaths.length > 0) {
+						try {
+							await this.qdrantClient.deletePointsByMultipleFilePaths(uniqueFilePaths)
+						} catch (error) {
+							throw new Error(`Failed to delete points in workspace ${scanWorkspace}`, { cause: error })
+						}
 					}
-				}
-				// --- End Deletion Step ---
 
-				// Create embeddings for batch
-				const { embeddings } = await this.embedder.createEmbeddings(batchTexts)
+					const { embeddings } = await this.embedder.createEmbeddings(batchTexts)
+					const points = batchBlocks.map((block, index) => {
+						const normalizedAbsolutePath = generateNormalizedAbsolutePath(block.file_path, scanWorkspace)
+						return {
+							id: uuidv5(block.segmentHash, QDRANT_CODE_BLOCK_NAMESPACE),
+							vector: embeddings[index],
+							payload: {
+								filePath: generateRelativeFilePath(normalizedAbsolutePath, scanWorkspace),
+								codeChunk: block.content,
+								startLine: block.start_line,
+								endLine: block.end_line,
+								segmentHash: block.segmentHash,
+							},
+						}
+					})
+					await this.qdrantClient.upsertPoints(points)
+				},
+				{
+					signal,
+					onRetry: ({ attempt, delayMs, reason }) =>
+						console.warn(
+							`[DirectoryScanner] Retry batch in ${Math.ceil(delayMs / 1000)}s (attempt ${attempt}): ${reason}`,
+						),
+				},
+			)
 
-				// Prepare points for Qdrant
-				const points = batchBlocks.map((block, index) => {
-					const normalizedAbsolutePath = generateNormalizedAbsolutePath(block.file_path, scanWorkspace)
-
-					// Use segmentHash for unique ID generation to handle multiple segments from same line
-					const pointId = uuidv5(block.segmentHash, QDRANT_CODE_BLOCK_NAMESPACE)
-
-					return {
-						id: pointId,
-						vector: embeddings[index],
-						payload: {
-							filePath: generateRelativeFilePath(normalizedAbsolutePath, scanWorkspace),
-							codeChunk: block.content,
-							startLine: block.start_line,
-							endLine: block.end_line,
-							segmentHash: block.segmentHash,
-						},
-					}
-				})
-
-				// Upsert points to Qdrant
-				await this.qdrantClient.upsertPoints(points)
-				onBlocksIndexed?.(batchBlocks.length)
-
-				// Update hashes for successfully processed files in this batch
-				for (const fileInfo of batchFileInfos) {
-					await this.cacheManager.updateHash(fileInfo.filePath, fileInfo.fileHash)
-				}
-				success = true
-			} catch (error) {
-				lastError = error as Error
-				console.error(
-					`[DirectoryScanner] Error processing batch (attempt ${attempts}) in workspace ${scanWorkspace}:`,
-					error,
-				)
-
-				if (attempts < MAX_BATCH_RETRIES) {
-					const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempts - 1)
-					await new Promise((resolve) => setTimeout(resolve, delay))
-				}
-			}
-		}
-
-		if (!success && lastError) {
-			console.error(`[DirectoryScanner] Failed to process batch after ${MAX_BATCH_RETRIES} attempts`)
-			if (onError) {
-				// Preserve the original error message from embedders which now have detailed i18n messages
-				const errorMessage = lastError.message || "Unknown error"
-
-				// For other errors, provide context
-				onError(
-					new Error(
-						t("embeddings:scanner.failedToProcessBatchWithError", {
-							maxRetries: MAX_BATCH_RETRIES,
-							errorMessage,
-						}),
-					),
-				)
-			}
+			onBlocksIndexed?.(batchBlocks.length)
+			for (const fileInfo of batchFileInfos)
+				await this.cacheManager.updateHash(fileInfo.filePath, fileInfo.fileHash)
+		} catch (error) {
+			if (error instanceof DOMException && error.name === "AbortError") throw error
+			const finalError = error instanceof Error ? error : new Error(String(error))
+			console.error("[DirectoryScanner] Failed to process batch:", finalError)
+			onError?.(finalError)
 		}
 	}
 }
