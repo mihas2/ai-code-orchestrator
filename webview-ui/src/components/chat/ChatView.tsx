@@ -85,7 +85,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		soundVolume,
 		messageQueue = [],
 		showWorktreesInHomeScreen,
-		orchestrationSnapshot,
 	} = useExtensionState()
 
 	// Show a WarningRow when the user sends a message with a retired provider.
@@ -1671,7 +1670,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			{task ? (
 				<>
 					<TaskHeader
-						currentTaskId={currentTaskId ?? currentTaskItem?.id}
 						task={task}
 						tokensIn={apiMetrics.totalTokensIn}
 						tokensOut={apiMetrics.totalTokensOut}
@@ -1700,11 +1698,9 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 								: undefined
 						}
 						contextTokens={apiMetrics.contextTokens}
-						taskHistory={taskHistory}
 						buttonsDisabled={sendingDisabled}
 						handleCondenseContext={handleCondenseContext}
 						todos={latestTodos}
-						orchestrationSnapshot={orchestrationSnapshot}
 					/>
 
 					{checkpointWarning && (

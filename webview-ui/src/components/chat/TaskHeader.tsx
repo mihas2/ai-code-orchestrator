@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next"
 import { ChevronUp, ChevronDown, HardDriveDownload, HardDriveUpload, FoldVertical, ArrowLeft } from "lucide-react"
 import prettyBytes from "pretty-bytes"
 
-import type { ClineMessage, HistoryItem } from "@ai-code-orchestrator/types"
+import type { ClineMessage } from "@ai-code-orchestrator/types"
 
 import { getModelMaxOutputTokens } from "@aico/api"
 
@@ -21,12 +21,9 @@ import { ContextWindowProgress } from "./ContextWindowProgress"
 import { Mention } from "./Mention"
 import { TodoListDisplay } from "./TodoListDisplay"
 import { LucideIconButton } from "./LucideIconButton"
-import OrchestrationPanel from "../orchestration/OrchestrationPanel"
 
 export interface TaskHeaderProps {
 	task: ClineMessage
-	/** Identity of the task currently displayed by ChatView; task messages have no id. */
-	currentTaskId?: string
 	tokensIn: number
 	tokensOut: number
 	cacheWrites?: number
@@ -35,34 +32,15 @@ export interface TaskHeaderProps {
 	aggregatedCost?: number
 	hasSubtasks?: boolean
 	parentTaskId?: string
-	taskHistory?: HistoryItem[]
 	costBreakdown?: string
 	contextTokens: number
 	buttonsDisabled: boolean
 	handleCondenseContext: (taskId: string) => void
 	todos?: any[]
-	orchestrationSnapshot?: {
-		run: {
-			runId: string
-			rootTaskId?: string
-			status: string
-			budget?: {
-				tokenLimit?: number
-				used?: {
-					inputTokens?: number
-					outputTokens?: number
-					cachedInputTokens?: number
-					reasoningTokens?: number
-				}
-			}
-		}
-		nodes: Array<Record<string, unknown>>
-	}
 }
 
 const TaskHeader = ({
 	task,
-	currentTaskId,
 	tokensIn,
 	tokensOut,
 	cacheWrites,
@@ -71,23 +49,14 @@ const TaskHeader = ({
 	aggregatedCost,
 	hasSubtasks,
 	parentTaskId,
-	taskHistory = [],
 	costBreakdown,
 	contextTokens,
 	buttonsDisabled,
 	handleCondenseContext,
 	todos,
-	orchestrationSnapshot,
 }: TaskHeaderProps) => {
 	const { t } = useTranslation()
 	const { apiConfiguration, currentTaskItem } = useExtensionState()
-	const relatedTasks = useMemo(() => {
-		if (!currentTaskItem) return []
-		const ids = new Set(currentTaskItem.childIds ?? [])
-		return taskHistory.filter((item) => ids.has(item.id))
-	}, [currentTaskItem, taskHistory])
-	const taskRole = currentTaskItem?.mode
-	const taskModel = currentTaskItem?.modelId
 	const { id: modelId, info: model } = useSelectedModel(apiConfiguration)
 	const [isTaskExpanded, setIsTaskExpanded] = useState(false)
 
@@ -449,45 +418,6 @@ const TaskHeader = ({
 							</table>
 						</div>
 					</>
-				)}
-				{(isSubtask || relatedTasks.length > 0) && (
-					<div
-						className="pt-1 text-xs"
-						data-testid="task-lineage"
-						onClick={(event) => event.stopPropagation()}>
-						<div className="flex flex-wrap items-center gap-2 opacity-80">
-							{isSubtask && (
-								<span>{t("chat:task.role", { role: taskRole || t("chat:task.unknown") })}</span>
-							)}
-							{taskModel && <span>{t("chat:task.model", { model: taskModel })}</span>}
-							{currentTaskItem?.status && (
-								<span>{t("chat:task.status", { status: currentTaskItem.status })}</span>
-							)}
-							{isSubtask && <span>{t("chat:task.budgetUnset")}</span>}
-						</div>
-						{relatedTasks.length > 0 && (
-							<div className="mt-1 flex flex-col gap-1">
-								<span className="font-medium">{t("chat:task.subtasks")}</span>
-								{relatedTasks.map((child) => (
-									<button
-										key={child.id}
-										type="button"
-										className="flex items-center justify-between text-left opacity-80 hover:opacity-100"
-										onClick={() => vscode.postMessage({ type: "showTaskWithId", text: child.id })}>
-										<span className="truncate">{child.task}</span>
-										<span className="ml-2 shrink-0">
-											{child.status || t("chat:task.statusUnknown")}
-										</span>
-									</button>
-								))}
-							</div>
-						)}
-					</div>
-				)}
-				{orchestrationSnapshot && currentTaskId && (
-					<div className="pt-1" onClick={(event) => event.stopPropagation()}>
-						<OrchestrationPanel snapshot={orchestrationSnapshot} currentTaskId={currentTaskId} />
-					</div>
 				)}
 				{/* Todo list - always shown at bottom when todos exist */}
 				{hasTodos && <TodoListDisplay todos={todos ?? (task as any)?.tool?.todos ?? []} />}

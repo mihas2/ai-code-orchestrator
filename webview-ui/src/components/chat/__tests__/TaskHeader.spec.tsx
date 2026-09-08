@@ -42,7 +42,6 @@ const mockExtensionState: {
 	runtimeApiConfigName?: string
 	listApiConfigMeta?: Array<{ name: string; modelId?: string; id: string }>
 	roleAssignments?: { roles?: Record<string, { modelId?: string }> }
-	orchestrationSnapshot?: unknown
 	runtimeMode?: string
 	mode?: string
 	clineMessages: any[]
@@ -99,11 +98,9 @@ vi.mock("@aico/api", () => ({
 describe("TaskHeader", () => {
 	beforeEach(() => {
 		mockExtensionState.currentTaskItem = { id: "test-task-id" }
-		mockExtensionState.orchestrationSnapshot = undefined
 	})
 	const defaultProps: TaskHeaderProps = {
 		task: { type: "say", ts: Date.now(), text: "Test task", images: [] },
-		currentTaskId: "test-task-id",
 		tokensIn: 100,
 		tokensOut: 50,
 		totalCost: 0.05,
@@ -122,127 +119,7 @@ describe("TaskHeader", () => {
 		)
 	}
 
-	it("renders orchestration details for the root task, including child budget", () => {
-		const snapshot = {
-			run: { runId: "run-root", rootTaskId: "test-task-id", status: "running", budget: { tokenLimit: 1200 } },
-			nodes: [
-				{
-					nodeId: "child-node",
-					taskId: "child-task",
-					title: "Worker",
-					status: "running",
-					inputContract: { tokenBudget: 500 },
-				},
-			],
-		}
-		renderTaskHeader({ orchestrationSnapshot: snapshot })
-		expect(screen.getByRole("region", { name: "Orchestration" })).toBeInTheDocument()
-		expect(screen.getByText("Worker")).toBeInTheDocument()
-		expect(screen.getByText("Budget 500")).toBeInTheDocument()
-	})
-
-	it("renders orchestration for a node-owned child but not an unrelated task", () => {
-		const snapshot = {
-			run: { runId: "run-child", rootTaskId: "root-task", status: "running" },
-			nodes: [
-				{
-					nodeId: "review-node",
-					taskId: "child-task",
-					title: "Reviewer",
-					role: "reviewer",
-					status: "running",
-					inputContract: { tokenBudget: 500 },
-				},
-			],
-		}
-		mockExtensionState.currentTaskItem = { id: "child-task" }
-		const { rerender } = renderTaskHeader({ currentTaskId: "child-task", orchestrationSnapshot: snapshot })
-		expect(screen.getByText("Reviewer")).toBeInTheDocument()
-		expect(screen.getByText("chat:orchestration.partOfRun")).toBeInTheDocument()
-
-		mockExtensionState.currentTaskItem = { id: "unrelated-child" }
-		rerender(
-			<QueryClientProvider client={queryClient}>
-				<TaskHeader
-					{...defaultProps}
-					task={{ ...defaultProps.task, text: "Unrelated task" }}
-					currentTaskId="unrelated-child"
-					orchestrationSnapshot={snapshot}
-				/>
-			</QueryClientProvider>,
-		)
-		expect(screen.queryByRole("region", { name: "Orchestration" })).not.toBeInTheDocument()
-		mockExtensionState.currentTaskItem = { id: "test-task-id" }
-	})
-
-	it("does not attach a stale snapshot after navigation", () => {
-		mockExtensionState.currentTaskItem = { id: "new-task" }
-		renderTaskHeader({
-			currentTaskId: "new-task",
-			orchestrationSnapshot: {
-				run: { runId: "stale", rootTaskId: "old-root", status: "completed" },
-				nodes: [{ nodeId: "old-node", taskId: "old-child", status: "completed" }],
-			},
-		})
-		expect(screen.queryByRole("region", { name: "Orchestration" })).not.toBeInTheDocument()
-		mockExtensionState.currentTaskItem = { id: "test-task-id" }
-	})
-
-	it("renders orchestration only for the current root task", () => {
-		const snapshot = {
-			run: { runId: "run-1", rootTaskId: "test-task-id", status: "running" },
-			nodes: [{ nodeId: "node", title: "Worker", status: "running" }],
-		}
-		const { rerender } = renderTaskHeader({ orchestrationSnapshot: snapshot })
-		expect(screen.getByRole("region", { name: "Orchestration" })).toBeInTheDocument()
-
-		mockExtensionState.currentTaskItem = { id: "another-task" }
-		rerender(
-			<QueryClientProvider client={queryClient}>
-				<TaskHeader
-					{...defaultProps}
-					task={{ ...defaultProps.task, text: "Another task" }}
-					currentTaskId="another-task"
-					orchestrationSnapshot={snapshot}
-				/>
-			</QueryClientProvider>,
-		)
-		expect(screen.queryByRole("region", { name: "Orchestration" })).not.toBeInTheDocument()
-		mockExtensionState.currentTaskItem = { id: "test-task-id" }
-	})
-
-	it("does not display global or role-assigned model names", () => {
-		mockExtensionState.runtimeApiConfigName = "task-profile"
-		mockExtensionState.listApiConfigMeta = [{ id: "task-profile-id", name: "task-profile", modelId: "fallback" }]
-		mockExtensionState.roleAssignments = { roles: { code: { modelId: "gpt-5.6-sol" } } }
-		mockExtensionState.apiConfiguration = {
-			apiProvider: "anthropic",
-			apiModelId: "cc/claude-opus-4-8",
-		} as ProviderSettings
-
-		renderTaskHeader()
-
-		expect(screen.queryByText("gpt-5.6-sol")).not.toBeInTheDocument()
-		expect(screen.queryByText("cc/claude-opus-4-8")).not.toBeInTheDocument()
-	})
-
-	it("renders ordinary delegated task lineage from task history without a DAG snapshot", () => {
-		mockExtensionState.currentTaskItem = {
-			id: "parent-task",
-			childIds: ["child-task"],
-		} as any
-		renderTaskHeader({
-			currentTaskId: "parent-task",
-			taskHistory: [
-				{ id: "child-task", task: "Исследовать и исправить UI ошибок провайдера", status: "active" },
-			] as any,
-		})
-		expect(screen.getByTestId("task-lineage")).toBeInTheDocument()
-		expect(screen.getByText("Исследовать и исправить UI ошибок провайдера")).toBeInTheDocument()
-		expect(screen.getByText("active")).toBeInTheDocument()
-	})
-
-	it("renders task-scoped role, model, status and unset budget for an ordinary child", () => {
+	it("keeps collapsed task details compact", () => {
 		mockExtensionState.currentTaskItem = {
 			id: "child-task",
 			parentTaskId: "parent-task",
@@ -250,11 +127,17 @@ describe("TaskHeader", () => {
 			modelId: "gpt-child",
 			status: "active",
 		} as any
-		renderTaskHeader({ currentTaskId: "child-task", parentTaskId: "parent-task" })
-		expect(screen.getByText("chat:task.role")).toBeInTheDocument()
-		expect(screen.getByText("chat:task.model")).toBeInTheDocument()
-		expect(screen.getByText("chat:task.status")).toBeInTheDocument()
-		expect(screen.getByText("chat:task.budgetUnset")).toBeInTheDocument()
+		const taskText = "A very long task description that should be clamped when the header is collapsed"
+		const { container } = renderTaskHeader({
+			parentTaskId: "parent-task",
+			task: { ...defaultProps.task, text: taskText },
+		})
+
+		expect(screen.queryByTestId("task-lineage")).not.toBeInTheDocument()
+		expect(screen.queryByText(/gpt-child|active|debug/)).not.toBeInTheDocument()
+		expect(screen.queryByText(/Subtasks|subtasks|подзадач/i)).not.toBeInTheDocument()
+		expect(screen.queryByRole("region", { name: "Orchestration" })).not.toBeInTheDocument()
+		expect(container.querySelector(".line-clamp-2")).toBeInTheDocument()
 	})
 
 	it("should display cost when totalCost is greater than 0", () => {
