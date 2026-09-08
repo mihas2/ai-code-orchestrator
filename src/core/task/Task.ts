@@ -2546,7 +2546,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				"api_req_started",
 				JSON.stringify({
 					apiProtocol,
-				}),
+					provider: apiProvider,
+					modelId: this.api.getModel().id,
+				} satisfies ClineApiReqInfo),
 			)
 
 			const provider = this.providerRef.deref()
@@ -4328,19 +4330,16 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				return
 			}
 
-			// Build header text; fall back to error message if none provided
-			let headerText
-			if (error.status) {
-				// Include both status code (for ChatRow parsing) and detailed message (for error details)
-				// Format: "<status>\n<message>" allows ChatRow to extract status via parseInt(text.substring(0,3))
-				// while preserving the full error message in errorDetails for debugging
-				const errorMessage = error?.message || "Unknown error"
-				headerText = `${error.status}\n${errorMessage}`
-			} else if (error?.message) {
-				headerText = error.message
-			} else {
-				headerText = "Unknown error"
-			}
+			// Preserve provider/proxy details. Stringifying is only a fallback when no message exists.
+			const serialized = JSON.stringify(serializeError(error), null, 2)
+			const errorMessage =
+				typeof error?.message === "string" && error.message.trim()
+					? error.message.trim()
+					: serialized !== "{}"
+						? serialized
+						: "Unknown error"
+			const headerTextWithStatus = error?.status ? `${error.status}\n${errorMessage}` : errorMessage
+			let headerText = headerTextWithStatus
 
 			headerText = headerText ? `${headerText}\n` : ""
 

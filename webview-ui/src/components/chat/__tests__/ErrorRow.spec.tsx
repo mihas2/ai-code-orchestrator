@@ -79,4 +79,27 @@ describe("ErrorRow diagnostics download", () => {
 		// Timestamp is generated at runtime, but should be a string
 		expect(typeof payload.values.timestamp).toBe("string")
 	})
+	it("uses the task route instead of the currently selected profile and bounds long content", () => {
+		const longError = JSON.stringify({ error: "x".repeat(5000) })
+		render(
+			<ErrorRow
+				type="api_failure"
+				message="Provider failed"
+				errorDetails={longError}
+				provider="openai"
+				modelId="task-model"
+			/>,
+		)
+
+		fireEvent.click(screen.getByRole("button", { name: "Error Details" }))
+
+		const dialog = screen.getByTestId("error-details-dialog")
+		expect(dialog).toHaveClass("max-h-[calc(100vh-2rem)]", "overflow-hidden", "min-w-0")
+		expect(dialog.textContent).toContain("Provider: openai")
+		expect(dialog.textContent).toContain("Model: task-model")
+		expect(dialog.textContent).not.toContain("Model: test-model")
+		expect(dialog.querySelector("pre")).toHaveClass("break-all", "max-w-full", "min-w-0")
+		expect(screen.getByRole("button", { name: "Copy to Clipboard" })).toBeVisible()
+		expect(screen.getByRole("button", { name: "Get detailed error info" })).toBeVisible()
+	})
 })

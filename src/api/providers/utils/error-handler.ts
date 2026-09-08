@@ -48,7 +48,13 @@ export function handleProviderError(
 
 	if (error instanceof Error) {
 		const anyErr = error as any
-		const msg = anyErr?.error?.metadata?.raw || error.message || ""
+		const raw = anyErr?.error?.metadata?.raw
+		const msg =
+			typeof raw === "string" && raw.trim()
+				? raw
+				: typeof error.message === "string" && error.message.trim()
+					? error.message
+					: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
 
 		// Log the original error details for debugging
 		console.error(`[${providerName}] API error:`, {
@@ -92,12 +98,16 @@ export function handleProviderError(
 		return wrapped
 	}
 
-	// Non-Error: wrap with provider-specific prefix
+	// Non-Error: preserve structured provider payload instead of reducing it to "[object Object]".
 	console.error(`[${providerName}] Non-Error exception:`, error)
-	const wrapped = new Error(`${providerName} ${messagePrefix} error: ${String(error)}`)
+	const anyErr = error as any
+	const details =
+		typeof anyErr?.message === "string" && anyErr.message.trim()
+			? anyErr.message
+			: JSON.stringify(error, null, 2) || String(error)
+	const wrapped = new Error(`${providerName} ${messagePrefix} error: ${details}`)
 
 	// Also try to preserve status for non-Error exceptions (e.g., plain objects with status)
-	const anyErr = error as any
 	if (typeof anyErr?.status === "number") {
 		;(wrapped as any).status = anyErr.status
 	}

@@ -806,6 +806,8 @@ export interface ClineAskUseMcpServer {
 
 export interface ClineApiReqInfo {
 	request?: string
+	provider?: string
+	modelId?: string
 	tokensIn?: number
 	tokensOut?: number
 	cacheWrites?: number
@@ -813,6 +815,8 @@ export interface ClineApiReqInfo {
 	cost?: number
 	cancelReason?: ClineApiReqCancelReason
 	streamingFailedMessage?: string
+	/** Exact provider error retained for diagnostics and retry UI. */
+	errorDetails?: string
 	apiProtocol?: "anthropic" | "openai"
 }
 

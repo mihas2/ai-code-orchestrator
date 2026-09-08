@@ -252,6 +252,17 @@ export const ChatRowContent = ({
 		return [undefined, undefined, undefined]
 	}, [message.text, message.say])
 
+	const requestRoute = useMemo(() => {
+		const currentIndex = clineMessages.findIndex((candidate) => candidate.ts === message.ts)
+		for (let index = currentIndex >= 0 ? currentIndex : clineMessages.length - 1; index >= 0; index--) {
+			const candidate = clineMessages[index]
+			if (candidate.say !== "api_req_started" || !candidate.text) continue
+			const info = safeJsonParse<ClineApiReqInfo>(candidate.text)
+			if (info?.provider || info?.modelId) return info
+		}
+		return undefined
+	}, [clineMessages, message.ts])
+
 	// When resuming task, last won't be api_req_failed but a resume_task
 	// message, so api_req_started will show loading spinner. That's why we just
 	// remove the last api_req_started that failed without streaming anything.
@@ -1086,22 +1097,24 @@ export const ChatRowContent = ({
 								<ErrorRow
 									type="api_failure"
 									message={apiRequestFailedMessage || apiReqStreamingFailedMessage || ""}
+									provider={requestRoute?.provider}
+									modelId={requestRoute?.modelId}
 									docsURL={
 										apiRequestFailedMessage?.toLowerCase().includes("powershell")
 											? "https://github.com/cline/cline/wiki/TroubleShooting-%E2%80%90-%22PowerShell-is-not-recognized-as-an-internal-or-external-command%22"
 											: undefined
 									}
-									errorDetails={apiReqStreamingFailedMessage}
+									errorDetails={apiReqStreamingFailedMessage || apiRequestFailedMessage}
 								/>
 							)}
 						</>
 					)
 				case "api_req_retry_delayed":
 					let body = t(`chat:apiRequest.failed`)
-					let retryInfo, rawError, code, docsURL
+					let retryInfo, rawError, code
 					if (message.text !== undefined) {
-						// Try to show richer error message for that code, if available
-						const potentialCode = parseInt(message.text.substring(0, 3))
+						rawError = message.text.replace(/<retry_timer>(.*?)<\/retry_timer>/, "").trim()
+						const potentialCode = parseInt(rawError.substring(0, 3))
 						if (!isNaN(potentialCode) && potentialCode >= 400) {
 							code = potentialCode
 							const stringForError = `chat:apiRequest.errorMessage.${code}`
@@ -1115,11 +1128,13 @@ export const ChatRowContent = ({
 								// 		break;
 								// }
 							} else {
-								// Non-HTTP-status-code error message - store full text as errorDetails
-								body = t("chat:apiRequest.errorMessage.unknown")
-								docsURL =
-									"https://github.com/AIOrchestrator/ai-code-orchestrator/issues/new?template=bug_report.yml"
+								// Status is metadata; display the exact provider message that follows it.
+								body =
+									rawError.replace(/^\d{3}\s*/, "").trim() ||
+									t("chat:apiRequest.errorMessage.unknown")
 							}
+						} else {
+							body = rawError || t("chat:apiRequest.errorMessage.unknown")
 						}
 
 						// This isn't pretty, but since the retry logic happens at a lower level
@@ -1127,7 +1142,6 @@ export const ChatRowContent = ({
 						// retry information using this "tag" as a convention
 						const retryTimerMatch = message.text.match(/<retry_timer>(.*?)<\/retry_timer>/)
 						const retryTimer = retryTimerMatch && retryTimerMatch[1] ? parseInt(retryTimerMatch[1], 10) : 0
-						rawError = message.text.replace(/<retry_timer>(.*?)<\/retry_timer>/, "").trim()
 						retryInfo = retryTimer > 0 && (
 							<p
 								className={cn(
@@ -1144,9 +1158,10 @@ export const ChatRowContent = ({
 							type="api_req_retry_delayed"
 							code={code}
 							message={body}
-							docsURL={docsURL}
 							additionalContent={retryInfo}
 							errorDetails={rawError}
+							provider={requestRoute?.provider}
+							modelId={requestRoute?.modelId}
 						/>
 					)
 				case "api_req_rate_limit_wait": {

@@ -83,20 +83,28 @@ describe("ChatRow - rate limit wait", () => {
 		expect(container.firstChild).toBeNull()
 	})
 
-	it("links unknown API errors to GitHub issues", () => {
+	it("renders the concrete provider error instead of replacing it with a GitHub prompt", () => {
 		const message: any = {
 			type: "say",
 			say: "api_req_retry_delayed",
 			ts: Date.now(),
-			text: "599 Provider returned an unknown error",
+			text: "503\nOpenAI completion error: 503 The selected model is temporarily unavailable. Try again later. Retry in 60s.",
 		}
 
 		renderChatRow(message)
 
+		expect(
+			screen.getByText(
+				"OpenAI completion error: 503 The selected model is temporarily unavailable. Try again later. Retry in 60s.",
+			),
+		).toBeInTheDocument()
+		expect(screen.queryByText("Unknown API error. Please report this on GitHub.")).not.toBeInTheDocument()
+		expect(screen.queryByRole("link", { name: /Docs/ })).not.toBeInTheDocument()
+	})
+
+	it("uses the generic fallback only when error details are absent", () => {
+		renderChatRow({ type: "say", say: "api_req_retry_delayed", ts: Date.now(), text: "" })
+
 		expect(screen.getByText("Unknown API error. Please report this on GitHub.")).toBeInTheDocument()
-		expect(screen.getByRole("link", { name: /Docs/ })).toHaveAttribute(
-			"href",
-			"https://github.com/AIOrchestrator/ai-code-orchestrator/issues/new?template=bug_report.yml",
-		)
 	})
 })

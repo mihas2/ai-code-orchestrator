@@ -69,6 +69,8 @@ export interface ErrorRowProps {
 	code?: number
 	docsURL?: string // Optional documentation link
 	errorDetails?: string // Optional detailed error message shown in modal
+	provider?: string
+	modelId?: string
 }
 
 /**
@@ -88,6 +90,8 @@ export const ErrorRow = memo(
 		docsURL,
 		code,
 		errorDetails,
+		provider: taskProvider,
+		modelId: taskModelId,
 	}: ErrorRowProps) => {
 		const { t } = useTranslation()
 		const [isExpanded, setIsExpanded] = useState(defaultExpanded)
@@ -96,7 +100,9 @@ export const ErrorRow = memo(
 		const [showDetailsCopySuccess, setShowDetailsCopySuccess] = useState(false)
 		const { copyWithFeedback } = useCopyToClipboard()
 		const { version, apiConfiguration } = useExtensionState()
-		const { provider, id: modelId } = useSelectedModel(apiConfiguration)
+		const selectedModel = useSelectedModel(apiConfiguration)
+		const provider = taskProvider ?? selectedModel.provider
+		const modelId = taskModelId ?? selectedModel.id
 
 		const usesProxy = PROVIDERS.find((p) => p.value === provider)?.proxy ?? false
 
@@ -289,12 +295,14 @@ export const ErrorRow = memo(
 				{/* Error Details Dialog */}
 				{formattedErrorDetails && (
 					<Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-						<DialogContent className="max-w-2xl">
+						<DialogContent
+							data-testid="error-details-dialog"
+							className="max-w-2xl max-h-[calc(100vh-2rem)] min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden p-4 sm:p-6">
 							<DialogHeader>
 								<DialogTitle>{t("chat:errorDetails.title")}</DialogTitle>
 							</DialogHeader>
-							<div className="max-h-96 overflow-auto bg-vscode-editor-background rounded-xl border border-vscode-editorGroup-border">
-								<pre className="font-mono text-sm whitespace-pre-wrap break-words bg-transparent px-3">
+							<div className="min-h-0 min-w-0 overflow-auto bg-vscode-editor-background rounded-xl border border-vscode-editorGroup-border">
+								<pre className="font-mono text-sm whitespace-pre-wrap break-all bg-transparent px-3 max-w-full min-w-0">
 									{formattedErrorDetails}
 								</pre>
 								{usesProxy && (
@@ -306,7 +314,7 @@ export const ErrorRow = memo(
 									</div>
 								)}
 							</div>
-							<DialogFooter>
+							<DialogFooter className="shrink-0 flex-col sm:flex-row">
 								<Button variant="secondary" className="w-full" onClick={handleCopyDetails}>
 									{showDetailsCopySuccess ? (
 										<>
