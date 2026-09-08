@@ -19,7 +19,12 @@
 		"shareSuccessPublic": "Public link copied to clipboard",
 		"openApiHistory": "Open API History",
 		"openUiHistory": "Open UI History",
-		"backToParentTask": "Parent task"
+		"backToParentTask": "Parent task",
+		"orchestration": {
+			"taskRole": "task",
+			"budget": "Budget: {{count}} tokens",
+			"partOfRun": "Part of orchestration run {{runId}}"
+		}
 	},
 	"unpin": "Unpin",
 	"pin": "Pin",

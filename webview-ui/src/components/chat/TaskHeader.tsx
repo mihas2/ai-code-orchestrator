@@ -166,13 +166,17 @@ const TaskHeader = ({
 
 					setIsTaskExpanded(!isTaskExpanded)
 				}}>
-				<div className="flex justify-between items-center gap-0">
-					<div className="flex items-center select-none grow min-w-0">
-						<div className="grow min-w-0">
+				<div className="flex justify-between items-start gap-0">
+					<div className="flex items-start select-none grow min-w-0">
+						<div
+							className={cn(
+								"grow min-w-0",
+								!isTaskExpanded && "max-h-[2.5rem] overflow-hidden leading-5",
+							)}>
 							{isTaskExpanded && <span className="font-bold">{t("chat:task.title")}</span>}
 							{!isTaskExpanded && <Mention text={task.text} />}
 						</div>
-						<div className="flex items-center shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+						<div className="flex items-start shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
 							<StandardTooltip content={isTaskExpanded ? t("chat:task.collapse") : t("chat:task.expand")}>
 								<button
 									onClick={() => setIsTaskExpanded(!isTaskExpanded)}
@@ -437,9 +441,9 @@ const TaskHeader = ({
 						</div>
 					</>
 				)}
-				{orchestrationSnapshot?.run.rootTaskId === currentTaskItem?.id && (
+				{orchestrationSnapshot && currentTaskItem && (
 					<div className="pt-1" onClick={(event) => event.stopPropagation()}>
-						<OrchestrationPanel snapshot={orchestrationSnapshot} />
+						<OrchestrationPanel snapshot={orchestrationSnapshot} currentTaskId={currentTaskItem.id} />
 					</div>
 				)}
 				{/* Todo list - always shown at bottom when todos exist */}

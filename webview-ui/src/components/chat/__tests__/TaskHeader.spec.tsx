@@ -121,6 +121,51 @@ describe("TaskHeader", () => {
 		)
 	}
 
+	it("renders orchestration for a node-owned child but not an unrelated task", () => {
+		const snapshot = {
+			run: { runId: "run-child", rootTaskId: "root-task", status: "running" },
+			nodes: [
+				{
+					nodeId: "review-node",
+					taskId: "child-task",
+					title: "Reviewer",
+					role: "reviewer",
+					status: "running",
+					inputContract: { tokenBudget: 500 },
+				},
+			],
+		}
+		mockExtensionState.currentTaskItem = { id: "child-task" }
+		const { rerender } = renderTaskHeader({ orchestrationSnapshot: snapshot })
+		expect(screen.getByText("Reviewer")).toBeInTheDocument()
+		expect(screen.getByText("chat:orchestration.partOfRun")).toBeInTheDocument()
+
+		mockExtensionState.currentTaskItem = { id: "unrelated-child" }
+		rerender(
+			<QueryClientProvider client={queryClient}>
+				<TaskHeader
+					{...defaultProps}
+					task={{ ...defaultProps.task, text: "Unrelated task" }}
+					orchestrationSnapshot={snapshot}
+				/>
+			</QueryClientProvider>,
+		)
+		expect(screen.queryByRole("region", { name: "Orchestration" })).not.toBeInTheDocument()
+		mockExtensionState.currentTaskItem = { id: "test-task-id" }
+	})
+
+	it("does not attach a stale snapshot after navigation", () => {
+		mockExtensionState.currentTaskItem = { id: "new-task" }
+		renderTaskHeader({
+			orchestrationSnapshot: {
+				run: { runId: "stale", rootTaskId: "old-root", status: "completed" },
+				nodes: [{ nodeId: "old-node", taskId: "old-child", status: "completed" }],
+			},
+		})
+		expect(screen.queryByRole("region", { name: "Orchestration" })).not.toBeInTheDocument()
+		mockExtensionState.currentTaskItem = { id: "test-task-id" }
+	})
+
 	it("renders orchestration only for the current root task", () => {
 		const snapshot = {
 			run: { runId: "run-1", rootTaskId: "test-task-id", status: "running" },

@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { vscode } from "@src/utils/vscode"
 import { Button } from "@src/components/ui/button"
 
 interface TaskNode {
 	nodeId: string
+	taskId?: string
 	title?: string
 	role?: string
 	status?: string
@@ -123,6 +125,7 @@ const TaskRow = ({ node, runId, nodeTitles }: { node: TaskNode; runId: string; n
 
 const OrchestrationPanel = ({
 	snapshot,
+	currentTaskId,
 }: {
 	snapshot?: {
 		run: {
@@ -133,7 +136,9 @@ const OrchestrationPanel = ({
 		}
 		nodes: Array<Record<string, unknown>>
 	}
+	currentTaskId?: string
 }) => {
+	const { t } = useTranslation()
 	const contextSnapshot = useExtensionState().orchestrationSnapshot
 	const orchestrationSnapshot = snapshot ?? contextSnapshot
 	const nodes = useMemo(() => orchestrationSnapshot?.nodes as TaskNode[] | undefined, [orchestrationSnapshot])
@@ -143,6 +148,9 @@ const OrchestrationPanel = ({
 	const [cancelPending, setCancelPending] = useState(false)
 	if (!orchestrationSnapshot) return null
 	const terminal = ["completed", "failed", "canceled"].includes(orchestrationSnapshot.run.status)
+	const currentNode = currentTaskId ? nodes?.find((node) => node.taskId === currentTaskId) : undefined
+	const isRoot = currentTaskId === undefined || orchestrationSnapshot.run.rootTaskId === currentTaskId
+	if (!isRoot && !currentNode) return null
 	const activeNodes = (nodes ?? []).filter((node) => node.status === "running")
 	const nodeTitles = new Map((nodes ?? []).map((node) => [node.nodeId, node.title || node.nodeId]))
 	const children = new Set(nodes?.flatMap((node) => node.dependsOn ?? []) ?? [])
@@ -158,38 +166,71 @@ const OrchestrationPanel = ({
 			<h2 id="orchestration-heading" className="sr-only">
 				Orchestration
 			</h2>
-			<header className="mb-1 flex items-center justify-between gap-2">
-				<button
-					type="button"
-					className="min-w-0 flex-1 text-left text-xs"
-					aria-expanded={expanded}
-					aria-controls="orchestration-tasks"
-					onClick={() => setExpanded((value) => !value)}>
-					<span className="font-medium">Subtasks</span>
-					<span className="ml-2 opacity-70">
-						{activeNodes.length}/{nodes?.length ?? 0} active · {orchestrationSnapshot.run.status}
+			{currentNode ? (
+				<header className="flex flex-wrap items-center gap-2 text-xs">
+					<span className="font-medium">{currentNode.title || currentNode.nodeId}</span>
+					<span className="rounded border border-vscode-panel-border px-1.5 py-0.5">
+						{currentNode.role || t("chat:orchestration.taskRole")}
 					</span>
-				</button>
-				<Button
-					variant="destructive"
-					size="sm"
-					disabled={terminal || cancelPending}
-					aria-label="Cancel orchestration"
-					onClick={() => {
-						setCancelPending(true)
-						vscode.postMessage({
-							type: "orchestrationCancel",
-							orchestrationRunId: orchestrationSnapshot.run.runId,
-						})
-					}}>
-					{cancelPending ? "Canceling..." : terminal ? "Finished" : "Cancel run"}
-				</Button>
-			</header>
+					<span className="opacity-80">{statusLabel(currentNode.status ?? "pending")}</span>
+					{currentNode.inputContract?.tokenBudget !== undefined && (
+						<span className="opacity-80">
+							{t("chat:orchestration.budget", { count: currentNode.inputContract.tokenBudget })}
+						</span>
+					)}
+					<span className="basis-full opacity-70">
+						{t("chat:orchestration.partOfRun", { runId: orchestrationSnapshot.run.runId })}
+					</span>
+					{currentNode.status === "running" && (
+						<Button
+							variant="ghost"
+							size="sm"
+							aria-label={`Cancel task ${currentNode.title || currentNode.nodeId}`}
+							onClick={() =>
+								vscode.postMessage({
+									type: "orchestrationCancel",
+									orchestrationRunId: orchestrationSnapshot.run.runId,
+									orchestrationNodeId: currentNode.nodeId,
+								})
+							}>
+							Cancel
+						</Button>
+					)}
+				</header>
+			) : (
+				<header className="mb-1 flex items-center justify-between gap-2">
+					<button
+						type="button"
+						className="min-w-0 flex-1 text-left text-xs"
+						aria-expanded={expanded}
+						aria-controls="orchestration-tasks"
+						onClick={() => setExpanded((value) => !value)}>
+						<span className="font-medium">Subtasks</span>
+						<span className="ml-2 opacity-70">
+							{activeNodes.length}/{nodes?.length ?? 0} active · {orchestrationSnapshot.run.status}
+						</span>
+					</button>
+					<Button
+						variant="destructive"
+						size="sm"
+						disabled={terminal || cancelPending}
+						aria-label="Cancel orchestration"
+						onClick={() => {
+							setCancelPending(true)
+							vscode.postMessage({
+								type: "orchestrationCancel",
+								orchestrationRunId: orchestrationSnapshot.run.runId,
+							})
+						}}>
+						{cancelPending ? "Canceling..." : terminal ? "Finished" : "Cancel run"}
+					</Button>
+				</header>
+			)}
 			<div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
 				Orchestration status: {orchestrationSnapshot.run.status}. {orderedNodes.length} task
 				{orderedNodes.length === 1 ? "" : "s"}.
 			</div>
-			{!expanded ? null : orderedNodes.length === 0 ? (
+			{currentNode || !expanded ? null : orderedNodes.length === 0 ? (
 				<p className="text-sm opacity-70">No tasks</p>
 			) : (
 				<ul

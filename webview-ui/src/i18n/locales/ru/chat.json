@@ -19,7 +19,12 @@
 		"shareSuccessPublic": "Публичная ссылка скопирована в буфер обмена",
 		"openApiHistory": "Открыть историю API",
 		"openUiHistory": "Открыть историю UI",
-		"backToParentTask": "Родительская задача"
+		"backToParentTask": "Родительская задача",
+		"orchestration": {
+			"taskRole": "задача",
+			"budget": "Бюджет: {{count}} токенов",
+			"partOfRun": "Часть запуска orchestration {{runId}}"
+		}
 	},
 	"unpin": "Открепить",
 	"pin": "Закрепить",
