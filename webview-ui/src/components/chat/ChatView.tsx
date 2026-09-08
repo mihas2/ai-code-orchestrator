@@ -31,7 +31,6 @@ import AicoTips from "@src/components/welcome/AicoTips"
 import { StandardTooltip, Button } from "@src/components/ui"
 import VersionIndicator from "../common/VersionIndicator"
 import HistoryPreview from "../history/HistoryPreview"
-import OrchestrationPanel from "../orchestration/OrchestrationPanel"
 import Announcement from "./Announcement"
 import ChatRow from "./ChatRow"
 import WarningRow from "./WarningRow"
@@ -1669,7 +1668,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					}}
 				/>
 			)}
-			{orchestrationSnapshot && <OrchestrationPanel />}
 			{task ? (
 				<>
 					<TaskHeader
@@ -1704,6 +1702,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						buttonsDisabled={sendingDisabled}
 						handleCondenseContext={handleCondenseContext}
 						todos={latestTodos}
+						orchestrationSnapshot={orchestrationSnapshot}
 					/>
 
 					{checkpointWarning && (

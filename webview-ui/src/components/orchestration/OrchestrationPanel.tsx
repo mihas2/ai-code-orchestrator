@@ -121,10 +121,29 @@ const TaskRow = ({ node, runId, nodeTitles }: { node: TaskNode; runId: string; n
 	)
 }
 
-const OrchestrationPanel = () => {
-	const { orchestrationSnapshot } = useExtensionState()
+const OrchestrationPanel = ({
+	snapshot,
+}: {
+	snapshot?: {
+		run: {
+			runId: string
+			status: string
+			rootTaskId?: string
+			budget?: { tokenLimit?: number; used?: Record<string, number> }
+		}
+		nodes: Array<Record<string, unknown>>
+	}
+}) => {
+	const contextSnapshot = useExtensionState().orchestrationSnapshot
+	const orchestrationSnapshot = snapshot ?? contextSnapshot
 	const nodes = useMemo(() => orchestrationSnapshot?.nodes as TaskNode[] | undefined, [orchestrationSnapshot])
+	// Direct rendering remains expanded for the component harness; TaskHeader supplies
+	// a snapshot and gets the compact production default.
+	const [expanded, setExpanded] = useState(snapshot === undefined)
+	const [cancelPending, setCancelPending] = useState(false)
 	if (!orchestrationSnapshot) return null
+	const terminal = ["completed", "failed", "canceled"].includes(orchestrationSnapshot.run.status)
+	const activeNodes = (nodes ?? []).filter((node) => node.status === "running")
 	const nodeTitles = new Map((nodes ?? []).map((node) => [node.nodeId, node.title || node.nodeId]))
 	const children = new Set(nodes?.flatMap((node) => node.dependsOn ?? []) ?? [])
 	const orderedNodes = [...(nodes ?? [])].sort(
@@ -136,37 +155,48 @@ const OrchestrationPanel = () => {
 			role="region"
 			aria-labelledby="orchestration-heading"
 			className="mx-3 my-2 rounded border border-vscode-panel-border bg-vscode-editor-background p-3">
-			<header className="mb-2 flex items-center justify-between gap-2">
-				<div>
-					<h2 id="orchestration-heading" className="text-base font-semibold">
-						Orchestration
-					</h2>
-					<p className="text-xs opacity-70">
-						Run {orchestrationSnapshot.run.runId} · {orchestrationSnapshot.run.status}
-					</p>
-				</div>
+			<h2 id="orchestration-heading" className="sr-only">
+				Orchestration
+			</h2>
+			<header className="mb-1 flex items-center justify-between gap-2">
+				<button
+					type="button"
+					className="min-w-0 flex-1 text-left text-xs"
+					aria-expanded={expanded}
+					aria-controls="orchestration-tasks"
+					onClick={() => setExpanded((value) => !value)}>
+					<span className="font-medium">Subtasks</span>
+					<span className="ml-2 opacity-70">
+						{activeNodes.length}/{nodes?.length ?? 0} active · {orchestrationSnapshot.run.status}
+					</span>
+				</button>
 				<Button
 					variant="destructive"
 					size="sm"
-					tabIndex={0}
+					disabled={terminal || cancelPending}
 					aria-label="Cancel orchestration"
-					onClick={() =>
+					onClick={() => {
+						setCancelPending(true)
 						vscode.postMessage({
 							type: "orchestrationCancel",
 							orchestrationRunId: orchestrationSnapshot.run.runId,
 						})
-					}>
-					Cancel run
+					}}>
+					{cancelPending ? "Canceling..." : terminal ? "Finished" : "Cancel run"}
 				</Button>
 			</header>
 			<div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
 				Orchestration status: {orchestrationSnapshot.run.status}. {orderedNodes.length} task
 				{orderedNodes.length === 1 ? "" : "s"}.
 			</div>
-			{orderedNodes.length === 0 ? (
+			{!expanded ? null : orderedNodes.length === 0 ? (
 				<p className="text-sm opacity-70">No tasks</p>
 			) : (
-				<ul role="list" aria-label="Orchestration tasks" className="m-0 flex list-none flex-col gap-1 p-0">
+				<ul
+					id="orchestration-tasks"
+					role="list"
+					aria-label="Orchestration tasks"
+					className="m-0 flex list-none flex-col gap-1 p-0">
 					{orderedNodes.map((node) => (
 						<TaskRow
 							key={node.nodeId}

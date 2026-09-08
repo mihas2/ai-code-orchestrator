@@ -156,6 +156,32 @@ describe("OrchestrationService", () => {
 		expect(store.get().run.budget.used.outputTokens).toBe(2)
 	})
 
+	it("publishes a terminal run summary when its only running node is canceled", async () => {
+		const store = memory()
+		const published: OrchestrationSnapshot[] = []
+		let service: OrchestrationService
+		service = new OrchestrationService(
+			store.persistence,
+			{
+				start: async ({ node }) => ({ taskId: node.nodeId, cancel: async () => undefined }),
+			},
+			async () => {
+				published.push(structuredClone(await service.getSnapshot("r")))
+			},
+		)
+		const singleNodeInput = { ...input(), nodes: [input().nodes[0]] }
+		await service.start(singleNodeInput)
+		await service.dispatch("r")
+
+		await service.cancelNode("r", "a", "root")
+
+		const latest = published.at(-1)!
+		expect(latest.nodes).toHaveLength(1)
+		expect(latest.nodes[0].status).toBe("canceled")
+		expect(latest.run.status).toBe("canceled")
+		expect(latest.run.activeNodeIds).toEqual([])
+	})
+
 	it("restores pause state, cancels idempotently, and recovers running children", async () => {
 		const store = memory()
 		const cancel = vi.fn(async () => undefined)

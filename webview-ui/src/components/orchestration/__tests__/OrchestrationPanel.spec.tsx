@@ -93,6 +93,21 @@ describe("OrchestrationPanel", () => {
 		expect(screen.getByText(/"input": "value"/)).toBeInTheDocument()
 	})
 
+	it("shows a terminal canceled summary and disables run cancellation", () => {
+		vi.mocked(useExtensionState).mockReturnValue({ orchestrationSnapshot: undefined } as never)
+		render(
+			<OrchestrationPanel
+				snapshot={{
+					run: { runId: "run-1", status: "canceled" },
+					nodes: [{ nodeId: "only", status: "canceled" }],
+				}}
+			/>,
+		)
+
+		expect(screen.getByText(/0\/1 active.*canceled/)).toBeInTheDocument()
+		expect(screen.getByRole("button", { name: "Cancel orchestration" })).toBeDisabled()
+	})
+
 	it("sends a cancel command for a running task", () => {
 		vi.mocked(useExtensionState).mockReturnValue({ orchestrationSnapshot: snapshot } as never)
 		render(<OrchestrationPanel />)

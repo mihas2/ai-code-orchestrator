@@ -42,6 +42,7 @@ const mockExtensionState: {
 	runtimeApiConfigName?: string
 	listApiConfigMeta?: Array<{ name: string; modelId?: string; id: string }>
 	roleAssignments?: { roles?: Record<string, { modelId?: string }> }
+	orchestrationSnapshot?: unknown
 	runtimeMode?: string
 	mode?: string
 	clineMessages: any[]
@@ -96,6 +97,10 @@ vi.mock("@aico/api", () => ({
 }))
 
 describe("TaskHeader", () => {
+	beforeEach(() => {
+		mockExtensionState.currentTaskItem = { id: "test-task-id" }
+		mockExtensionState.orchestrationSnapshot = undefined
+	})
 	const defaultProps: TaskHeaderProps = {
 		task: { type: "say", ts: Date.now(), text: "Test task", images: [] },
 		tokensIn: 100,
@@ -115,6 +120,28 @@ describe("TaskHeader", () => {
 			</QueryClientProvider>,
 		)
 	}
+
+	it("renders orchestration only for the current root task", () => {
+		const snapshot = {
+			run: { runId: "run-1", rootTaskId: "test-task-id", status: "running" },
+			nodes: [{ nodeId: "node", title: "Worker", status: "running" }],
+		}
+		const { rerender } = renderTaskHeader({ orchestrationSnapshot: snapshot })
+		expect(screen.getByRole("region", { name: "Orchestration" })).toBeInTheDocument()
+
+		mockExtensionState.currentTaskItem = { id: "another-task" }
+		rerender(
+			<QueryClientProvider client={queryClient}>
+				<TaskHeader
+					{...defaultProps}
+					task={{ ...defaultProps.task, text: "Another task" }}
+					orchestrationSnapshot={snapshot}
+				/>
+			</QueryClientProvider>,
+		)
+		expect(screen.queryByRole("region", { name: "Orchestration" })).not.toBeInTheDocument()
+		mockExtensionState.currentTaskItem = { id: "test-task-id" }
+	})
 
 	it("does not display global or role-assigned model names", () => {
 		mockExtensionState.runtimeApiConfigName = "task-profile"

@@ -576,7 +576,9 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					await service.resume(runId)
 					break
 				case "orchestrationCancel":
-					await service.cancel(runId, rootTaskId, message.text)
+					if (message.orchestrationNodeId)
+						await service.cancelNode(runId, message.orchestrationNodeId, rootTaskId, message.text)
+					else await service.cancel(runId, rootTaskId, message.text)
 					break
 				case "orchestrationRetry":
 					if (!message.orchestrationNodeId) throw new Error("Orchestration node id is required")

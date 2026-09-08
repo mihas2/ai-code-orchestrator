@@ -21,6 +21,7 @@ import { ContextWindowProgress } from "./ContextWindowProgress"
 import { Mention } from "./Mention"
 import { TodoListDisplay } from "./TodoListDisplay"
 import { LucideIconButton } from "./LucideIconButton"
+import OrchestrationPanel from "../orchestration/OrchestrationPanel"
 
 export interface TaskHeaderProps {
 	task: ClineMessage
@@ -37,6 +38,23 @@ export interface TaskHeaderProps {
 	buttonsDisabled: boolean
 	handleCondenseContext: (taskId: string) => void
 	todos?: any[]
+	orchestrationSnapshot?: {
+		run: {
+			runId: string
+			rootTaskId?: string
+			status: string
+			budget?: {
+				tokenLimit?: number
+				used?: {
+					inputTokens?: number
+					outputTokens?: number
+					cachedInputTokens?: number
+					reasoningTokens?: number
+				}
+			}
+		}
+		nodes: Array<Record<string, unknown>>
+	}
 }
 
 const TaskHeader = ({
@@ -54,6 +72,7 @@ const TaskHeader = ({
 	buttonsDisabled,
 	handleCondenseContext,
 	todos,
+	orchestrationSnapshot,
 }: TaskHeaderProps) => {
 	const { t } = useTranslation()
 	const { apiConfiguration, currentTaskItem } = useExtensionState()
@@ -417,6 +436,11 @@ const TaskHeader = ({
 							</table>
 						</div>
 					</>
+				)}
+				{orchestrationSnapshot?.run.rootTaskId === currentTaskItem?.id && (
+					<div className="pt-1" onClick={(event) => event.stopPropagation()}>
+						<OrchestrationPanel snapshot={orchestrationSnapshot} />
+					</div>
 				)}
 				{/* Todo list - always shown at bottom when todos exist */}
 				{hasTodos && <TodoListDisplay todos={todos ?? (task as any)?.tool?.todos ?? []} />}

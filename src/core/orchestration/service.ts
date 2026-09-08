@@ -58,6 +58,7 @@ export interface OrchestratorService {
 	approvePlan(runId: string): Promise<void>
 	approveIntegration(runId: string, expectedRootTaskId: string): Promise<void>
 	retryNode(runId: string, nodeId: string, expectedRootTaskId: string): Promise<void>
+	cancelNode(runId: string, nodeId: string, expectedRootTaskId: string, reason?: string): Promise<void>
 	cancel(runId: string, expectedRootTaskId: string, reason?: string): Promise<void>
 	pause(runId: string): Promise<void>
 	resume(runId: string): Promise<void>
@@ -421,6 +422,38 @@ export class OrchestrationService implements OrchestratorService {
 		await this.persist(s)
 		await this.dispatch(id)
 	}
+	async cancelNode(id: string, nodeId: string, expectedRootTaskId: string, reason?: string) {
+		const s = await this.require(id, expectedRootTaskId, true)
+		const n = s.nodes.find((node) => node.nodeId === nodeId)
+		if (!n) throw new Error("Unknown orchestration node")
+		if (terminalRun.has(s.run.status) || terminalNode.has(n.status)) return
+		if (n.status !== "running") throw new Error("Node cannot be canceled in its current state")
+		const handle = this.handles.get(nodeId)
+		if (!handle) throw new Error("Node execution is not available for cancellation")
+		await handle.cancel(reason ?? "Canceled")
+		this.clearWatchdog(nodeId)
+		this.handles.delete(nodeId)
+		n.status = "canceled"
+		n.timestamps.canceled = Date.now()
+		n.error = { code: "canceled", message: reason ?? "Canceled", recoverable: false }
+		s.run.activeNodeIds = s.run.activeNodeIds.filter((id) => id !== nodeId)
+		this.blockFailedDependencies(s)
+		const hasWork = s.nodes.some((node) => !terminalNode.has(node.status) && node.status !== "blocked")
+		if (!s.run.activeNodeIds.length && !hasWork) {
+			assertRunTransition(s.run.status, "canceled")
+			s.run.status = "canceled"
+			s.run.cancellationRequested = true
+		}
+		// Publish only after the run summary and dependent nodes agree with the canceled node.
+		await this.saveEvent(
+			s,
+			"nodeStatusChanged",
+			{ nodeId, status: "canceled" },
+			`node:${id}:${nodeId}:${n.attempt}:canceled`,
+		)
+		await this.persist(s)
+		if (!terminalRun.has(s.run.status)) await this.dispatch(id)
+	}
 	async cancel(id: string, expectedRootTaskId: string, reason?: string) {
 		const s = await this.require(id, expectedRootTaskId, true)
 		if (terminalRun.has(s.run.status)) return
@@ -542,11 +575,14 @@ export class OrchestrationService implements OrchestratorService {
 		for (const n of s.nodes)
 			if (
 				n.status === "planned" &&
-				n.dependsOn.some(
-					(d) =>
-						s.nodes.find((x) => x.nodeId === d)?.status === "failed" ||
-						s.nodes.find((x) => x.nodeId === d)?.status === "blocked",
-				)
+				n.dependsOn.some((d) => {
+					const dependencyStatus = s.nodes.find((x) => x.nodeId === d)?.status
+					return (
+						dependencyStatus === "failed" ||
+						dependencyStatus === "blocked" ||
+						dependencyStatus === "canceled"
+					)
+				})
 			) {
 				n.status = "blocked"
 				n.timestamps.blocked = Date.now()
