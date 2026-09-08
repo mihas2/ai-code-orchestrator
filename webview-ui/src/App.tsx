@@ -9,7 +9,6 @@ import { vscode } from "./utils/vscode"
 import { initializeSourceMaps, exposeSourceMapsForDebugging } from "./utils/sourceMapInitializer"
 import { ExtensionStateContextProvider, useExtensionState } from "./context/ExtensionStateContext"
 import ChatView, { ChatViewRef } from "./components/chat/ChatView"
-import OrchestrationPanel from "./components/orchestration/OrchestrationPanel"
 import HistoryView from "./components/history/HistoryView"
 import SettingsView, { SettingsViewRef } from "./components/settings/SettingsView"
 import WelcomeView from "./components/welcome/WelcomeViewProvider"
@@ -47,8 +46,7 @@ const tabsByMessageAction: Partial<Record<NonNullable<ExtensionMessage["action"]
 }
 
 const App = () => {
-	const { didHydrateState, showWelcome, shouldShowAnnouncement, renderContext, orchestrationSnapshot } =
-		useExtensionState()
+	const { didHydrateState, showWelcome, shouldShowAnnouncement, renderContext } = useExtensionState()
 
 	const [showAnnouncement, setShowAnnouncement] = useState(false)
 	const [tab, setTab] = useState<Tab>("chat")
@@ -180,7 +178,6 @@ const App = () => {
 			{tab === "settings" && (
 				<SettingsView ref={settingsRef} onDone={() => setTab("chat")} targetSection={currentSection} />
 			)}
-			{tab === "chat" && orchestrationSnapshot && <OrchestrationPanel />}
 			<ChatView
 				ref={chatViewRef}
 				isHidden={tab !== "chat"}

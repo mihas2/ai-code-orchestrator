@@ -31,6 +31,7 @@ import AicoTips from "@src/components/welcome/AicoTips"
 import { StandardTooltip, Button } from "@src/components/ui"
 import VersionIndicator from "../common/VersionIndicator"
 import HistoryPreview from "../history/HistoryPreview"
+import OrchestrationPanel from "../orchestration/OrchestrationPanel"
 import Announcement from "./Announcement"
 import ChatRow from "./ChatRow"
 import WarningRow from "./WarningRow"
@@ -85,6 +86,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		soundVolume,
 		messageQueue = [],
 		showWorktreesInHomeScreen,
+		orchestrationSnapshot,
 	} = useExtensionState()
 
 	// Show a WarningRow when the user sends a message with a retired provider.
@@ -1667,6 +1669,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					}}
 				/>
 			)}
+			{orchestrationSnapshot && <OrchestrationPanel />}
 			{task ? (
 				<>
 					<TaskHeader
