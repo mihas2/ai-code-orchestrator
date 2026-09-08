@@ -24,7 +24,7 @@ const AicoHero = () => {
 					animation: isHovered ? "smooth-bounce 1s ease-in-out infinite" : "none",
 				}}
 				className="z-5 mr-auto translate-y-0 transition-transform duration-500">
-				<img src={imagesBaseUri + "/aico-logo.svg"} alt="AI Orchestrator logo" className="h-8 opacity-0" />
+				<img src={imagesBaseUri + "/aico-logo.svg"} alt="AI Code Orchestrator logo" className="h-8 opacity-0" />
 			</div>
 			<div
 				className="w-[200%] -mt-0.25 h-0.5 overflow-hidden opacity-0 group-hover:opacity-70 transition-opacity duration-300"

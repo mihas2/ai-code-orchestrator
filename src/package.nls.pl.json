@@ -33,7 +33,7 @@
 	"settings.vsCodeLmModelSelector.vendor.description": "Dostawca modelu językowego (np. copilot)",
 	"settings.vsCodeLmModelSelector.family.description": "Rodzina modelu językowego (np. gpt-4)",
 	"settings.customStoragePath.description": "Niestandardowa ścieżka przechowywania. Pozostaw puste, aby użyć domyślnej lokalizacji. Obsługuje ścieżki bezwzględne (np. 'D:\\AIOrchestratorStorage')",
-	"settings.enableCodeActions.description": "Włącz szybkie poprawki AI Orchestrator.",
+	"settings.enableCodeActions.description": "Włącz szybkie poprawki AI Code Orchestrator.",
 	"settings.autoImportSettingsPath.description": "Ścieżka do pliku konfiguracyjnego AI Code Orchestrator, który ma być automatycznie importowany podczas uruchamiania rozszerzenia. Obsługuje ścieżki bezwzględne i ścieżki względne do katalogu domowego (np. '~/Documents/ai-code-orchestrator-settings.json'). Pozostaw puste, aby wyłączyć automatyczne importowanie.",
 	"settings.maximumIndexedFilesForFileSearch.description": "Maksymalna liczba plików do indeksowania dla funkcji wyszukiwania plików @. Wyższe wartości zapewniają lepsze wyniki wyszukiwania w dużych projektach, ale mogą zużywać więcej pamięci. Domyślnie: 10 000.",
 	"settings.useAgentRules.description": "Włącz wczytywanie plików AGENTS.md dla reguł specyficznych dla agenta (zobacz https://agent-rules.org/)",

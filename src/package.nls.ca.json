@@ -33,7 +33,7 @@
 	"settings.vsCodeLmModelSelector.vendor.description": "El proveïdor del model de llenguatge (p. ex. copilot)",
 	"settings.vsCodeLmModelSelector.family.description": "La família del model de llenguatge (p. ex. gpt-4)",
 	"settings.customStoragePath.description": "Ruta d'emmagatzematge personalitzada. Deixeu-la buida per utilitzar la ubicació predeterminada. Admet rutes absolutes (p. ex. 'D:\\AIOrchestratorStorage')",
-	"settings.enableCodeActions.description": "Habilitar correccions ràpides de AI Orchestrator.",
+	"settings.enableCodeActions.description": "Habilitar correccions ràpides de AI Code Orchestrator.",
 	"settings.autoImportSettingsPath.description": "Ruta a un fitxer de configuració de AI Code Orchestrator per importar automàticament en iniciar l'extensió. Admet rutes absolutes i rutes relatives al directori d'inici (per exemple, '~/Documents/ai-code-orchestrator-settings.json'). Deixeu-ho en blanc per desactivar la importació automàtica.",
 	"settings.maximumIndexedFilesForFileSearch.description": "Nombre màxim de fitxers per indexar per a la funció de cerca de fitxers @. Valors més alts proporcionen millors resultats de cerca en projectes grans però poden utilitzar més memòria. Per defecte: 10.000.",
 	"settings.useAgentRules.description": "Activa la càrrega de fitxers AGENTS.md per a regles específiques de l'agent (vegeu https://agent-rules.org/)",

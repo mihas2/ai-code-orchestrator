@@ -33,7 +33,7 @@
 	"settings.vsCodeLmModelSelector.vendor.description": "Vendor dari model bahasa (misalnya copilot)",
 	"settings.vsCodeLmModelSelector.family.description": "Keluarga dari model bahasa (misalnya gpt-4)",
 	"settings.customStoragePath.description": "Path penyimpanan kustom. Biarkan kosong untuk menggunakan lokasi default. Mendukung path absolut (misalnya 'D:\\AIOrchestratorStorage')",
-	"settings.enableCodeActions.description": "Aktifkan perbaikan cepat AI Orchestrator.",
+	"settings.enableCodeActions.description": "Aktifkan perbaikan cepat AI Code Orchestrator.",
 	"settings.autoImportSettingsPath.description": "Path ke file konfigurasi AI Code Orchestrator untuk diimpor secara otomatis saat ekstensi dimulai. Mendukung path absolut dan path relatif terhadap direktori home (misalnya '~/Documents/ai-code-orchestrator-settings.json'). Biarkan kosong untuk menonaktifkan impor otomatis.",
 	"settings.maximumIndexedFilesForFileSearch.description": "Jumlah maksimum file yang akan diindeks untuk fitur pencarian file @. Nilai yang lebih besar memberikan hasil pencarian yang lebih baik di proyek besar tetapi mungkin menggunakan lebih banyak memori. Default: 10.000.",
 	"settings.useAgentRules.description": "Aktifkan pemuatan file AGENTS.md untuk aturan khusus agen (lihat https://agent-rules.org/)",

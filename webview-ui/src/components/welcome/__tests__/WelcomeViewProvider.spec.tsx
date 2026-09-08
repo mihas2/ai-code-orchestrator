@@ -34,7 +34,7 @@ vi.mock("../../common/Tab", () => ({
 }))
 
 vi.mock("../AicoHero", () => ({
-	default: () => <div data-testid="aico-hero">AI Orchestrator Hero</div>,
+	default: () => <div data-testid="aico-hero">AI Code Orchestrator Hero</div>,
 }))
 
 vi.mock("lucide-react", () => ({
