@@ -90,7 +90,12 @@ import { OrchestrationSynthesisAdapter, ReviewerAdapter } from "../orchestration
 import { GlobalStateOrchestrationPersistence } from "../orchestration/persistence"
 import { GitWorkerWorkspaceRegistry } from "../orchestration/workerIsolation"
 import type { OrchestrationExecutor } from "../orchestration/types"
-import { parseAndValidatePlan, redactPlannerContext } from "../orchestration/planner"
+import {
+	isReviewOnlyGoal,
+	parseAndValidatePlan,
+	redactPlannerContext,
+	validateReviewOnlyPlan,
+} from "../orchestration/planner"
 import { extractResultContract, RESULT_CONTRACT_INSTRUCTION } from "../orchestration/resultContract"
 import type { ClineMessage, TodoItem } from "@ai-code-orchestrator/types"
 import { readApiMessages, saveApiMessages, saveTaskMessages, TaskHistoryStore } from "../task-persistence"
@@ -1089,19 +1094,22 @@ export class ClineProvider
 		const state = await this.getState()
 		const context = redactPlannerContext(`${goal}\nWorkspace: ${this.cwd}`)
 		const raw = await task.api.completePrompt(
-			`Return ONLY JSON plan: {\"version\":1,\"nodes\":[{\"id\":\"n1\",\"role\":\"worker\",\"mode\":\"code\",\"objective\":\"...\",\"acceptanceCriteria\":[],\"constraints\":[],\"fileScopes\":{\"include\":[],\"exclude\":[]},\"dependencies\":[],\"tokenBudget\":1}]}\n\nFile scope rules: fileScopes must contain only project source code and configuration files necessary to complete the goal. NEVER include .git or any of its subdirectories, .aico or any of its subdirectories, node_modules, .vscode, or other standard service/tooling directories and files (for example build output, caches, logs, and IDE metadata). These paths are forbidden even if they appear relevant; leave them out of both include and exclude scopes.\nGoal: ${context}`,
+			`Return ONLY JSON plan: {\"version\":1,\"nodes\":[{\"id\":\"n1\",\"role\":\"worker\",\"mode\":\"code\",\"objective\":\"...\",\"acceptanceCriteria\":[],\"constraints\":[],\"fileScopes\":{\"include\":[],\"exclude\":[]},\"dependencies\":[],\"tokenBudget\":1}]}\n\nDelegation rule: if the goal is review-only (review, audit, inspect, assess, or find regressions without changing code), every review node MUST use role="reviewer" and mode="reviewer". The orchestrator is a coordinator only and MUST NOT perform review itself. A review-only plan without a reviewer node is invalid and must not be executed.\n\nFile scope rules: fileScopes must contain only project source code and configuration files necessary to complete the goal. NEVER include .git or any of its subdirectories, .aico or any of its subdirectories, node_modules, .vscode, or other standard service/tooling directories and files (for example build output, caches, logs, and IDE metadata). These paths are forbidden even if they appear relevant; leave them out of both include and exclude scopes.\nGoal: ${context}`,
 		)
 		let nodes: ReturnType<typeof parseAndValidatePlan>
 		try {
 			const customModes = await this.customModesManager.getCustomModes()
+			const reviewOnly = isReviewOnlyGoal(goal)
 			nodes = parseAndValidatePlan(raw, {
 				modes: DEFAULT_MODES.map((m) => m.slug),
 				roles: [...DEFAULT_MODES.map((m) => m.slug), ...customModes.map((m) => m.slug)],
+				reviewOnly,
 				logger: (_level, message) => this.log(message),
 				allowedScopes: [".", this.cwd],
 				maxChildTokens: settings.maxChildTokens,
 				maxRunTokens: settings.maxRunTokens,
 			})
+			validateReviewOnlyPlan(goal, nodes)
 		} catch (error) {
 			const diagnostic = raw.trim().replace(/(?:api[_-]?key|token|secret|password)\s*[:=]\s*\S+/gi, "[REDACTED]")
 			this.log(

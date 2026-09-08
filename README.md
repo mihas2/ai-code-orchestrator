@@ -40,12 +40,14 @@ See the project documentation, including the orchestration specification, in [`a
 
 ## Installation
 
-Install the **AI Code Orchestrator** extension from the VS Code Marketplace, or build a VSIX locally:
+Install the **AI Code Orchestrator** extension from the VS Code Marketplace, or rebuild a fresh VSIX locally:
 
 ```bash
 pnpm install
-pnpm vsix
+pnpm rebuild:vsix
 ```
+
+To rebuild and then install it interactively, run `pnpm install:vsix`. This explicitly rebuilds the webview before bundling and packaging the extension. A normal `pnpm install` only installs dependencies.
 
 The CLI is available from the monorepo during development:
 

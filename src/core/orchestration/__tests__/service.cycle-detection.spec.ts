@@ -96,6 +96,36 @@ describe("OrchestrationService DAG cycle detection", () => {
 		expect(starts).toEqual(["A"])
 	})
 
+	it("fails closed before dispatching a review-only plan without a reviewer", async () => {
+		const starts: string[] = []
+		const { orchestration } = service(starts)
+		await expect(
+			orchestration.start({ ...input([node("review")]), goal: "Review the current branch for regressions" }),
+		).rejects.toThrow("reviewer node is required")
+		await expect(orchestration.dispatch("run")).rejects.toThrow("Unknown orchestration run")
+		expect(starts).toEqual([])
+	})
+
+	it("dispatches review-only work as reviewer role and mode", async () => {
+		const starts: Array<{ role: string; mode: string }> = []
+		const store = persistence()
+		const orchestration = new OrchestrationService(store.persistence, {
+			start: async ({ node: child }) => {
+				starts.push({ role: child.role, mode: child.mode })
+				return { taskId: child.nodeId, cancel: async () => undefined }
+			},
+		})
+		const reviewer = {
+			...node("review"),
+			role: "reviewer",
+			mode: "reviewer",
+			inputContract: { ...node("review").inputContract, mode: "reviewer" },
+		}
+		await orchestration.start({ ...input([reviewer]), goal: "Audit the current branch" })
+		await orchestration.dispatch("run")
+		expect(starts).toEqual([{ role: "reviewer", mode: "reviewer" }])
+	})
+
 	it.each([
 		[
 			[node("A", ["B"]), node("B", ["A"])],

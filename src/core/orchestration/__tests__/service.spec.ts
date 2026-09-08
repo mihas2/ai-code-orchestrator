@@ -83,7 +83,7 @@ function memory(initial?: OrchestrationSnapshot) {
 describe("OrchestrationService", () => {
 	it("includes node attempt limits and payload in the snapshot", async () => {
 		const store = memory()
-		const service = new OrchestrationService(store.persistence)
+		const service = new OrchestrationService(store.persistence, {} as never)
 		await service.start(input())
 		const snapshot = store.get()
 		expect(snapshot.nodes[0]).toMatchObject({ attempt: 0, maxAttempts: 2, payload: { source: "test" } })

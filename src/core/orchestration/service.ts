@@ -16,6 +16,7 @@ import type { OrchestrationPersistence } from "./persistence"
 import { validateDag } from "./dag"
 import { assertNodeTransition, assertRunTransition } from "./transitions"
 import { createBudget, reconcileBudget, reserveBudget, validateUsage } from "./budget"
+import { validateReviewOnlyPlan } from "./planner"
 
 export interface OrchestratorAdapters {
 	review?: import("./types").ReviewAdapter
@@ -105,6 +106,7 @@ export class OrchestrationService implements OrchestratorService {
 			this.getLogAggregator(input.runId)
 			return existing.run
 		}
+		validateReviewOnlyPlan(input.goal, input.nodes)
 		const issues = validateDag(input.nodes)
 		const cycle = issues.find((issue) => issue.code === "cycle")
 		if (cycle) {

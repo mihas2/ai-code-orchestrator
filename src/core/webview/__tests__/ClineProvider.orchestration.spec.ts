@@ -141,6 +141,32 @@ describe("ClineProvider orchestration route resolution", () => {
 		})
 	})
 
+	it("routes reviewer nodes through the reviewer assignment", async () => {
+		const provider = routeProvider(
+			{
+				currentApiConfigName: "A",
+				roleAssignments: {
+					roles: { reviewer: { profileName: "Review", modelId: "review-model", inheritPrimary: false } },
+				},
+			},
+			{
+				A: { id: "a", name: "A", apiProvider: "openrouter", openRouterModelId: "model-A" },
+				Review: {
+					id: "review",
+					name: "Review",
+					apiProvider: "openrouter",
+					openRouterModelId: "review-primary",
+				},
+			},
+		)
+		expect(await provider.resolveOrchestrationRoute({ role: "reviewer", mode: "reviewer" })).toMatchObject({
+			profileId: "review",
+			modelId: "review-model",
+			role: "reviewer",
+			source: "explicit",
+		})
+	})
+
 	it("inherits the current primary model of the assigned profile", async () => {
 		const profiles = { B: { id: "b", name: "B", apiProvider: "openrouter", openRouterModelId: "model-B2" } }
 		const provider = routeProvider(

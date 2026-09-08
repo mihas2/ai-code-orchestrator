@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest"
-import { extractPlannerJson, parseAndValidatePlan, redactPlannerContext } from "../planner"
+import {
+	extractPlannerJson,
+	isReviewOnlyGoal,
+	parseAndValidatePlan,
+	redactPlannerContext,
+	validateReviewOnlyPlan,
+} from "../planner"
 
 const limits = { modes: ["code", "debug"], allowedScopes: ["src", "."], maxChildTokens: 100, maxRunTokens: 150 }
 const plan = (
@@ -43,6 +49,29 @@ describe("planner adapter", () => {
 	it("uses the second balanced JSON candidate when the first is invalid", () => {
 		const raw = `{"version":1,"nodes":[]}\n${plan()}`
 		expect(parseAndValidatePlan(raw, limits)[0].nodeId).toBe("a")
+	})
+	it("rejects a Russian review request when the planner returns an orchestrator child", () => {
+		const goal = "сделай ревью проекта"
+		const nodes = parseAndValidatePlan(
+			plan([{ ...JSON.parse(plan()).nodes[0], role: "orchestrator", mode: "orchestrator" }]),
+			{
+				...limits,
+				modes: [...limits.modes, "orchestrator"],
+			},
+		)
+		expect(isReviewOnlyGoal(goal)).toBe(true)
+		expect(() => validateReviewOnlyPlan(goal, nodes)).toThrow("reviewer node is required")
+	})
+	it("rejects review-only plans without a reviewer child", () => {
+		const nodes = parseAndValidatePlan(plan(), limits)
+		expect(() => validateReviewOnlyPlan("Review the completed implementation for regressions", nodes)).toThrow(
+			"reviewer node is required",
+		)
+	})
+	it("accepts review-only plans with a reviewer child", () => {
+		const reviewerPlan = plan([{ ...JSON.parse(plan()).nodes[0], role: "reviewer", mode: "reviewer" }])
+		const nodes = parseAndValidatePlan(reviewerPlan, { ...limits, modes: [...limits.modes, "reviewer"] })
+		expect(() => validateReviewOnlyPlan("Audit the completed implementation", nodes)).not.toThrow()
 	})
 	it("rejects completely invalid input", () => {
 		expect(() => parseAndValidatePlan("", limits)).toThrow("malformed JSON")

@@ -29,6 +29,8 @@ export interface PlannerLimits {
 	modes: readonly string[]
 	allowedScopes: readonly string[]
 	roles?: readonly string[]
+	/** Reject plans that cannot execute a review-only goal with a reviewer child. */
+	reviewOnly?: boolean
 	logger?: (level: "info" | "debug", message: string) => void
 	maxChildTokens?: number
 	maxRunTokens?: number
@@ -114,6 +116,8 @@ export function parseAndValidatePlan(raw: string, limits: PlannerLimits): PlanNo
 		}
 		const issues: string[] = []
 		const unknownRoles = new Set<string>()
+		if (limits.reviewOnly && !parsed.data.nodes.some((n) => n.role === "reviewer" && n.mode === "reviewer"))
+			issues.push("review_only_requires_reviewer_node")
 		for (const n of parsed.data.nodes) {
 			if (limits.roles && !limits.roles.includes(n.role) && !unknownRoles.has(n.role)) {
 				unknownRoles.add(n.role)
@@ -178,6 +182,20 @@ export function parseAndValidatePlan(raw: string, limits: PlannerLimits): PlanNo
 	}
 	throw lastError ?? new Error("Planner returned malformed JSON: invalid JSON value")
 }
+
+export function isReviewOnlyGoal(goal: string): boolean {
+	const reviewIntent =
+		/\b(review|audit|inspect|assess|find regressions?)\b|(?:^|\s)(ревью|аудит|провер(?:ь|ить|ка)|проанализир(?:уй|овать))(?=\s|$)/iu
+	const changeIntent =
+		/\b(implement|fix|change|modify|write|refactor)\b|(?:^|\s)(реализ(?:уй|овать)|исправ(?:ь|ить)|измен(?:и|ить)|напиш(?:и|ите)|рефактор(?:инг|ить))(?=\s|$)/iu
+	return reviewIntent.test(goal) && !changeIntent.test(goal)
+}
+
+export function validateReviewOnlyPlan(goal: string, nodes: readonly PlanNodeInput[]): void {
+	if (isReviewOnlyGoal(goal) && !nodes.some((node) => node.role === "reviewer" && node.mode === "reviewer"))
+		throw new Error("Review-only plan rejected: reviewer node is required")
+}
+
 export function redactPlannerContext(text: string, maxChars = 12000) {
 	return text.replace(/(?:api[_-]?key|token|secret|password)\s*[:=]\s*\S+/gi, "[REDACTED]").slice(0, maxChars)
 }
