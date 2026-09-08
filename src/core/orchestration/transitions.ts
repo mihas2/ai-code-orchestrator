@@ -7,7 +7,7 @@ const run: Record<RunStatus, readonly RunStatus[]> = {
 	reviewing: ["reworking", "integrating", "failed", "canceled", "paused"],
 	reworking: ["running", "failed", "canceled", "paused"],
 	integrating: ["dispatching", "synthesizing", "failed", "canceled", "paused"],
-	synthesizing: ["completed", "failed", "canceled", "paused"],
+	synthesizing: ["reworking", "completed", "failed", "canceled", "paused"],
 	paused: [
 		"planning",
 		"planned",

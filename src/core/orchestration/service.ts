@@ -23,6 +23,8 @@ export interface OrchestratorAdapters {
 	integration?: import("./types").IntegrationAdapter
 	synthesis?: import("./types").SynthesisAdapter
 	route?: import("./types").RouteCapabilityValidator
+	/** Root-owned acceptance runs after integration/synthesis; integration alone is not acceptance. */
+	acceptance?: import("./types").RootAcceptanceAdapter
 	logger?: (
 		level: "error",
 		entry: {
@@ -305,6 +307,19 @@ export class OrchestrationService implements OrchestratorService {
 		n.status = reportedStatus
 		n.timestamps[reportedStatus] = Date.now()
 		if (e.result) {
+			if (e.result.status !== "completed") {
+				n.status = "needs_rework"
+				n.error = {
+					code: "incomplete_result",
+					message: "Worker reported partial or failed result",
+					recoverable: true,
+				}
+				s.run.activeNodeIds = s.run.activeNodeIds.filter((x) => x !== n.nodeId)
+				this.handles.delete(n.nodeId)
+				reconcileBudget(s.run.budget, reserved, 0, e.usage ?? {})
+				await this.persist(s)
+				return
+			}
 			n.outputContract = e.result
 			n.artifactRefs = [...new Set(e.result.artifactRefs)]
 		}
@@ -732,6 +747,43 @@ export class OrchestrationService implements OrchestratorService {
 		if (s.synthesis.status !== "completed") {
 			s.run.status = "failed"
 			s.run.error = { code: "synthesis_failed", message: s.synthesis.summary, recoverable: true }
+			return
+		}
+		// Acceptance is opt-in at the service boundary so legacy/non-lead callers
+		// retain their existing completion semantics. Lead-managed roots always
+		// configure this adapter in ClineProvider.
+		const acceptance = await this.adapters.acceptance?.accept({ run: s.run, snapshot: s })
+		if (acceptance && acceptance.outcome !== "accepted") {
+			if (acceptance.outcome === "rework") {
+				// Rework must return the DAG to a dispatchable state. Leaving all nodes
+				// integrated would make the next dispatch a silent no-op.
+				for (const node of s.nodes) {
+					if (node.status === "integrated") {
+						assertNodeTransition(node.status, "needs_rework")
+						node.status = "needs_rework"
+						node.timestamps.needs_rework = Date.now()
+						node.error = {
+							code: "lead_acceptance_rework",
+							message: acceptance.feedback ?? "Root lead requested rework",
+							recoverable: true,
+						}
+						node.reviewRefs = []
+					}
+				}
+			}
+			assertRunTransition(s.run.status, acceptance.outcome === "rework" ? "reworking" : "failed")
+			s.run.status = acceptance.outcome === "rework" ? "reworking" : "failed"
+			s.run.error = {
+				code: acceptance.outcome === "rework" ? "lead_acceptance_rework" : "lead_acceptance_blocked",
+				message: acceptance.feedback ?? "Root lead did not accept the integrated result",
+				recoverable: acceptance.outcome === "rework",
+			}
+			await this.saveEvent(
+				s,
+				"orchestrationError",
+				{ status: s.run.status, error: s.run.error },
+				`run:${s.run.runId}:acceptance:${acceptance.outcome}`,
+			)
 			return
 		}
 		assertRunTransition(s.run.status, "completed")

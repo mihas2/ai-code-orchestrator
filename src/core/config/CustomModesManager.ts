@@ -805,6 +805,9 @@ export class CustomModesManager {
 			// Create an export mode with rules files preserved
 			const exportMode: ExportedModeConfig = {
 				...mode,
+				rulesFiles: mode.rulesFiles?.flatMap((file) =>
+					file.content === undefined ? [] : [{ relativePath: file.relativePath, content: file.content }],
+				),
 				// Remove source property for export
 				source: "project" as const,
 			}

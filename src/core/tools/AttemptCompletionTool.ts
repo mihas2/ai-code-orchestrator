@@ -25,6 +25,12 @@ export interface AttemptCompletionCallbacks extends ToolCallbacks {
  */
 interface DelegationProvider {
 	getTaskWithId(id: string): Promise<{ historyItem: HistoryItem }>
+	/** Optional root-owned acceptance hook; absent for legacy tasks/configurations. */
+	leadAcceptanceGate?(params: {
+		taskId: string
+		result: string
+		parentTaskId?: string
+	}): Promise<{ outcome: "accepted" | "rework" | "clarification" | "blocked"; feedback?: string }>
 	reopenParentFromDelegation(params: {
 		parentTaskId: string
 		childTaskId: string
@@ -73,6 +79,22 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 				task.recordToolError("attempt_completion")
 				pushToolResult(await task.sayAndCreateMissingParamError("attempt_completion", "result"))
 				return
+			}
+
+			const provider = task.providerRef?.deref?.() as DelegationProvider | undefined
+			if (provider?.leadAcceptanceGate && !task.abort) {
+				const gate = await provider.leadAcceptanceGate({
+					taskId: task.taskId,
+					result,
+					parentTaskId: task.parentTaskId,
+				})
+				if (gate.outcome !== "accepted") {
+					const feedback =
+						gate.feedback ?? `Lead acceptance: ${gate.outcome}. Provide the missing evidence and retry.`
+					await task.say("error", feedback)
+					pushToolResult(formatResponse.toolError(feedback))
+					return
+				}
 			}
 
 			task.consecutiveMistakeCount = 0

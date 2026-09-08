@@ -98,13 +98,10 @@ export function handleProviderError(
 		return wrapped
 	}
 
-	// Non-Error: preserve structured provider payload instead of reducing it to "[object Object]".
+	// Keep legacy formatting for non-Error throws; provider SDKs may throw arbitrary values.
 	console.error(`[${providerName}] Non-Error exception:`, error)
 	const anyErr = error as any
-	const details =
-		typeof anyErr?.message === "string" && anyErr.message.trim()
-			? anyErr.message
-			: JSON.stringify(error, null, 2) || String(error)
+	const details = String(error)
 	const wrapped = new Error(`${providerName} ${messagePrefix} error: ${details}`)
 
 	// Also try to preserve status for non-Error exceptions (e.g., plain objects with status)

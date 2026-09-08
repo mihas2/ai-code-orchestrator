@@ -97,6 +97,9 @@ import {
 	validateReviewOnlyPlan,
 } from "../orchestration/planner"
 import { extractResultContract, RESULT_CONTRACT_INSTRUCTION } from "../orchestration/resultContract"
+import { LeadCoordinator } from "../orchestration/leadCoordinator"
+import { StreamingLeadProvider } from "../orchestration/leadProvider"
+import { VersionedLeadSessionStore } from "../orchestration/leadSession"
 import type { ClineMessage, TodoItem } from "@ai-code-orchestrator/types"
 import { readApiMessages, saveApiMessages, saveTaskMessages, TaskHistoryStore } from "../task-persistence"
 import { readTaskMessages } from "../task-persistence/taskMessages"
@@ -170,6 +173,7 @@ export class ClineProvider
 	public readonly providerSettingsManager: ProviderSettingsManager
 	public readonly customModesManager: CustomModesManager
 	private orchestrationService?: OrchestrationService
+	private readonly leadCoordinators = new WeakMap<object, LeadCoordinator>()
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -1079,23 +1083,191 @@ export class ClineProvider
 		return task
 	}
 
+	public async leadAcceptanceGate(params: { taskId: string; result: string; parentTaskId?: string }) {
+		// Only lead-managed roots use this gate; preserve ordinary and legacy flows.
+		if (params.parentTaskId) return { outcome: "accepted" as const }
+		const rootTaskId = params.taskId
+		const session = await new VersionedLeadSessionStore(this.context.globalState).load(rootTaskId)
+		if (!session) return { outcome: "accepted" as const }
+		if (!session.decision)
+			return {
+				outcome: "blocked" as const,
+				feedback: "Root lead acceptance is unavailable; execution cannot be completed safely.",
+			}
+		if (session.phase === "canceled")
+			return { outcome: "blocked" as const, feedback: "Canceled root tasks cannot be completed." }
+		if (session.phase === "completed" && session.acceptance?.outcome === "accepted")
+			return { outcome: "accepted" as const }
+		const task = await this.resolveTaskForOrchestration(rootTaskId)
+		const api = task?.api
+		if (!api?.createMessage)
+			return {
+				outcome: "blocked" as const,
+				feedback: "Acceptance provider is unavailable; completion is fail-closed.",
+			}
+		let coordinator = this.leadCoordinators.get(api as object)
+		if (!coordinator) {
+			coordinator = new LeadCoordinator(
+				new StreamingLeadProvider(api),
+				new VersionedLeadSessionStore(this.context.globalState),
+				(event, data) => this.log(`[lead] ${event} ${JSON.stringify(data)}`),
+			)
+			this.leadCoordinators.set(api as object, coordinator)
+		}
+		try {
+			const store = new VersionedLeadSessionStore(this.context.globalState)
+			const requestVersion = session.version
+			const decision = await coordinator.accept({
+				rootTaskId,
+				requestId: session.requestId,
+				criteria: session.decision.acceptance,
+				result: params.result.slice(0, 48_000),
+				context: { taskId: rootTaskId, cwd: task?.cwd ?? this.cwd },
+				signal: task?.currentRequestAbortController?.signal ?? new AbortController().signal,
+				budget: session.reservations.acceptance,
+				attempt: (session.acceptance?.attempt ?? 0) + 1,
+			})
+			// Re-read after the model call: a restart or competing request may have
+			// advanced this root session while the provider was working.
+			const current = await store.load(rootTaskId)
+			if (
+				!current ||
+				current.requestId !== session.requestId ||
+				current.fingerprint !== session.fingerprint ||
+				current.version !== requestVersion
+			)
+				return {
+					outcome: "blocked" as const,
+					feedback: "Acceptance result became stale and was not persisted.",
+				}
+			const evidence = decision.criteria.map((item) => ({
+				criterionId: item.criterionId,
+				status:
+					item.status === "met"
+						? ("met" as const)
+						: item.status === "unmet"
+							? ("unmet" as const)
+							: ("unknown" as const),
+				source: "lead-model",
+				detail: item.rationale,
+			}))
+			const next = {
+				...session,
+				evidence,
+				acceptance: { ...decision, attempt: (session.acceptance?.attempt ?? 0) + 1 },
+				phase:
+					decision.outcome === "accepted"
+						? ("completed" as const)
+						: decision.outcome === "rework"
+							? ("rework" as const)
+							: ("blocked" as const),
+				version: requestVersion + 1,
+				updatedAt: Date.now(),
+			}
+			await store.save(rootTaskId, next, requestVersion)
+			this.log(
+				`[lead] acceptance ${JSON.stringify({ sessionId: session.sessionId, outcome: decision.outcome, attempt: next.acceptance.attempt, confidence: decision.confidence })}`,
+			)
+			return {
+				outcome: decision.outcome,
+				feedback: decision.feedback ?? (decision.outcome === "accepted" ? undefined : decision.rationale),
+			}
+		} catch (error) {
+			this.log(
+				`[lead] acceptance blocked ${JSON.stringify({ sessionId: session.sessionId, reason: error instanceof Error ? error.name : "unknown" })}`,
+			)
+			return {
+				outcome: "blocked" as const,
+				feedback: "Lead acceptance could not be verified; completion is blocked.",
+			}
+		}
+	}
+
+	private async ensureLeadForTask(task: Task, goal: string) {
+		if (task.parentTaskId) throw new Error("Lead assessment is root-only; child tasks must not assess")
+		if (this._disposed || task.abort) throw new Error("Root lead assessment was canceled")
+		const settings =
+			(await this.contextProxy.getValue("orchestrationSettings")) ??
+			(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS
+		const api = task.api
+		if (!api?.createMessage) {
+			this.log(`[lead] blocked ${JSON.stringify({ reason: "provider_unavailable", rootTaskId: task.taskId })}`)
+			throw new Error("Root Orchestrator requires a provider with createMessage for lead assessment")
+		}
+		let coordinator = this.leadCoordinators.get(api as object)
+		if (!coordinator) {
+			coordinator = new LeadCoordinator(
+				new StreamingLeadProvider(api),
+				new VersionedLeadSessionStore(this.context.globalState),
+				(event, data) => this.log(`[lead] ${event} ${JSON.stringify(data)}`),
+			)
+			this.leadCoordinators.set(api as object, coordinator)
+		}
+		const result = await coordinator.ensure({
+			rootTaskId: task.taskId,
+			request: {
+				requestId: `lead:${task.taskId}`,
+				summary: goal.slice(0, 4000),
+				goal,
+				context: { mode: await task.getTaskMode(), workspace: this.cwd },
+			},
+			configFingerprint: JSON.stringify(settings),
+			workspaceFingerprint: this.cwd,
+			allowedRoles: [...DEFAULT_MODES.map((mode) => mode.slug)],
+			allowedModels: [api.getModel().id],
+			budget: {
+				assessment: settings.maxRunTokens ?? 0,
+				execution: settings.maxRunTokens ?? 0,
+				acceptance: Math.max(1, Math.floor((settings.maxRunTokens ?? 0) / 10)),
+			},
+			signal: task.currentRequestAbortController?.signal ?? new AbortController().signal,
+		})
+		if (result.phase !== "executing" || !result.decision)
+			throw new Error(`Lead assessment blocked execution: ${result.phase}`)
+		return result
+	}
+
 	public async planOrchestration(
 		goal: string,
 		runId: string,
 		rootTaskId: string,
 	): Promise<import("../orchestration/types").OrchestrationRun> {
-		const task = this.getCurrentTask()
-		if (!task?.api.completePrompt) throw new Error("Selected provider does not support planner completion")
+		// The visible task may be a delegated child; orchestration ownership stays
+		// with the persisted root task identified by the caller.
+		const task = await this.resolveTaskForOrchestration(rootTaskId)
+		if (!task) throw new Error("No active root task for lead assessment")
+		const lead = await this.ensureLeadForTask(task, goal)
+		if (!lead.decision) throw new Error("Root lead assessment has no executable decision")
+		if (lead.decision.decision === "clarification") throw new Error("Lead requires clarification before execution")
+		if (lead.decision.decision !== "orchestrated")
+			throw new Error(`Lead selected ${lead.decision.decision}; orchestration requires an orchestrated decision`)
 		const settings =
 			(await this.contextProxy.getValue("orchestrationSettings")) ??
 			(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS
 		if ((await this.getMode()) !== (settings?.orchestratorModeSlug ?? "orchestrator"))
 			throw new Error("Orchestration is only available in orchestrator mode")
 		const state = await this.getState()
-		const context = redactPlannerContext(`${goal}\nWorkspace: ${this.cwd}`)
-		const raw = await task.api.completePrompt(
-			`Return ONLY JSON plan: {\"version\":1,\"nodes\":[{\"id\":\"n1\",\"role\":\"worker\",\"mode\":\"code\",\"objective\":\"...\",\"acceptanceCriteria\":[],\"constraints\":[],\"fileScopes\":{\"include\":[],\"exclude\":[]},\"dependencies\":[],\"tokenBudget\":1}]}\n\nDelegation rule: if the goal is review-only (review, audit, inspect, assess, or find regressions without changing code), every review node MUST use role="reviewer" and mode="reviewer". The orchestrator is a coordinator only and MUST NOT perform review itself. A review-only plan without a reviewer node is invalid and must not be executed.\n\nFile scope rules: fileScopes must contain only project source code and configuration files necessary to complete the goal. NEVER include .git or any of its subdirectories, .aico or any of its subdirectories, node_modules, .vscode, or other standard service/tooling directories and files (for example build output, caches, logs, and IDE metadata). These paths are forbidden even if they appear relevant; leave them out of both include and exclude scopes.\nGoal: ${context}`,
-		)
+		// Materialize the lead-approved phases; do not make a second planner call.
+		const raw = JSON.stringify({
+			version: 1,
+			nodes: lead.decision.phases.map((phase) => {
+				const role = phase.roles[0] ?? "worker"
+				const requirement = lead.decision!.roles.find((item) => item.role === role)
+				return {
+					id: phase.id,
+					role,
+					mode: role,
+					title: phase.summary,
+					objective: `${phase.summary}\nGoal: ${lead.decision!.task.goal}`,
+					acceptanceCriteria: phase.acceptance,
+					constraints: lead.decision!.policyConstraints,
+					fileScopes: { include: ["."], exclude: [] },
+					dependencies: phase.dependsOn,
+					tokenBudget: requirement?.budget.tokens ?? 1,
+				}
+			}),
+		})
+
 		let nodes: ReturnType<typeof parseAndValidatePlan>
 		try {
 			const customModes = await this.customModesManager.getCustomModes()
@@ -1120,7 +1292,7 @@ export class ClineProvider
 		for (const node of nodes) {
 			node.inputContract.runId = runId
 			node.inputContract.goal = goal
-			node.inputContract.parentContextDigest = "planner"
+			node.inputContract.parentContextDigest = "lead-assessment"
 		}
 		return await (
 			await this.getOrchestrationService()
@@ -1453,6 +1625,24 @@ export class ClineProvider
 					review: reviewer,
 					synthesis: new OrchestrationSynthesisAdapter(),
 					route: { resolve: ({ node }) => this.resolveOrchestrationRoute(node) },
+					acceptance: {
+						accept: async ({ run, snapshot }) => {
+							const synthesis = snapshot.synthesis
+							const result = JSON.stringify({
+								goal: run.goal,
+								synthesis,
+								nodes: snapshot.nodes.map((node) => ({
+									nodeId: node.nodeId,
+									status: node.status,
+									result: node.outputContract,
+									artifacts: node.artifactRefs,
+									reviews: node.reviewRefs,
+									events: snapshot.events.filter((event) => event.nodeId === node.nodeId),
+								})),
+							})
+							return this.leadAcceptanceGate({ taskId: run.rootTaskId, result })
+						},
+					},
 				},
 			)
 			await this.orchestrationService.recover()
@@ -2956,6 +3146,11 @@ export class ClineProvider
 		return this.clineStack[this.clineStack.length - 1]
 	}
 
+	/** Resolve orchestration ownership without depending on whichever child is visible. */
+	private async resolveTaskForOrchestration(rootTaskId: string): Promise<Task | undefined> {
+		return this.clineStack.find((task) => task.taskId === rootTaskId)
+	}
+
 	public getRecentTasks(): string[] {
 		if (this.recentTasksCache) {
 			return this.recentTasksCache
@@ -3186,6 +3381,8 @@ export class ClineProvider
 		})
 
 		await this.addClineToStack(task)
+		// Lead assessment is performed by the orchestration entrypoint, not by task
+		// creation. This keeps ordinary and legacy roots on their existing path.
 		task.start()
 
 		this.log(

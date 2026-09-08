@@ -339,3 +339,13 @@ export interface IntegrationAdapter {
 export interface SynthesisAdapter {
 	synthesize(snapshot: Readonly<OrchestrationSnapshot>): Promise<SynthesisResult>
 }
+
+export type RootAcceptanceOutcome = "accepted" | "rework" | "blocked"
+
+/** The root-owned gate is the only authority allowed to complete a run. */
+export interface RootAcceptanceAdapter {
+	accept(input: {
+		run: Readonly<OrchestrationRun>
+		snapshot: Readonly<OrchestrationSnapshot>
+	}): Promise<{ outcome: RootAcceptanceOutcome; feedback?: string }>
+}

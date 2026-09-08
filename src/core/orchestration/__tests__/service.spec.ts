@@ -250,7 +250,7 @@ describe("OrchestrationService", () => {
 				},
 			},
 			undefined,
-			{ review, integration },
+			{ review, integration, acceptance: { accept: vi.fn(async () => ({ outcome: "accepted" as const })) } },
 		)
 		const reviewInput = input()
 		reviewInput.nodes = reviewInput.nodes.map((node) => ({
@@ -421,6 +421,24 @@ describe("OrchestrationService", () => {
 		expect(route.resolve).toHaveBeenCalledTimes(1)
 		expect(start).not.toHaveBeenCalled()
 		expect(store.get().nodes[0]).toMatchObject({ status: "failed", error: { code: "route_rejected" } })
+	})
+
+	it("returns acceptance rework to a dispatchable node instead of dead-ending", async () => {
+		const store = memory()
+		const start = vi.fn(async ({ node }) => ({ taskId: node.nodeId, cancel: async () => undefined }))
+		const accept = vi
+			.fn()
+			.mockResolvedValueOnce({ outcome: "rework" as const, feedback: "add evidence" })
+			.mockResolvedValueOnce({ outcome: "accepted" as const })
+		const service = new OrchestrationService(store.persistence, { start }, undefined, { acceptance: { accept } })
+		await service.start({ ...input(), nodes: [input().nodes[0]] })
+		await service.dispatch("r")
+		await service.handleChildEvent({ runId: "r", nodeId: "a", idempotencyKey: "first", status: "integrated" })
+		expect(store.get().run.status).toBe("running")
+		expect(store.get().nodes[0].status).toBe("running")
+		expect(start).toHaveBeenCalledTimes(2)
+		await service.handleChildEvent({ runId: "r", nodeId: "a", idempotencyKey: "second", status: "integrated" })
+		expect(store.get().run.status).toBe("completed")
 	})
 
 	it("starts at least two independent workers when both configured limits permit it", async () => {
