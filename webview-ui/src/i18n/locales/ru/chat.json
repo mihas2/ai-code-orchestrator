@@ -20,6 +20,13 @@
 		"openApiHistory": "Открыть историю API",
 		"openUiHistory": "Открыть историю UI",
 		"backToParentTask": "Родительская задача",
+		"role": "Роль: {{role}}",
+		"model": "Модель: {{model}}",
+		"status": "Статус: {{status}}",
+		"unknown": "неизвестно",
+		"statusUnknown": "статус неизвестен",
+		"budgetUnset": "Лимит не задан",
+		"subtasks": "Подзадачи",
 		"orchestration": {
 			"taskRole": "задача",
 			"budget": "Бюджет: {{count}} токенов",

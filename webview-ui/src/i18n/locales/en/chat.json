@@ -20,6 +20,13 @@
 		"openApiHistory": "Open API History",
 		"openUiHistory": "Open UI History",
 		"backToParentTask": "Parent task",
+		"role": "Role: {{role}}",
+		"model": "Model: {{model}}",
+		"status": "Status: {{status}}",
+		"unknown": "unknown",
+		"statusUnknown": "status unknown",
+		"budgetUnset": "Budget: not set",
+		"subtasks": "Subtasks",
 		"orchestration": {
 			"taskRole": "task",
 			"budget": "Budget: {{count}} tokens",

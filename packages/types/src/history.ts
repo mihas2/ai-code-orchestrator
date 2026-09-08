@@ -19,6 +19,8 @@ export const historyItemSchema = z.object({
 	size: z.number().optional(),
 	workspace: z.string().optional(),
 	mode: z.string().optional(),
+	/** Model resolved for this task at runtime. Absent on legacy history records. */
+	modelId: z.string().optional(),
 	apiConfigName: z.string().optional(), // Provider profile name for sticky profile feature
 	status: z.enum(["active", "completed", "delegated"]).optional(),
 	delegatedToId: z.string().optional(), // Last child this parent delegated to

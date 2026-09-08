@@ -103,6 +103,7 @@ describe("TaskHeader", () => {
 	})
 	const defaultProps: TaskHeaderProps = {
 		task: { type: "say", ts: Date.now(), text: "Test task", images: [] },
+		currentTaskId: "test-task-id",
 		tokensIn: 100,
 		tokensOut: 50,
 		totalCost: 0.05,
@@ -121,6 +122,25 @@ describe("TaskHeader", () => {
 		)
 	}
 
+	it("renders orchestration details for the root task, including child budget", () => {
+		const snapshot = {
+			run: { runId: "run-root", rootTaskId: "test-task-id", status: "running", budget: { tokenLimit: 1200 } },
+			nodes: [
+				{
+					nodeId: "child-node",
+					taskId: "child-task",
+					title: "Worker",
+					status: "running",
+					inputContract: { tokenBudget: 500 },
+				},
+			],
+		}
+		renderTaskHeader({ orchestrationSnapshot: snapshot })
+		expect(screen.getByRole("region", { name: "Orchestration" })).toBeInTheDocument()
+		expect(screen.getByText("Worker")).toBeInTheDocument()
+		expect(screen.getByText("Budget 500")).toBeInTheDocument()
+	})
+
 	it("renders orchestration for a node-owned child but not an unrelated task", () => {
 		const snapshot = {
 			run: { runId: "run-child", rootTaskId: "root-task", status: "running" },
@@ -136,7 +156,7 @@ describe("TaskHeader", () => {
 			],
 		}
 		mockExtensionState.currentTaskItem = { id: "child-task" }
-		const { rerender } = renderTaskHeader({ orchestrationSnapshot: snapshot })
+		const { rerender } = renderTaskHeader({ currentTaskId: "child-task", orchestrationSnapshot: snapshot })
 		expect(screen.getByText("Reviewer")).toBeInTheDocument()
 		expect(screen.getByText("chat:orchestration.partOfRun")).toBeInTheDocument()
 
@@ -146,6 +166,7 @@ describe("TaskHeader", () => {
 				<TaskHeader
 					{...defaultProps}
 					task={{ ...defaultProps.task, text: "Unrelated task" }}
+					currentTaskId="unrelated-child"
 					orchestrationSnapshot={snapshot}
 				/>
 			</QueryClientProvider>,
@@ -157,6 +178,7 @@ describe("TaskHeader", () => {
 	it("does not attach a stale snapshot after navigation", () => {
 		mockExtensionState.currentTaskItem = { id: "new-task" }
 		renderTaskHeader({
+			currentTaskId: "new-task",
 			orchestrationSnapshot: {
 				run: { runId: "stale", rootTaskId: "old-root", status: "completed" },
 				nodes: [{ nodeId: "old-node", taskId: "old-child", status: "completed" }],
@@ -180,6 +202,7 @@ describe("TaskHeader", () => {
 				<TaskHeader
 					{...defaultProps}
 					task={{ ...defaultProps.task, text: "Another task" }}
+					currentTaskId="another-task"
 					orchestrationSnapshot={snapshot}
 				/>
 			</QueryClientProvider>,
@@ -201,6 +224,37 @@ describe("TaskHeader", () => {
 
 		expect(screen.queryByText("gpt-5.6-sol")).not.toBeInTheDocument()
 		expect(screen.queryByText("cc/claude-opus-4-8")).not.toBeInTheDocument()
+	})
+
+	it("renders ordinary delegated task lineage from task history without a DAG snapshot", () => {
+		mockExtensionState.currentTaskItem = {
+			id: "parent-task",
+			childIds: ["child-task"],
+		} as any
+		renderTaskHeader({
+			currentTaskId: "parent-task",
+			taskHistory: [
+				{ id: "child-task", task: "Исследовать и исправить UI ошибок провайдера", status: "active" },
+			] as any,
+		})
+		expect(screen.getByTestId("task-lineage")).toBeInTheDocument()
+		expect(screen.getByText("Исследовать и исправить UI ошибок провайдера")).toBeInTheDocument()
+		expect(screen.getByText("active")).toBeInTheDocument()
+	})
+
+	it("renders task-scoped role, model, status and unset budget for an ordinary child", () => {
+		mockExtensionState.currentTaskItem = {
+			id: "child-task",
+			parentTaskId: "parent-task",
+			mode: "debug",
+			modelId: "gpt-child",
+			status: "active",
+		} as any
+		renderTaskHeader({ currentTaskId: "child-task", parentTaskId: "parent-task" })
+		expect(screen.getByText("chat:task.role")).toBeInTheDocument()
+		expect(screen.getByText("chat:task.model")).toBeInTheDocument()
+		expect(screen.getByText("chat:task.status")).toBeInTheDocument()
+		expect(screen.getByText("chat:task.budgetUnset")).toBeInTheDocument()
 	})
 
 	it("should display cost when totalCost is greater than 0", () => {

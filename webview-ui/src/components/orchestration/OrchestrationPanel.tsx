@@ -142,9 +142,8 @@ const OrchestrationPanel = ({
 	const contextSnapshot = useExtensionState().orchestrationSnapshot
 	const orchestrationSnapshot = snapshot ?? contextSnapshot
 	const nodes = useMemo(() => orchestrationSnapshot?.nodes as TaskNode[] | undefined, [orchestrationSnapshot])
-	// Direct rendering remains expanded for the component harness; TaskHeader supplies
-	// a snapshot and gets the compact production default.
-	const [expanded, setExpanded] = useState(snapshot === undefined)
+	// The panel was moved into TaskHeader, so keep its task details visible there.
+	const [expanded, setExpanded] = useState(true)
 	const [cancelPending, setCancelPending] = useState(false)
 	if (!orchestrationSnapshot) return null
 	const terminal = ["completed", "failed", "canceled"].includes(orchestrationSnapshot.run.status)
