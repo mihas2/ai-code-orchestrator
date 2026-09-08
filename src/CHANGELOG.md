@@ -1,5 +1,25 @@
 # AI Code Orchestrator
 
+## [1.2.2] - 2026-09-08
+
+### Changed
+
+- Completed the AI Code Orchestrator branding and identifier migration across extension manifests, localizations, documentation, and webview surfaces.
+- Rebuilt the webview before VSIX packaging and added a reproducible `install:vsix` workflow.
+- Simplified orchestration UI state and task presentation by removing the obsolete panel and noisy task details while retaining useful delegation context.
+- Improved delegated task context so child tasks receive the relevant orchestration and parent-task details.
+
+### Fixed
+
+- Corrected reviewer delegation so reviewer tasks use the intended reviewer flow and context.
+- Preserved provider error details in chat, including model information and readable overflow handling.
+- Added retries with bounded backoff for transient code indexer API failures.
+
+### Validation
+
+- Added and updated focused tests for orchestration planning/delegation, provider errors, task UI, and indexer retries.
+- Release validation covers formatting, linting, type checks, tests, and builds; environment-dependent VSIX installation and end-to-end checks may require a local VS Code host.
+
 ## [1.2.1] - 2026-09-07
 
 ### Fixed
