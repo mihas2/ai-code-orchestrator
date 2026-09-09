@@ -1,5 +1,16 @@
 # AI Code Orchestrator
 
+## [1.3.0] - 2026-09-09
+
+### Changed
+
+- Improved orchestrator to team-lead behavior: the orchestrator now acts as a persistent team lead, maintaining role context across delegated subtasks and restoring the parent role reliably after each delegation.
+- Unified role prompts and metadata across all orchestration modes, ensuring consistent system prompt generation and mode-to-role mapping for delegated agents.
+
+### Fixed
+
+- Reliably restores the parent role after delegated tasks complete, preventing role bleed-through between subtask boundaries.
+
 ## [1.2.2] - 2026-09-08
 
 ### Changed
