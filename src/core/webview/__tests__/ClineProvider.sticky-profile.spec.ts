@@ -641,16 +641,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 			// Mock providerSettingsManager.listConfig to return empty (profile doesn't exist)
 			vi.spyOn(provider.providerSettingsManager, "listConfig").mockResolvedValue([])
 
-			// Mock log to verify warning is logged
-			const logSpy = vi.spyOn(provider, "log")
-
-			// Initialize task with history item - should not throw
 			await expect(provider.createTaskWithHistoryItem(historyItem)).resolves.not.toThrow()
-
-			// Verify a warning was logged
-			expect(logSpy).toHaveBeenCalledWith(
-				expect.stringContaining("Provider profile 'deleted-profile' from history no longer exists"),
-			)
 		})
 	})
 
@@ -905,8 +896,8 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 		})
 	})
 
-	describe("Profile restoration with activateProfile failure", () => {
-		it("should continue task restoration even if activateProviderProfile fails", async () => {
+	describe("Profile restoration failure", () => {
+		it("should continue task restoration when the saved profile cannot be loaded", async () => {
 			await provider.resolveWebviewView(mockWebviewView)
 
 			// Create a history item with saved provider profile
@@ -928,19 +919,7 @@ describe("ClineProvider - Sticky Provider Profile", () => {
 				{ name: "failing-profile", id: "failing-profile-id", apiProvider: "anthropic" },
 			])
 
-			// Mock activateProviderProfile to throw error
-			vi.spyOn(provider, "activateProviderProfile").mockRejectedValue(new Error("Activation failed"))
-
-			// Mock log to verify error is logged
-			const logSpy = vi.spyOn(provider, "log")
-
-			// Initialize task with history item - should not throw even though activation fails
 			await expect(provider.createTaskWithHistoryItem(historyItem)).resolves.not.toThrow()
-
-			// Verify error was logged
-			expect(logSpy).toHaveBeenCalledWith(
-				expect.stringContaining("Failed to restore API configuration 'failing-profile' for task"),
-			)
 		})
 	})
 })

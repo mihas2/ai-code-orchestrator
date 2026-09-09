@@ -346,6 +346,26 @@ describe("ClineProvider delegation flow", () => {
 		expect(child.abortTask).toHaveBeenCalled()
 	})
 
+	it("restores parent runtime flags when child creation rejects", async () => {
+		const provider = makeProvider()
+		const parent = task(provider, "parent")
+		parent.abort = true
+		parent.abandoned = true
+		provider.clineStack = [parent]
+		provider.createTask = vi.fn().mockRejectedValue(new Error("child rejected"))
+		await expect(
+			provider.delegateParentAndOpenChild({
+				parentTaskId: "parent",
+				message: "work",
+				initialTodos: [],
+				mode: "code",
+			}),
+		).rejects.toThrow("child rejected")
+		expect(provider.getCurrentTask()).toBe(parent)
+		expect(parent.abort).toBe(true)
+		expect(parent.abandoned).toBe(true)
+	})
+
 	it("handles an invalid child configuration without corrupting the parent", async () => {
 		const provider = makeProvider()
 		const parent = task(provider, "parent")
