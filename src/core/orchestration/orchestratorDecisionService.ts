@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto"
+import { randomUUID, createHash } from "node:crypto"
 import {
 	taskAcceptanceDecisionSchema,
 	taskStrategyAssessmentSchema,
@@ -6,7 +6,18 @@ import {
 	type TaskStrategyRequest,
 } from "@ai-code-orchestrator/types"
 import type { BoundedLeadResult, StreamingLeadProvider } from "./leadProvider"
+import type { RootBudgetRepository } from "./budgetRepository"
 import { leadFingerprint, type LeadSession, type LeadSessionStore, type LeadUsage } from "./leadSession"
+
+export interface LeadBudgetLedger {
+	assessment: number
+	repair: number
+	acceptance: number
+	execution: number
+	rework: number
+	actual: number
+	calls: number
+}
 
 export interface LeadContext {
 	rootTaskId: string
@@ -15,24 +26,110 @@ export interface LeadContext {
 	workspaceFingerprint: string
 	allowedRoles: string[]
 	allowedModels: string[]
-	budget: { assessment: number; execution: number; acceptance: number }
+	allowedCapabilities?: string[]
+	/** Canonical prompt generated for the existing orchestrator mode. */
+	systemPrompt: string
+	budget: {
+		assessment: number
+		execution: number
+		acceptance: number
+		repair?: number
+		rework?: number
+		calls?: number
+	}
+	budgetRepository?: RootBudgetRepository
 	signal: AbortSignal
 }
 
-const systemPrompt = `You are the selected team lead. Understand the request before execution and return only JSON matching the supplied schema. Choose the smallest sufficient team. A short task may still be complex and a long task may be simple. If facts are missing, choose clarification or a bounded research phase; do not invent architecture. Preserve every requirement. Reserve acceptance resources. Worker claims are not evidence.`
+export type EvidenceRecord =
+	| {
+			id: string
+			type: "task-history"
+			taskId: string
+			role: string
+			contentHash: string
+			content: unknown
+			provenance?: Record<string, unknown>
+	  }
+	| {
+			id: string
+			type: "tool-result"
+			taskId: string
+			toolUseId?: string
+			contentHash: string
+			content: unknown
+			provenance?: Record<string, unknown>
+	  }
+	| {
+			id: string
+			type: "node-result"
+			nodeId: string
+			resultHash: string
+			status: string
+			provenance?: Record<string, unknown>
+	  }
+	| {
+			id: string
+			type: "artifact"
+			ref: string
+			hash?: string
+			status: "available" | "unavailable"
+			provenance?: Record<string, unknown>
+	  }
+	| {
+			id: string
+			type: "test"
+			command: string
+			passed: boolean
+			exitCode?: number
+			outputRef?: string
+			provenance?: Record<string, unknown>
+	  }
+	| {
+			id: string
+			type: "review"
+			findingId: string
+			eventId?: string
+			status: string
+			criterionId?: string
+			provenance?: Record<string, unknown>
+			attempt?: number
+	  }
+	| {
+			id: string
+			type: "event"
+			eventId: string
+			eventType: string
+			status: string
+			provenance?: Record<string, unknown>
+	  }
+
+export interface EvidenceRegistry {
+	requestId: string
+	originalGoal: string
+	resultHash: string
+	workspaceRevision: string
+	records: EvidenceRecord[]
+}
 
 export interface LeadAcceptanceContext {
 	rootTaskId: string
 	requestId: string
 	criteria: string[]
 	result: string
-	context?: unknown
+	evidenceRegistry: EvidenceRegistry
+	systemPrompt: string
 	signal: AbortSignal
 	budget: number
 	attempt: number
+	/** Durable identity allocated and persisted before this provider call. */
+	attemptId: string
+	budgetRepository?: RootBudgetRepository
+	/** Persists the root run ledger after every reserve/reconcile boundary. */
+	persistBudget?: () => Promise<void>
 }
 
-export class LeadCoordinator {
+export class OrchestratorDecisionService {
 	private readonly active = new Map<string, Promise<LeadSession>>()
 	private readonly acceptanceActive = new Map<string, Promise<TaskAcceptanceDecision>>()
 	constructor(
@@ -81,25 +178,35 @@ export class LeadCoordinator {
 			evidence: [],
 			usage: { calls: 0, known: true },
 			reservations: { ...context.budget, used: 0 },
+			budget: context.budgetRepository?.getLedger(),
 			ambiguousRequest: { requestId, operation: "assessment", startedAt: now },
 			updatedAt: now,
 		}
+		const budgetKey = `lead:assessment:${session.sessionId}:${session.requestRevision}`
+		const reserved = await context.budgetRepository?.reserve(budgetKey, "assessment", context.budget.assessment)
+		if (reserved === false) throw new Error("Assessment attempt reservation already exists")
+		// Persist the reservation and in-flight marker in the same session write
+		// before the provider can consume any budget.
+		session.budget = context.budgetRepository?.getLedger() as import("./types").BudgetLedger | undefined
 		await this.store.save(key, session, existing?.version)
 		this.emit("lead.call.started", { sessionId: session.sessionId, requestId, operation: "assessment" })
 		let response: BoundedLeadResult
 		try {
 			response = await this.provider.complete({
 				requestId,
-				systemPrompt,
+				systemPrompt: context.systemPrompt,
 				prompt: assessmentPrompt(context),
 				signal: context.signal,
 				timeoutMs: 30_000,
 				maxOutputCharacters: 24_000,
 			})
 		} catch (error) {
+			// A provider failure has unknown usage unless it supplied a response.
+			await context.budgetRepository?.charge(budgetKey, undefined, false)
 			session = {
 				...session,
 				phase: context.signal.aborted ? "canceled" : "blocked",
+				budget: context.budgetRepository?.getLedger() as import("./types").BudgetLedger | undefined,
 				version: session.version + 1,
 				updatedAt: Date.now(),
 			}
@@ -128,19 +235,34 @@ export class LeadCoordinator {
 			decision.success &&
 			decision.data.requestId === requestId &&
 			decision.data.roles.every(
-				(role) => context.allowedRoles.includes(role.role) && context.allowedModels.includes(role.model),
+				(role) =>
+					context.allowedRoles.includes(role.role) &&
+					context.allowedModels.includes(role.model) &&
+					role.capabilities.every((capability) => context.allowedCapabilities?.includes(capability) ?? false),
 			)
+		await context.budgetRepository?.charge(
+			budgetKey,
+			{
+				inputTokens: response.usage.inputTokens,
+				outputTokens: response.usage.outputTokens,
+				cost: response.usage.cost,
+			},
+			response.usage.known,
+		)
 		const usage = mergeUsage(session.usage, response.usage)
 		// Unknown provider usage cannot satisfy a hard budget reservation.
 		const withinBudget =
 			response.usage.known &&
-			(response.usage.inputTokens ?? 0) + (response.usage.outputTokens ?? 0) <= context.budget.assessment
+			(response.usage.inputTokens ?? 0) + (response.usage.outputTokens ?? 0) <= context.budget.assessment &&
+			(response.usage.calls ?? 1) <= (context.budget.calls ?? Number.POSITIVE_INFINITY)
 		const used = response.usage.known ? (response.usage.inputTokens ?? 0) + (response.usage.outputTokens ?? 0) : 0
 		session = {
 			...session,
 			decision: authorized && withinBudget ? decision.data : undefined,
+			modelId: response.modelId,
 			phase: authorized && withinBudget ? "executing" : "blocked",
 			usage,
+			budget: context.budgetRepository?.getLedger() as import("./types").BudgetLedger | undefined,
 			reservations: { ...session.reservations, used },
 			ambiguousRequest: undefined,
 			version: session.version + 1,
@@ -173,34 +295,73 @@ export class LeadCoordinator {
 				rationale: "Acceptance repair limit exceeded",
 				criteria: [],
 			}
-		const response = await this.provider.complete({
-			requestId: context.requestId,
-			systemPrompt,
-			prompt: acceptancePrompt(context),
-			signal: context.signal,
-			timeoutMs: 30_000,
-			maxOutputCharacters: 16_000,
-		})
+		const budgetKey = `lead:acceptance:${context.attemptId}`
+		const reserved = await context.budgetRepository?.reserve(
+			budgetKey,
+			context.attempt > 1 ? "repair" : "acceptance",
+			context.budget,
+		)
+		if (reserved === false) throw new Error("Acceptance attempt reservation already exists")
+		await context.persistBudget?.()
+		let response: BoundedLeadResult
+		try {
+			response = await this.provider.complete({
+				requestId: context.requestId,
+				systemPrompt: context.systemPrompt,
+				prompt: acceptancePrompt(context),
+				signal: context.signal,
+				timeoutMs: 30_000,
+				maxOutputCharacters: 16_000,
+			})
+		} catch (error) {
+			await context.budgetRepository?.charge(budgetKey, undefined, false)
+			await context.persistBudget?.()
+			throw error
+		}
+		await context.budgetRepository?.charge(
+			budgetKey,
+			{
+				inputTokens: response.usage.inputTokens,
+				outputTokens: response.usage.outputTokens,
+				cost: response.usage.cost,
+			},
+			response.usage.known,
+		)
+		await context.persistBudget?.()
 		if (!response.usage.known) throw new Error("Acceptance provider usage is unknown")
 		const used = (response.usage.inputTokens ?? 0) + (response.usage.outputTokens ?? 0)
 		if (used > context.budget) throw new Error("Acceptance budget exceeded")
 		const parsed = taskAcceptanceDecisionSchema.safeParse(parseJson(response.text))
 		if (!parsed.success || parsed.data.requestId !== context.requestId)
 			throw new Error("Invalid lead acceptance decision")
-		const evidenceText = JSON.stringify({ result: context.result, context: context.context })
-		const invalidEvidence = parsed.data.criteria.some(
-			(d, i) =>
-				d.criterionId !== `REQ-${i + 1}` ||
-				d.evidenceRefs.length === 0 ||
-				d.evidenceRefs.some((ref) => typeof ref !== "string" || !evidenceText.includes(ref)),
-		)
+		const registry = new Map(context.evidenceRegistry.records.map((record) => [record.id, record]))
+		const invalidEvidence = parsed.data.criteria.some((d, i) => {
+			const criterionId = `REQ-${i + 1}`
+			return (
+				d.criterionId !== criterionId ||
+				(d.status === "met" && d.evidenceRefs.length === 0) ||
+				d.evidenceRefs.some((ref) => {
+					const evidence = registry.get(ref)
+					if (!evidence) return true
+					if (evidence.type === "review" && evidence.criterionId && evidence.criterionId !== criterionId)
+						return true
+					if (evidence.type === "review" && evidence.status === "blocking") return true
+					if (evidence.type === "artifact" && evidence.status !== "available") return true
+					return (
+						d.status === "met" &&
+						((evidence.type === "test" && !evidence.passed) ||
+							(evidence.type === "node-result" && evidence.status !== "completed"))
+					)
+				})
+			)
+		})
 		const incomplete =
 			parsed.data.criteria.length !== context.criteria.length ||
 			parsed.data.criteria.some((d) => d.status !== "met")
 		if (invalidEvidence || incomplete)
 			return {
 				...parsed.data,
-				outcome: parsed.data.outcome === "blocked" ? "blocked" : "rework",
+				outcome: "rework",
 				feedback:
 					parsed.data.feedback ??
 					"Provide actionable fixes and grounded evidence references for every unmet criterion.",
@@ -210,11 +371,39 @@ export class LeadCoordinator {
 }
 
 function acceptancePrompt(context: LeadAcceptanceContext) {
-	return `Return only JSON matching this schema: {schemaVersion:1,requestId:string,outcome:"accepted|rework|blocked",confidence:number,rationale:string,criteria:[{criterionId:string,status:"met|unmet|missing|blocked",evidenceRefs:string[],rationale:string}],feedback?:string}. Map every criterion to concrete evidence refs. Missing, failed, or partial evidence cannot be accepted. Criteria: ${JSON.stringify(context.criteria)} Result/artifacts/tests context: ${JSON.stringify({ result: context.result, context: context.context }).slice(0, 48_000)}`
+	const schema = {
+		schemaVersion: 1,
+		requestId: "string",
+		outcome: "accepted|rework|blocked",
+		confidence: "number 0..1",
+		rationale: "string",
+		feedback: "optional string",
+		criteria: [
+			{
+				criterionId: "REQ-n",
+				status: "met|unmet|unknown",
+				rationale: "string",
+				evidenceRefs: ["evidence registry record id"],
+			},
+		],
+	}
+	return `Acceptance protocol schema: ${JSON.stringify(schema)}\nRequestId: ${JSON.stringify(context.requestId)}\nCriteria: ${JSON.stringify(context.criteria)}\nEvidence registry: ${JSON.stringify(context.evidenceRegistry)}\nCompletion claim: ${JSON.stringify(context.result).slice(0, 48_000)}`
+}
+
+export function sha256(value: string): string {
+	return createHash("sha256").update(value).digest("hex")
 }
 
 function assessmentPrompt(context: LeadContext) {
-	return `Schema: ${JSON.stringify({ schemaVersion: 1, requestId: context.request.requestId, task: { summary: "string", goal: "string" }, decision: "direct|delegated|orchestrated|clarification", judgment: { label: "low|medium|high", confidence: 1, rationale: "string" }, phases: [], dependencies: [], roles: [], acceptance: [], evidence: [], checkpoints: [], estimates: { durationMs: 0, budget: { tokens: 0, cost: 0, calls: 0 } }, hardBudget: { tokens: 0, cost: 0, calls: 0 }, nonGoals: [], risks: [], policyConstraints: [] })}\nAllowed roles: ${context.allowedRoles.join(", ")}\nAllowed models: ${context.allowedModels.join(", ")}\nRequest: ${JSON.stringify(context.request).slice(0, 48_000)}`
+	const schema = {
+		schemaVersion: 1,
+		requestId: "string",
+		decision: "direct|delegated|orchestrated|clarification",
+		phases: [{ id: "string", roles: ["authorized role"], dependsOn: ["phase id"], acceptance: ["criterion"] }],
+		roles: [{ role: "authorized role", model: "authorized model", capabilities: ["authorized capability"] }],
+		acceptance: ["criterion"],
+	}
+	return `Assessment protocol schema: ${JSON.stringify(schema)}\nRequestId: ${JSON.stringify(context.request.requestId)}\nOriginal goal: ${JSON.stringify(context.request.goal)}\nAllowed roles: ${JSON.stringify(context.allowedRoles)}\nAllowed models: ${JSON.stringify(context.allowedModels)}\nAllowed capabilities: ${JSON.stringify(context.allowedCapabilities ?? [])}`
 }
 function parseJson(text: string): unknown {
 	try {

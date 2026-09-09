@@ -1,4 +1,5 @@
 import os from "os"
+import { createHash, randomUUID } from "node:crypto"
 import * as path from "path"
 import fs from "fs/promises"
 import EventEmitter from "events"
@@ -42,6 +43,7 @@ import {
 import { aggregateTaskCostsRecursive, type AggregatedCosts } from "./aggregateTaskCosts"
 
 import { Package } from "../../shared/package"
+import { fingerprintWorkspace } from "../orchestration/workspaceFingerprint"
 import { findLast } from "../../shared/array"
 import { supportPrompt } from "../../shared/support-prompt"
 import { GlobalFileNames } from "../../shared/globalFileNames"
@@ -97,9 +99,12 @@ import {
 	validateReviewOnlyPlan,
 } from "../orchestration/planner"
 import { extractResultContract, RESULT_CONTRACT_INSTRUCTION } from "../orchestration/resultContract"
-import { LeadCoordinator } from "../orchestration/leadCoordinator"
+import { OrchestratorDecisionService } from "../orchestration/orchestratorDecisionService"
 import { StreamingLeadProvider } from "../orchestration/leadProvider"
-import { VersionedLeadSessionStore } from "../orchestration/leadSession"
+import { leadFingerprint, VersionedLeadSessionStore } from "../orchestration/leadSession"
+import { buildEvidenceRegistry, buildTaskEvidenceRegistry } from "../orchestration/evidenceRegistry"
+import { createBudget } from "../orchestration/budget"
+import { PersistedRootBudgetRepository } from "../orchestration/budgetRepository"
 import type { ClineMessage, TodoItem } from "@ai-code-orchestrator/types"
 import { readApiMessages, saveApiMessages, saveTaskMessages, TaskHistoryStore } from "../task-persistence"
 import { readTaskMessages } from "../task-persistence/taskMessages"
@@ -173,7 +178,8 @@ export class ClineProvider
 	public readonly providerSettingsManager: ProviderSettingsManager
 	public readonly customModesManager: CustomModesManager
 	private orchestrationService?: OrchestrationService
-	private readonly leadCoordinators = new WeakMap<object, LeadCoordinator>()
+	private readonly orchestratorDecisionServices = new WeakMap<object, OrchestratorDecisionService>()
+	private readonly rootBudgetLedgers = new Map<string, import("../orchestration/types").BudgetLedger>()
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -1083,12 +1089,45 @@ export class ClineProvider
 		return task
 	}
 
-	public async leadAcceptanceGate(params: { taskId: string; result: string; parentTaskId?: string }) {
-		// Only lead-managed roots use this gate; preserve ordinary and legacy flows.
-		if (params.parentTaskId) return { outcome: "accepted" as const }
+	public async leadAcceptanceGate(params: {
+		taskId: string
+		result: string
+		parentTaskId?: string
+		attemptId?: string
+	}) {
+		// Delegated children are not acceptance authorities; completion is fail-closed.
+		if (params.parentTaskId)
+			return { outcome: "blocked" as const, feedback: "Delegated completion requires root acceptance." }
 		const rootTaskId = params.taskId
+		const task = await this.resolveTaskForOrchestration(rootTaskId)
+		const settings =
+			(await this.contextProxy.getValue("orchestrationSettings")) ??
+			(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS
+		if (!task)
+			return {
+				outcome: "blocked" as const,
+				feedback: "Root task is not active; recover the durable root session.",
+			}
+		if ((await task.getTaskMode()) !== (settings.orchestratorModeSlug ?? "orchestrator"))
+			return { outcome: "blocked" as const, feedback: "Root task is no longer in orchestrator mode." }
 		const session = await new VersionedLeadSessionStore(this.context.globalState).load(rootTaskId)
-		if (!session) return { outcome: "accepted" as const }
+		if (params.attemptId) {
+			try {
+				const snapshot = await (await this.getOrchestrationService()).getSnapshot(`run:${rootTaskId}`)
+				if (snapshot.acceptanceInFlight?.attemptId !== params.attemptId)
+					return {
+						outcome: "blocked" as const,
+						feedback: "Acceptance attempt identity is stale or mismatched.",
+					}
+			} catch {
+				return { outcome: "blocked" as const, feedback: "Acceptance attempt identity could not be verified." }
+			}
+		}
+		if (!session)
+			return {
+				outcome: "blocked" as const,
+				feedback: "Orchestrator root has no durable decision session; completion is blocked.",
+			}
 		if (!session.decision)
 			return {
 				outcome: "blocked" as const,
@@ -1096,45 +1135,174 @@ export class ClineProvider
 			}
 		if (session.phase === "canceled")
 			return { outcome: "blocked" as const, feedback: "Canceled root tasks cannot be completed." }
-		if (session.phase === "completed" && session.acceptance?.outcome === "accepted")
+		const resultHash = createHash("sha256").update(params.result).digest("hex")
+		const currentRevision = await this.getWorkspaceRevisionFingerprint(task.cwd)
+		if (
+			session.phase === "completed" &&
+			session.acceptance?.outcome === "accepted" &&
+			session.acceptedResultHash === resultHash &&
+			currentRevision !== "unknown-workspace-revision" &&
+			session.acceptedWorkspaceRevision === currentRevision
+		)
 			return { outcome: "accepted" as const }
-		const task = await this.resolveTaskForOrchestration(rootTaskId)
-		const api = task?.api
+		const api = task.api
 		if (!api?.createMessage)
 			return {
 				outcome: "blocked" as const,
 				feedback: "Acceptance provider is unavailable; completion is fail-closed.",
 			}
-		let coordinator = this.leadCoordinators.get(api as object)
+		let coordinator = this.orchestratorDecisionServices.get(api as object)
 		if (!coordinator) {
-			coordinator = new LeadCoordinator(
+			coordinator = new OrchestratorDecisionService(
 				new StreamingLeadProvider(api),
 				new VersionedLeadSessionStore(this.context.globalState),
 				(event, data) => this.log(`[lead] ${event} ${JSON.stringify(data)}`),
 			)
-			this.leadCoordinators.set(api as object, coordinator)
+			this.orchestratorDecisionServices.set(api as object, coordinator)
 		}
+		const store = new VersionedLeadSessionStore(this.context.globalState)
+		const requestVersion = session.version + 1
+		const attemptId = params.attemptId ?? randomUUID()
+		let attempt = 0
 		try {
-			const store = new VersionedLeadSessionStore(this.context.globalState)
-			const requestVersion = session.version
+			const leaseWorkspaceRevision = await this.getWorkspaceRevisionFingerprint(task.cwd)
+			if (session.accepting)
+				return {
+					outcome: "blocked" as const,
+					feedback:
+						session.accepting.expiresAt > Date.now()
+							? "Another acceptance attempt still owns the persisted lease."
+							: "Acceptance reconciliation is required; an expired attempt will not be retried automatically.",
+				}
+			attempt = Math.max(session.acceptanceAttempt ?? 0, session.acceptance?.attempt ?? 0) + 1
+			if (attempt > 2)
+				return {
+					outcome: "blocked" as const,
+					feedback: "Acceptance repair limit exceeded.",
+				}
+			const accepting: import("../orchestration/leadSession").LeadSession = {
+				...session,
+				// Allocate the attempt before the provider call so malformed/error responses
+				// cannot be retried with the same durable attempt number.
+				acceptanceAttempt: attempt,
+				phase: "accepting" as const,
+				accepting: {
+					attempt,
+					attemptId,
+					requestId: session.requestId,
+					expiresAt: Date.now() + 60_000,
+					resultHash,
+					workspaceRevision: leaseWorkspaceRevision,
+					requestRevision: session.requestRevision,
+					startedAt: Date.now(),
+				},
+				version: requestVersion,
+				updatedAt: Date.now(),
+			}
+			await store.save(rootTaskId, accepting, session.version)
+			const runId = `run:${rootTaskId}`
+			const revision = await this.getWorkspaceRevisionFingerprint(task?.cwd ?? this.cwd)
+			const ordinary = session.decision.decision !== "orchestrated"
+			const taskIds = ordinary
+				? [rootTaskId, ...((await this.getTaskWithId(rootTaskId)).historyItem.childIds ?? [])]
+				: []
+			const taskEvidence = ordinary
+				? await Promise.all(
+						taskIds.map(async (taskId) => {
+							const persisted = await this.getTaskWithId(taskId)
+							return {
+								taskId,
+								role: persisted.historyItem.mode ?? "unknown",
+								history: persisted.apiConversationHistory as unknown[],
+							}
+						}),
+					)
+				: []
+			const snapshot = ordinary ? undefined : await (await this.getOrchestrationService()).getSnapshot(runId)
+			const evidenceRegistry = snapshot
+				? buildEvidenceRegistry(snapshot, session.requestId, params.result, revision)
+				: buildTaskEvidenceRegistry({
+						requestId: session.requestId,
+						originalGoal: session.goal,
+						result: params.result,
+						workspaceRevision: revision,
+						tasks: taskEvidence,
+					})
+			const ledger = session.budget ?? this.rootBudgetLedgers.get(rootTaskId) ?? createBudget()
+			this.rootBudgetLedgers.set(rootTaskId, ledger)
+			const budgetRepository = snapshot
+				? await (await this.getOrchestrationService()).getBudgetRepository(runId, rootTaskId)
+				: new PersistedRootBudgetRepository(
+						rootTaskId,
+						runId,
+						ledger,
+						async (currentLedger) => {
+							const latest = await store.load(rootTaskId)
+							if (!latest) throw new Error("Root session disappeared during budget accounting")
+							latest.budget = structuredClone(currentLedger)
+							await store.save(rootTaskId, latest, latest.version)
+						},
+						async (currentLedger) => {
+							const latest = await store.load(rootTaskId)
+							if (latest?.budget) Object.assign(currentLedger, structuredClone(latest.budget))
+						},
+					)
 			const decision = await coordinator.accept({
 				rootTaskId,
 				requestId: session.requestId,
+				systemPrompt: task ? await this.getOrchestratorSystemPrompt(task) : "",
 				criteria: session.decision.acceptance,
 				result: params.result.slice(0, 48_000),
-				context: { taskId: rootTaskId, cwd: task?.cwd ?? this.cwd },
+				evidenceRegistry,
 				signal: task?.currentRequestAbortController?.signal ?? new AbortController().signal,
 				budget: session.reservations.acceptance,
-				attempt: (session.acceptance?.attempt ?? 0) + 1,
+				attempt,
+				attemptId,
+				budgetRepository,
 			})
-			// Re-read after the model call: a restart or competing request may have
-			// advanced this root session while the provider was working.
+			// Re-read both durable records after the call. Local maps only serialize
+			// this extension host; globalState cannot provide a linearizable global CAS.
 			const current = await store.load(rootTaskId)
+			const currentRevision = await this.getWorkspaceRevisionFingerprint(task?.cwd ?? this.cwd)
+			const currentRegistry = snapshot
+				? buildEvidenceRegistry(
+						await (await this.getOrchestrationService()).getSnapshot(runId),
+						session.requestId,
+						params.result,
+						currentRevision,
+					)
+				: buildTaskEvidenceRegistry({
+						requestId: session.requestId,
+						originalGoal: session.goal,
+						result: params.result,
+						workspaceRevision: currentRevision,
+						tasks: await Promise.all(
+							taskIds.map(async (taskId) => {
+								const persisted = await this.getTaskWithId(taskId)
+								return {
+									taskId,
+									role: persisted.historyItem.mode ?? "unknown",
+									history: persisted.apiConversationHistory as unknown[],
+								}
+							}),
+						),
+					})
+			const currentServiceAttempt = params.attemptId
+				? (await (await this.getOrchestrationService()).getSnapshot(runId)).acceptanceInFlight?.attemptId
+				: undefined
 			if (
 				!current ||
+				(params.attemptId !== undefined && currentServiceAttempt !== params.attemptId) ||
 				current.requestId !== session.requestId ||
 				current.fingerprint !== session.fingerprint ||
-				current.version !== requestVersion
+				current.version !== requestVersion ||
+				current.accepting?.attemptId !== attemptId ||
+				current.accepting.expiresAt <= Date.now() ||
+				current.accepting.resultHash !== resultHash ||
+				current.accepting.requestRevision !== session.requestRevision ||
+				current.accepting.workspaceRevision !== revision ||
+				(currentRevision !== revision && currentRevision !== "unknown-workspace-revision") ||
+				JSON.stringify(currentRegistry.records) !== JSON.stringify(evidenceRegistry.records)
 			)
 				return {
 					outcome: "blocked" as const,
@@ -1152,9 +1320,13 @@ export class ClineProvider
 				detail: item.rationale,
 			}))
 			const next = {
-				...session,
+				...current,
 				evidence,
-				acceptance: { ...decision, attempt: (session.acceptance?.attempt ?? 0) + 1 },
+				accepting: undefined,
+				acceptanceAttempt: attempt,
+				acceptedResultHash: decision.outcome === "accepted" ? resultHash : undefined,
+				acceptedWorkspaceRevision: decision.outcome === "accepted" ? currentRevision : undefined,
+				acceptance: { ...decision, attempt, serviceAttemptId: params.attemptId },
 				phase:
 					decision.outcome === "accepted"
 						? ("completed" as const)
@@ -1173,12 +1345,195 @@ export class ClineProvider
 				feedback: decision.feedback ?? (decision.outcome === "accepted" ? undefined : decision.rationale),
 			}
 		} catch (error) {
+			const failureStore = new VersionedLeadSessionStore(this.context.globalState)
+			const latest = await failureStore.load(rootTaskId)
+			const lease = latest?.accepting
+			if (latest && lease) {
+				const key = `run:${rootTaskId}:lead:acceptance:${lease.attemptId}`
+				const knownUsage = latest.budget?.usageByIdempotencyKey?.[key]?.reconciled === true
+				if (knownUsage)
+					await failureStore.save(
+						rootTaskId,
+						{
+							...latest,
+							accepting: undefined,
+							acceptanceAttempt: lease.attempt ?? (latest.acceptanceAttempt ?? 0) + 1,
+							phase: "blocked",
+							version: latest.version + 1,
+							updatedAt: Date.now(),
+						},
+						latest.version,
+					)
+			}
 			this.log(
 				`[lead] acceptance blocked ${JSON.stringify({ sessionId: session.sessionId, reason: error instanceof Error ? error.name : "unknown" })}`,
 			)
 			return {
 				outcome: "blocked" as const,
 				feedback: "Lead acceptance could not be verified; completion is blocked.",
+			}
+		}
+	}
+
+	public async prepareTaskApiRequest(
+		task: Task,
+		attempt: number | string,
+	): Promise<(() => Promise<void>) | undefined> {
+		const rootTaskId = task.rootTaskId ?? task.taskId
+		const store = new VersionedLeadSessionStore(this.context.globalState)
+		const session = await store.load(rootTaskId)
+		const ledger = session?.budget ?? this.rootBudgetLedgers.get(rootTaskId)
+		if (!ledger) return undefined // Explicit specialist tasks without a lead remain unblocked.
+		this.rootBudgetLedgers.set(rootTaskId, ledger)
+		const runId = `run:${rootTaskId}`
+		const repository = new PersistedRootBudgetRepository(
+			rootTaskId,
+			runId,
+			ledger,
+			async (current) => {
+				const latest = await store.load(rootTaskId)
+				if (!latest) throw new Error("Root lead session disappeared during task accounting")
+				latest.budget = structuredClone(current)
+				await store.save(rootTaskId, latest, latest.version)
+			},
+			async (current) => {
+				const latest = await store.load(rootTaskId)
+				if (latest?.budget) Object.assign(current, structuredClone(latest.budget))
+			},
+		)
+		const key = `task:${task.taskId}:${task.instanceId}:attempt:${attempt}`
+		// ApiHandler does not expose a preflight estimate. Reserve the call and reconcile
+		// authoritative token/cost usage after streaming; token limits still fail closed.
+		const reserved = await repository.reserve(key, "execution", 0, 0)
+		if (!reserved) throw new Error("Task API request reservation already exists")
+		return async () => repository.charge(key, undefined, false)
+	}
+
+	public async chargeTaskApiRequest(
+		task: Task,
+		attempt: number | string,
+		usage: {
+			inputTokens: number
+			outputTokens: number
+			cachedInputTokens?: number
+			reasoningTokens?: number
+			cost?: number
+		},
+		known: boolean,
+	): Promise<void> {
+		const rootTaskId = task.rootTaskId ?? task.taskId
+		const store = new VersionedLeadSessionStore(this.context.globalState)
+		const session = await store.load(rootTaskId)
+		const ledger = session?.budget ?? this.rootBudgetLedgers.get(rootTaskId)
+		if (!ledger) return
+		this.rootBudgetLedgers.set(rootTaskId, ledger)
+		const repository = new PersistedRootBudgetRepository(
+			rootTaskId,
+			`run:${rootTaskId}`,
+			ledger,
+			async (current) => {
+				const session = await store.load(rootTaskId)
+				if (!session) throw new Error("Root lead session disappeared during task accounting")
+				session.budget = structuredClone(current)
+				await store.save(rootTaskId, session, session.version)
+			},
+			async (current) => {
+				const session = await store.load(rootTaskId)
+				if (session?.budget) Object.assign(current, structuredClone(session.budget))
+			},
+		)
+		await repository.charge(`task:${task.taskId}:${task.instanceId}:attempt:${attempt}`, usage, known)
+	}
+
+	public async prepareRootTaskExecution(task: Task, goal: string): Promise<boolean> {
+		if (task.parentTaskId) return true
+		const settings =
+			(await this.contextProxy.getValue("orchestrationSettings")) ??
+			(await import("@ai-code-orchestrator/types")).DEFAULT_ORCHESTRATION_SETTINGS
+		if ((await task.getTaskMode()) !== (settings.orchestratorModeSlug ?? "orchestrator")) return true
+		const lead = await this.ensureLeadForTask(task, goal)
+		if (!lead.decision) return false
+		switch (lead.decision.decision) {
+			case "direct":
+				return true
+			case "clarification": {
+				const question = lead.decision.judgment.rationale
+				const store = new VersionedLeadSessionStore(this.context.globalState)
+				const session = await store.load(task.taskId)
+				if (session) {
+					if (session.pendingClarification?.question === question) return false
+					await store.save(
+						task.taskId,
+						{
+							...session,
+							pendingClarification: { question, requestedAt: Date.now() },
+							phase: "blocked",
+							version: session.version + 1,
+							updatedAt: Date.now(),
+						},
+						session.version,
+					)
+				}
+				const { response, text, images } = await task.ask("followup", question, false)
+				if (response === "messageResponse" && text?.trim()) {
+					await task.say("user_feedback", text, images)
+					await task.submitUserMessage(text, images)
+					const latest = await store.load(task.taskId)
+					if (latest) {
+						const nextGoal = `${latest.goal}\n\nClarification response: ${text.trim()}`
+						const nextRequest = {
+							requestId: latest.requestId,
+							summary: nextGoal.slice(0, 4000),
+							goal: nextGoal,
+							context: { mode: await task.getTaskMode(), workspace: task.cwd },
+						}
+						await store.save(
+							task.taskId,
+							{
+								...latest,
+								goal: nextGoal,
+								requestRevision: latest.requestRevision + 1,
+								fingerprint: leadFingerprint(
+									nextRequest,
+									latest.configFingerprint,
+									latest.workspaceFingerprint,
+								),
+								pendingClarification: {
+									question,
+									response: text.trim(),
+									requestedAt: latest.pendingClarification?.requestedAt ?? Date.now(),
+								},
+								decision: undefined,
+								phase: "blocked",
+								version: latest.version + 1,
+								updatedAt: Date.now(),
+							},
+							latest.version,
+						)
+					}
+				}
+				return false
+			}
+			case "delegated": {
+				const persisted = (await this.getTaskWithId(task.taskId)).historyItem
+				if (persisted.awaitingChildId || persisted.completedByChildId) return true
+				const phase = lead.decision.phases[0]
+				const role = phase ? lead.decision.roles.find((item) => phase.roles.includes(item.role)) : undefined
+				if (!phase || !role) throw new Error("Delegated decision has no executable assignment")
+				await this.delegateParentAndOpenChild({
+					parentTaskId: task.taskId,
+					message: `${phase.summary}\n\nGoal: ${lead.decision.task.goal}`,
+					initialTodos: [],
+					mode: await task.getTaskMode(),
+					explicitRole: role.role,
+				})
+				return false
+			}
+			case "orchestrated": {
+				const run = await this.startOrchestrationFromDecision(goal, `run:${task.taskId}`, task.taskId, lead)
+				if (!run.settingsSnapshot.requirePlanApproval)
+					await (await this.getOrchestrationService()).dispatch(run.runId)
+				return false
 			}
 		}
 	}
@@ -1194,49 +1549,117 @@ export class ClineProvider
 			this.log(`[lead] blocked ${JSON.stringify({ reason: "provider_unavailable", rootTaskId: task.taskId })}`)
 			throw new Error("Root Orchestrator requires a provider with createMessage for lead assessment")
 		}
-		let coordinator = this.leadCoordinators.get(api as object)
+		let coordinator = this.orchestratorDecisionServices.get(api as object)
 		if (!coordinator) {
-			coordinator = new LeadCoordinator(
+			coordinator = new OrchestratorDecisionService(
 				new StreamingLeadProvider(api),
 				new VersionedLeadSessionStore(this.context.globalState),
 				(event, data) => this.log(`[lead] ${event} ${JSON.stringify(data)}`),
 			)
-			this.leadCoordinators.set(api as object, coordinator)
+			this.orchestratorDecisionServices.set(api as object, coordinator)
 		}
+		const customModes = await this.customModesManager.getCustomModes()
+		const runId = `run:${task.taskId}`
+		const persistedSession = await new VersionedLeadSessionStore(this.context.globalState).load(task.taskId)
+		const effectiveGoal = persistedSession?.pendingClarification?.response ? persistedSession.goal : goal
+		const ledger =
+			persistedSession?.budget ??
+			this.rootBudgetLedgers.get(task.taskId) ??
+			createBudget(settings.maxRunTokens, settings.maxRunCost, settings.maxParallelWorkers * 64)
+		this.rootBudgetLedgers.set(task.taskId, ledger)
+		const state = await this.getState()
+		const assignments: Record<string, { modelId?: string }> = state.roleAssignments?.roles ?? {}
+		const canonicalRoles = [...DEFAULT_MODES, ...customModes].map((mode) => mode.slug)
 		const result = await coordinator.ensure({
 			rootTaskId: task.taskId,
+			systemPrompt: await this.getOrchestratorSystemPrompt(task),
 			request: {
-				requestId: `lead:${task.taskId}`,
-				summary: goal.slice(0, 4000),
-				goal,
-				context: { mode: await task.getTaskMode(), workspace: this.cwd },
+				requestId: persistedSession?.requestId ?? `lead:${task.taskId}`,
+				summary: effectiveGoal.slice(0, 4000),
+				goal: effectiveGoal,
+				context: { mode: await task.getTaskMode(), workspace: task.cwd },
 			},
 			configFingerprint: JSON.stringify(settings),
-			workspaceFingerprint: this.cwd,
-			allowedRoles: [...DEFAULT_MODES.map((mode) => mode.slug)],
-			allowedModels: [api.getModel().id],
+			workspaceFingerprint: await this.getWorkspaceRevisionFingerprint(task.cwd),
+			allowedRoles: canonicalRoles,
+			allowedModels: [
+				api.getModel().id,
+				...Object.values(assignments).flatMap((assignment) => (assignment.modelId ? [assignment.modelId] : [])),
+			],
+			// Capabilities are policy, not model output. The lead may only authorize
+			// capabilities enabled by the canonical orchestration settings.
+			allowedCapabilities: [
+				...(settings.allowWorkerCommands ? ["commands"] : []),
+				...(settings.allowWorkerMcp ? ["mcp"] : []),
+			],
 			budget: {
-				assessment: settings.maxRunTokens ?? 0,
+				assessment: Math.max(1, Math.floor((settings.maxRunTokens ?? 0) / 10)),
 				execution: settings.maxRunTokens ?? 0,
 				acceptance: Math.max(1, Math.floor((settings.maxRunTokens ?? 0) / 10)),
 			},
+			budgetRepository: new PersistedRootBudgetRepository(
+				task.taskId,
+				runId,
+				ledger,
+				async (current) => {
+					const currentSession = await new VersionedLeadSessionStore(this.context.globalState).load(
+						task.taskId,
+					)
+					if (!currentSession) throw new Error("Root lead session disappeared during assessment accounting")
+					currentSession.budget = structuredClone(current)
+					await new VersionedLeadSessionStore(this.context.globalState).save(
+						task.taskId,
+						currentSession,
+						currentSession.version,
+					)
+				},
+				async (current) => {
+					const currentSession = await new VersionedLeadSessionStore(this.context.globalState).load(
+						task.taskId,
+					)
+					if (currentSession?.budget) Object.assign(current, structuredClone(currentSession.budget))
+				},
+			),
 			signal: task.currentRequestAbortController?.signal ?? new AbortController().signal,
 		})
-		if (result.phase !== "executing" || !result.decision)
+		if (result.phase !== "executing" || !result.decision) {
+			if (result.decision?.decision === "clarification") return result
 			throw new Error(`Lead assessment blocked execution: ${result.phase}`)
+		}
 		return result
+	}
+
+	private async getWorkspaceRevisionFingerprint(cwd: string): Promise<string> {
+		return fingerprintWorkspace(cwd, this.getCurrentTask()?.currentRequestAbortController?.signal)
+	}
+
+	private async getOrchestratorSystemPrompt(task: Task): Promise<string> {
+		// Task's private prompt builder is the canonical source for the existing role.
+		return (task as unknown as { getSystemPrompt: () => Promise<string> }).getSystemPrompt()
+	}
+
+	private async startOrchestrationFromDecision(
+		goal: string,
+		runId: string,
+		rootTaskId: string,
+		lead: import("../orchestration/leadSession").LeadSession,
+	): Promise<import("../orchestration/types").OrchestrationRun> {
+		if (!lead.decision || lead.decision.decision !== "orchestrated")
+			throw new Error("An orchestrated root decision is required")
+		return this.planOrchestration(goal, runId, rootTaskId, lead)
 	}
 
 	public async planOrchestration(
 		goal: string,
 		runId: string,
 		rootTaskId: string,
+		approvedLead?: import("../orchestration/leadSession").LeadSession,
 	): Promise<import("../orchestration/types").OrchestrationRun> {
 		// The visible task may be a delegated child; orchestration ownership stays
 		// with the persisted root task identified by the caller.
 		const task = await this.resolveTaskForOrchestration(rootTaskId)
 		if (!task) throw new Error("No active root task for lead assessment")
-		const lead = await this.ensureLeadForTask(task, goal)
+		const lead = approvedLead ?? (await this.ensureLeadForTask(task, goal))
 		if (!lead.decision) throw new Error("Root lead assessment has no executable decision")
 		if (lead.decision.decision === "clarification") throw new Error("Lead requires clarification before execution")
 		if (lead.decision.decision !== "orchestrated")
@@ -1251,19 +1674,36 @@ export class ClineProvider
 		const raw = JSON.stringify({
 			version: 1,
 			nodes: lead.decision.phases.map((phase) => {
-				const role = phase.roles[0] ?? "worker"
-				const requirement = lead.decision!.roles.find((item) => item.role === role)
+				const requirements = phase.roles.map((role) => lead.decision!.roles.find((item) => item.role === role))
+				if (requirements.some((item) => !item))
+					throw new Error(`Lead phase '${phase.id}' has an unresolved role assignment`)
+				const materialized = requirements as NonNullable<(typeof requirements)[number]>[]
+				if (materialized.length !== 1)
+					throw new Error(
+						`Lead phase '${phase.id}' requires ${materialized.length} sub-executions, but this executor supports exactly one assignment per phase`,
+					)
+				const primary = materialized[0]
 				return {
 					id: phase.id,
-					role,
-					mode: role,
+					role: primary.role,
+					mode: primary.role,
+					assignments: materialized.map((item) => ({
+						role: item.role,
+						modelId: item.model,
+						capabilities: item.capabilities,
+						tokenBudget: item.budget.tokens,
+						costBudget: item.budget.cost,
+						callBudget: item.budget.calls,
+					})),
+					modelId: primary.model,
+					capabilities: [...new Set(materialized.flatMap((item) => item.capabilities))],
 					title: phase.summary,
 					objective: `${phase.summary}\nGoal: ${lead.decision!.task.goal}`,
 					acceptanceCriteria: phase.acceptance,
 					constraints: lead.decision!.policyConstraints,
 					fileScopes: { include: ["."], exclude: [] },
 					dependencies: phase.dependsOn,
-					tokenBudget: requirement?.budget.tokens ?? 1,
+					tokenBudget: materialized.reduce((total, item) => total + item.budget.tokens, 0),
 				}
 			}),
 		})
@@ -1273,7 +1713,7 @@ export class ClineProvider
 			const customModes = await this.customModesManager.getCustomModes()
 			const reviewOnly = isReviewOnlyGoal(goal)
 			nodes = parseAndValidatePlan(raw, {
-				modes: DEFAULT_MODES.map((m) => m.slug),
+				modes: [...DEFAULT_MODES.map((m) => m.slug), ...customModes.map((m) => m.slug)],
 				roles: [...DEFAULT_MODES.map((m) => m.slug), ...customModes.map((m) => m.slug)],
 				reviewOnly,
 				logger: (_level, message) => this.log(message),
@@ -1301,6 +1741,7 @@ export class ClineProvider
 			rootTaskId,
 			goal,
 			settings,
+			budget: this.rootBudgetLedgers.get(rootTaskId),
 			nodes,
 			estimatedTokens: nodes.reduce((s, n) => s + n.inputContract.tokenBudget, 0),
 		})
@@ -1344,41 +1785,37 @@ export class ClineProvider
 		role: string
 		mode?: string
 		nodeId?: string
+		modelId?: string
+		capabilities?: string[]
 	}): Promise<import("@ai-code-orchestrator/types").ModelRoute> {
 		const state = await this.getState()
 		const availableModes = [...DEFAULT_MODES, ...(await this.customModesManager.getCustomModes())]
+		const assignment = state.roleAssignments?.roles?.[node.role] as
+			| ({ modeSlug?: string; profileName?: string; modelId?: string; inheritPrimary?: boolean } & Record<
+					string,
+					unknown
+			  >)
+			| undefined
 		const knownRole = availableModes.some((mode) => mode.slug === node.role)
-		const fallbackRole = node.role === "orchestrator" || node.mode === "orchestrator" ? "orchestrator" : "worker"
-		if (!knownRole) {
-			this.log(
-				`Unknown role '${node.role}' not found in available modes, falling back to default '${fallbackRole}'`,
-			)
-		}
+		const modeSlug =
+			assignment?.modeSlug ?? node.mode ?? (knownRole ? node.role : node.role === "worker" ? "code" : undefined)
+		const executableMode = availableModes.find((mode) => mode.slug === modeSlug)
+		if (!knownRole && !assignment && node.role !== "worker")
+			throw new Error(`Unknown orchestration role '${node.role}'`)
+		if (!executableMode) throw new Error(`Role '${node.role}' is assigned to unknown mode '${modeSlug}'`)
 		this.log(
 			`[Orchestration route] Resolving role='${node.role}' mode='${node.mode ?? "unset"}' nodeId='${node.nodeId ?? "unset"}' ` +
 				`activeProfile='${state.currentApiConfigName ?? "default"}' assignments=${JSON.stringify(Object.keys(state.roleAssignments?.roles ?? {}))}`,
 		)
-		// The UI persists assignments under the selected mode slug (visualMode), while
-		// orchestration plans identify nodes by role. Check both canonical and legacy
-		// keys before falling back to the built-in orchestration roles.
-		const assignments = state.roleAssignments?.roles
-		const assignmentEntries = [
-			["node.role", node.role, assignments?.[node.role]],
-			["node.nodeId", node.nodeId, assignments?.[node.nodeId ?? ""]],
-			["node.mode", node.mode, assignments?.[node.mode ?? ""]],
-			[`role.${fallbackRole}`, fallbackRole, assignments?.[fallbackRole]],
-		] as const
-		const [assignmentKey, assignmentLookupKey, assignment] = assignmentEntries.find(
-			([, , value]) => value != null,
-		) ?? ["none", undefined, undefined]
 		this.log(
-			`[Orchestration route] Assignment lookup role='${node.role}' fallback='${fallbackRole}' ` +
-				`selected=${assignmentKey}:${assignmentLookupKey ?? "none"} ` +
+			`[Orchestration route] Assignment lookup role='${node.role}' mode='${modeSlug}' ` +
 				`profile='${assignment?.profileName ?? "active"}' model='${assignment?.modelId ?? "primary"}'`,
 		)
 		const activeProfileName: string = state.currentApiConfigName ?? "default"
-		const assignedProfileId = state.modeApiConfigs?.[node.mode ?? node.role]
+		const assignedProfileId = modeSlug ? state.modeApiConfigs?.[modeSlug] : undefined
 		const profileRef = assignment?.profileName
+		if (assignment && !profileRef && !assignedProfileId)
+			throw new Error(`Role '${node.role}' has an assignment without a resolvable profile`)
 		// A role assignment is canonical. modeApiConfigs is only a compatibility fallback.
 		const profile = await this.resolveAssignedProfile({
 			profileName: profileRef,
@@ -1410,15 +1847,15 @@ export class ClineProvider
 			provider: profile.apiProvider,
 			primaryModelId: getModelId(profile) ?? "",
 			role: node.role,
-			// Role assignments are global and take precedence over profile primary models.
-			explicitModelId: assignment?.modelId,
+			// The lead-approved phase assignment is authoritative for this execution.
+			explicitModelId: node.modelId ?? assignment?.modelId,
 			roleModels: profile.profileRoleModelSettings,
 		})
 		this.log(
 			`[Orchestration route] Resolved role='${node.role}' profile='${route.profileId}' ` +
 				`provider='${route.provider}' model='${route.modelId}' source='${route.source}'`,
 		)
-		return route
+		return { ...route, modeSlug } as typeof route & { modeSlug: string | undefined }
 	}
 
 	public async getOrchestrationService(): Promise<OrchestrationService> {
@@ -1435,15 +1872,10 @@ export class ClineProvider
 			const executor: OrchestrationExecutor = {
 				maxParallel: settings.maxParallelWorkers,
 				start: async ({ run, node, idempotencyKey }) => {
-					// Delegation is serialized: the currently active task is the parent
-					// (after the first node this is the previous child, not the root).
-					let parent
-					try {
-						parent = this.getCurrentTask()
-					} catch {
-						throw new Error("Orchestration has no safe Task adapter in the current provider lifecycle")
-					}
-					if (!parent) throw new Error("Orchestration has no safe Task adapter: parent task is not active")
+					// DAG workers are all owned by the immutable persisted root.
+					const parent = await this.resolveTaskForOrchestration(run.rootTaskId)
+					if (!parent)
+						throw new Error("Orchestration has no safe Task adapter: persisted root task is unavailable")
 					const workspace = await workerRegistry.allocate(run.runId, node.nodeId, node.attempt)
 					const route = node.route
 					let selectedProfile: (ProviderSettings & { id?: string; name?: string }) | undefined
@@ -1452,25 +1884,9 @@ export class ClineProvider
 							selectedProfile = await this.providerSettingsManager.getProfile({ id: route.profileId })
 							if (!selectedProfile) throw new Error(`Profile '${route.profileId}' was not found by id`)
 						} catch (error) {
-							// Routes may use the profile name as a stable fallback when no id is persisted.
-							this.log(
-								`[Orchestration executor] Profile id '${route.profileId}' lookup failed; retrying by name: ${error instanceof Error ? error.message : String(error)}`,
+							throw new Error(
+								`Resolved orchestration profile '${route.profileId}' is unavailable: ${error instanceof Error ? error.message : String(error)}`,
 							)
-							try {
-								selectedProfile = await this.providerSettingsManager.getProfile({
-									name: route.profileId,
-								})
-								if (!selectedProfile)
-									throw new Error(`Profile '${route.profileId}' was not found by name`)
-							} catch (nameError) {
-								const activeProfileName = (await this.getState()).currentApiConfigName ?? "default"
-								this.log(
-									`[Orchestration executor] Profile '${route.profileId}' unavailable; using active profile '${activeProfileName}': ${nameError instanceof Error ? nameError.message : String(nameError)}`,
-								)
-								selectedProfile = await this.providerSettingsManager.getProfile({
-									name: activeProfileName,
-								})
-							}
 						}
 						if (!selectedProfile?.apiProvider) {
 							throw new Error(
@@ -1478,47 +1894,45 @@ export class ClineProvider
 							)
 						}
 					}
-					const child = await this.delegateParentAndOpenChild({
-						parentTaskId: parent.taskId,
-						message: [
+					if (!route || !selectedProfile) throw new Error(`No resolved route for node '${node.nodeId}'`)
+					const modelKey =
+						selectedProfile.apiProvider === "openai"
+							? "openAiModelId"
+							: modelIdKeysByProvider[
+									selectedProfile.apiProvider as keyof typeof modelIdKeysByProvider
+								] || "apiModelId"
+					const configuration = { ...selectedProfile } as AiCodeOrchestratorSettings
+					for (const key of modelIdKeys) delete (configuration as any)[key]
+					;(configuration as any)[modelKey] = route.modelId
+					configuration.currentApiConfigName = selectedProfile.name
+					const createWorker = this.createTask
+					const child = await createWorker.call(
+						this,
+						[
 							node.title,
 							node.objective,
 							`Acceptance criteria: ${node.inputContract.acceptanceCriteria.join("; ")}`,
 							`Declared file scopes: ${JSON.stringify(node.inputContract.fileScopes)}`,
 							RESULT_CONTRACT_INSTRUCTION,
 						].join("\n\n"),
-						initialTodos: [],
-						mode: node.mode,
-						workspacePath: workspace.path,
-						configuration:
-							selectedProfile && route
-								? (() => {
-										const modelKey =
-											selectedProfile.apiProvider === "openai"
-												? "openAiModelId"
-												: modelIdKeysByProvider[
-														selectedProfile.apiProvider as keyof typeof modelIdKeysByProvider
-													] || "apiModelId"
-										const configuration = { ...selectedProfile }
-										for (const key of modelIdKeys) delete configuration[key]
-										return {
-											...configuration,
-											[modelKey]: route.modelId,
-											currentApiConfigName: selectedProfile.name,
-										}
-									})()
-								: (() => {
-										this.log(
-											`[Orchestration executor] Missing resolved configuration for node '${node.nodeId}', role '${node.role}', route=${JSON.stringify(route)}`,
-										)
-										throw new Error(
-											`Unable to create configuration for orchestration node '${node.nodeId}'`,
-										)
-									})(),
-						explicitRole: node.role,
-					})
+						undefined,
+						parent,
+						{
+							initialTodos: [],
+							initialStatus: "active",
+							startTask: false,
+							workspacePath: workspace.path,
+							orchestrationExecutionOwned: true,
+						} as CreateTaskOptions & { orchestrationExecutionOwned: boolean },
+						{
+							...configuration,
+							mode: (route as typeof route & { modeSlug?: string }).modeSlug ?? node.mode,
+						},
+						node.role,
+					)
 					node.taskId = child.taskId
-					const complete = async (_taskId: string, usage: TokenUsage) => {
+					const complete = async (completedTaskId: string, usage: TokenUsage) => {
+						if (completedTaskId !== child.taskId) return
 						child.off(AiCodeOrchestratorEventName.TaskCompleted, complete)
 						child.off(AiCodeOrchestratorEventName.TaskAborted, aborted)
 						try {
@@ -1612,8 +2026,9 @@ export class ClineProvider
 				this.context,
 			)
 			await reviewer.restoreState(this.context)
+			const persistence = new GlobalStateOrchestrationPersistence(this.context.globalState)
 			this.orchestrationService = new OrchestrationService(
-				new GlobalStateOrchestrationPersistence(this.context.globalState),
+				persistence,
 				executor,
 				async (event) => {
 					await this.postMessageToWebview({ type: "orchestrationEvent", payload: event })
@@ -1621,26 +2036,46 @@ export class ClineProvider
 					if (snapshot) await this.postMessageToWebview({ type: "orchestrationSnapshot", payload: snapshot })
 				},
 				{
-					integration: new GitIntegrationAdapter(this.cwd),
+					integration: new GitIntegrationAdapter(this.cwd, persistence),
 					review: reviewer,
 					synthesis: new OrchestrationSynthesisAdapter(),
 					route: { resolve: ({ node }) => this.resolveOrchestrationRoute(node) },
 					acceptance: {
-						accept: async ({ run, snapshot }) => {
-							const synthesis = snapshot.synthesis
+						accept: async ({ run, attemptId }) => {
+							const live = await (await this.getOrchestrationService()).getSnapshot(run.runId)
 							const result = JSON.stringify({
 								goal: run.goal,
-								synthesis,
-								nodes: snapshot.nodes.map((node) => ({
+								synthesis: live.synthesis,
+								nodes: live.nodes.map((node) => ({
 									nodeId: node.nodeId,
 									status: node.status,
 									result: node.outputContract,
 									artifacts: node.artifactRefs,
 									reviews: node.reviewRefs,
-									events: snapshot.events.filter((event) => event.nodeId === node.nodeId),
+									events: live.events.filter((event) => event.nodeId === node.nodeId),
 								})),
 							})
-							return this.leadAcceptanceGate({ taskId: run.rootTaskId, result })
+							// The service owns the durable in-flight identity; the lead gate
+							// remains the provider-specific acceptance implementation.
+							return this.leadAcceptanceGate({ taskId: run.rootTaskId, result, attemptId })
+						},
+						reconcile: async ({ run, attemptId }) => {
+							const session = await new VersionedLeadSessionStore(this.context.globalState).load(
+								run.rootTaskId,
+							)
+							if (
+								!session?.acceptance ||
+								session.acceptanceAttempt !== session.acceptance.attempt ||
+								session.acceptance.serviceAttemptId !== attemptId
+							)
+								return undefined
+							return {
+								outcome: session.acceptance.outcome,
+								feedback: session.acceptance.feedback,
+								criterionIds: session.acceptance.criteria
+									.filter((criterion) => criterion.status !== "met")
+									.map((criterion) => criterion.criterionId),
+							}
 						},
 					},
 				},
@@ -3148,7 +3583,18 @@ export class ClineProvider
 
 	/** Resolve orchestration ownership without depending on whichever child is visible. */
 	private async resolveTaskForOrchestration(rootTaskId: string): Promise<Task | undefined> {
-		return this.clineStack.find((task) => task.taskId === rootTaskId)
+		const live = this.clineStack.find((task) => task.taskId === rootTaskId)
+		if (live) return live
+		try {
+			const { historyItem } = await this.getTaskWithId(rootTaskId)
+			return await this.createTaskWithHistoryItem(
+				{ ...historyItem, rootTask: undefined, parentTask: undefined },
+				{ startTask: false },
+			)
+		} catch (error) {
+			this.log(`[orchestration] failed to rehydrate root ${rootTaskId}: ${String(error)}`)
+			return undefined
+		}
 	}
 
 	public getRecentTasks(): string[] {
@@ -3280,7 +3726,9 @@ export class ClineProvider
 		configuration: AiCodeOrchestratorSettings = {},
 		explicitRole?: string,
 	): Promise<Task> {
-		if (configuration) {
+		const orchestrationExecutionOwned = (options as CreateTaskOptions & { orchestrationExecutionOwned?: boolean })
+			.orchestrationExecutionOwned
+		if (configuration && !orchestrationExecutionOwned) {
 			await this.setValues(configuration)
 
 			if (configuration.allowedCommands) {
@@ -3305,7 +3753,7 @@ export class ClineProvider
 					)
 			}
 
-			if (configuration.currentApiConfigName) {
+			if (configuration.currentApiConfigName && !orchestrationExecutionOwned) {
 				await this.setProviderProfile(configuration.currentApiConfigName)
 			}
 

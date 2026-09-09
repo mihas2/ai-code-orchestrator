@@ -58,4 +58,15 @@ describe("GlobalStateOrchestrationPersistence", () => {
 		expect(stored.events[0].sequence).toBe(100)
 		expect(stored.events.at(-1).sequence).toBe(1099)
 	})
+
+	it("persists ownership leases and rejects stale release tokens", async () => {
+		const state = stateWith(undefined)
+		const first = new GlobalStateOrchestrationPersistence(state)
+		const second = new GlobalStateOrchestrationPersistence(state)
+		const token = await first.acquireLease("run-1")
+		await expect(second.acquireLease("run-1")).rejects.toThrow("owned by another lease")
+		await expect(second.releaseLease("run-1", "stale")).rejects.toThrow("Stale orchestration lease")
+		await first.releaseLease("run-1", token)
+		await expect(second.acquireLease("run-1")).resolves.toEqual(expect.any(String))
+	})
 })

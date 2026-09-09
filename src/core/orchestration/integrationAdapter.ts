@@ -5,6 +5,7 @@ import path from "path"
 import { promisify } from "util"
 
 import type { ArtifactDescriptor, IntegrationAdapter, OrchestrationRun } from "./types"
+import type { IntegrationProvenanceRecord, IntegrationProvenanceStore } from "./persistence"
 
 const execFileAsync = promisify(execFile)
 const unsafePath = /(^|[\\/])\.\.(?:[\\/]|$)|^(?:[a-zA-Z]:|[\\/]{2})|\0|(^|[\\/])\.git(?:[\\/]|$)/
@@ -16,14 +17,45 @@ interface PreparedArtifact {
 	paths: string[]
 }
 
+interface PathProvenance {
+	nodeId: string
+	attempt: number
+	idempotencyKey: string
+	artifactHash: string
+}
+
 /** Applies immutable patch artifacts after checking their recorded git base and touched paths. */
 export class GitIntegrationAdapter implements IntegrationAdapter {
 	private readonly bases = new Map<string, string>()
-	private readonly integratedPaths = new Map<string, Set<string>>()
+	private readonly pathProvenance = new Map<string, Map<string, PathProvenance>>()
 	private readonly completed = new Map<string, string[]>()
+	private readonly ambiguous = new Set<string>()
 	private serialized: Promise<void> = Promise.resolve()
 
-	constructor(private readonly cwd: string) {}
+	constructor(
+		private readonly cwd: string,
+		private readonly persistence?: IntegrationProvenanceStore,
+	) {}
+
+	private async restore(runId: string): Promise<void> {
+		if (!this.persistence || this.pathProvenance.has(runId)) return
+		const provenance = new Map<string, PathProvenance>()
+		for (const record of await this.persistence.loadIntegrationProvenance(runId)) {
+			// A pending mutation has an ambiguous crash boundary; never reapply it.
+			if (record.state === "pending") this.ambiguous.add(record.key)
+			if (record.state === "applied") {
+				this.completed.set(record.key, record.artifactRefs)
+				for (const changedPath of record.paths)
+					provenance.set(changedPath, {
+						nodeId: record.nodeId,
+						attempt: record.attempt,
+						idempotencyKey: record.key,
+						artifactHash: record.artifactHash,
+					})
+			}
+		}
+		this.pathProvenance.set(runId, provenance)
+	}
 
 	async captureBase(run: Readonly<OrchestrationRun>): Promise<string> {
 		const existing = this.bases.get(run.runId)
@@ -40,7 +72,17 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 		parentArtifacts?: readonly ArtifactDescriptor[]
 		parentNodeId?: string
 		childNodeId?: string
+		idempotencyKey?: string
 	}): Promise<{ safe: boolean; conflicts: string[]; currentBaseHash?: string }> {
+		await this.restore(input.run.runId)
+		if (input.idempotencyKey && this.ambiguous.has(input.idempotencyKey))
+			return {
+				safe: false,
+				conflicts: ["ambiguous_integration"],
+				currentBaseHash: await this.git(["rev-parse", "HEAD"]),
+			}
+		if (input.idempotencyKey && this.completed.has(input.idempotencyKey))
+			return { safe: true, conflicts: [], currentBaseHash: await this.git(["rev-parse", "HEAD"]) }
 		const base = await this.captureBase(input.run)
 		const current = await this.git(["rev-parse", "HEAD"])
 		const conflicts = new Set<string>()
@@ -52,7 +94,7 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 		)
 		const writeScopes = input.node?.inputContract.fileScopes.write ?? input.node?.inputContract.fileScopes.include
 		const seen = new Set<string>()
-		const integrated = this.integratedPaths.get(input.run.runId) ?? new Set<string>()
+		const provenance = this.pathProvenance.get(input.run.runId) ?? new Map<string, PathProvenance>()
 		for (const item of prepared) {
 			if (item.artifact.baseHash && item.artifact.baseHash !== base) conflicts.add(`base:${item.artifact.ref}`)
 			for (const changedPath of item.paths) {
@@ -66,7 +108,10 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 					)
 				)
 					conflicts.add(`scope:${changedPath}`)
-				if (seen.has(changedPath) || integrated.has(changedPath)) conflicts.add(`path:${changedPath}`)
+				const owner = provenance.get(changedPath)
+				const isNewerOwnerAttempt =
+					owner && owner.nodeId === input.node?.nodeId && input.node.attempt > owner.attempt
+				if (seen.has(changedPath) || (owner && !isNewerOwnerAttempt)) conflicts.add(`path:${changedPath}`)
 				seen.add(changedPath)
 			}
 			if (item.paths.length) {
@@ -101,6 +146,9 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 		childNodeId?: string
 		idempotencyKey: string
 	}): Promise<{ artifactRefs: string[] }> {
+		await this.restore(input.run.runId)
+		if (this.ambiguous.has(input.idempotencyKey))
+			throw new Error("Ambiguous persisted integration; refusing to reapply")
 		const previous = this.completed.get(input.idempotencyKey)
 		if (previous) return { artifactRefs: [...previous] }
 		const operation = async () => {
@@ -108,6 +156,20 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 			if (!checked.safe) throw new Error(`Unsafe integration: ${checked.conflicts.join(", ")}`)
 			const prepared = await Promise.all(input.artifacts.map((artifact) => this.prepare(artifact)))
 			const nonEmpty = prepared.filter((item) => item.paths.length > 0)
+			const refs = nonEmpty.map((item) => item.artifact.ref)
+			const record: IntegrationProvenanceRecord = {
+				key: input.idempotencyKey,
+				runId: input.run.runId,
+				nodeId: input.node.nodeId,
+				attempt: input.node.attempt,
+				artifactHash: createHash("sha256")
+					.update(prepared.map((item) => item.hash).join(":"))
+					.digest("hex"),
+				paths: [...new Set(nonEmpty.flatMap((item) => item.paths))],
+				state: "pending",
+				artifactRefs: refs,
+			}
+			if (this.persistence) await this.persistence.saveIntegrationProvenance(record)
 			if (nonEmpty.length)
 				await this.git([
 					"apply",
@@ -115,10 +177,17 @@ export class GitIntegrationAdapter implements IntegrationAdapter {
 					"--whitespace=error-all",
 					...nonEmpty.map((item) => item.patchPath),
 				])
-			const paths = this.integratedPaths.get(input.run.runId) ?? new Set<string>()
-			for (const item of prepared) for (const changedPath of item.paths) paths.add(changedPath)
-			this.integratedPaths.set(input.run.runId, paths)
-			const refs = prepared.filter((item) => item.paths.length > 0).map((item) => item.artifact.ref)
+			const provenance = this.pathProvenance.get(input.run.runId) ?? new Map<string, PathProvenance>()
+			for (const item of prepared)
+				for (const changedPath of item.paths)
+					provenance.set(changedPath, {
+						nodeId: input.node.nodeId,
+						attempt: input.node.attempt,
+						idempotencyKey: input.idempotencyKey,
+						artifactHash: item.hash,
+					})
+			this.pathProvenance.set(input.run.runId, provenance)
+			if (this.persistence) await this.persistence.saveIntegrationProvenance({ ...record, state: "applied" })
 			this.completed.set(input.idempotencyKey, refs)
 			return { artifactRefs: refs }
 		}

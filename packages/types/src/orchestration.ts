@@ -3,9 +3,12 @@ import { z } from "zod"
 export const orchestrationSchemaVersion = 1 as const
 
 export const profileRoleModelSettingSchema = z.object({
+	/** Executable mode is explicit because a canonical role is not necessarily a mode slug. */
+	modeSlug: z.string().min(1).optional(),
 	/** Optional profile name; omitted means use the active profile. */
 	profileName: z.string().min(1).optional(),
 	modelId: z.string().min(1).optional(),
+	capabilities: z.array(z.string().min(1)).optional(),
 	inheritPrimary: z.boolean().default(true),
 })
 
@@ -61,6 +64,7 @@ export interface ModelRoute {
 	provider: string
 	modelId: string
 	role: string
+	modeSlug?: string
 	source: "explicit" | "role" | "primary"
 	contextWindow?: number
 	maxOutputTokens?: number
@@ -73,6 +77,7 @@ export interface ResolveModelRouteInput {
 	provider: string
 	primaryModelId: string
 	role: string
+	modeSlug?: string
 	explicitModelId?: string
 	roleModels?: ProfileRoleModelSettings
 	resolvedAt?: number
@@ -89,6 +94,7 @@ export function resolveModelRoute(input: ResolveModelRouteInput): ModelRoute {
 		provider: input.provider,
 		modelId,
 		role: input.role,
+		modeSlug: input.modeSlug,
 		source: input.explicitModelId ? "explicit" : roleModelId ? "role" : "primary",
 		resolvedAt: input.resolvedAt ?? Date.now(),
 	}

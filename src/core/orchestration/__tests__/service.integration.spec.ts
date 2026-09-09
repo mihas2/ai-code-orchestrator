@@ -129,7 +129,9 @@ describe("OrchestrationService integration", () => {
 		expect(start).toHaveBeenCalledTimes(2)
 		expect(store.get().run.activeNodeIds).toEqual(["api", "ui"])
 		expect(start.mock.calls.map(([call]) => call.node.inputContract.nodeId)).toEqual(["api", "ui"])
-		expect(service.workerHandles.get("api")?.workspacePath).not.toBe(service.workerHandles.get("ui")?.workspacePath)
+		expect(service.workerHandles.get("integration-run:api:1")?.workspacePath).not.toBe(
+			service.workerHandles.get("integration-run:ui:1")?.workspacePath,
+		)
 	})
 
 	it("completes a review-rework-review-integration cycle", async () => {
@@ -219,7 +221,7 @@ describe("OrchestrationService integration", () => {
 		const restarted = new OrchestrationService(store.persistence, { start: vi.fn(), recover })
 		await restarted.recover()
 		expect(recover).toHaveBeenCalledTimes(1)
-		expect(restarted.workerHandles.get("api")?.taskId).toBe("recovered-api")
+		expect(restarted.workerHandles.get("integration-run:api:1")?.taskId).toBe("recovered-api")
 		expect((await restarted.getSnapshot("integration-run")).nodes[0].status).toBe("running")
 	})
 })

@@ -101,7 +101,7 @@ describe("orchestration role model assignment integration", () => {
 		const nodes = (["code", "debug", "architect"] as const).map((role, index) => ({
 			nodeId: `${role}-stage`,
 			role,
-			mode: role,
+			mode: "code",
 			title: `${role} stage`,
 			objective: `Run ${role}`,
 			dependsOn: index ? [`${["code", "debug", "architect"][index - 1]}-stage`] : [],

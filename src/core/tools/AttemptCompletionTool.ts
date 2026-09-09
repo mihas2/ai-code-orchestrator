@@ -30,6 +30,7 @@ interface DelegationProvider {
 		taskId: string
 		result: string
 		parentTaskId?: string
+		attemptId?: string
 	}): Promise<{ outcome: "accepted" | "rework" | "clarification" | "blocked"; feedback?: string }>
 	reopenParentFromDelegation(params: {
 		parentTaskId: string

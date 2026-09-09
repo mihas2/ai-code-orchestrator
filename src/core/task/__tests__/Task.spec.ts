@@ -1328,6 +1328,130 @@ describe("Cline", () => {
 			})
 		})
 
+		describe("execution budget streaming boundary", () => {
+			it("reserves before createMessage and charges reported usage once after the stream", async () => {
+				const reserve = vi.fn().mockResolvedValue(undefined)
+				const charge = vi.fn().mockResolvedValue(undefined)
+				mockProvider.prepareTaskApiRequest = reserve
+				mockProvider.chargeTaskApiRequest = charge
+				const task = new Task({
+					provider: mockProvider,
+					apiConfiguration: mockApiConfig,
+					task: "budget",
+					startTask: false,
+				})
+				vi.spyOn(task as any, "getSystemPrompt").mockResolvedValue("prompt")
+				vi.spyOn(task.api, "createMessage").mockReturnValue(
+					(async function* () {
+						yield { type: "usage", inputTokens: 4, outputTokens: 3, cacheReadTokens: 2, totalCost: 0.5 }
+					})() as any,
+				)
+				const iterator = task.attemptApiRequest(0)
+				await iterator.next()
+				await iterator.next()
+				expect(reserve).toHaveBeenCalledBefore(task.api.createMessage as any)
+				expect(charge).toHaveBeenCalledWith(
+					task,
+					expect.any(String),
+					expect.objectContaining({ inputTokens: 4, outputTokens: 3, cachedInputTokens: 2, cost: 0.5 }),
+					true,
+				)
+			})
+
+			it("marks usage unknown when the stream fails after reporting usage", async () => {
+				const charge = vi.fn().mockResolvedValue(undefined)
+				mockProvider.prepareTaskApiRequest = vi.fn().mockResolvedValue(undefined)
+				mockProvider.chargeTaskApiRequest = charge
+				const task = new Task({
+					provider: mockProvider,
+					apiConfiguration: mockApiConfig,
+					task: "failure",
+					startTask: false,
+				})
+				vi.spyOn(task as any, "getSystemPrompt").mockResolvedValue("prompt")
+				vi.spyOn(task.api, "createMessage").mockReturnValue(
+					(async function* () {
+						yield { type: "text", text: "started" }
+						yield { type: "usage", inputTokens: 4, outputTokens: 3 }
+						throw new Error("midstream")
+					})() as any,
+				)
+				const iterator = task.attemptApiRequest(0)
+				await iterator.next()
+				await iterator.next()
+				await expect(iterator.next()).rejects.toThrow("midstream")
+				expect(charge).toHaveBeenCalledOnce()
+				expect(charge).toHaveBeenCalledWith(task, expect.any(String), expect.any(Object), false)
+			})
+
+			it("charges unknown when the consumer returns after the first yield", async () => {
+				const charge = vi.fn().mockResolvedValue(undefined)
+				mockProvider.prepareTaskApiRequest = vi.fn().mockResolvedValue(undefined)
+				mockProvider.chargeTaskApiRequest = charge
+				const task = new Task({
+					provider: mockProvider,
+					apiConfiguration: mockApiConfig,
+					task: "return",
+					startTask: false,
+				})
+				vi.spyOn(task as any, "getSystemPrompt").mockResolvedValue("prompt")
+				vi.spyOn(task.api, "createMessage").mockReturnValue(
+					(async function* () {
+						yield { type: "text", text: "started" }
+					})() as any,
+				)
+				const iterator = task.attemptApiRequest(0)
+				await iterator.next()
+				await iterator.return(undefined)
+				expect(charge).toHaveBeenCalledOnce()
+				expect(charge).toHaveBeenCalledWith(task, expect.any(String), expect.any(Object), false)
+			})
+
+			it("charges unknown when createMessage throws synchronously", async () => {
+				const charge = vi.fn().mockResolvedValue(undefined)
+				mockProvider.prepareTaskApiRequest = vi.fn().mockResolvedValue(undefined)
+				mockProvider.chargeTaskApiRequest = charge
+				const task = new Task({
+					provider: mockProvider,
+					apiConfiguration: mockApiConfig,
+					task: "sync",
+					startTask: false,
+				})
+				vi.spyOn(task as any, "getSystemPrompt").mockResolvedValue("prompt")
+				vi.spyOn(task as any, "ask").mockResolvedValue({ response: "noButtonClicked" })
+				vi.spyOn(task.api, "createMessage").mockImplementation(() => {
+					throw new Error("sync-create")
+				})
+				await expect(task.attemptApiRequest(0).next()).rejects.toThrow("API request failed")
+				expect(charge).toHaveBeenCalledOnce()
+				expect(charge).toHaveBeenCalledWith(task, expect.any(String), expect.any(Object), false)
+			})
+
+			it("uses a distinct persisted accounting key for each retry attempt", async () => {
+				const keys: string[] = []
+				mockProvider.prepareTaskApiRequest = vi.fn(async (_task: Task, key: string) => {
+					keys.push(key)
+				})
+				mockProvider.chargeTaskApiRequest = vi.fn().mockResolvedValue(undefined)
+				const task = new Task({
+					provider: mockProvider,
+					apiConfiguration: mockApiConfig,
+					task: "retry",
+					startTask: false,
+				})
+				vi.spyOn(task as any, "getSystemPrompt").mockResolvedValue("prompt")
+				vi.spyOn(task.api, "createMessage").mockReturnValue(
+					(async function* () {
+						yield { type: "text", text: "ok" }
+					})() as any,
+				)
+				await (task.attemptApiRequest(0) as any).next()
+				await (task.attemptApiRequest(1) as any).next()
+				expect(keys).toHaveLength(2)
+				expect(keys[0]).not.toBe(keys[1])
+			})
+		})
+
 		describe("Dynamic Strategy Selection", () => {
 			let mockProvider: any
 			let mockApiConfig: any

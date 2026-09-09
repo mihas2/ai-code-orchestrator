@@ -407,6 +407,96 @@ describe("OrchestrationService", () => {
 		expect(review.review).toHaveBeenCalledTimes(1)
 	})
 
+	it("does not rerun a clean review for the same run/node/attempt receipt", async () => {
+		const store = memory()
+		const review = { review: vi.fn(async () => ({ findings: [], artifactRefs: [] })) }
+		const service = new OrchestrationService(
+			store.persistence,
+			{ start: async ({ node }) => ({ taskId: node.nodeId, cancel: async () => undefined }) },
+			undefined,
+			{ review },
+		)
+		await service.start({ ...input(), settings: { ...settings, reviewPolicy: "completion" } })
+		await service.dispatch("r")
+		const result = {
+			contractVersion: 1 as const,
+			status: "completed" as const,
+			summary: "ok",
+			filesRead: [],
+			filesChanged: [],
+			artifactRefs: [],
+			tests: [],
+			assumptions: [],
+			risks: [],
+			openQuestions: [],
+			nextActions: [],
+		}
+		await service.handleChildEvent({
+			runId: "r",
+			nodeId: "a",
+			idempotencyKey: "clean-1",
+			status: "integrated",
+			result,
+		})
+		const snapshot = (service as any).snapshots.get("r")
+		expect(snapshot.events).toContainEqual(
+			expect.objectContaining({
+				idempotencyKey: "review:r:a:1",
+				runId: "r",
+				payload: { nodeId: "a", attempt: 1, receipt: true },
+			}),
+		)
+		snapshot.nodes[0].status = "awaiting_review"
+		await service.reviewNodeById("r", "a")
+		expect(review.review).toHaveBeenCalledTimes(1)
+	})
+
+	it("does not let an attempt-one review event suppress attempt-two review", async () => {
+		const store = memory()
+		const review = { review: vi.fn(async () => ({ findings: [], artifactRefs: [] })) }
+		const service = new OrchestrationService(
+			store.persistence,
+			{ start: async ({ node }) => ({ taskId: node.nodeId, cancel: async () => undefined }) },
+			undefined,
+			{ review },
+		)
+		await service.start({ ...input(), settings: { ...settings, reviewPolicy: "completion" } })
+		await service.dispatch("r")
+		const result = {
+			contractVersion: 1 as const,
+			status: "completed" as const,
+			summary: "ok",
+			filesRead: [],
+			filesChanged: [],
+			artifactRefs: [],
+			tests: [],
+			assumptions: [],
+			risks: [],
+			openQuestions: [],
+			nextActions: [],
+		}
+		await service.handleChildEvent({
+			runId: "r",
+			nodeId: "a",
+			idempotencyKey: "attempt-1",
+			status: "integrated",
+			result,
+		})
+		const snapshot = (service as any).snapshots.get("r")
+		snapshot.nodes[0].attempt = 2
+		snapshot.nodes[0].status = "awaiting_review"
+		snapshot.nodes[0].reviewRefs = []
+		await service.reviewNodeById("r", "a")
+		expect(review.review).toHaveBeenCalledTimes(2)
+		expect(snapshot.events).toContainEqual(
+			expect.objectContaining({
+				idempotencyKey: "review:r:a:2",
+				runId: "r",
+				payload: { nodeId: "a", attempt: 2, receipt: true },
+			}),
+		)
+	})
+
 	it("validates routes before starting workers and reports rejected capabilities", async () => {
 		const store = memory()
 		const start = vi.fn(async ({ node }) => ({ taskId: node.nodeId, cancel: async () => undefined }))
@@ -473,6 +563,8 @@ describe("OrchestrationService", () => {
 		await service.dispatch("r")
 		expect(start).toHaveBeenCalledTimes(2)
 		expect(store.get().run.activeNodeIds).toEqual(["a", "b"])
-		expect(service.workerHandles.get("a")?.workspacePath).not.toBe(service.workerHandles.get("b")?.workspacePath)
+		expect(service.workerHandles.get("r:a:1")?.workspacePath).not.toBe(
+			service.workerHandles.get("r:b:1")?.workspacePath,
+		)
 	})
 })

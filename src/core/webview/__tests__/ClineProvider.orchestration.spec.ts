@@ -1,7 +1,13 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import EventEmitter from "events"
+import fs from "node:fs/promises"
+import os from "node:os"
+import path from "node:path"
 
 import { AiCodeOrchestratorEventName } from "@ai-code-orchestrator/types"
+import { createBudget } from "../../orchestration/budget"
+import { buildTaskEvidenceRegistry } from "../../orchestration/evidenceRegistry"
+import { VersionedLeadSessionStore, type LeadSession } from "../../orchestration/leadSession"
 import { ClineProvider } from "../ClineProvider"
 import type { StartOrchestrationInput } from "../../orchestration/types"
 
@@ -69,6 +75,12 @@ function providerBoundary(enabled: boolean, mode: string) {
 			resolvedAt: Date.now(),
 		})),
 		postMessageToWebview: vi.fn(async () => undefined),
+	})
+	Object.assign(provider as any, {
+		__values: values,
+		clineStack: [],
+		orchestratorDecisionServices: new WeakMap(),
+		rootBudgetLedgers: new Map(),
 	})
 	return provider
 }
@@ -213,15 +225,32 @@ describe("ClineProvider orchestration route resolution", () => {
 		})
 	})
 
-	it("logs when an unknown role falls back to the default role", async () => {
+	it("fails closed for an unknown canonical role before task creation", async () => {
 		const provider = routeProvider(
 			{ currentApiConfigName: "A", roleAssignments: { roles: { worker: { profileName: "A" } } } },
 			{ A: { id: "a", name: "A", apiProvider: "openrouter", openRouterModelId: "model-A" } },
 		)
-		await provider.resolveOrchestrationRoute({ role: "future-role", mode: "code" })
-		expect(provider.outputChannel.appendLine).toHaveBeenCalledWith(
-			"Unknown role 'future-role' not found in available modes, falling back to default 'worker'",
+		await expect(provider.resolveOrchestrationRoute({ role: "future-role", mode: "code" })).rejects.toThrow(
+			"Unknown orchestration role 'future-role'",
 		)
+	})
+
+	it("resolves a canonical role to its assigned mode, profile, and model", async () => {
+		const provider = routeProvider(
+			{
+				currentApiConfigName: "A",
+				roleAssignments: {
+					roles: { implementer: { modeSlug: "code", profileName: "B", modelId: "model-code" } },
+				},
+			},
+			{ B: { id: "b", name: "B", apiProvider: "openrouter", openRouterModelId: "primary" } },
+		)
+		await expect(provider.resolveOrchestrationRoute({ role: "implementer" })).resolves.toMatchObject({
+			role: "implementer",
+			modeSlug: "code",
+			profileId: "b",
+			modelId: "model-code",
+		})
 	})
 
 	it("fails closed when an orchestration assignment profile is unavailable", async () => {
@@ -288,6 +317,320 @@ describe("ClineProvider orchestration boundary", () => {
 	})
 })
 
+function acceptanceSession(decision: "direct" | "delegated" = "direct"): LeadSession {
+	return {
+		schemaVersion: 1,
+		sessionId: "session",
+		requestId: "request-1",
+		rootTaskId: "root",
+		goal: "Ship the requested boundary safely",
+		requestRevision: 0,
+		fingerprint: "fingerprint",
+		configFingerprint: "config",
+		workspaceFingerprint: "workspace",
+		phase: "executing",
+		version: 1,
+		decision: {
+			schemaVersion: 1,
+			requestId: "request-1",
+			task: { summary: "boundary", goal: "Ship the requested boundary safely" },
+			decision,
+			judgment: { label: "low", confidence: 1, rationale: "ordinary task" },
+			phases: [],
+			dependencies: [],
+			roles: [],
+			acceptance: ["tests pass"],
+			evidence: [],
+			checkpoints: [],
+			estimates: { durationMs: 1, budget: { tokens: 10, cost: 0, calls: 1 } },
+			hardBudget: { tokens: 100, cost: 0, calls: 4 },
+			nonGoals: [],
+			risks: [],
+			policyConstraints: [],
+		} as any,
+		evidence: [],
+		usage: { calls: 1, known: true },
+		reservations: { assessment: 10, execution: 80, acceptance: 10, used: 1 },
+		budget: createBudget(100, undefined, 4),
+		acceptanceAttempt: 0,
+		updatedAt: 1,
+	}
+}
+
+function apiResponse(text: string, known = true) {
+	return {
+		getModel: () => ({ id: "acceptance-model" }),
+		createMessage: vi.fn((_system: string, messages: Array<{ content: string }>, options: { taskId: string }) => ({
+			async *[Symbol.asyncIterator]() {
+				yield { type: "text", text }
+				if (known) yield { type: "usage", inputTokens: 2, outputTokens: 3, totalCost: 0.01 }
+			},
+		})),
+	}
+}
+
+async function acceptanceBoundary(api: ReturnType<typeof apiResponse>, values = new Map<string, unknown>()) {
+	const provider = providerBoundary(true, "orchestrator") as any
+	provider.__values = values
+	provider.context.globalState.get = (key: string) => values.get(key)
+	provider.context.globalState.update = async (key: string, value: unknown) => void values.set(key, value)
+	const task = {
+		taskId: "root",
+		cwd: process.cwd(),
+		api,
+		apiConversationHistory: [{ role: "assistant", content: "tests passed" }],
+		getTaskMode: vi.fn(async () => "orchestrator"),
+		currentRequestAbortController: new AbortController(),
+	}
+	provider.clineStack = [task]
+	provider.getTaskWithId = vi.fn(async (id: string) => ({
+		historyItem: { id, mode: "orchestrator", childIds: [] },
+		apiConversationHistory: task.apiConversationHistory,
+	}))
+	provider.getWorkspaceRevisionFingerprint = vi.fn(async () => "revision-1")
+	provider.getOrchestratorSystemPrompt = vi.fn(async () => "system")
+	return provider as ClineProvider
+}
+
+function acceptedDecision() {
+	const evidenceRef = buildTaskEvidenceRegistry({
+		requestId: "request-1",
+		originalGoal: "Ship the requested boundary safely",
+		result: "done",
+		workspaceRevision: "revision-1",
+		tasks: [{ taskId: "root", role: "orchestrator", history: [{ role: "assistant", content: "tests passed" }] }],
+	}).records[0].id
+	return JSON.stringify({
+		schemaVersion: 1,
+		requestId: "request-1",
+		outcome: "accepted",
+		confidence: 1,
+		rationale: "verified",
+		criteria: [{ criterionId: "REQ-1", status: "met", evidenceRefs: [evidenceRef], rationale: "passed" }],
+	})
+}
+
+describe("ClineProvider leadAcceptanceGate production boundary", () => {
+	const temporaryDirectories: string[] = []
+	afterEach(async () =>
+		Promise.all(temporaryDirectories.splice(0).map((cwd) => fs.rm(cwd, { recursive: true, force: true }))),
+	)
+
+	it("accepts an unchanged direct non-git root using the production fingerprint", async () => {
+		const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "acceptance-non-git-"))
+		temporaryDirectories.push(cwd)
+		await fs.writeFile(path.join(cwd, "result.txt"), "stable")
+		const api = apiResponse(acceptedDecision())
+		const provider = (await acceptanceBoundary(api)) as any
+		provider.clineStack[0].cwd = cwd
+		delete provider.getWorkspaceRevisionFingerprint
+		await new VersionedLeadSessionStore(provider.context.globalState).save("root", acceptanceSession())
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toMatchObject({
+			outcome: "accepted",
+		})
+	})
+
+	it("passes requestId and original goal, persists known usage, and reuses acceptance after provider restart", async () => {
+		const values = new Map<string, unknown>()
+		const api = apiResponse(acceptedDecision())
+		let provider = await acceptanceBoundary(api, values)
+		await new VersionedLeadSessionStore((provider as any).context.globalState).save("root", acceptanceSession())
+
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toEqual({
+			outcome: "accepted",
+			feedback: undefined,
+		})
+		const prompt = api.createMessage.mock.calls[0][1][0].content
+		expect(prompt).toContain('RequestId: "request-1"')
+		expect(prompt).toContain('"originalGoal":"Ship the requested boundary safely"')
+		let persisted = await new VersionedLeadSessionStore((provider as any).context.globalState).load("root")
+		expect(persisted?.budget?.used).toMatchObject({ inputTokens: 2, outputTokens: 3 })
+		expect(persisted?.budget?.usedCalls).toBe(1)
+
+		provider = await acceptanceBoundary(api, values)
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toEqual({
+			outcome: "accepted",
+		})
+		expect(api.createMessage).toHaveBeenCalledTimes(1)
+		persisted = await new VersionedLeadSessionStore((provider as any).context.globalState).load("root")
+		expect(persisted?.phase).toBe("completed")
+	})
+
+	it("durably counts malformed calls, allocates a new attemptId, and enforces max attempts", async () => {
+		const values = new Map<string, unknown>()
+		const api = apiResponse("not-json")
+		let provider = await acceptanceBoundary(api, values)
+		await new VersionedLeadSessionStore((provider as any).context.globalState).save("root", acceptanceSession())
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toMatchObject({
+			outcome: "blocked",
+		})
+		let persisted = await new VersionedLeadSessionStore((provider as any).context.globalState).load("root")
+		const firstKey = Object.keys(persisted?.budget?.usageByIdempotencyKey ?? {})[0]
+		expect(persisted?.acceptanceAttempt).toBe(1)
+
+		provider = await acceptanceBoundary(api, values)
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toMatchObject({
+			outcome: "blocked",
+		})
+		persisted = await new VersionedLeadSessionStore((provider as any).context.globalState).load("root")
+		const keys = Object.keys(persisted?.budget?.usageByIdempotencyKey ?? {})
+		expect(persisted?.acceptanceAttempt).toBe(2)
+		expect(keys).toHaveLength(2)
+		expect(keys[1]).not.toBe(firstKey)
+
+		provider = await acceptanceBoundary(api, values)
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toMatchObject({
+			outcome: "blocked",
+			feedback: "Acceptance repair limit exceeded.",
+		})
+		expect(api.createMessage).toHaveBeenCalledTimes(2)
+	})
+
+	it("fails closed for a missing root and delegated child completion", async () => {
+		const api = apiResponse(acceptedDecision())
+		const provider = (await acceptanceBoundary(api)) as any
+		provider.clineStack = []
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toMatchObject({
+			outcome: "blocked",
+		})
+		provider.clineStack = [{ taskId: "root" }]
+		await expect(
+			provider.leadAcceptanceGate({ taskId: "child", parentTaskId: "root", result: "done" }),
+		).resolves.toMatchObject({ outcome: "blocked" })
+		expect(api.createMessage).not.toHaveBeenCalled()
+	})
+
+	it("keeps delegated parent acceptance authoritative across a provider restart", async () => {
+		const values = new Map<string, unknown>()
+		const api = apiResponse(acceptedDecision())
+		let provider = (await acceptanceBoundary(api, values)) as any
+		await new VersionedLeadSessionStore(provider.context.globalState).save("root", acceptanceSession())
+		const parent = provider.clineStack[0]
+		const child = { taskId: "child", parentTaskId: "root", getTaskMode: vi.fn(async () => "code") }
+		provider.clineStack = [parent, child]
+		await expect(
+			provider.leadAcceptanceGate({ taskId: "child", parentTaskId: "root", result: "done" }),
+		).resolves.toMatchObject({ outcome: "blocked" })
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toMatchObject({
+			outcome: "accepted",
+		})
+
+		provider = (await acceptanceBoundary(api, values)) as any
+		provider.clineStack = [provider.clineStack[0], child]
+		await expect(
+			provider.leadAcceptanceGate({ taskId: "child", parentTaskId: "root", result: "done" }),
+		).resolves.toMatchObject({ outcome: "blocked" })
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toMatchObject({
+			outcome: "accepted",
+		})
+		expect(api.createMessage).toHaveBeenCalledTimes(1)
+	})
+
+	it("does not invoke the provider for unknown or expired accepting markers", async () => {
+		const values = new Map<string, unknown>()
+		const api = apiResponse(acceptedDecision())
+		let provider = (await acceptanceBoundary(api, values)) as any
+		const store = new VersionedLeadSessionStore(provider.context.globalState)
+		await store.save("root", {
+			...acceptanceSession(),
+			accepting: {
+				attempt: 1,
+				attemptId: "unknown",
+				requestId: "request-1",
+				expiresAt: Date.now() - 1,
+				resultHash: "x",
+				workspaceRevision: "revision-1",
+				requestRevision: 0,
+				startedAt: 1,
+			},
+		})
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toMatchObject({
+			outcome: "blocked",
+		})
+		expect(api.createMessage).not.toHaveBeenCalled()
+		provider = (await acceptanceBoundary(api, values)) as any
+		await store.save("root", {
+			...acceptanceSession(),
+			accepting: {
+				attempt: 1,
+				attemptId: "known",
+				requestId: "request-1",
+				expiresAt: Date.now() + 60_000,
+				resultHash: "x",
+				workspaceRevision: "revision-1",
+				requestRevision: 0,
+				startedAt: 1,
+			},
+		})
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toMatchObject({
+			outcome: "blocked",
+		})
+		expect(api.createMessage).not.toHaveBeenCalled()
+	})
+
+	it("rejects blocking review evidence even when the lead reports acceptance", async () => {
+		const api = apiResponse(acceptedDecision())
+		const provider = (await acceptanceBoundary(api)) as any
+		provider.getTaskWithId = vi.fn(async (id: string) => ({
+			historyItem: { id, mode: "reviewer", childIds: [] },
+			apiConversationHistory: [{ role: "assistant", content: "BLOCKING REVIEW: failed" }],
+		}))
+		await expect(provider.leadAcceptanceGate({ taskId: "root", result: "done" })).resolves.toMatchObject({
+			outcome: "blocked",
+		})
+	})
+
+	it("serializes concurrent acceptance and preserves the winning evidence", async () => {
+		const values = new Map<string, unknown>()
+		let release!: () => void
+		const gate = new Promise<void>((resolve) => (release = resolve))
+		const api = apiResponse(acceptedDecision())
+		api.createMessage.mockImplementation(
+			(_system: string, messages: Array<{ content: string }>, options: { taskId: string }) => ({
+				async *[Symbol.asyncIterator]() {
+					await gate
+					yield { type: "text", text: acceptedDecision() }
+					yield { type: "usage", inputTokens: 2, outputTokens: 3, totalCost: 0.01 }
+				},
+			}),
+		)
+		const provider = (await acceptanceBoundary(api, values)) as any
+		await new VersionedLeadSessionStore(provider.context.globalState).save("root", acceptanceSession())
+		const first = provider.leadAcceptanceGate({ taskId: "root", result: "done" })
+		const second = provider.leadAcceptanceGate({ taskId: "root", result: "done" })
+		release()
+		const results = await Promise.all([first, second])
+		expect(results.filter((result) => result.outcome === "accepted")).toHaveLength(1)
+		expect(api.createMessage).toHaveBeenCalledTimes(1)
+	})
+
+	it("does not persist acceptance after a fresh snapshot changes the evidence", async () => {
+		const api = apiResponse(acceptedDecision())
+		const provider = (await acceptanceBoundary(api)) as any
+		await new VersionedLeadSessionStore(provider.context.globalState).save("root", acceptanceSession())
+		let revisionReads = 0
+		provider.getWorkspaceRevisionFingerprint = vi.fn(async () => {
+			revisionReads += 1
+			return revisionReads >= 3 ? "revision-2" : "revision-1"
+		})
+		api.createMessage.mockImplementation(
+			(_system: string, _messages: Array<{ content: string }>, _options: { taskId: string }) => ({
+				async *[Symbol.asyncIterator]() {
+					yield { type: "text", text: acceptedDecision() }
+					yield { type: "usage", inputTokens: 2, outputTokens: 3, totalCost: 0.01 }
+				},
+			}),
+		)
+		const pending = provider.leadAcceptanceGate({ taskId: "root", result: "done" })
+		await expect(pending).resolves.toMatchObject({
+			outcome: "blocked",
+			feedback: "Acceptance result became stale and was not persisted.",
+		})
+		const persisted = await new VersionedLeadSessionStore(provider.context.globalState).load("root")
+		expect(persisted?.phase).not.toBe("completed")
+	})
+})
+
 const resultContract = {
 	contractVersion: 1 as const,
 	status: "completed" as const,
@@ -317,8 +660,12 @@ describe("ClineProvider TaskCompleted result boundary", () => {
 			apiConversationHistory: [],
 			abortTask: vi.fn(async () => undefined),
 		})
-		provider.getCurrentTask = vi.fn(() => ({ taskId: "root" }))
-		provider.delegateParentAndOpenChild = vi.fn(async () => child)
+		const root = { taskId: "root" }
+		provider.clineStack = [root]
+		provider.createTask = vi.fn(async (_message, _images, parent) => {
+			expect(parent).toBe(root)
+			return child
+		})
 		const service = await provider.getOrchestrationService()
 		await service.start({ ...input, settings: { ...settings, requireIntegrationApproval: true } })
 		await service.dispatch("run")
@@ -342,8 +689,12 @@ describe("ClineProvider TaskCompleted result boundary", () => {
 			clineMessages: [],
 			apiConversationHistory: [],
 		})
-		provider.getCurrentTask = vi.fn(() => ({ taskId: "root" }))
-		provider.delegateParentAndOpenChild = vi.fn(async () => child)
+		const root = { taskId: "root" }
+		provider.clineStack = [root]
+		provider.createTask = vi.fn(async (_message, _images, parent) => {
+			expect(parent).toBe(root)
+			return child
+		})
 		const service = await provider.getOrchestrationService()
 		await service.start(input)
 		await service.dispatch("run")

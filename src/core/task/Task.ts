@@ -155,6 +155,8 @@ export interface TaskOptions extends CreateTaskOptions {
 	workspacePath?: string
 	/** Initial status for the task's history item (e.g., "active" for child tasks) */
 	initialStatus?: "active" | "delegated" | "completed"
+	/** DAG service owns accounting; ordinary delegated tasks do not. */
+	orchestrationExecutionOwned?: boolean
 }
 
 export class Task extends EventEmitter<TaskEvents> implements TaskLike {
@@ -263,6 +265,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	providerRef: WeakRef<ClineProvider>
 	private readonly globalStoragePath: string
+	private readonly orchestrationExecutionOwned: boolean
 	abort: boolean = false
 	currentRequestAbortController?: AbortController
 	skipPrevResponseIdOnce: boolean = false
@@ -397,6 +400,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	cachedStreamingModel?: { id: string; info: ModelInfo }
 
 	// Token Usage Cache
+	private apiRequestSequence = 0
 	private tokenUsageSnapshot?: TokenUsage
 	private tokenUsageSnapshotAt?: number
 
@@ -435,6 +439,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		workspacePath,
 		initialStatus,
 		isRoleSpecificConfig = false,
+		orchestrationExecutionOwned = false,
 	}: TaskOptions) {
 		super()
 
@@ -489,6 +494,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		this.consecutiveMistakeLimit = consecutiveMistakeLimit ?? DEFAULT_CONSECUTIVE_MISTAKE_LIMIT
 		this.providerRef = new WeakRef(provider)
+		this.orchestrationExecutionOwned = orchestrationExecutionOwned
 		this.globalStoragePath = provider.context.globalStorageUri.fsPath
 		this.diffViewProvider = new DiffViewProvider(this.cwd, this)
 		this.enableCheckpoints = enableCheckpoints
@@ -1943,6 +1949,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			}
 			this.isInitialized = true
 
+			const provider = this.providerRef.deref()
+			if (provider && !(await provider.prepareRootTaskExecution(this, task ?? ""))) return
+
 			const imageBlocks: Anthropic.ImageBlockParam[] = formatResponse.imageBlocks(images)
 
 			// Task starting
@@ -2191,6 +2200,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 			await this.overwriteApiConversationHistory(modifiedApiConversationHistory)
 
+			const provider = this.providerRef.deref()
+			if (provider && !(await provider.prepareRootTaskExecution(this, this.metadata.task ?? ""))) return
+
 			// Task resuming from history item.
 			await this.initiateTaskLoop(newUserContent)
 		} catch (error) {
@@ -2433,6 +2445,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		// Save the updated history
 		await this.saveApiConversationHistory()
+
+		const provider = this.providerRef.deref()
+		if (provider && !(await provider.prepareRootTaskExecution(this, this.metadata.task ?? ""))) return
 
 		// Continue task loop - pass empty array to signal no new user content needed
 		// The initiateTaskLoop will handle this by skipping user message addition
@@ -2748,6 +2763,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// allow the user to retry the request (most likely due to rate
 				// limit error, which gets thrown on the first chunk).
 				const stream = this.attemptApiRequest(currentItem.retryAttempt ?? 0, { skipProviderRateLimit: true })
+				const accountingAttempt = currentItem.retryAttempt ?? 0
 				let assistantMessage = ""
 				let reasoningMessage = ""
 				let pendingGroundingSources: GroundingSource[] = []
@@ -4195,12 +4211,37 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			stateMode: state?.mode,
 			metadata,
 		})
-		const stream = this.api.createMessage(
-			systemPrompt,
-			cleanConversationHistory as unknown as Anthropic.Messages.MessageParam[],
-			metadata,
-		)
-		const iterator = stream[Symbol.asyncIterator]()
+		const accountingProvider = this.providerRef.deref()
+		const accountingKey = `${Date.now()}:${++this.apiRequestSequence}:retry:${retryAttempt}`
+		const canAccount = typeof accountingProvider?.prepareTaskApiRequest === "function"
+		let accountingUsage = {
+			inputTokens: 0,
+			outputTokens: 0,
+			cachedInputTokens: 0,
+			cost: undefined as number | undefined,
+		}
+		let accountingKnown = false
+		let accountingCompleted = false
+		let accountingCharged = false
+		const chargeAccounting = async () => {
+			if (accountingCharged || this.orchestrationExecutionOwned || !canAccount) return
+			accountingCharged = true
+			await accountingProvider!.chargeTaskApiRequest(
+				this,
+				accountingKey,
+				accountingUsage,
+				accountingCompleted && accountingKnown,
+			)
+		}
+		const accountChunk = (chunk: any) => {
+			if (chunk?.type !== "usage") return
+			accountingUsage.inputTokens += chunk.inputTokens
+			accountingUsage.outputTokens += chunk.outputTokens
+			accountingUsage.cachedInputTokens += chunk.cacheReadTokens ?? 0
+			accountingUsage.cost = chunk.totalCost
+			accountingKnown = true
+		}
+		let iterator: AsyncIterator<any>
 
 		// Set up abort handling - when the signal is aborted, clean up the controller reference
 		abortSignal.addEventListener("abort", () => {
@@ -4209,6 +4250,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		})
 
 		try {
+			if (!this.orchestrationExecutionOwned && canAccount)
+				await accountingProvider!.prepareTaskApiRequest(this, accountingKey)
+			const stream = this.api.createMessage(
+				systemPrompt,
+				cleanConversationHistory as unknown as Anthropic.Messages.MessageParam[],
+				metadata,
+			)
+			iterator = stream[Symbol.asyncIterator]()
 			// Awaiting first chunk to see if it will throw an error.
 			this.isWaitingForFirstChunk = true
 
@@ -4226,10 +4275,18 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			abortPromise.catch(() => undefined)
 
 			const firstChunk = await Promise.race([firstChunkPromise, abortPromise])
-			yield firstChunk.value
+			accountChunk(firstChunk.value)
+			let firstYieldResumed = false
+			try {
+				yield firstChunk.value
+				firstYieldResumed = true
+			} finally {
+				if (!firstYieldResumed) await chargeAccounting()
+			}
 			this.isWaitingForFirstChunk = false
 		} catch (error) {
 			this.isWaitingForFirstChunk = false
+			await chargeAccounting()
 			this.currentRequestAbortController = undefined
 			const isContextWindowExceededError = checkContextWindowExceededError(error)
 
@@ -4293,7 +4350,15 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// it's saying "yield all remaining values from this iterator". This
 		// effectively passes along all subsequent chunks from the original
 		// stream.
-		yield* iterator
+		try {
+			for await (const chunk of { [Symbol.asyncIterator]: () => iterator }) {
+				accountChunk(chunk)
+				yield chunk
+			}
+			accountingCompleted = true
+		} finally {
+			await chargeAccounting()
+		}
 	}
 
 	// Shared exponential backoff for retries (first-chunk and mid-stream)

@@ -674,30 +674,9 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			provider.isViewLaunched = true
 			break
 		case "newTask":
-			{
-				const orchestrationSettings = await getGlobalState("orchestrationSettings")
-				const currentMode = await getCurrentMode()
-				if (currentMode === (orchestrationSettings?.orchestratorModeSlug ?? "orchestrator")) {
-					const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
-					const root = await provider.createTask(resolved.text, resolved.images, undefined, {
-						taskId: message.taskId,
-						startTask: false,
-						initialStatus: "active",
-					})
-					try {
-						const run = await provider.planOrchestration(resolved.text, `run:${root.taskId}`, root.taskId)
-						await provider.postMessageToWebview({ type: "invoke", invoke: "newChat" })
-						if (!run.settingsSnapshot.requirePlanApproval)
-							await (await provider.getOrchestrationService()).dispatch(run.runId)
-					} catch (error) {
-						await provider.postMessageToWebview({ type: "invoke", invoke: "newChat" })
-						vscode.window.showErrorMessage(
-							`Failed to plan orchestration: ${error instanceof Error ? error.message : String(error)}`,
-						)
-					}
-					break
-				}
-			}
+			// Orchestrator roots use the same Task lifecycle as every other entrypoint.
+			// The root hook performs one durable assessment before execution and routes
+			// direct, delegated, DAG, or clarification outcomes itself.
 			// Initializing new instance of Cline will make sure that any
 			// agentically running promises in old instance don't affect our new
 			// task. This essentially creates a fresh slate for the new task.

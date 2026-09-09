@@ -23,8 +23,10 @@ export class StreamingLeadProvider {
 		const controller = new AbortController()
 		const abort = () => controller.abort()
 		request.signal.addEventListener("abort", abort, { once: true })
-		const timer = setTimeout(abort, request.timeoutMs)
 		let stream: ReturnType<ApiHandler["createMessage"]>
+		let iterator:
+			| AsyncIterator<Awaited<ReturnType<ApiHandler["createMessage"]>> extends AsyncIterable<infer T> ? T : never>
+			| undefined
 		try {
 			// Race acquisition as well as iteration; always clear the secondary timer
 			// so a completed stream cannot later produce an unhandled rejection.
@@ -58,18 +60,15 @@ export class StreamingLeadProvider {
 		let text = ""
 		let usage: LeadUsage = { calls: 1, known: false }
 		try {
-			for await (const chunk of stream) {
-				if (controller.signal.aborted) {
-					await stream.return(undefined)
-					throw new DOMException("Aborted", "AbortError")
-				}
+			iterator = stream[Symbol.asyncIterator]()
+			while (true) {
+				const next = await nextWithTimeout(iterator, request.timeoutMs, controller.signal)
+				if (next.done) break
+				const chunk = next.value
 				if (chunk.type === "error") throw new Error(chunk.message)
 				if (chunk.type === "text") {
 					text += chunk.text
-					if (text.length > request.maxOutputCharacters) {
-						await stream.return(undefined)
-						throw new Error("Lead output limit exceeded")
-					}
+					if (text.length > request.maxOutputCharacters) throw new Error("Lead output limit exceeded")
 				}
 				if (chunk.type === "usage")
 					usage = {
@@ -80,11 +79,31 @@ export class StreamingLeadProvider {
 						known: true,
 					}
 			}
-			if (!usage.known) usage = { calls: 1, known: false }
 			return { text, usage, modelId: this.api.getModel().id }
 		} finally {
-			clearTimeout(timer)
+			controller.abort()
+			await iterator?.return?.().catch(() => undefined)
 			request.signal.removeEventListener("abort", abort)
 		}
+	}
+}
+
+async function nextWithTimeout<T>(iterator: AsyncIterator<T>, timeoutMs: number, signal: AbortSignal) {
+	if (signal.aborted) throw new DOMException("Aborted", "AbortError")
+	let timer: ReturnType<typeof setTimeout> | undefined
+	try {
+		return await Promise.race([
+			iterator.next(),
+			new Promise<never>((_, reject) => {
+				timer = setTimeout(() => reject(new DOMException("Timed out", "TimeoutError")), timeoutMs)
+			}),
+			new Promise<never>((_, reject) =>
+				signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), {
+					once: true,
+				}),
+			),
+		])
+	} finally {
+		if (timer) clearTimeout(timer)
 	}
 }

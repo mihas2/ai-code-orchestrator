@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import { coordinateIntegration, reviewBlocks, synthesizeSnapshot } from "./reviewIntegration"
 import { LogAggregator } from "./logAggregator"
 import type {
@@ -15,8 +16,16 @@ import type {
 import type { OrchestrationPersistence } from "./persistence"
 import { validateDag } from "./dag"
 import { assertNodeTransition, assertRunTransition } from "./transitions"
-import { createBudget, reconcileBudget, reserveBudget, validateUsage } from "./budget"
+import {
+	createBudget,
+	reconcileBudget,
+	reserveBudget,
+	reserveBudgetOnce,
+	reconcileBudgetOnce,
+	validateUsage,
+} from "./budget"
 import { validateReviewOnlyPlan } from "./planner"
+import { PersistedRootBudgetRepository, type RootBudgetRepository } from "./budgetRepository"
 
 export interface OrchestratorAdapters {
 	review?: import("./types").ReviewAdapter
@@ -66,6 +75,7 @@ export interface OrchestratorService {
 	resume(runId: string): Promise<void>
 	getSnapshot(runId: string): Promise<OrchestrationSnapshot>
 	recover(): Promise<void>
+	getBudgetRepository(runId: string, expectedRootTaskId: string): Promise<RootBudgetRepository>
 }
 
 const terminalRun = new Set(["completed", "failed", "canceled"])
@@ -76,7 +86,16 @@ export class OrchestrationService implements OrchestratorService {
 	private logAggregators = new Map<string, LogAggregator>()
 	private handles = new Map<string, ExecutionHandle>()
 	private watchdogs = new Map<string, ReturnType<typeof setTimeout>>()
+	private runtimeRunPrefix(runId: string) {
+		return `${encodeURIComponent(runId)}:`
+	}
+	private runtimeKey(runId: string, nodeId: string, attempt: number) {
+		return `${this.runtimeRunPrefix(runId)}${encodeURIComponent(nodeId)}:${attempt}`
+	}
 	private eventKeys = new Map<string, Set<string>>()
+	private leaseTokens = new Map<string, string>()
+	private budgetRepositories = new Map<string, RootBudgetRepository>()
+	private dispatchQueues = new Map<string, Promise<void>>()
 	/** Exposed read-only worker registry for lifecycle/recovery diagnostics. */
 	get workerHandles(): ReadonlyMap<string, ExecutionHandle> {
 		return this.handles
@@ -103,6 +122,8 @@ export class OrchestrationService implements OrchestratorService {
 	}
 
 	async start(input: StartOrchestrationInput): Promise<OrchestrationRun> {
+		if (this.persistence.acquireLease && !this.leaseTokens.has(input.runId))
+			this.leaseTokens.set(input.runId, await this.persistence.acquireLease(input.runId))
 		const existing = await this.persistence.load(input.runId)
 		if (existing) {
 			this.snapshots.set(input.runId, existing)
@@ -129,7 +150,13 @@ export class OrchestrationService implements OrchestratorService {
 			settingsSnapshot: input.settings,
 			createdAt: now,
 			updatedAt: now,
-			budget: createBudget(input.settings.maxRunTokens, input.settings.maxRunCost),
+			budget:
+				input.budget ??
+				createBudget(
+					input.settings.maxRunTokens,
+					input.settings.maxRunCost,
+					input.settings.maxParallelWorkers * 64,
+				),
 			activeNodeIds: [],
 			eventSequence: 0,
 		}
@@ -163,6 +190,17 @@ export class OrchestrationService implements OrchestratorService {
 	}
 
 	async dispatch(id: string) {
+		const prior = this.dispatchQueues.get(id) ?? Promise.resolve()
+		const next = prior.catch(() => undefined).then(() => this.dispatchOnce(id))
+		this.dispatchQueues.set(id, next)
+		try {
+			await next
+		} finally {
+			if (this.dispatchQueues.get(id) === next) this.dispatchQueues.delete(id)
+		}
+	}
+
+	private async dispatchOnce(id: string) {
 		const s = await this.require(id)
 		// Dispatch is only valid while planning or executing. In particular, do not
 		// redispatch ready-to-integrate nodes after an integration conflict.
@@ -211,6 +249,22 @@ export class OrchestrationService implements OrchestratorService {
 			if (!overlaps) selected.push(candidate)
 		}
 		for (const n of selected) {
+			// Check for durable cancel intent before attempting to start
+			const cancelIntent = s.canceledNodeIntents?.[n.nodeId]
+			if (cancelIntent && cancelIntent.attempt === n.attempt + 1) {
+				n.attempt++
+				n.status = "canceled"
+				n.timestamps.canceled = Date.now()
+				n.error = { code: "canceled", message: cancelIntent.reason ?? "Canceled", recoverable: false }
+				if (s.canceledNodeIntents) delete s.canceledNodeIntents[n.nodeId]
+				await this.saveEvent(
+					s,
+					"nodeStatusChanged",
+					{ nodeId: n.nodeId, status: "canceled" },
+					`node:${id}:${n.nodeId}:${n.attempt}:canceled`,
+				)
+				continue
+			}
 			const childLimit = s.run.settingsSnapshot.maxChildTokens
 			if (childLimit !== undefined && n.inputContract.tokenBudget > childLimit) {
 				await this.failNode(s, n, {
@@ -221,8 +275,16 @@ export class OrchestrationService implements OrchestratorService {
 				continue
 			}
 			try {
-				// Cost data is optional; enforce it only when a provider reports it.
-				reserveBudget(s.run.budget, n.inputContract.tokenBudget, 0)
+				// Allocate and persist the attempt before any external dispatch.
+				n.attempt++
+				const repository = await this.getBudgetRepository(id, s.run.rootTaskId)
+				const reserved = await repository.reserve(
+					`${n.nodeId}:${n.attempt}`,
+					"execution",
+					n.inputContract.tokenBudget,
+					0,
+				)
+				if (!reserved) throw new Error("Execution attempt reservation already exists")
 			} catch (error) {
 				await this.failNode(
 					s,
@@ -238,7 +300,6 @@ export class OrchestrationService implements OrchestratorService {
 			}
 			assertNodeTransition(n.status, "running")
 			n.status = "running"
-			n.attempt++
 			n.timestamps.running = Date.now()
 			try {
 				if (this.adapters.route)
@@ -251,27 +312,38 @@ export class OrchestrationService implements OrchestratorService {
 				})
 				continue
 			}
-			s.run.activeNodeIds.push(n.nodeId)
+			// Mark as active with attempt awareness
+			if (!s.run.activeNodeIds.includes(n.nodeId)) {
+				s.run.activeNodeIds.push(n.nodeId)
+			}
 			await this.saveEvent(
 				s,
 				"nodeStatusChanged",
 				{ status: n.status, attempt: n.attempt, route: n.route },
 				`node:${id}:${n.nodeId}:${n.attempt}:running`,
 			)
+			await this.persist(s)
 			try {
 				const handle = await this.executor.start({
 					run: s.run,
 					node: n,
 					idempotencyKey: `${id}:${n.nodeId}:${n.attempt}`,
 				})
-				this.handles.set(n.nodeId, handle)
+				this.handles.set(this.runtimeKey(id, n.nodeId, n.attempt), handle)
 				this.startWatchdog(s, n, handle)
 			} catch (error) {
-				await this.failNode(s, n, {
-					code: "dispatch_failed",
-					message: error instanceof Error ? error.message : String(error),
-					recoverable: true,
-				})
+				// start() rejected before handing back a worker handle, so no provider
+				// usage could have occurred and the reservation may be released.
+				await this.failNode(
+					s,
+					n,
+					{
+						code: "dispatch_failed",
+						message: error instanceof Error ? error.message : String(error),
+						recoverable: true,
+					},
+					true,
+				)
 			}
 		}
 		if (s.run.activeNodeIds.length && s.run.status !== "running") {
@@ -288,8 +360,16 @@ export class OrchestrationService implements OrchestratorService {
 		if (!n) throw new Error("Unknown orchestration node")
 		if (s.events.some((x) => x.idempotencyKey === e.idempotencyKey)) return
 		if (terminalRun.has(s.run.status)) return
+		// Validate that the event matches the current node attempt and runtime identity
+		const eventAttempt = e.attempt ?? n.attempt
+		if (eventAttempt !== n.attempt) return
+		const key = this.runtimeKey(e.runId, e.nodeId, n.attempt)
+		const handle = this.handles.get(key)
+		if (handle && e.runtimeIdentity && handle.taskId !== e.runtimeIdentity) return
 		// Child "integrated" means the child completed. Review and integration still
 		// have to run in the orchestrator, so expose it as ready_to_integrate first.
+		const key = this.runtimeKey(e.runId, n.nodeId, n.attempt)
+		const handle = this.handles.get(key)
 		const requiresIntegration = !!this.adapters.integration || s.run.settingsSnapshot.requireIntegrationApproval
 		const requiresReview = !!this.adapters.review && s.run.settingsSnapshot.reviewPolicy !== "off"
 		// Keep completion durable as awaiting_review until the review action promotes it.
@@ -301,9 +381,8 @@ export class OrchestrationService implements OrchestratorService {
 					? "ready_to_integrate"
 					: e.status
 		if (n.status === "integrated" && e.status === "integrated") return
-		this.clearWatchdog(n.nodeId)
+		this.clearWatchdog(e.runId, n.nodeId, n.attempt)
 		assertNodeTransition(n.status, reportedStatus)
-		const reserved = n.inputContract.tokenBudget
 		n.status = reportedStatus
 		n.timestamps[reportedStatus] = Date.now()
 		if (e.result) {
@@ -315,8 +394,10 @@ export class OrchestrationService implements OrchestratorService {
 					recoverable: true,
 				}
 				s.run.activeNodeIds = s.run.activeNodeIds.filter((x) => x !== n.nodeId)
-				this.handles.delete(n.nodeId)
-				reconcileBudget(s.run.budget, reserved, 0, e.usage ?? {})
+				this.handles.delete(this.runtimeKey(e.runId, n.nodeId, n.attempt))
+				await (
+					await this.getBudgetRepository(e.runId, s.run.rootTaskId)
+				).charge(`${e.nodeId}:${n.attempt}`, e.usage, e.usageKnown !== false)
 				await this.persist(s)
 				return
 			}
@@ -347,16 +428,21 @@ export class OrchestrationService implements OrchestratorService {
 				]),
 			) as typeof e.usage
 		}
-		if (e.usage) reconcileBudget(s.run.budget, reserved, 0, n.usage ?? {})
-		else reconcileBudget(s.run.budget, reserved, 0, {})
+		await (
+			await this.getBudgetRepository(e.runId, s.run.rootTaskId)
+		).charge(`${e.nodeId}:${n.attempt}`, n.usage, e.usageKnown !== false)
 		s.run.activeNodeIds = s.run.activeNodeIds.filter((x) => x !== n.nodeId)
-		this.handles.delete(n.nodeId)
+		if (eventHandle) {
+			this.handles.delete(key)
+			await eventHandle.dispose?.()
+		}
 		const usedTokens =
 			s.run.budget.used.inputTokens +
 			s.run.budget.used.cachedInputTokens +
 			s.run.budget.used.outputTokens +
 			s.run.budget.used.reasoningTokens
 		if (
+			s.run.budget.usageUnknown === true ||
 			(s.run.budget.tokenLimit !== undefined && usedTokens > s.run.budget.tokenLimit) ||
 			(s.run.budget.costLimit !== undefined &&
 				n.usage?.cost !== undefined &&
@@ -442,16 +528,30 @@ export class OrchestrationService implements OrchestratorService {
 		const n = s.nodes.find((node) => node.nodeId === nodeId)
 		if (!n) throw new Error("Unknown orchestration node")
 		if (terminalRun.has(s.run.status) || terminalNode.has(n.status)) return
-		if (n.status !== "running") throw new Error("Node cannot be canceled in its current state")
-		const handle = this.handles.get(nodeId)
-		if (!handle) throw new Error("Node execution is not available for cancellation")
-		await handle.cancel(reason ?? "Canceled")
-		this.clearWatchdog(nodeId)
-		this.handles.delete(nodeId)
-		n.status = "canceled"
-		n.timestamps.canceled = Date.now()
-		n.error = { code: "canceled", message: reason ?? "Canceled", recoverable: false }
-		s.run.activeNodeIds = s.run.activeNodeIds.filter((id) => id !== nodeId)
+		// Handle both running nodes and nodes pending start with durable cancellation
+		if (n.status === "running") {
+			const key = this.runtimeKey(id, nodeId, n.attempt)
+			const handle = this.handles.get(key)
+			if (handle) {
+				await handle.cancel(reason ?? "Canceled")
+				this.clearWatchdog(id, nodeId, n.attempt)
+				if (this.handles.get(key) === handle) this.handles.delete(key)
+				await handle.dispose?.()
+			}
+			n.status = "canceled"
+			n.timestamps.canceled = Date.now()
+			n.error = { code: "canceled", message: reason ?? "Canceled", recoverable: false }
+			s.run.activeNodeIds = s.run.activeNodeIds.filter((id) => id !== nodeId)
+		} else if (n.status === "planned" || n.status === "needs_rework") {
+			// Record cancel intent durably before start() is called
+			if (!s.canceledNodeIntents) s.canceledNodeIntents = {}
+			s.canceledNodeIntents[nodeId] = { attempt: n.attempt + 1, reason, canceledAt: Date.now() }
+			n.status = "canceled"
+			n.timestamps.canceled = Date.now()
+			n.error = { code: "canceled", message: reason ?? "Canceled", recoverable: false }
+		} else {
+			throw new Error("Node cannot be canceled in its current state")
+		}
 		this.blockFailedDependencies(s)
 		const hasWork = s.nodes.some((node) => !terminalNode.has(node.status) && node.status !== "blocked")
 		if (!s.run.activeNodeIds.length && !hasWork) {
@@ -475,9 +575,13 @@ export class OrchestrationService implements OrchestratorService {
 		s.run.cancellationRequested = true
 		s.run.status = "canceled"
 		s.run.error = { code: "canceled", message: reason ?? "Canceled", recoverable: false }
-		await Promise.all([...this.handles.values()].map((h) => h.cancel(reason)))
-		for (const nodeId of this.watchdogs.keys()) this.clearWatchdog(nodeId)
-		this.handles.clear()
+		const runPrefix = this.runtimeRunPrefix(id)
+		const runKeys = [...this.handles.keys()].filter((key) => key.startsWith(runPrefix))
+		await Promise.all(runKeys.map((key) => this.handles.get(key)?.cancel(reason)))
+		for (const key of [...this.watchdogs.keys()]) if (key.startsWith(runPrefix)) this.clearWatchdogKey(key)
+		// Dispose all handles after cancel
+		await Promise.all(runKeys.map((key) => this.handles.get(key)?.dispose?.()))
+		for (const key of runKeys) this.handles.delete(key)
 		s.run.activeNodeIds = []
 		for (const n of s.nodes) if (!terminalNode.has(n.status)) n.status = "canceled"
 		await this.saveEvent(s, "orchestrationError", { status: "canceled", reason }, `run:${id}:canceled`)
@@ -496,30 +600,96 @@ export class OrchestrationService implements OrchestratorService {
 		if (s.run.status !== "paused") throw new Error("Run is not paused")
 		s.run.status = s.run.statusBeforePause ?? "planned"
 		delete s.run.statusBeforePause
+		delete s.run.error
 		await this.persist(s)
-		await this.dispatch(id)
+		await this.finishIfReady(s)
+		await this.persist(s)
+		if (!terminalRun.has(s.run.status) && s.run.status !== "synthesizing") await this.dispatch(id)
 	}
 	async getSnapshot(id: string) {
 		return this.require(id)
 	}
+	async getBudgetRepository(id: string, expectedRootTaskId: string): Promise<RootBudgetRepository> {
+		const snapshot = await this.require(id, expectedRootTaskId, true)
+		let repository = this.budgetRepositories.get(id)
+		if (!repository) {
+			repository = new PersistedRootBudgetRepository(
+				expectedRootTaskId,
+				id,
+				snapshot.run.budget,
+				async (ledger) => {
+					// Resolve the live service-owned snapshot at mutation time. Recovery may
+					// have replaced its budget object, so transfer the mutated scalar state.
+					const current = await this.require(id, expectedRootTaskId, true)
+					current.run.budget = structuredClone(ledger)
+					await this.persist(current)
+				},
+				async (ledger) => {
+					const current = await this.require(id, expectedRootTaskId, true)
+					Object.assign(ledger, current.run.budget)
+				},
+			)
+			this.budgetRepositories.set(id, repository)
+		}
+		return repository
+	}
 	async recover() {
 		for (const s of await this.persistence.scanRecoverable()) {
 			try {
+				if (this.persistence.acquireLease && !this.leaseTokens.has(s.run.runId))
+					this.leaseTokens.set(s.run.runId, await this.persistence.acquireLease(s.run.runId))
 				if (!s?.run?.runId || !Array.isArray(s.nodes))
 					throw new Error("Invalid persisted orchestration snapshot")
 				this.snapshots.set(s.run.runId, s)
+				// Normalize inconsistent state: running nodes without activeNodeIds or vice versa
+				const actualRunning = s.nodes.filter((n) => n.status === "running")
+				const declaredActive = new Set(s.run.activeNodeIds)
+				if (
+					actualRunning.length !== declaredActive.size ||
+					!actualRunning.every((n) => declaredActive.has(n.nodeId))
+				) {
+					s.run.statusBeforePause = s.run.status
+					s.run.status = "paused"
+					s.run.error = {
+						code: "recovery_state_inconsistent",
+						message: "Snapshot has inconsistent running/active state; manual review required",
+						recoverable: true,
+					}
+					await this.persist(s)
+					continue
+				}
+				if (s.run.status === "synthesizing") {
+					s.run.statusBeforePause = "synthesizing"
+					s.run.status = "paused"
+					s.run.error = {
+						code: "synthesis_recovery_required",
+						message:
+							"Run stopped during terminal synthesis/acceptance; inspect persisted result before resuming.",
+						recoverable: true,
+					}
+					await this.persist(s)
+					continue
+				}
 				for (const n of s.nodes)
-					if (n.status === "running" && !this.handles.has(n.nodeId)) {
+					if (
+						n.status === "running" &&
+						!this.handles.has(this.runtimeKey(s.run.runId, n.nodeId, n.attempt))
+					) {
 						const h = await this.executor.recover?.(s.run, n)
 						if (h) {
-							this.handles.set(n.nodeId, h)
+							this.handles.set(this.runtimeKey(s.run.runId, n.nodeId, n.attempt), h)
 							this.startWatchdog(s, n, h)
 						} else
-							await this.failNode(s, n, {
-								code: "recovery_unavailable",
-								message: "Child execution cannot be recovered",
-								recoverable: true,
-							})
+							await this.failNode(
+								s,
+								n,
+								{
+									code: "recovery_unavailable",
+									message: "Child execution cannot be recovered",
+									recoverable: true,
+								},
+								false,
+							)
 					}
 				await this.dispatch(s.run.runId)
 			} catch {
@@ -530,20 +700,27 @@ export class OrchestrationService implements OrchestratorService {
 	}
 
 	private startWatchdog(s: OrchestrationSnapshot, n: OrchestrationNode, handle: ExecutionHandle) {
-		this.clearWatchdog(n.nodeId)
+		const key = this.runtimeKey(s.run.runId, n.nodeId, n.attempt)
+		this.clearWatchdogKey(key)
 		const timeoutMs = s.run.settingsSnapshot.timeoutMs
 		if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return
 		const timer = setTimeout(async () => {
-			this.watchdogs.delete(n.nodeId)
+			if (this.watchdogs.get(key) !== timer || this.handles.get(key) !== handle) return
+			this.watchdogs.delete(key)
 			if (n.status !== "running" || !s.run.activeNodeIds.includes(n.nodeId)) return
 			try {
 				await handle.cancel("orchestration timeout")
-				this.handles.delete(n.nodeId)
-				await this.failNode(s, n, {
-					code: "timeout",
-					message: `Node produced no child event within ${timeoutMs}ms`,
-					recoverable: true,
-				})
+				if (this.handles.get(key) === handle) this.handles.delete(key)
+				await this.failNode(
+					s,
+					n,
+					{
+						code: "timeout",
+						message: `Node produced no child event within ${timeoutMs}ms`,
+						recoverable: true,
+					},
+					false,
+				)
 				await this.persist(s)
 			} catch (error) {
 				s.run.status = "failed"
@@ -555,12 +732,15 @@ export class OrchestrationService implements OrchestratorService {
 				await this.persist(s)
 			}
 		}, timeoutMs)
-		this.watchdogs.set(n.nodeId, timer)
+		this.watchdogs.set(key, timer)
 	}
-	private clearWatchdog(nodeId: string) {
-		const timer = this.watchdogs.get(nodeId)
+	private clearWatchdog(runId: string, nodeId: string, attempt: number) {
+		this.clearWatchdogKey(this.runtimeKey(runId, nodeId, attempt))
+	}
+	private clearWatchdogKey(key: string) {
+		const timer = this.watchdogs.get(key)
 		if (timer) clearTimeout(timer)
-		this.watchdogs.delete(nodeId)
+		this.watchdogs.delete(key)
 	}
 	private async failNode(
 		s: OrchestrationSnapshot,
@@ -568,7 +748,7 @@ export class OrchestrationService implements OrchestratorService {
 		error: OrchestrationNode["error"],
 		releaseReservation = true,
 	) {
-		this.clearWatchdog(n.nodeId)
+		this.clearWatchdog(s.run.runId, n.nodeId, n.attempt)
 		n.status = "failed"
 		n.error = error
 		n.timestamps.failed = Date.now()
@@ -578,7 +758,8 @@ export class OrchestrationService implements OrchestratorService {
 			error: error?.message,
 		})
 		s.run.activeNodeIds = s.run.activeNodeIds.filter((x) => x !== n.nodeId)
-		if (releaseReservation) reconcileBudget(s.run.budget, n.inputContract.tokenBudget, 0, {})
+		if (releaseReservation)
+			await (await this.getBudgetRepository(s.run.runId, s.run.rootTaskId)).release(`${n.nodeId}:${n.attempt}`)
 		await this.saveEvent(
 			s,
 			"nodeStatusChanged",
@@ -610,11 +791,109 @@ export class OrchestrationService implements OrchestratorService {
 	}
 	private async reviewNode(s: OrchestrationSnapshot, n: OrchestrationNode) {
 		if (!this.adapters.review || !n.outputContract || s.run.settingsSnapshot.reviewPolicy === "off") return
-		if (n.reviewRefs.some((ref) => ref.startsWith("finding:") && ref.includes(`:${n.nodeId}:`))) return
+		// A review receipt is durable only when all runtime identity dimensions match.
+		// In particular, a receipt from an earlier attempt must never suppress review.
+		const reviewKey = `review:${s.run.runId}:${n.nodeId}:${n.attempt}`
+		const alreadyReviewed = s.events.some(
+			(event) =>
+				event.type === "reviewFinding" &&
+				event.payload.receipt === true &&
+				event.runId === s.run.runId &&
+				event.payload.nodeId === n.nodeId &&
+				event.payload.attempt === n.attempt &&
+				event.idempotencyKey === reviewKey,
+		)
+		if (alreadyReviewed) return
+		// Check for in-flight review recovery
+		if (
+			s.reviewInFlight?.runId === s.run.runId &&
+			s.reviewInFlight.nodeId === n.nodeId &&
+			s.reviewInFlight.attempt === n.attempt
+		) {
+			if (
+				s.reviewResult?.runId === s.run.runId &&
+				s.reviewResult.nodeId === n.nodeId &&
+				s.reviewResult.attempt === n.attempt
+			) {
+				// Consume the persisted result
+				const result = s.reviewResult.result
+				const findings = result.findings.map((finding) => ({
+					...finding,
+					runId: s.run.runId,
+					nodeId: finding.nodeId ?? n.nodeId,
+					provenance: { ...finding.provenance, attempt: n.attempt },
+				}))
+				s.findings = [...(s.findings ?? []), ...findings]
+				n.reviewRefs.push(...findings.map((f) => f.id))
+				await this.saveEvent(
+					s,
+					"reviewFinding",
+					{ nodeId: n.nodeId, attempt: n.attempt, receipt: true },
+					reviewKey,
+				)
+				for (const finding of findings)
+					await this.saveEvent(
+						s,
+						"reviewFinding",
+						{ nodeId: n.nodeId, attempt: n.attempt, finding },
+						`finding:${s.run.runId}:${n.nodeId}:${n.attempt}:${finding.id}`,
+					)
+				delete s.reviewInFlight
+				delete s.reviewResult
+				if (reviewBlocks({ policy: s.run.settingsSnapshot.reviewPolicy, findings: result.findings })) {
+					if (n.attempt >= n.maxAttempts)
+						return this.failNode(
+							s,
+							n,
+							{
+								code: "review_rework_exhausted",
+								message: "Review findings exceed the bounded rework limit",
+								recoverable: false,
+							},
+							false,
+						)
+					assertNodeTransition(n.status, "needs_rework")
+					n.status = "needs_rework"
+					n.timestamps.needs_rework = Date.now()
+					n.error = {
+						code: "review_findings",
+						message: result.findings.map((f) => f.message).join("; "),
+						recoverable: true,
+					}
+					if (s.run.status === "reviewing") {
+						assertRunTransition(s.run.status, "reworking")
+						s.run.status = "reworking"
+					}
+				} else {
+					assertNodeTransition(n.status, "ready_to_integrate")
+					n.status = "ready_to_integrate"
+					n.timestamps.ready_to_integrate = Date.now()
+					if (s.run.settingsSnapshot.requireIntegrationApproval) s.pendingApproval = "integration"
+					if (s.run.status === "reviewing") {
+						assertRunTransition(s.run.status, "integrating")
+						s.run.status = "integrating"
+					}
+				}
+				return
+			}
+			// In-flight without result means provider crash: fail closed
+			s.run.status = "paused"
+			s.run.statusBeforePause = "reviewing"
+			s.run.error = {
+				code: "review_recovery_required",
+				message: "Review call was in flight when service stopped; reconcile before retrying",
+				recoverable: true,
+			}
+			await this.persist(s)
+			return
+		}
 		if (s.run.status === "running") {
 			assertRunTransition(s.run.status, "reviewing")
 			s.run.status = "reviewing"
 		}
+		// Record in-flight before the provider call
+		s.reviewInFlight = { runId: s.run.runId, nodeId: n.nodeId, attempt: n.attempt, startedAt: Date.now() }
+		await this.persist(s)
 		const artifacts = n.artifactRefs.map((ref) => ({ ref, path: ref, preserved: true }))
 		const result = await this.adapters.review.review({
 			run: s.run,
@@ -623,15 +902,28 @@ export class OrchestrationService implements OrchestratorService {
 			artifacts,
 			idempotencyKey: `review:${s.run.runId}:${n.nodeId}:${n.attempt}`,
 		})
-		s.findings = [...(s.findings ?? []), ...result.findings]
-		n.reviewRefs.push(...result.findings.map((f) => f.id))
-		for (const finding of result.findings)
+		// Record result before consuming it
+		s.reviewResult = { runId: s.run.runId, nodeId: n.nodeId, attempt: n.attempt, result, recordedAt: Date.now() }
+		await this.persist(s)
+		const findings = result.findings.map((finding) => ({
+			...finding,
+			runId: s.run.runId,
+			nodeId: finding.nodeId ?? n.nodeId,
+			provenance: { ...finding.provenance, attempt: n.attempt },
+		}))
+		s.findings = [...(s.findings ?? []), ...findings]
+		n.reviewRefs.push(...findings.map((f) => f.id))
+		await this.saveEvent(s, "reviewFinding", { nodeId: n.nodeId, attempt: n.attempt, receipt: true }, reviewKey)
+		for (const finding of findings)
 			await this.saveEvent(
 				s,
 				"reviewFinding",
-				{ nodeId: n.nodeId, finding },
-				`finding:${s.run.runId}:${n.nodeId}:${finding.id}`,
+				{ nodeId: n.nodeId, attempt: n.attempt, finding },
+				`finding:${s.run.runId}:${n.nodeId}:${n.attempt}:${finding.id}`,
 			)
+		// Clean up in-flight and result markers after successful consumption
+		delete s.reviewInFlight
+		delete s.reviewResult
 		if (reviewBlocks({ policy: s.run.settingsSnapshot.reviewPolicy, findings: result.findings })) {
 			if (n.attempt >= n.maxAttempts)
 				return this.failNode(
@@ -677,14 +969,25 @@ export class OrchestrationService implements OrchestratorService {
 		await this.reviewNode(s, n)
 	}
 	private async finishIfReady(s: OrchestrationSnapshot) {
-		if (!s.nodes.length || !s.nodes.every((n) => n.status === "ready_to_integrate" || n.status === "integrated"))
+		if (!s.nodes.length) return
+		// A terminal event is the durable acceptance receipt. If persistence captured
+		// a stale synthesizing status, resume completes without another provider call.
+		if (s.events.some((event) => event.type === "orchestrationCompleted")) {
+			s.run.status = "completed"
 			return
-		if (s.run.status !== "integrating") {
+		}
+		const ready = s.nodes.filter(
+			(n) =>
+				n.status === "ready_to_integrate" &&
+				n.dependsOn.every((id) => s.nodes.find((d) => d.nodeId === id)?.status === "integrated"),
+		)
+		if (!ready.length && !s.nodes.every((n) => n.status === "integrated")) return
+		if (ready.length && s.run.status !== "integrating") {
 			assertRunTransition(s.run.status, "integrating")
 			s.run.status = "integrating"
 		}
 		if (this.adapters.integration) {
-			for (const n of s.nodes.filter((x) => x.status === "ready_to_integrate")) {
+			for (const n of ready) {
 				const result = await coordinateIntegration({
 					run: s.run,
 					node: n,
@@ -734,31 +1037,99 @@ export class OrchestrationService implements OrchestratorService {
 					`node:${s.run.runId}:${n.nodeId}:${n.attempt}:integrated`,
 				)
 			}
-		} else if (s.nodes.some((n) => n.status === "ready_to_integrate")) {
-			if (s.run.settingsSnapshot.requireIntegrationApproval) {
-				s.pendingApproval = "integration"
-				return
-			}
-			throw new Error("No integration adapter is configured; artifacts were preserved")
+		} else if (ready.length) {
+			if (s.run.settingsSnapshot.requireIntegrationApproval) s.pendingApproval = "integration"
+			// Keep the node ready when no integration owner exists. This preserves the
+			// durable continuation point instead of silently treating integration as done.
+			return
 		}
+		if (!s.nodes.every((n) => n.status === "integrated")) return
 		assertRunTransition(s.run.status, "synthesizing")
 		s.run.status = "synthesizing"
-		s.synthesis = await synthesizeSnapshot(s, this.adapters.synthesis)
+		// Persist the stage before external work. Recovery resumes from durable
+		// synthesis when available and never replays already-integrated patches.
+		await this.persist(s)
+		if (!s.synthesis) s.synthesis = await synthesizeSnapshot(s, this.adapters.synthesis)
 		if (s.synthesis.status !== "completed") {
 			s.run.status = "failed"
 			s.run.error = { code: "synthesis_failed", message: s.synthesis.summary, recoverable: true }
 			return
 		}
 		// Acceptance is opt-in at the service boundary so legacy/non-lead callers
-		// retain their existing completion semantics. Lead-managed roots always
-		// configure this adapter in ClineProvider.
-		const acceptance = await this.adapters.acceptance?.accept({ run: s.run, snapshot: s })
+		// retain their existing completion semantics. Allocate the invocation identity
+		// durably before calling an external provider; after a crash, a result is
+		// consumed once and an in-flight call is blocked for reconciliation.
+		let acceptance: import("./types").RootAcceptanceResult | undefined
+		if (this.adapters.acceptance) {
+			if (s.acceptanceResult) {
+				if (s.acceptanceInFlight && s.acceptanceResult.attemptId !== s.acceptanceInFlight.attemptId) {
+					s.run.status = "paused"
+					s.run.statusBeforePause = "synthesizing"
+					s.run.error = {
+						code: "acceptance_attempt_mismatch",
+						message: "Stale acceptance result does not match the durable in-flight attempt.",
+						recoverable: true,
+					}
+					await this.persist(s)
+					return
+				}
+				acceptance = s.acceptanceResult.result
+				s.acceptanceResult = undefined
+			} else if (s.acceptanceInFlight) {
+				const reconciled = await this.adapters.acceptance.reconcile?.({
+					run: s.run,
+					snapshot: s,
+					attemptId: s.acceptanceInFlight.attemptId,
+				})
+				if (!reconciled) {
+					s.run.status = "paused"
+					s.run.statusBeforePause = "synthesizing"
+					s.run.error = {
+						code: "acceptance_reconciliation_required",
+						message: "Acceptance call was in flight when the service stopped; reconcile before retrying.",
+						recoverable: true,
+					}
+					await this.persist(s)
+					return
+				}
+				acceptance = reconciled
+				s.acceptanceResult = {
+					attemptId: s.acceptanceInFlight.attemptId,
+					result: reconciled,
+					recordedAt: Date.now(),
+				}
+				delete s.acceptanceInFlight
+				await this.persist(s)
+			} else {
+				const attemptId = randomUUID()
+				s.acceptanceInFlight = { attemptId, startedAt: Date.now() }
+				await this.persist(s)
+				acceptance = await this.adapters.acceptance.accept({ run: s.run, snapshot: s, attemptId })
+				s.acceptanceResult = { attemptId, result: acceptance, recordedAt: Date.now() }
+				delete s.acceptanceInFlight
+				await this.persist(s)
+			}
+		}
+		// The receipt is replay protection only until this state-machine turn consumes it.
+		// The following persisted transition is the durable consumed marker.
+		if (acceptance) delete s.acceptanceResult
 		if (acceptance && acceptance.outcome !== "accepted") {
 			if (acceptance.outcome === "rework") {
-				// Rework must return the DAG to a dispatchable state. Leaving all nodes
-				// integrated would make the next dispatch a silent no-op.
+				const affected = new Set(acceptance.nodeIds ?? [])
+				for (const criterionId of acceptance.criterionIds ?? []) {
+					const index = Number.parseInt(criterionId.replace(/^REQ-/, ""), 10) - 1
+					const criterion = Number.isInteger(index)
+						? s.run.goal && s.nodes.flatMap((n) => n.inputContract.acceptanceCriteria)[index]
+						: undefined
+					for (const node of s.nodes)
+						if (criterion && node.inputContract.acceptanceCriteria.includes(criterion))
+							affected.add(node.nodeId)
+				}
+				// Fail closed when an old adapter supplies no mapping, while preserving
+				// unaffected integrated artifacts for criterion-aware adapters.
+				if (!affected.size) for (const node of s.nodes) affected.add(node.nodeId)
 				for (const node of s.nodes) {
-					if (node.status === "integrated") {
+					if (node.status === "integrated" && affected.has(node.nodeId)) {
 						assertNodeTransition(node.status, "needs_rework")
 						node.status = "needs_rework"
 						node.timestamps.needs_rework = Date.now()

@@ -105,9 +105,17 @@ export interface BudgetUsage {
 export interface BudgetLedger {
 	tokenLimit?: number
 	costLimit?: number
+	callLimit?: number
 	reservedTokens: number
 	reservedCost: number
+	reservedCalls: number
 	used: BudgetUsage
+	usedCalls: number
+	usageByIdempotencyKey?: Record<
+		string,
+		{ reservedTokens: number; reservedCost: number; calls: number; reconciled: boolean }
+	>
+	usageUnknown?: boolean
 }
 export interface OrchestrationNode {
 	nodeId: string
@@ -178,6 +186,16 @@ export interface OrchestrationSnapshot {
 	nodes: OrchestrationNode[]
 	events: OrchestrationEvent[]
 	capturedAt: number
+	/** Durable acceptance call identity. Its presence without a result requires reconciliation, never replay. */
+	acceptanceInFlight?: { attemptId: string; startedAt: number }
+	/** Durable provider receipt consumed exactly once by the state machine after restart. */
+	acceptanceResult?: { attemptId: string; result: RootAcceptanceResult; recordedAt: number }
+	/** Durable review in-flight identity. */
+	reviewInFlight?: { runId: string; nodeId: string; attempt: number; startedAt: number }
+	/** Durable review result receipt. */
+	reviewResult?: { runId: string; nodeId: string; attempt: number; result: ReviewResult; recordedAt: number }
+	/** Durable cancel intent for nodes pending executor.start */
+	canceledNodeIntents?: Record<string, { attempt: number; reason?: string; canceledAt: number }>
 	artifacts?: ArtifactDescriptor[]
 	findings?: ReviewFinding[]
 	conflicts?: ConflictRecord[]
@@ -205,15 +223,21 @@ export interface StartOrchestrationInput {
 	nodes: PlanNodeInput[]
 	estimatedTokens?: number
 	estimatedCost?: number
+	budget?: BudgetLedger
 	now?: number
 }
 export interface ChildEvent {
 	runId: string
 	nodeId: string
+	attempt?: number
+	taskId?: string
+	runtimeIdentity?: string
 	idempotencyKey: string
 	status: NodeStatus
 	result?: ResultContract
 	usage?: Partial<BudgetUsage>
+	/** Providers must explicitly state whether usage is authoritative. */
+	usageKnown?: boolean
 	error?: ErrorRecord
 	stdout?: string
 	stderr?: string
@@ -260,6 +284,7 @@ export interface FindingProvenance {
 	conflictRefs: string[]
 	reviewer?: string
 	detectedAt: number
+	attempt?: number
 }
 export interface ReviewFinding {
 	/** Stable internal identifier; findingId and title mirror the orchestration specification. */
@@ -325,6 +350,7 @@ export interface IntegrationAdapter {
 		parentArtifacts?: readonly ArtifactDescriptor[]
 		parentNodeId?: string
 		childNodeId?: string
+		idempotencyKey?: string
 	}): Promise<{ safe: boolean; conflicts: string[]; currentBaseHash?: string }>
 	integrate(input: {
 		run: Readonly<OrchestrationRun>
@@ -341,11 +367,26 @@ export interface SynthesisAdapter {
 }
 
 export type RootAcceptanceOutcome = "accepted" | "rework" | "blocked"
+export interface RootAcceptanceResult {
+	outcome: RootAcceptanceOutcome
+	feedback?: string
+	/** Criterion ids that failed; only owning nodes are invalidated. */
+	criterionIds?: string[]
+	nodeIds?: string[]
+}
 
 /** The root-owned gate is the only authority allowed to complete a run. */
 export interface RootAcceptanceAdapter {
 	accept(input: {
 		run: Readonly<OrchestrationRun>
 		snapshot: Readonly<OrchestrationSnapshot>
-	}): Promise<{ outcome: RootAcceptanceOutcome; feedback?: string }>
+		/** Persisted before invocation; adapters should use it as their idempotency key. */
+		attemptId: string
+	}): Promise<RootAcceptanceResult>
+	/** Reconcile a previously persisted call after a service restart. */
+	reconcile?(input: {
+		run: Readonly<OrchestrationRun>
+		snapshot: Readonly<OrchestrationSnapshot>
+		attemptId: string
+	}): Promise<RootAcceptanceResult | undefined>
 }

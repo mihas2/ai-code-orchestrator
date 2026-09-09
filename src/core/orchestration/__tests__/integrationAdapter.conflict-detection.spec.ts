@@ -28,10 +28,19 @@ async function fixture() {
 	return cwd
 }
 
-async function patch(cwd: string, name: string, files: string[]): Promise<ArtifactDescriptor> {
-	for (const file of files) await fs.writeFile(path.join(cwd, file), `changed ${file}\n`)
+async function patch(
+	cwd: string,
+	name: string,
+	files: string[],
+	content: (file: string) => string = (file) => `changed ${file}\n`,
+): Promise<ArtifactDescriptor> {
+	const originals = new Map<string, Buffer>()
+	for (const file of files) {
+		originals.set(file, await fs.readFile(path.join(cwd, file)))
+		await fs.writeFile(path.join(cwd, file), content(file))
+	}
 	const contents = await git(cwd, "diff")
-	for (const file of files) await fs.writeFile(path.join(cwd, file), `export const value = "${file}"\n`)
+	for (const file of files) await fs.writeFile(path.join(cwd, file), originals.get(file)!)
 	await fs.writeFile(path.join(cwd, name), `${contents}\n`)
 	return { ref: name, path: files[0] ?? "", preserved: true }
 }
@@ -105,5 +114,52 @@ describe("GitIntegrationAdapter conflict detection", () => {
 		await fs.writeFile(path.join(cwd, "child.patch"), "")
 		const result = await integrate(cwd, [parent], [{ ref: "child.patch", path: "", preserved: true }])
 		expect(result).toMatchObject({ status: "integrated", artifactRefs: [] })
+	})
+	it("allows a newer attempt by the same node without weakening ownership or safety checks", async () => {
+		const cwd = await fixture()
+		const adapter = new GitIntegrationAdapter(cwd)
+		const nodeA1 = { ...node, nodeId: "a", attempt: 1 } as OrchestrationNode
+		const nodeA2 = { ...node, nodeId: "a", attempt: 2 } as OrchestrationNode
+		const nodeB = { ...node, nodeId: "b", attempt: 1 } as OrchestrationNode
+		const first = await patch(cwd, "a-1.patch", ["fileA.ts"])
+		first.baseHash = await git(cwd, "rev-parse", "HEAD")
+
+		await expect(
+			adapter.integrate({ run, node: nodeA1, artifacts: [first], idempotencyKey: "integration:run:a:1" }),
+		).resolves.toEqual({ artifactRefs: ["a-1.patch"] })
+		expect(await fs.readFile(path.join(cwd, "fileA.ts"), "utf8")).toBe("changed fileA.ts\n")
+
+		const second = await patch(cwd, "a-2.patch", ["fileA.ts"], () => "changed again fileA.ts\n")
+		second.baseHash = first.baseHash
+		await expect(
+			adapter.integrate({ run, node: nodeA2, artifacts: [second], idempotencyKey: "integration:run:a:2" }),
+		).resolves.toEqual({ artifactRefs: ["a-2.patch"] })
+		const afterSecond = await fs.readFile(path.join(cwd, "fileA.ts"), "utf8")
+		await expect(
+			adapter.integrate({ run, node: nodeA2, artifacts: [second], idempotencyKey: "integration:run:a:2" }),
+		).resolves.toEqual({ artifactRefs: ["a-2.patch"] })
+		expect(await fs.readFile(path.join(cwd, "fileA.ts"), "utf8")).toBe(afterSecond)
+
+		const overwrite = await patch(cwd, "b.patch", ["fileA.ts"], () => "node b overwrite\n")
+		overwrite.baseHash = first.baseHash
+		await expect(
+			adapter.integrate({ run, node: nodeB, artifacts: [overwrite], idempotencyKey: "integration:run:b:1" }),
+		).rejects.toThrow("path:fileA.ts")
+
+		const stale = await patch(cwd, "stale.patch", ["fileB.ts"])
+		stale.baseHash = "stale"
+		await expect(
+			adapter.integrate({ run, node: nodeA2, artifacts: [stale], idempotencyKey: "integration:run:a:stale" }),
+		).rejects.toThrow("base:stale.patch")
+
+		const outside = await patch(cwd, "outside.patch", ["fileB.ts"])
+		await expect(
+			adapter.integrate({
+				run,
+				node: { ...nodeA2, inputContract: { fileScopes: { write: ["fileA.ts"] } } } as OrchestrationNode,
+				artifacts: [outside],
+				idempotencyKey: "integration:run:a:outside",
+			}),
+		).rejects.toThrow("scope:fileB.ts")
 	})
 })

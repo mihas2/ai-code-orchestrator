@@ -4,6 +4,7 @@ import {
 	allocateChildBudgets,
 	createBudget,
 	reconcileBudget,
+	reserveBudget,
 	validateBudget,
 	validateUsage,
 } from "../budget"
@@ -40,6 +41,15 @@ describe("orchestration budget safety", () => {
 		expect(FINAL_PHASE_RESERVE_RATIO).toBe(0.1)
 		expect(allocation.childBudget).toBe(450)
 		expect(allocation.finalPhaseReserve).toBe(100)
+	})
+
+	it("enforces and reconciles the root call budget", () => {
+		const ledger = createBudget(100, 10, 1)
+		reserveBudget(ledger, 10, 1, 1)
+		expect(() => reserveBudget(ledger, 1, 0, 1)).toThrow("Call budget exceeded")
+		reconcileBudget(ledger, 10, 1, { inputTokens: 4, outputTokens: 2 }, 1)
+		expect(ledger).toMatchObject({ reservedCalls: 0, usedCalls: 1 })
+		expect(() => reserveBudget(ledger, 1, 0, 1)).toThrow("Call budget exceeded")
 	})
 
 	it("reconciles cascading child usage against the parent budget", () => {

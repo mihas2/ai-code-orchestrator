@@ -15,6 +15,23 @@ const node = z
 		id: z.string().min(1).max(100),
 		role: z.string().min(1).max(100),
 		mode: z.string().min(1).max(100),
+		assignments: z
+			.array(
+				z
+					.object({
+						role: z.string().min(1),
+						modelId: z.string().min(1),
+						capabilities: z.array(z.string()),
+						tokenBudget: z.number().positive(),
+						costBudget: z.number().nonnegative().optional(),
+						callBudget: z.number().int().nonnegative().optional(),
+					})
+					.strict(),
+			)
+			.min(1)
+			.optional(),
+		modelId: z.string().min(1).optional(),
+		capabilities: z.array(z.string().min(1)).optional(),
 		objective: z.string().min(1),
 		acceptanceCriteria: z.array(z.string().min(1)),
 		constraints: z.array(z.string()),
@@ -158,6 +175,9 @@ export function parseAndValidatePlan(raw: string, limits: PlannerLimits): PlanNo
 			nodeId: n.id,
 			role: n.role,
 			mode: n.mode,
+			assignments: n.assignments,
+			modelId: n.modelId,
+			capabilities: n.capabilities,
 			title: n.objective.slice(0, 120),
 			objective: n.objective,
 			dependsOn: n.dependencies,

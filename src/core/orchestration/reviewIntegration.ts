@@ -89,7 +89,8 @@ export async function coordinateIntegration(input: IntegrationCoordinatorInput):
 			message: "Base revision changed; artifacts were preserved",
 		}
 	}
-	const checked = await input.adapter.check(input)
+	const idempotencyKey = `integration:${input.run.runId}:${input.node.nodeId}:${input.node.attempt}`
+	const checked = await input.adapter.check({ ...input, idempotencyKey })
 	if (!checked.safe || checked.conflicts.length)
 		return {
 			nodeId: input.node.nodeId,
@@ -107,12 +108,7 @@ export async function coordinateIntegration(input: IntegrationCoordinatorInput):
 		return {
 			nodeId: input.node.nodeId,
 			status: "integrated",
-			artifactRefs: (
-				await input.adapter.integrate({
-					...input,
-					idempotencyKey: `integration:${input.run.runId}:${input.node.nodeId}`,
-				})
-			).artifactRefs,
+			artifactRefs: (await input.adapter.integrate({ ...input, idempotencyKey })).artifactRefs,
 			conflictRefs,
 		}
 	} catch (error) {
