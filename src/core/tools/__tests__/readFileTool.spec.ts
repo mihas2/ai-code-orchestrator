@@ -17,6 +17,7 @@ import path from "path"
 import { isBinaryFile } from "isbinaryfile"
 
 import { readFileTool, ReadFileTool } from "../ReadFileTool"
+import { NativeToolCallParser } from "../../assistant-message/NativeToolCallParser"
 import { formatResponse } from "../../prompts/responses"
 import {
 	validateImageForProcessing,
@@ -196,6 +197,27 @@ describe("ReadFileTool", () => {
 	})
 
 	describe("input validation", () => {
+		it("executes the real provider file_path payload through the parser", async () => {
+			const filePath = "src/core/webview/__tests__/webviewMessageHandler.spec.ts"
+			const parsed = NativeToolCallParser.parseToolCall({
+				id: "toolu_real_payload",
+				name: "read_file",
+				arguments: JSON.stringify({ file_path: filePath }),
+			})
+			const mockTask = createMockTask()
+			const callbacks = createMockCallbacks()
+
+			expect(parsed?.type).toBe("tool_use")
+			if (parsed?.type !== "tool_use" || !parsed.nativeArgs) {
+				throw new Error("Expected parsed read_file nativeArgs")
+			}
+
+			await readFileTool.execute(parsed.nativeArgs, mockTask as any, callbacks)
+
+			expect(mockedFsReadFile).toHaveBeenCalledWith(`/test/workspace/${filePath}`)
+			expect(callbacks.pushToolResult).toHaveBeenCalledWith(expect.stringContaining(`File: ${filePath}`))
+		})
+
 		it("should return error when path is missing", async () => {
 			const mockTask = createMockTask()
 			const callbacks = createMockCallbacks()

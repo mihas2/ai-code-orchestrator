@@ -64,6 +64,18 @@ describe("Path Utilities", () => {
 
 		it("should return undefined when outside a workspace", () => {})
 	})
+
+	describe("getReadablePath", () => {
+		it("does not turn a missing path into the workspace basename", () => {
+			expect(getReadablePath("/home/user/v2", "")).toBe("")
+			expect(getReadablePath("/home/user/v2")).toBe("")
+		})
+
+		it("preserves a real file path after a directory path", () => {
+			expect(getReadablePath("/home/user/v2", "src/example.ts")).toBe("src/example.ts")
+		})
+	})
+
 	describe("arePathsEqual", () => {
 		describe("on Windows", () => {
 			beforeEach(() => {
@@ -157,9 +169,8 @@ describe("Path Utilities", () => {
 			expect(getReadablePath(cwd)).toBe("")
 		})
 
-		it("should return cwd basename when relative path is empty string", () => {
-			// Empty string resolves to cwd, which returns basename
-			expect(getReadablePath(cwd, "")).toBe("project")
+		it("should not return cwd basename when relative path is empty string", () => {
+			expect(getReadablePath(cwd, "")).toBe("")
 		})
 
 		it("should handle parent directory traversal", () => {

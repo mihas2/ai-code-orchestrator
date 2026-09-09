@@ -28,6 +28,27 @@ describe("NativeToolCallParser", () => {
 				}
 			})
 
+			it("should normalize the provider file_path alias into nativeArgs.path", () => {
+				const result = NativeToolCallParser.parseToolCall({
+					id: "toolu_file_path_alias",
+					name: "read_file",
+					arguments: JSON.stringify({
+						file_path: "src/core/webview/__tests__/webviewMessageHandler.spec.ts",
+					}),
+				})
+
+				expect(result?.type).toBe("tool_use")
+				if (result?.type === "tool_use") {
+					expect(result.nativeArgs).toEqual({
+						path: "src/core/webview/__tests__/webviewMessageHandler.spec.ts",
+						mode: undefined,
+						offset: undefined,
+						limit: undefined,
+						indentation: undefined,
+					})
+				}
+			})
+
 			it("should parse slice-mode params", () => {
 				const toolCall = {
 					id: "toolu_123",
@@ -309,6 +330,22 @@ describe("NativeToolCallParser", () => {
 				expect(result?.nativeArgs).toBeDefined()
 				const nativeArgs = result?.nativeArgs as { path: string }
 				expect(nativeArgs.path).toBe("src/test.ts")
+			})
+
+			it("should expose file_path as nativeArgs.path during streaming", () => {
+				const id = "toolu_streaming_file_path_alias"
+				NativeToolCallParser.startStreamingToolCall(id, "read_file")
+
+				const result = NativeToolCallParser.processStreamingChunk(
+					id,
+					JSON.stringify({ file_path: "src/core/webview/__tests__/webviewMessageHandler.spec.ts" }),
+				)
+
+				expect(result?.nativeArgs).toEqual(
+					expect.objectContaining({
+						path: "src/core/webview/__tests__/webviewMessageHandler.spec.ts",
+					}),
+				)
 			})
 		})
 
