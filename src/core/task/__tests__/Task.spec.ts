@@ -1087,6 +1087,26 @@ describe("Cline", () => {
 				expect(saySpy).toHaveBeenCalledWith("api_req_rate_limit_wait", undefined, undefined, false)
 			}, 10000) // Increase timeout to 10 seconds
 
+			it("uses an explicit orchestration workspace instead of inheriting the parent workspace", () => {
+				const parent = new Task({
+					provider: mockProvider,
+					apiConfiguration: mockApiConfig,
+					task: "parent task",
+					startTask: false,
+				})
+				const child = new Task({
+					provider: mockProvider,
+					apiConfiguration: mockApiConfig,
+					task: "worker task",
+					parentTask: parent,
+					rootTask: parent,
+					workspacePath: "/tmp/orchestration-worker",
+					startTask: false,
+				})
+
+				expect(child.cwd).toBe("/tmp/orchestration-worker")
+			})
+
 			it("should not apply rate limiting if enough time has passed", async () => {
 				// Create parent task
 				const parent = new Task({
