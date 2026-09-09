@@ -395,7 +395,7 @@ export class NativeToolCallParser {
 		let usedLegacyFormat = false
 
 		switch (name) {
-			case "read_file":
+			case "read_file": {
 				// Check for legacy format first: { files: [...] }
 				// Handle both array and stringified array (some models double-stringify)
 				if (partialArgs.files !== undefined) {
@@ -423,10 +423,11 @@ export class NativeToolCallParser {
 						}
 					}
 				}
-				// New format: { path: "...", mode: "..." }
-				if (!nativeArgs && partialArgs.path !== undefined) {
+				// Canonical path takes precedence; file_path is a provider compatibility alias.
+				const partialReadFilePath = partialArgs.path !== undefined ? partialArgs.path : partialArgs.file_path
+				if (!nativeArgs && typeof partialReadFilePath === "string" && partialReadFilePath.length > 0) {
 					nativeArgs = {
-						path: partialArgs.path,
+						path: partialReadFilePath,
 						mode: partialArgs.mode,
 						offset: this.coerceOptionalNumber(partialArgs.offset),
 						limit: this.coerceOptionalNumber(partialArgs.limit),
@@ -447,6 +448,7 @@ export class NativeToolCallParser {
 					}
 				}
 				break
+			}
 
 			case "attempt_completion":
 				if (partialArgs.result) {
@@ -726,7 +728,7 @@ export class NativeToolCallParser {
 			let usedLegacyFormat = false
 
 			switch (resolvedName) {
-				case "read_file":
+				case "read_file": {
 					// Check for legacy format first: { files: [...] }
 					// Handle both array and stringified array (some models double-stringify)
 					if (args.files !== undefined) {
@@ -754,10 +756,11 @@ export class NativeToolCallParser {
 							} as NativeArgsFor<TName>
 						}
 					}
-					// New format: { path: "...", mode: "..." }
-					if (!nativeArgs && args.path !== undefined) {
+					// Canonical path takes precedence; file_path is a provider compatibility alias.
+					const readFilePath = args.path !== undefined ? args.path : args.file_path
+					if (!nativeArgs && typeof readFilePath === "string" && readFilePath.length > 0) {
 						nativeArgs = {
-							path: args.path,
+							path: readFilePath,
 							mode: args.mode,
 							offset: this.coerceOptionalNumber(args.offset),
 							limit: this.coerceOptionalNumber(args.limit),
@@ -776,6 +779,7 @@ export class NativeToolCallParser {
 						} as NativeArgsFor<TName>
 					}
 					break
+				}
 
 				case "attempt_completion":
 					if (args.result) {

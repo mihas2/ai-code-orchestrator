@@ -80,9 +80,9 @@ function normalizePath(p: string): string {
 }
 
 export function getReadablePath(cwd: string, relPath?: string): string {
-	// If relPath is undefined, return empty string instead of allowing path.resolve
-	// to return cwd (which would then show misleading cwd basename in UI)
-	if (relPath === undefined) {
+	// Streaming tool calls may not have received their path yet. Do not let
+	// path.resolve(cwd, "") turn that missing argument into the workspace name.
+	if (!relPath) {
 		return ""
 	}
 
