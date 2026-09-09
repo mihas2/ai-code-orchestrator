@@ -102,6 +102,7 @@ export default defineConfig(({ mode }) => {
 			alias: [
 				// The generic shared modes module also exposes extension-host helpers.
 				{ find: /^@aico\/modes$/, replacement: resolve(__dirname, "../src/shared/modes-browser.ts") },
+				{ find: /^@aico\/mode-resolvers$/, replacement: resolve(__dirname, "../src/shared/mode-resolvers.ts") },
 				{ find: "@", replacement: resolve(__dirname, "./src") },
 				{ find: "@src", replacement: resolve(__dirname, "./src") },
 				{ find: "@aico", replacement: resolve(__dirname, "../src/shared") },

@@ -20,6 +20,7 @@ export default defineConfig({
 			"@": path.resolve(__dirname, "./src"),
 			"@src": path.resolve(__dirname, "./src"),
 			"@aico": path.resolve(__dirname, "../src/shared"),
+			"@aico/mode-resolvers": path.resolve(__dirname, "../src/shared/mode-resolvers.ts"),
 			// Mock the vscode module for tests since it's not available outside
 			// VS Code extension context.
 			vscode: path.resolve(__dirname, "./src/__mocks__/vscode.ts"),

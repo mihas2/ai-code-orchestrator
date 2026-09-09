@@ -17,6 +17,12 @@ import { vscode } from "@src/utils/vscode"
 
 import { buildDocLink } from "@/utils/docLinks"
 
+/**
+ * ContextMenu receives modes that should already have presentation metadata resolved
+ * by the parent component (e.g., ChatTextArea). This ensures mode descriptions are
+ * properly localized for display.
+ */
+
 interface ContextMenuProps {
 	onSelect: (type: ContextMenuOptionType, value?: string) => void
 	searchQuery: string

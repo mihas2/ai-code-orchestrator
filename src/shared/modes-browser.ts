@@ -7,6 +7,7 @@ import {
 	DEFAULT_MODES,
 } from "@ai-code-orchestrator/types"
 
+import { getEffectiveOperationalFields } from "./mode-resolvers"
 import { TOOL_GROUPS, ALWAYS_AVAILABLE_TOOLS } from "./tools"
 
 export type Mode = string
@@ -60,21 +61,22 @@ export function findModeBySlug(
 	return availableModes?.find((mode) => mode.slug === slug)
 }
 
+/**
+ * Get the mode selection based on the provided mode slug, prompt component, and custom modes.
+ * This now delegates to the unified operational resolver.
+ *
+ * @deprecated Use getEffectiveOperationalFields from mode-resolvers instead for new code.
+ */
 export function getModeSelection(mode: string, promptComponent?: PromptComponent, customModes?: ModeConfig[]) {
-	const customMode = findModeBySlug(mode, customModes)
-	const builtInMode = findModeBySlug(mode, modes)
-	if (customMode) {
-		return {
-			roleDefinition: customMode.roleDefinition || "",
-			baseInstructions: customMode.customInstructions || "",
-			description: customMode.description || "",
-		}
-	}
-	const baseMode = builtInMode || modes[0]
+	// Convert PromptComponent to CustomModePrompts format for the resolver
+	const customModePrompts: CustomModePrompts | undefined = promptComponent ? { [mode]: promptComponent } : undefined
+
+	const operational = getEffectiveOperationalFields(mode, customModes, customModePrompts)
+
 	return {
-		roleDefinition: promptComponent?.roleDefinition || baseMode.roleDefinition || "",
-		baseInstructions: promptComponent?.customInstructions || baseMode.customInstructions || "",
-		description: baseMode.description || "",
+		roleDefinition: operational.roleDefinition,
+		baseInstructions: operational.customInstructions,
+		description: operational.description,
 	}
 }
 

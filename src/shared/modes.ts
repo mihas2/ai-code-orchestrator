@@ -10,6 +10,7 @@ import {
 } from "@ai-code-orchestrator/types"
 
 import { addCustomInstructions } from "../core/prompts/sections/custom-instructions"
+import { getEffectiveOperationalFields } from "./mode-resolvers"
 
 import { TOOL_GROUPS, ALWAYS_AVAILABLE_TOOLS } from "./tools"
 
@@ -105,30 +106,20 @@ export function findModeBySlug(slug: string, modes: readonly ModeConfig[] | unde
 
 /**
  * Get the mode selection based on the provided mode slug, prompt component, and custom modes.
- * If a custom mode is found, it takes precedence over the built-in modes.
- * If no custom mode is found, the built-in mode is used with partial merging from promptComponent.
- * If neither is found, the default mode is used.
+ * This now delegates to the unified operational resolver.
+ *
+ * @deprecated Use getEffectiveOperationalFields from mode-resolvers instead for new code.
  */
 export function getModeSelection(mode: string, promptComponent?: PromptComponent, customModes?: ModeConfig[]) {
-	const customMode = findModeBySlug(mode, customModes)
-	const builtInMode = findModeBySlug(mode, modes)
+	// Convert PromptComponent to CustomModePrompts format for the resolver
+	const customModePrompts: CustomModePrompts | undefined = promptComponent ? { [mode]: promptComponent } : undefined
 
-	// If we have a custom mode, use it entirely
-	if (customMode) {
-		return {
-			roleDefinition: customMode.roleDefinition || "",
-			baseInstructions: customMode.customInstructions || "",
-			description: customMode.description || "",
-		}
-	}
-
-	// Otherwise, use built-in mode as base and merge with promptComponent
-	const baseMode = builtInMode || modes[0] // fallback to default mode
+	const operational = getEffectiveOperationalFields(mode, customModes, customModePrompts)
 
 	return {
-		roleDefinition: promptComponent?.roleDefinition || baseMode.roleDefinition || "",
-		baseInstructions: promptComponent?.customInstructions || baseMode.customInstructions || "",
-		description: baseMode.description || "",
+		roleDefinition: operational.roleDefinition,
+		baseInstructions: operational.customInstructions,
+		description: operational.description,
 	}
 }
 
@@ -164,13 +155,27 @@ export async function getAllModesWithPrompts(context: vscode.ExtensionContext): 
 	const customModePrompts = (await context.globalState.get<CustomModePrompts>("customModePrompts")) || {}
 
 	const allModes = getAllModes(customModes)
-	return allModes.map((mode) => ({
-		...mode,
-		roleDefinition: customModePrompts[mode.slug]?.roleDefinition ?? mode.roleDefinition,
-		whenToUse: customModePrompts[mode.slug]?.whenToUse ?? mode.whenToUse,
-		customInstructions: customModePrompts[mode.slug]?.customInstructions ?? mode.customInstructions,
-		// description is not overridable via customModePrompts, so we keep the original
-	}))
+
+	return allModes.map((mode) => {
+		// Check if this is a custom mode
+		const isCustom = customModes.some((cm) => cm.slug === mode.slug)
+
+		if (isCustom) {
+			// Custom modes: use their own fields, ignore prompt overrides
+			return mode
+		}
+
+		// Built-in modes: apply prompt overrides using the unified resolver
+		const operational = getEffectiveOperationalFields(mode.slug, undefined, customModePrompts)
+
+		return {
+			...mode,
+			roleDefinition: operational.roleDefinition,
+			whenToUse: operational.whenToUse,
+			customInstructions: operational.customInstructions,
+			description: operational.description,
+		}
+	})
 }
 
 // Helper function to get complete mode details with all overrides
@@ -184,22 +189,18 @@ export async function getFullModeDetails(
 		language?: string
 	},
 ): Promise<ModeConfig> {
-	// First get the base mode config from custom modes or built-in modes
+	// Get the base mode config (custom takes precedence over built-in)
 	const baseMode = getModeBySlug(modeSlug, customModes) || modes.find((m) => m.slug === modeSlug) || modes[0]
+	const isCustom = !!customModes?.some((cm) => cm.slug === modeSlug)
 
-	// Check for any prompt component overrides
-	const promptComponent = customModePrompts?.[modeSlug]
-
-	// Get the base custom instructions
-	const baseCustomInstructions = promptComponent?.customInstructions || baseMode.customInstructions || ""
-	const baseWhenToUse = promptComponent?.whenToUse || baseMode.whenToUse || ""
-	const baseDescription = promptComponent?.description || baseMode.description || ""
+	// Get operational fields using the unified resolver
+	const operational = getEffectiveOperationalFields(modeSlug, customModes, customModePrompts)
 
 	// If we have cwd, load and combine all custom instructions
-	let fullCustomInstructions = baseCustomInstructions
+	let fullCustomInstructions = operational.customInstructions
 	if (options?.cwd) {
 		fullCustomInstructions = await addCustomInstructions(
-			baseCustomInstructions,
+			operational.customInstructions,
 			options.globalCustomInstructions || "",
 			options.cwd,
 			modeSlug,
@@ -207,12 +208,12 @@ export async function getFullModeDetails(
 		)
 	}
 
-	// Return mode with any overrides applied
+	// Return mode with operational fields applied
 	return {
 		...baseMode,
-		roleDefinition: promptComponent?.roleDefinition || baseMode.roleDefinition,
-		whenToUse: baseWhenToUse,
-		description: baseDescription,
+		roleDefinition: operational.roleDefinition,
+		whenToUse: operational.whenToUse,
+		description: operational.description,
 		customInstructions: fullCustomInstructions,
 	}
 }

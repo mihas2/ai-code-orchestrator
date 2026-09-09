@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from "react"
 import { validateSkillName as validateSkillNameShared, SkillNameValidationError } from "@ai-code-orchestrator/types"
 
 import { getAllModes } from "@aico/modes"
+import { resolveModePresentationMetadata } from "@aico/mode-resolvers"
 
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { useExtensionState } from "@/context/ExtensionStateContext"
@@ -74,7 +75,7 @@ export const CreateSkillDialog: React.FC<CreateSkillDialogProps> = ({
 	onSkillCreated,
 	hasWorkspace,
 }) => {
-	const { t } = useAppTranslation()
+	const { t, tEn } = useAppTranslation()
 	const { customModes } = useExtensionState()
 
 	const [name, setName] = useState("")
@@ -87,10 +88,15 @@ export const CreateSkillDialog: React.FC<CreateSkillDialogProps> = ({
 	const [selectedModes, setSelectedModes] = useState<string[]>([])
 	const [isAnyMode, setIsAnyMode] = useState(true)
 
-	// Get available modes for the checkboxes (built-in + custom modes)
+	// Get available modes for the checkboxes (built-in + custom modes) with resolved presentation
 	const availableModes = useMemo(() => {
-		return getAllModes(customModes).map((m) => ({ slug: m.slug, name: m.name }))
-	}, [customModes])
+		return getAllModes(customModes).map((mode) => {
+			const presentation = resolveModePresentationMetadata(mode, t, tEn, undefined, {
+				isCustomMode: customModes?.some((customMode) => customMode === mode) ?? false,
+			})
+			return { slug: mode.slug, name: presentation.displayName }
+		})
+	}, [customModes, t, tEn])
 
 	const resetForm = useCallback(() => {
 		setName("")

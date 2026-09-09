@@ -22,7 +22,8 @@
 		"paths": {
 			"@/*": ["./src/*"],
 			"@src/*": ["./src/*"],
-			"@aico/*": ["../src/shared/*"]
+			"@aico/*": ["../src/shared/*"],
+			"@aico/mode-resolvers": ["../src/shared/mode-resolvers.ts"]
 		}
 	},
 	"include": ["src", "../src/shared", "vitest.setup.ts"]

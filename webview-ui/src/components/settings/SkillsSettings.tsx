@@ -5,6 +5,7 @@ import { Plus, Globe, Folder, Edit, Trash2, Settings } from "lucide-react"
 import type { SkillMetadata } from "@ai-code-orchestrator/types"
 
 import { getAllModes } from "@aico/modes"
+import { resolveModePresentationMetadata } from "@aico/mode-resolvers"
 
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { useExtensionState } from "@/context/ExtensionStateContext"
@@ -34,7 +35,7 @@ import { SectionHeader } from "./SectionHeader"
 import { CreateSkillDialog } from "./CreateSkillDialog"
 
 export const SkillsSettings: React.FC = () => {
-	const { t } = useAppTranslation()
+	const { t, tEn } = useAppTranslation()
 	const { cwd, skills: rawSkills, customModes } = useExtensionState()
 	const skills = useMemo(() => rawSkills ?? [], [rawSkills])
 
@@ -51,10 +52,15 @@ export const SkillsSettings: React.FC = () => {
 	// Check if we're in a workspace/project
 	const hasWorkspace = Boolean(cwd)
 
-	// Get available modes for the checkboxes (built-in + custom modes)
+	// Get available modes for the checkboxes (built-in + custom modes) with resolved presentation
 	const availableModes = useMemo(() => {
-		return getAllModes(customModes).map((m) => ({ slug: m.slug, name: m.name }))
-	}, [customModes])
+		return getAllModes(customModes).map((mode) => {
+			const presentation = resolveModePresentationMetadata(mode, t, tEn, undefined, {
+				isCustomMode: customModes?.some((customMode) => customMode === mode) ?? false,
+			})
+			return { slug: mode.slug, name: presentation.displayName }
+		})
+	}, [customModes, t, tEn])
 
 	const handleRefresh = useCallback(() => {
 		vscode.postMessage({ type: "requestSkills" })
@@ -342,7 +348,10 @@ export const SkillsSettings: React.FC = () => {
 										checked={selectedModes.includes(mode.slug)}
 										onCheckedChange={(checked) => handleModeToggle(mode.slug, checked === true)}
 									/>
-									<label htmlFor={`mode-${mode.slug}`} className="flex-1 cursor-pointer">
+									<label
+										htmlFor={`mode-${mode.slug}`}
+										className="flex-1 cursor-pointer"
+										title={mode.name}>
 										{mode.name}
 									</label>
 								</div>
