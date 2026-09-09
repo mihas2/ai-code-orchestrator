@@ -5,6 +5,7 @@ import { Check, X } from "lucide-react"
 import { type ModeConfig, type CustomModePrompts } from "@ai-code-orchestrator/types"
 
 import { type Mode, getAllModes, defaultModeSlug } from "@aico/modes"
+import { resolveModePresentationMetadata } from "@aico/mode-resolvers"
 
 import { vscode } from "@/utils/vscode"
 import { cn } from "@/lib/utils"
@@ -48,7 +49,7 @@ export const ModeSelector = ({
 	const lastNotifiedInvalidModeRef = React.useRef<string | null>(null)
 	const portalContainer = useAicoPortal("aico-portal")
 	const { hasOpenedModeSelector, setHasOpenedModeSelector } = useExtensionState()
-	const { t } = useAppTranslation()
+	const { t, tEn } = useAppTranslation()
 
 	const trackModeSelectorOpened = React.useCallback(() => {
 		// Track first-time usage for UI purposes.
@@ -58,15 +59,21 @@ export const ModeSelector = ({
 		}
 	}, [hasOpenedModeSelector, setHasOpenedModeSelector])
 
-	// Get all modes including custom modes and merge custom prompt descriptions.
+	// Get all modes including custom modes and resolve presentation metadata.
 	const modes = React.useMemo(() => {
 		const allModes = getAllModes(customModes)
 
-		return allModes.map((mode) => ({
-			...mode,
-			description: customModePrompts?.[mode.slug]?.description ?? mode.description,
-		}))
-	}, [customModes, customModePrompts])
+		return allModes.map((mode) => {
+			const presentation = resolveModePresentationMetadata(mode, t, tEn, customModePrompts, {
+				isCustomMode: customModes?.some((customMode) => customMode === mode) ?? false,
+			})
+			return {
+				...mode,
+				name: presentation.displayName,
+				description: presentation.displayDescription,
+			}
+		})
+	}, [customModes, customModePrompts, t, tEn])
 
 	// Find the selected mode, falling back to default if current mode doesn't exist (e.g., after workspace switch)
 	const selectedMode = React.useMemo(() => {

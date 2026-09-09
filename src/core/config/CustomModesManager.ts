@@ -13,6 +13,7 @@ import {
 	modeConfigSchema,
 } from "@ai-code-orchestrator/types"
 
+import { mergeWithUnknownFields, parseWithUnknownFields } from "../../shared/mode-validation"
 import { fileExistsAtPath } from "../../utils/fs"
 import { getWorkspacePath } from "../../utils/path"
 import { getGlobalAicoDirectory } from "../../services/aico-config"
@@ -213,8 +214,25 @@ export class CustomModesManager {
 			const isAgentModes = filePath.endsWith(AGENT_MODES_FILENAME)
 			const source = isAgentModes ? ("project" as const) : ("global" as const)
 
-			// Add source to each mode
-			return result.data.customModes.map((mode) => ({ ...mode, source }))
+			const rawModes = settings.customModes as unknown[]
+			const modesWithUnknownFields = result.data.customModes.map((mode) => {
+				const rawMode = rawModes.find((candidate: any) => candidate?.slug === mode.slug)
+				const parsed = parseWithUnknownFields(rawMode)
+				const modeWithSource = { ...mode, source }
+
+				if (parsed.success && parsed.data && Object.keys(parsed.data.unknownFields).length > 0) {
+					Object.defineProperty(modeWithSource, "__unknownFields", {
+						value: parsed.data.unknownFields,
+						writable: true,
+						enumerable: false,
+						configurable: true,
+					})
+				}
+
+				return modeWithSource
+			})
+
+			return modesWithUnknownFields
 		} catch (error) {
 			// Only log if the error wasn't already handled in parseYamlSafely
 			if (!(error as any).alreadyHandled) {
@@ -228,12 +246,25 @@ export class CustomModesManager {
 	private async mergeCustomModes(projectModes: ModeConfig[], globalModes: ModeConfig[]): Promise<ModeConfig[]> {
 		const slugs = new Set<string>()
 		const merged: ModeConfig[] = []
+		const cloneWithSource = (mode: ModeConfig, source: "project" | "global"): ModeConfig => {
+			const clone = { ...mode, source }
+			const unknownFields = (mode as any).__unknownFields
+			if (unknownFields && typeof unknownFields === "object") {
+				Object.defineProperty(clone, "__unknownFields", {
+					value: unknownFields,
+					writable: true,
+					enumerable: false,
+					configurable: true,
+				})
+			}
+			return clone
+		}
 
 		// Add project mode (takes precedence)
 		for (const mode of projectModes) {
 			if (!slugs.has(mode.slug)) {
 				slugs.add(mode.slug)
-				merged.push({ ...mode, source: "project" })
+				merged.push(cloneWithSource(mode, "project"))
 			}
 		}
 
@@ -241,7 +272,7 @@ export class CustomModesManager {
 		for (const mode of globalModes) {
 			if (!slugs.has(mode.slug)) {
 				slugs.add(mode.slug)
-				merged.push({ ...mode, source: "global" })
+				merged.push(cloneWithSource(mode, "global"))
 			}
 		}
 
@@ -300,8 +331,9 @@ export class CustomModesManager {
 				const agentModesPath = await this.getWorkspaceAgentModes()
 				const agentModes = agentModesPath ? await this.loadModesFromFile(agentModesPath) : []
 
-				// Merge modes from both sources (.agent-modes takes precedence)
-				const mergedModes = await this.mergeCustomModes(agentModes, result.data.customModes)
+				// Reload through the preserving parser before publishing to global state.
+				const settingsModes = await this.loadModesFromFile(settingsPath)
+				const mergedModes = await this.mergeCustomModes(agentModes, settingsModes)
 				await this.context.globalState.update("customModes", mergedModes)
 				this.clearCache()
 				await this.onUpdate()
@@ -444,10 +476,30 @@ export class CustomModesManager {
 			}
 
 			await this.queueWrite(async () => {
+				// Imported/edited data carries its own unknown fields; fall back to the
+				// persisted mode when callers provide only validated known fields.
+				const existingModes = await this.getCustomModes()
+				const existingMode = existingModes.find((m) => m.slug === slug)
+				const incomingUnknownFields = (config as any).__unknownFields
+				const unknownFields =
+					incomingUnknownFields && typeof incomingUnknownFields === "object"
+						? incomingUnknownFields
+						: (existingMode as any)?.__unknownFields
+
 				// Ensure source is set correctly based on target file.
 				const modeWithSource = {
 					...config,
 					source: isProjectMode ? ("project" as const) : ("global" as const),
+				}
+
+				// Preserve unknown fields as non-enumerable property
+				if (unknownFields && typeof unknownFields === "object") {
+					Object.defineProperty(modeWithSource, "__unknownFields", {
+						value: unknownFields,
+						writable: true,
+						enumerable: false,
+						configurable: true,
+					})
 				}
 
 				await this.updateModesInFile(targetPath, (modes) => {
@@ -487,7 +539,39 @@ export class CustomModesManager {
 			settings.customModes = []
 		}
 
-		settings.customModes = operation(settings.customModes)
+		// Keep raw modes from file for unknown field preservation
+		const rawModes = settings.customModes as Record<string, unknown>[]
+		const rawModesMap = new Map<string, Record<string, unknown>>()
+		for (const raw of rawModes) {
+			if (raw && typeof raw === "object" && typeof raw.slug === "string") {
+				rawModesMap.set(raw.slug, raw)
+			}
+		}
+
+		const updatedModes = operation(settings.customModes)
+
+		// Convert modes to plain objects preserving unknown fields from raw data
+		const modesForYaml = updatedModes.map((mode) => {
+			const unknownFields = (mode as any).__unknownFields
+			const plainMode = mergeWithUnknownFields(
+				mode,
+				unknownFields && typeof unknownFields === "object" ? unknownFields : {},
+			)
+
+			// Recover unknown data directly from the current file as well. This covers
+			// callers that spread a mode and therefore cannot carry non-enumerable data.
+			const rawMode = rawModesMap.get(mode.slug)
+			if (rawMode) {
+				const parsedRaw = parseWithUnknownFields(rawMode)
+				if (parsedRaw.success && parsedRaw.data) {
+					return mergeWithUnknownFields(plainMode as ModeConfig, parsedRaw.data.unknownFields)
+				}
+			}
+
+			return plainMode
+		})
+
+		settings.customModes = modesForYaml
 		await fs.writeFile(filePath, yaml.stringify(settings, { lineWidth: 0 }), "utf-8")
 	}
 
@@ -802,19 +886,36 @@ export class CustomModesManager {
 				// Directory doesn't exist, which is fine - mode might not have rules
 			}
 
-			// Create an export mode with rules files preserved
+			// Create an export mode preserving all fields including unknown ones
+			// Start with known fields
 			const exportMode: ExportedModeConfig = {
-				...mode,
-				// Remove source property for export
+				slug: mode.slug,
+				name: mode.name,
+				roleDefinition: mode.roleDefinition,
+				groups: mode.groups,
 				source: "project" as const,
 			}
 
-			// Merge custom prompts if provided
+			// Add optional known fields
+			if (mode.whenToUse) exportMode.whenToUse = mode.whenToUse
+			if (mode.description) exportMode.description = mode.description
+			if (mode.customInstructions) exportMode.customInstructions = mode.customInstructions
+			if (mode.ui) exportMode.ui = mode.ui
+
+			// Preserve unknown fields without allowing them to replace validated fields.
+			const unknownFields = (mode as any).__unknownFields
+			if (unknownFields && typeof unknownFields === "object") {
+				Object.assign(exportMode, mergeWithUnknownFields(exportMode, unknownFields))
+			}
+
+			// Empty built-in overrides mean reset/fallback; non-empty values remain exact.
 			if (customPrompts) {
-				if (customPrompts.roleDefinition) exportMode.roleDefinition = customPrompts.roleDefinition
-				if (customPrompts.description) exportMode.description = customPrompts.description
-				if (customPrompts.whenToUse) exportMode.whenToUse = customPrompts.whenToUse
-				if (customPrompts.customInstructions) exportMode.customInstructions = customPrompts.customInstructions
+				if (customPrompts.roleDefinition?.trim()) exportMode.roleDefinition = customPrompts.roleDefinition
+				if (customPrompts.description?.trim()) exportMode.description = customPrompts.description
+				if (customPrompts.whenToUse?.trim()) exportMode.whenToUse = customPrompts.whenToUse
+				if (customPrompts.customInstructions?.trim()) {
+					exportMode.customInstructions = customPrompts.customInstructions
+				}
 			}
 
 			// Add rules files if any exist
@@ -959,7 +1060,7 @@ export class CustomModesManager {
 			for (const importMode of importData.customModes) {
 				const { rulesFiles, ...modeConfig } = importMode
 
-				// Validate the mode configuration
+				// Validate known fields while retaining unknown import data for round-trip.
 				const validationResult = modeConfigSchema.safeParse(modeConfig)
 				if (!validationResult.success) {
 					logger.error(`Invalid mode configuration for ${modeConfig.slug}`, {
@@ -978,11 +1079,15 @@ export class CustomModesManager {
 					logger.info(`Overwriting existing mode: ${importMode.slug}`)
 				}
 
-				// Import the mode configuration with the specified source
-				await this.updateCustomMode(importMode.slug, {
-					...modeConfig,
-					source: source, // Use the provided source parameter
-				})
+				const parsedMode = parseWithUnknownFields(modeConfig)
+				const modeToSave = { ...validationResult.data, source }
+				if (parsedMode.success && parsedMode.data && Object.keys(parsedMode.data.unknownFields).length > 0) {
+					Object.defineProperty(modeToSave, "__unknownFields", {
+						value: parsedMode.data.unknownFields,
+						enumerable: false,
+					})
+				}
+				await this.updateCustomMode(importMode.slug, modeToSave)
 
 				// Import rules files (this also handles cleanup of existing rules folders)
 				await this.importRulesFiles(importMode, rulesFiles || [], source)

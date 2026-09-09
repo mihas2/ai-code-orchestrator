@@ -7,8 +7,13 @@ import { mentionRegex } from "@aico/context-mentions"
 import { escapeSpaces } from "./path-mentions"
 
 /**
- * Gets the description for a mode, prioritizing description > whenToUse > roleDefinition
- * and taking only the first line
+ * Gets the description for a mode for display purposes.
+ * Uses the provided description if available, falling back to whenToUse or roleDefinition.
+ * Takes only the first line for brevity.
+ *
+ * Note: For proper localization, callers should enrich modes with presentation metadata
+ * using resolveModePresentationMetadata before passing to getContextMenuOptions.
+ * The description field will then contain the localized displayDescription.
  */
 function getModeDescription(mode: ModeConfig): string {
 	return (mode.description || mode.whenToUse || mode.roleDefinition).split("\n")[0]

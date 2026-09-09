@@ -47,6 +47,24 @@
 							"additionalProperties": false
 						}
 					},
+					"ui": {
+						"type": "object",
+						"properties": {
+							"nameKey": {
+								"type": "string"
+							},
+							"descriptionKey": {
+								"type": "string"
+							},
+							"noticeKeys": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							}
+						},
+						"additionalProperties": false
+					},
 					"groups": {
 						"type": "array",
 						"items": {

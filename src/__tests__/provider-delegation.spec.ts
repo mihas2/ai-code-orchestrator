@@ -47,6 +47,11 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 			getTaskWithId,
 			updateTaskHistory,
 			handleModeSwitch,
+			getState: vi.fn().mockResolvedValue({
+				mode: "orchestrator",
+				currentApiConfigName: "test-profile",
+				apiConfiguration: {},
+			}),
 			log: vi.fn(),
 		} as unknown as ClineProvider
 
@@ -81,7 +86,7 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 		// Metadata persistence - parent gets "delegated" status (child status is set at creation via initialStatus)
 		expect(updateTaskHistory).toHaveBeenCalledTimes(1)
 
-		// Parent set to "delegated"
+		// Parent set to "delegated" with snapshot
 		const parentSaved = updateTaskHistory.mock.calls[0][0]
 		expect(parentSaved).toEqual(
 			expect.objectContaining({
@@ -90,6 +95,11 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 				delegatedToId: "child-1",
 				awaitingChildId: "child-1",
 				childIds: expect.arrayContaining(["child-1"]),
+				parentSnapshot: expect.objectContaining({
+					mode: "orchestrator",
+					apiConfigName: "test-profile",
+					capturedAt: expect.any(Number),
+				}),
 			}),
 		)
 
@@ -137,6 +147,11 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 			getTaskWithId,
 			updateTaskHistory,
 			handleModeSwitch,
+			getState: vi.fn().mockResolvedValue({
+				mode: "orchestrator",
+				currentApiConfigName: "test-profile",
+				apiConfiguration: {},
+			}),
 			log: vi.fn(),
 		} as unknown as ClineProvider
 

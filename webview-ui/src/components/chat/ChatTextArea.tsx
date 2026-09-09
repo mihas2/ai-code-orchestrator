@@ -3,11 +3,12 @@ import { useEvent } from "react-use"
 import DynamicTextArea from "react-textarea-autosize"
 import { VolumeX, Image, WandSparkles, SendHorizontal, X, ListEnd, Square } from "lucide-react"
 
-import type { ExtensionMessage } from "@ai-code-orchestrator/types"
+import type { ExtensionMessage, ModeConfig } from "@ai-code-orchestrator/types"
 
 import { mentionRegex, mentionRegexGlobal, commandRegexGlobal, unescapeSpaces } from "@aico/context-mentions"
 import { WebviewMessage } from "@aico/WebviewMessage"
 import { Mode, getAllModes } from "@aico/modes"
+import { resolveModePresentationMetadata } from "@aico/mode-resolvers"
 
 import { vscode } from "@src/utils/vscode"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
@@ -81,7 +82,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		},
 		ref,
 	) => {
-		const { t } = useAppTranslation()
+		const { t, tEn } = useAppTranslation()
 		const {
 			filePaths,
 			openedTabs,
@@ -255,7 +256,20 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			}
 		}, [inputValue, setInputValue, t])
 
-		const allModes = useMemo(() => getAllModes(customModes), [customModes])
+		// Resolve presentation metadata for all modes for context menu display
+		const allModesWithPresentation = useMemo(() => {
+			const modes = getAllModes(customModes)
+			return modes.map((mode) => {
+				const presentation = resolveModePresentationMetadata(mode, t, tEn, customModePrompts, {
+					isCustomMode: customModes?.some((customMode) => customMode === mode) ?? false,
+				})
+				// Enrich mode with displayDescription for context menu
+				return {
+					...mode,
+					description: presentation.displayDescription || mode.description,
+				} as ModeConfig
+			})
+		}, [customModes, t, tEn, customModePrompts])
 
 		// Memoized check for whether the input has content (text or images)
 		const hasInputContent = useMemo(() => {
@@ -428,7 +442,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								selectedType,
 								queryItems,
 								fileSearchResults,
-								allModes,
+								allModesWithPresentation,
 								commands,
 							)
 							const optionsLength = options.length
@@ -466,7 +480,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							selectedType,
 							queryItems,
 							fileSearchResults,
-							allModes,
+							allModesWithPresentation,
 							commands,
 						)[selectedMenuIndex]
 						if (
@@ -564,7 +578,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				setInputValue,
 				justDeletedSpaceAfterMention,
 				queryItems,
-				allModes,
+				allModesWithPresentation,
 				fileSearchResults,
 				handleHistoryNavigation,
 				resetHistoryNavigation,
@@ -1002,7 +1016,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 									setSelectedIndex={setSelectedMenuIndex}
 									selectedType={selectedType}
 									queryItems={queryItems}
-									modes={allModes}
+									modes={allModesWithPresentation}
 									loading={searchLoading}
 									dynamicSearchResults={fileSearchResults}
 									commands={commands}

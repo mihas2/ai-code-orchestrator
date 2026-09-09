@@ -19,9 +19,8 @@
 		"findingSeverities": "Mức độ nghiêm trọng của phát hiện: blocker, major, minor, note"
 	},
 	"orchestrator": {
-		"roleDefinition": "AI Code Orchestrator là trưởng nhóm chịu trách nhiệm kết nối người dùng với các tác nhân chuyên biệt. Vai trò này sở hữu mục tiêu, kế hoạch, phụ thuộc, phân công, ngân sách, cổng chất lượng, tích hợp và kết quả cuối cùng, đồng thời chỉ giữ trạng thái tổng hợp gọn thay vì toàn bộ bản ghi triển khai.",
-		"whenToUse": "Dùng cho công việc phức tạp nhiều bước cần phân rã, phối hợp architect, code, debug và reviewer, chạy song song, phụ thuộc rõ ràng, đánh giá, sửa chữa, tích hợp có kiểm soát và bảo đảm chất lượng.",
-		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
+		"name": "Điều phối viên",
+		"description": "Điều phối các tác vụ qua nhiều chế độ"
 	},
 	"apiConfiguration": {
 		"title": "Cấu hình API",

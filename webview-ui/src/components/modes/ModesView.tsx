@@ -29,6 +29,7 @@ import {
 	findModeBySlug as findCustomModeBySlug,
 	defaultModeSlug,
 } from "@aico/modes"
+import { resolveModePresentationMetadata } from "@aico/mode-resolvers"
 import { TOOL_GROUPS } from "@aico/tools"
 
 import { vscode } from "@src/utils/vscode"
@@ -97,7 +98,7 @@ type ModesViewProps = {
 }
 
 const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField }: ModesViewProps = {}) => {
-	const { t } = useAppTranslation()
+	const { t, tEn } = useAppTranslation()
 
 	const {
 		customModePrompts,
@@ -336,6 +337,23 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 		const findMode = (m: ModeConfig): boolean => m.slug === editingRole
 		return customModes?.find(findMode) || modes.find(findMode)
 	}, [editingRole, customModes, modes])
+
+	// Get display name for current mode using presentation resolver
+	const getCurrentModeDisplayName = useCallback((): string => {
+		const mode = getCurrentMode()
+		if (!mode) return t("prompts:modes.selectMode")
+
+		// Check for local rename first (custom mode UI rename)
+		if (localRenames[editingRole]) {
+			return localRenames[editingRole]
+		}
+
+		// Resolve against the mode collection so custom slug collisions stay literal.
+		const presentation = resolveModePresentationMetadata(mode, t, tEn, customModePrompts, {
+			isCustomMode: customModes?.some((customMode) => customMode === mode) ?? false,
+		})
+		return presentation.displayName
+	}, [getCurrentMode, editingRole, localRenames, t, tEn, customModePrompts, customModes])
 
 	// Check if the current mode has rules to export
 	const checkRulesDirectory = useCallback((slug: string) => {
@@ -775,11 +793,7 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 											aria-expanded={open}
 											className="justify-between grow"
 											data-testid="mode-select-trigger">
-											<div className="truncate">
-												{localRenames[editingRole] ??
-													getCurrentMode()?.name ??
-													t("prompts:modes.selectMode")}
-											</div>
+											<div className="truncate">{getCurrentModeDisplayName()}</div>
 											<ChevronDown className="opacity-50" />
 										</Button>
 									</PopoverTrigger>
@@ -1045,6 +1059,30 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 					/>
 				</div>
 
+				{/* Mode-specific notices (e.g., reviewer constraints) */}
+				{(() => {
+					const currentMode = getCurrentMode()
+					if (!currentMode) return null
+
+					const presentation = resolveModePresentationMetadata(currentMode, t, tEn, customModePrompts, {
+						isCustomMode: customModes?.some((customMode) => customMode === currentMode) ?? false,
+					})
+					if (presentation.notices.length === 0) return null
+
+					return (
+						<div className="mb-4 p-3 bg-vscode-input-background border border-vscode-input-border rounded">
+							{presentation.notices.map((notice, index) => (
+								<div
+									key={index}
+									className="text-sm text-vscode-descriptionForeground"
+									style={{ marginBottom: index < presentation.notices.length - 1 ? "8px" : "0" }}>
+									{notice}
+								</div>
+							))}
+						</div>
+					)
+				})()}
+
 				{/* Description section */}
 				<div className="mb-4">
 					<div className="flex justify-between items-center mb-1">
@@ -1267,7 +1305,7 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 					</div>
 					<div className="text-[13px] text-vscode-descriptionForeground mb-2">
 						{t("prompts:customInstructions.description", {
-							modeName: getCurrentMode()?.name || "Code",
+							modeName: getCurrentModeDisplayName(),
 						})}
 					</div>
 					<VSCodeTextArea
@@ -1311,7 +1349,7 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 						<Trans
 							i18nKey="prompts:customInstructions.loadFromFile"
 							values={{
-								mode: getCurrentMode()?.name || "Code",
+								mode: getCurrentModeDisplayName(),
 								slug: getCurrentMode()?.slug || "code",
 							}}
 							components={{
@@ -1655,7 +1693,7 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 							<h2 className="mb-4">
 								{selectedPromptTitle ||
 									t("prompts:systemPrompt.title", {
-										modeName: getCurrentMode()?.name || "Code",
+										modeName: getCurrentModeDisplayName(),
 									})}
 							</h2>
 							<pre className="p-2 whitespace-pre-wrap break-words font-mono text-vscode-editor-font-size text-vscode-editor-foreground bg-vscode-editor-background border border-vscode-editor-lineHighlightBorder rounded overflow-y-auto">

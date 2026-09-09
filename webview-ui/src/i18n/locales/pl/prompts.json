@@ -19,9 +19,8 @@
 		"findingSeverities": "Ważność ustaleń: blocker, major, minor, note"
 	},
 	"orchestrator": {
-		"roleDefinition": "AI Code Orchestrator jest odpowiedzialnym liderem zespołu łączącym użytkownika ze wyspecjalizowanymi agentami. Odpowiada za cel, plan, zależności, przydział, budżety, bramki jakości, integrację i wynik końcowy oraz przechowuje zwięzły stan zbiorczy zamiast pełnych transkrypcji.",
-		"whenToUse": "Używaj do złożonych, wieloetapowych prac wymagających dekompozycji, koordynacji architect, code, debug i reviewer, równoległości, jawnych zależności, przeglądu, poprawek, kontrolowanej integracji i zapewnienia jakości.",
-		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
+		"name": "Orkiestrator",
+		"description": "Koordynuj zadania w wielu trybach"
 	},
 	"apiConfiguration": {
 		"title": "Konfiguracja API",

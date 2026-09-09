@@ -19,9 +19,8 @@
 		"findingSeverities": "निष्कर्षों की गंभीरता: blocker, major, minor, note"
 	},
 	"orchestrator": {
-		"roleDefinition": "AI Code Orchestrator उपयोगकर्ता और विशेषज्ञ एजेंटों को जोड़ने वाला उत्तरदायी टीम लीड है। यह लक्ष्य, योजना, निर्भरताओं, कार्य-वितरण, बजट, गुणवत्ता गेट, एकीकरण और अंतिम परिणाम का स्वामी है तथा पूर्ण ट्रांसक्रिप्ट के बजाय संक्षिप्त समग्र स्थिति रखता है।",
-		"whenToUse": "जटिल बहु-चरणीय कार्य के लिए उपयोग करें जिसमें architect, code, debug और reviewer के बीच विघटन व समन्वय, समानांतर निष्पादन, स्पष्ट निर्भरताएँ, समीक्षा, सुधार, नियंत्रित एकीकरण और गुणवत्ता आश्वासन चाहिए।",
-		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
+		"name": "ऑर्केस्ट्रेटर",
+		"description": "कई मोड्स में कार्यों का समन्वय करें"
 	},
 	"apiConfiguration": {
 		"title": "API कॉन्फ़िगरेशन",

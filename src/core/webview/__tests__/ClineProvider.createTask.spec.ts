@@ -320,6 +320,24 @@ describe("ClineProvider task restoration role assignment", () => {
 		expect(taskConstructor.mock.calls.at(-1)![0].apiConfiguration.openRouterModelId).toBe("M1")
 	})
 
+	it("restores a different model from the same profile through the provider-specific key", async () => {
+		const provider = makeProvider()
+		provider.providerSettingsManager.listConfig.mockResolvedValue([
+			{ name: "same-profile", id: "same-profile-id", apiProvider: "openrouter" },
+		])
+		provider.providerSettingsManager.getProfile.mockResolvedValue(
+			profile({ name: "same-profile", openRouterModelId: "profile-default" }),
+		)
+		await provider.createTaskWithHistoryItem(
+			{ ...historyItem, apiConfigName: "same-profile", modelId: "snapshot-model" },
+			{ startTask: false, strictProfileRestore: true },
+		)
+		const restored = taskConstructor.mock.calls.at(-1)![0]
+		expect(restored.apiConfiguration.openRouterModelId).toBe("snapshot-model")
+		expect(restored.apiConfiguration).not.toHaveProperty("apiModelId")
+		expect(restored.apiConfiguration).not.toHaveProperty("openAiModelId")
+	})
+
 	it("C3 does not share task configuration references with global state", async () => {
 		const provider = makeProvider()
 		await provider.createTaskWithHistoryItem({ ...historyItem }, { startTask: false })

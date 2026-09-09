@@ -65,10 +65,15 @@ describe("History resume delegation - parent metadata transitions", () => {
 
 		const updateTaskHistory = vi.fn().mockResolvedValue([])
 		const removeClineFromStack = vi.fn().mockResolvedValue(undefined)
-		const createTaskWithHistoryItem = vi.fn().mockResolvedValue({
-			taskId: "parent-1",
-			skipPrevResponseIdOnce: false,
-			resumeAfterDelegation: vi.fn().mockResolvedValue(undefined),
+		const createTaskWithHistoryItem = vi.fn().mockImplementation(async () => {
+			// The real helper enforces the single-open-task invariant while installing
+			// the stopped replacement parent.
+			await removeClineFromStack()
+			return {
+				taskId: "parent-1",
+				skipPrevResponseIdOnce: false,
+				resumeAfterDelegation: vi.fn().mockResolvedValue(undefined),
+			}
 		})
 
 		const provider = {
@@ -115,7 +120,7 @@ describe("History resume delegation - parent metadata transitions", () => {
 				status: "active",
 				completedByChildId: "child-1",
 			}),
-			{ startTask: false },
+			{ startTask: false, strictProfileRestore: false },
 		)
 	})
 
@@ -649,7 +654,7 @@ describe("History resume delegation - parent metadata transitions", () => {
 				status: "active",
 				completedByChildId: "child-rpd02",
 			}),
-			{ startTask: false },
+			{ startTask: false, strictProfileRestore: false },
 		)
 		expect(parentInstance.resumeAfterDelegation).toHaveBeenCalledTimes(1)
 	})

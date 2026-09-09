@@ -90,10 +90,9 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 						const status = historyItem?.status
 
 						if (status === "completed") {
-							// Subtask already completed - skip delegation flow entirely
-							// Fall through to normal completion ask flow below (outside this if block)
-							// This shows the user the completion result and waits for acceptance
-							// without injecting another tool_result to the parent
+							// Subtask already completed - skip delegation flow entirely.
+							// Fall through to normal completion ask flow below (idempotent).
+							// This shows the user the completion result without injecting another tool_result to the parent.
 						} else if (status === "active") {
 							// Normal subtask completion - do delegation
 							const delegation = await this.delegateToParent(
@@ -108,22 +107,30 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 							}
 							if (delegation !== "continue") return
 						} else {
-							// Unexpected status (undefined or "delegated") - log error and skip delegation
-							// undefined indicates a bug in status persistence during child creation
-							// "delegated" would mean this child has its own grandchild pending (shouldn't reach attempt_completion)
-							console.error(
-								`[AttemptCompletionTool] Unexpected child task status "${status}" for task ${task.taskId}. ` +
-									`Expected "active" or "completed". Skipping delegation to prevent data corruption.`,
-							)
-							// Fall through to normal completion ask flow
+							// Unexpected status (undefined or "delegated").
+							// undefined indicates a bug in status persistence during child creation.
+							// "delegated" would mean this child has its own grandchild pending (shouldn't reach attempt_completion).
+							// Do NOT hide this with normal completion flow - surface the error to the user.
+							const errorMsg =
+								`Child task ${task.taskId} has unexpected status "${status}". ` +
+								`Expected "active" or "completed". This indicates a delegation metadata corruption bug. ` +
+								`The child result cannot be safely returned to the parent. Please report this issue.`
+
+							console.error(`[AttemptCompletionTool] ${errorMsg}`)
+							await task.say("error", errorMsg)
+							pushToolResult(formatResponse.toolError(errorMsg))
+							return
 						}
 					} catch (err) {
-						// If we can't get the history, log error and skip delegation
-						console.error(
-							`[AttemptCompletionTool] Failed to get history for task ${task.taskId}: ${(err as Error)?.message ?? String(err)}. ` +
-								`Skipping delegation.`,
-						)
-						// Fall through to normal completion ask flow
+						// If we can't get the history, surface the error instead of hiding it.
+						const errorMsg =
+							`Failed to verify child task ${task.taskId} status before delegation: ${(err as Error)?.message ?? String(err)}. ` +
+							`Cannot safely complete delegation. Please report this issue.`
+
+						console.error(`[AttemptCompletionTool] ${errorMsg}`)
+						await task.say("error", errorMsg)
+						pushToolResult(formatResponse.toolError(errorMsg))
+						return
 					}
 				}
 			}

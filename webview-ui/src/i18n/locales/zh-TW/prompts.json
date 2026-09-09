@@ -19,9 +19,8 @@
 		"findingSeverities": "發現嚴重程度：blocker、major、minor、note"
 	},
 	"orchestrator": {
-		"roleDefinition": "AI Code Orchestrator 是連結使用者與專業代理並對結果負責的團隊負責人。它負責目標、計畫、相依關係、工作分配、預算、品質關卡、整合和最終結果，並維護精簡的彙總狀態，而非完整實作記錄。",
-		"whenToUse": "適用於需要分解並協調 architect、code、debug 和 reviewer、平行執行獨立工作、明確規劃相依關係、審查、返工、受控整合和品質保證的複雜多步驟工作。",
-		"customInstructions": "Follow the orchestration lifecycle: 1) analyze the goal, constraints, risks, permissions, and acceptance criteria; 2) plan an acyclic DAG whose nodes have roles, dependencies, narrow ContextContracts, artifacts, checks, and budgets; 3) validate the plan and required plan gate; 4) launch only ready plan nodes, using new_task solely through the orchestration protocol, never for ad hoc delegation; 5) monitor dependencies, configurable parallelism and token/time budgets, and verify compact ResultContracts at batch gates; 6) invoke reviewer according to reviewPolicy and route blocker/major findings to bounded remediation and re-review; 7) run integration as a separate controlled stage through an integrator, including conflict resolution and end-to-end checks; 8) synthesize the final result only after all required quality gates pass. Do not write code yourself: assign architecture, implementation, and diagnosis to architect, code, and debug. Give each executor only narrow, sufficient context rather than the root transcript, and require a concise ResultContract with status, artifacts, evidence, tests, risks, and unresolved issues. Apply sandbox, approval, secret-handling, file-scope, and tool-safety rules independently to every executor."
+		"name": "編排器",
+		"description": "跨多個模式協調任務"
 	},
 	"apiConfiguration": {
 		"title": "API 設定",
