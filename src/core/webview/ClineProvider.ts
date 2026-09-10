@@ -1287,6 +1287,24 @@ export class ClineProvider
 						throw new Error("Orchestration has no safe Task adapter in the current provider lifecycle")
 					}
 					if (!parent) throw new Error("Orchestration has no safe Task adapter: parent task is not active")
+
+					// Capture parent auto-approval settings before creating worker
+					const parentState = await this.getState()
+					const autoApprovalSettings = {
+						autoApprovalEnabled: parentState.autoApprovalEnabled,
+						alwaysAllowReadOnly: parentState.alwaysAllowReadOnly,
+						alwaysAllowReadOnlyOutsideWorkspace: parentState.alwaysAllowReadOnlyOutsideWorkspace,
+						alwaysAllowWrite: parentState.alwaysAllowWrite,
+						alwaysAllowWriteOutsideWorkspace: parentState.alwaysAllowWriteOutsideWorkspace,
+						alwaysAllowWriteProtected: parentState.alwaysAllowWriteProtected,
+						alwaysAllowExecute: parentState.alwaysAllowExecute,
+						alwaysAllowMcp: parentState.alwaysAllowMcp,
+						alwaysAllowModeSwitch: parentState.alwaysAllowModeSwitch,
+						alwaysAllowSubtasks: parentState.alwaysAllowSubtasks,
+						alwaysAllowFollowupQuestions: parentState.alwaysAllowFollowupQuestions,
+						followupAutoApproveTimeoutMs: parentState.followupAutoApproveTimeoutMs,
+					}
+
 					const workspace = await workerRegistry.allocate(run.runId, node.nodeId, node.attempt)
 					const route = node.route
 					let selectedProfile: (ProviderSettings & { id?: string; name?: string }) | undefined
@@ -1348,6 +1366,8 @@ export class ClineProvider
 											...configuration,
 											[modelKey]: route.modelId,
 											currentApiConfigName: selectedProfile.name,
+											// Inherit auto-approval settings from parent
+											...autoApprovalSettings,
 										}
 									})()
 								: (() => {
