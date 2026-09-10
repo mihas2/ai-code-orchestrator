@@ -63,6 +63,10 @@
 		"title": "命令",
 		"tooltip": "执行此命令"
 	},
+	"runCommandAndAllow": {
+		"title": "运行并允许",
+		"tooltip": "将命令模式保存到允许列表并执行此命令"
+	},
 	"proceedWhileRunning": {
 		"title": "强制继续",
 		"tooltip": "忽略运行中的命令并继续"

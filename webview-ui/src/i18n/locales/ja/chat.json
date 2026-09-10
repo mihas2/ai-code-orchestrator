@@ -63,6 +63,10 @@
 		"title": "コマンド",
 		"tooltip": "このコマンドを実行"
 	},
+	"runCommandAndAllow": {
+		"title": "実行して許可",
+		"tooltip": "コマンドパターンを許可リストに保存してこのコマンドを実行します"
+	},
 	"proceedWhileRunning": {
 		"title": "実行中も続行",
 		"tooltip": "警告にもかかわらず続行"

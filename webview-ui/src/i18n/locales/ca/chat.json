@@ -63,6 +63,10 @@
 		"title": "Ordre",
 		"tooltip": "Executa aquesta ordre"
 	},
+	"runCommandAndAllow": {
+		"title": "Executar i Permetre",
+		"tooltip": "Desa els patrons d'ordres a la llista permesa i executa aquesta ordre"
+	},
 	"proceedWhileRunning": {
 		"title": "Continuar mentre s'executa",
 		"tooltip": "Continua malgrat els advertiments"

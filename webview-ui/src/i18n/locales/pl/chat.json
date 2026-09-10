@@ -63,6 +63,10 @@
 		"title": "Polecenie",
 		"tooltip": "Wykonaj to polecenie"
 	},
+	"runCommandAndAllow": {
+		"title": "Wykonaj i Zezwól",
+		"tooltip": "Zapisz wzorce poleceń na liście dozwolonych i wykonaj to polecenie"
+	},
 	"proceedWhileRunning": {
 		"title": "Kontynuuj podczas wykonywania",
 		"tooltip": "Kontynuuj pomimo ostrzeżeń"

@@ -63,6 +63,10 @@
 		"title": "Befehl",
 		"tooltip": "Diesen Befehl ausführen"
 	},
+	"runCommandAndAllow": {
+		"title": "Ausführen und Erlauben",
+		"tooltip": "Befehlsmuster zur Erlaubnisliste hinzufügen und diesen Befehl ausführen"
+	},
 	"proceedWhileRunning": {
 		"title": "Während Ausführung fortfahren",
 		"tooltip": "Trotz Warnungen fortfahren"

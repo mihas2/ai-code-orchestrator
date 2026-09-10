@@ -63,6 +63,10 @@
 		"title": "명령",
 		"tooltip": "이 명령 실행"
 	},
+	"runCommandAndAllow": {
+		"title": "실행 및 허용",
+		"tooltip": "명령 패턴을 허용 목록에 저장하고 이 명령을 실행합니다"
+	},
 	"proceedWhileRunning": {
 		"title": "실행 중에도 계속",
 		"tooltip": "경고에도 불구하고 계속 진행"

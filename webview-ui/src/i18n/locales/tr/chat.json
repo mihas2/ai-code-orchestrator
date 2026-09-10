@@ -63,6 +63,10 @@
 		"title": "Komut",
 		"tooltip": "Bu komutu çalıştır"
 	},
+	"runCommandAndAllow": {
+		"title": "Çalıştır ve İzin Ver",
+		"tooltip": "Komut kalıplarını izin verilen listeye kaydet ve bu komutu çalıştır"
+	},
 	"proceedWhileRunning": {
 		"title": "Çalışırken Devam Et",
 		"tooltip": "Uyarılara rağmen devam et"

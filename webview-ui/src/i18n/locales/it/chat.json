@@ -63,6 +63,10 @@
 		"title": "Comando",
 		"tooltip": "Esegui questo comando"
 	},
+	"runCommandAndAllow": {
+		"title": "Esegui e Consenti",
+		"tooltip": "Salva i pattern dei comandi nella lista consentiti ed esegui questo comando"
+	},
 	"proceedWhileRunning": {
 		"title": "Procedi durante l'esecuzione",
 		"tooltip": "Continua nonostante gli avvisi"

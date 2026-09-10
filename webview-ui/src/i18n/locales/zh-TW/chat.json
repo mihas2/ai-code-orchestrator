@@ -87,6 +87,10 @@
 		"title": "執行",
 		"tooltip": "執行此命令"
 	},
+	"runCommandAndAllow": {
+		"title": "執行並允許",
+		"tooltip": "將命令模式儲存至允許清單並執行此命令"
+	},
 	"proceedWhileRunning": {
 		"title": "執行時繼續",
 		"tooltip": "儘管有警告仍繼續執行"

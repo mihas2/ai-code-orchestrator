@@ -63,6 +63,10 @@
 		"title": "Lệnh",
 		"tooltip": "Thực thi lệnh này"
 	},
+	"runCommandAndAllow": {
+		"title": "Chạy và Cho phép",
+		"tooltip": "Lưu mẫu lệnh vào danh sách được phép và thực thi lệnh này"
+	},
 	"proceedWhileRunning": {
 		"title": "Tiếp tục trong khi chạy",
 		"tooltip": "Tiếp tục bất chấp cảnh báo"

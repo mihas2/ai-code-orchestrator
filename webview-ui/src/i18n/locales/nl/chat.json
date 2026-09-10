@@ -63,6 +63,10 @@
 		"title": "Commando",
 		"tooltip": "Voer dit commando uit"
 	},
+	"runCommandAndAllow": {
+		"title": "Uitvoeren en Toestaan",
+		"tooltip": "Sla commandopatronen op in de toegestane lijst en voer dit commando uit"
+	},
 	"proceedWhileRunning": {
 		"title": "Doorgaan tijdens uitvoeren",
 		"tooltip": "Ga door ondanks waarschuwingen"

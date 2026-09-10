@@ -89,6 +89,10 @@
 		"title": "Perintah",
 		"tooltip": "Jalankan perintah ini"
 	},
+	"runCommandAndAllow": {
+		"title": "Jalankan dan Izinkan",
+		"tooltip": "Simpan pola perintah ke daftar yang diizinkan dan jalankan perintah ini"
+	},
 	"proceedWhileRunning": {
 		"title": "Lanjutkan Saat Berjalan",
 		"tooltip": "Lanjutkan meskipun ada peringatan"

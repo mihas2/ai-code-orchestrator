@@ -63,6 +63,10 @@
 		"title": "Commande",
 		"tooltip": "Exécuter cette commande"
 	},
+	"runCommandAndAllow": {
+		"title": "Exécuter et Autoriser",
+		"tooltip": "Enregistrer les modèles de commandes dans la liste autorisée et exécuter cette commande"
+	},
 	"proceedWhileRunning": {
 		"title": "Continuer pendant l'exécution",
 		"tooltip": "Continuer malgré les avertissements"
