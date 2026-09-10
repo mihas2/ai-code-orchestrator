@@ -12,6 +12,7 @@ import { fileExistsAtPath } from "../../utils/fs"
 import { EXPERIMENT_IDS, experiments } from "../../shared/experiments"
 import { sanitizeUnifiedDiff, computeDiffStats } from "../diff/stats"
 import type { ToolUse } from "../../shared/tools"
+import { captureFileSnapshot, checkFileSnapshotOrGetError, type FileSnapshot } from "../../utils/file-snapshot"
 
 import { BaseTool, ToolCallbacks } from "./BaseTool"
 
@@ -227,6 +228,7 @@ export class EditFileTool extends BaseTool<"edit_file"> {
 			let currentContentLF: string | null = null
 			let originalEol: LineEnding = "\n"
 			let isNewFile = false
+			let fileSnapshot: FileSnapshot | null = null
 
 			// Read file or determine if creating new
 			if (fileExists) {
@@ -429,9 +431,40 @@ export class EditFileTool extends BaseTool<"edit_file"> {
 				if (!isPreventFocusDisruptionEnabled) {
 					await task.diffViewProvider.revertChanges()
 				}
+				// Cleanup: set fileSnapshot to null since changes were rejected
+				fileSnapshot = null
 				pushToolResult("Changes were rejected by the user.")
 				await task.diffViewProvider.reset()
 				return
+			}
+
+			// Capture file snapshot AFTER approval but BEFORE writing
+			// This ensures we detect any concurrent modifications during the approval window
+			if (!isNewFile && currentContent !== null) {
+				try {
+					fileSnapshot = await captureFileSnapshot(absolutePath, currentContent)
+				} catch (error) {
+					// If snapshot fails, proceed with warning but don't fail the operation
+					const errorMsg = error instanceof Error ? error.message : String(error)
+					console.warn(`[EditFileTool] Failed to capture file snapshot: ${errorMsg}`)
+					fileSnapshot = null
+				}
+			}
+
+			// Verify file hasn't been modified by another process before writing
+			if (fileSnapshot && !isNewFile) {
+				const snapshotError = await checkFileSnapshotOrGetError(fileSnapshot, "file edit")
+				if (snapshotError) {
+					task.consecutiveMistakeCount++
+					task.didToolFailInCurrentTurn = true
+					await finalizePartialToolAskIfNeeded(relPath)
+					await task.say("error", snapshotError)
+					await recordFailureForPathAndMaybeEscalate(relPath, snapshotError)
+					task.recordToolError("edit_file", snapshotError)
+					pushToolResult(snapshotError)
+					await task.diffViewProvider.reset()
+					return
+				}
 			}
 
 			// Save the changes
