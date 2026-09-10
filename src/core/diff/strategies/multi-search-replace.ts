@@ -8,7 +8,7 @@ import { normalizeString } from "../../../utils/text-normalization"
 
 const BUFFER_LINES = 40 // Number of extra context lines to show before and after matches
 
-function getSimilarity(original: string, search: string): number {
+function getSimilarity(original: string, search: string, debug = false): number {
 	// Empty searches are no longer supported
 	if (search === "") {
 		return 0
@@ -27,14 +27,39 @@ function getSimilarity(original: string, search: string): number {
 
 	// Calculate similarity ratio (0 to 1, where 1 is an exact match)
 	const maxLength = Math.max(normalizedOriginal.length, normalizedSearch.length)
-	return 1 - dist / maxLength
+	const similarity = 1 - dist / maxLength
+
+	// Log detailed diagnostics for near-miss cases (when debug is enabled)
+	if (debug && similarity >= 0.85 && similarity < 1.0) {
+		console.log("[getSimilarity] Near-miss detected:")
+		console.log(`  Similarity score: ${(similarity * 100).toFixed(2)}%`)
+		console.log(`  Levenshtein distance: ${dist}`)
+		console.log(`  Original length: ${normalizedOriginal.length}`)
+		console.log(`  Search length: ${normalizedSearch.length}`)
+		console.log(`  Max length: ${maxLength}`)
+
+		// Show character-by-character comparison for first mismatch
+		for (let i = 0; i < Math.min(normalizedOriginal.length, normalizedSearch.length); i++) {
+			if (normalizedOriginal[i] !== normalizedSearch[i]) {
+				const contextStart = Math.max(0, i - 20)
+				const contextEnd = Math.min(maxLength, i + 20)
+				console.log(`  First mismatch at position ${i}:`)
+				console.log(`    Original: "${normalizedOriginal.substring(contextStart, contextEnd)}"`)
+				console.log(`    Search:   "${normalizedSearch.substring(contextStart, contextEnd)}"`)
+				console.log(`    Char codes: ${normalizedOriginal.charCodeAt(i)} vs ${normalizedSearch.charCodeAt(i)}`)
+				break
+			}
+		}
+	}
+
+	return similarity
 }
 
 /**
  * Performs a "middle-out" search of `lines` (between [startIndex, endIndex]) to find
  * the slice that is most similar to `searchChunk`. Returns the best score, index, and matched text.
  */
-function fuzzySearch(lines: string[], searchChunk: string, startIndex: number, endIndex: number) {
+function fuzzySearch(lines: string[], searchChunk: string, startIndex: number, endIndex: number, debug = false) {
 	let bestScore = 0
 	let bestMatchIndex = -1
 	let bestMatchContent = ""
@@ -48,7 +73,7 @@ function fuzzySearch(lines: string[], searchChunk: string, startIndex: number, e
 	while (leftIndex >= startIndex || rightIndex <= endIndex - searchLen) {
 		if (leftIndex >= startIndex) {
 			const originalChunk = lines.slice(leftIndex, leftIndex + searchLen).join("\n")
-			const similarity = getSimilarity(originalChunk, searchChunk)
+			const similarity = getSimilarity(originalChunk, searchChunk, debug)
 			if (similarity > bestScore) {
 				bestScore = similarity
 				bestMatchIndex = leftIndex
@@ -59,7 +84,7 @@ function fuzzySearch(lines: string[], searchChunk: string, startIndex: number, e
 
 		if (rightIndex <= endIndex - searchLen) {
 			const originalChunk = lines.slice(rightIndex, rightIndex + searchLen).join("\n")
-			const similarity = getSimilarity(originalChunk, searchChunk)
+			const similarity = getSimilarity(originalChunk, searchChunk, debug)
 			if (similarity > bestScore) {
 				bestScore = similarity
 				bestMatchIndex = rightIndex
@@ -382,7 +407,7 @@ export class MultiSearchReplaceDiffStrategy implements DiffStrategy {
 
 				// Try exact match first
 				const originalChunk = resultLines.slice(exactStartIndex, exactEndIndex + 1).join("\n")
-				const similarity = getSimilarity(originalChunk, searchChunk)
+				const similarity = getSimilarity(originalChunk, searchChunk, true)
 				if (similarity >= this.fuzzyThreshold) {
 					matchIndex = exactStartIndex
 					bestMatchScore = similarity
@@ -391,6 +416,13 @@ export class MultiSearchReplaceDiffStrategy implements DiffStrategy {
 					// Set bounds for buffered search
 					searchStartIndex = Math.max(0, startLine - (this.bufferLines + 1))
 					searchEndIndex = Math.min(resultLines.length, startLine + searchLines.length + this.bufferLines)
+
+					// Log near-miss for debugging
+					if (similarity >= 0.85) {
+						console.log(
+							`[MultiSearchReplace] Near-miss at exact location (line ${startLine}): ${(similarity * 100).toFixed(2)}% similar (need ${(this.fuzzyThreshold * 100).toFixed(2)}%)`,
+						)
+					}
 				}
 			}
 
