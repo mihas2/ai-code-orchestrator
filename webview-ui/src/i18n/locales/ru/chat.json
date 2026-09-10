@@ -231,7 +231,7 @@
 	"response": "Ответ",
 	"arguments": "Аргументы",
 	"text": {
-		"aicoSaid": "Ру сказал"
+		"aicoSaid": "AIco сказал"
 	},
 	"feedback": {
 		"youSaid": "Вы сказали"
