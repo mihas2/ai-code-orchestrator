@@ -593,17 +593,21 @@ describe("ClineProvider parent snapshot restoration", () => {
 			expect(parentHistory.childIds).toEqual(["old-child", "child"])
 		})
 
-		it("rejects a different child while the parent resume is in flight", async () => {
+		it("serializes a different child instead of failing while the parent resume is in flight", async () => {
 			const provider = makeProvider()
 			let release!: () => void
 			const pending = new Promise<void>((resolve) => (release = resolve))
-			provider.getTaskWithId = vi.fn().mockResolvedValue({
-				historyItem: {
-					id: "parent",
-					status: "delegated",
-					delegatedToId: "child-a",
-					awaitingChildId: "child-a",
-				},
+			let phase = 0
+			provider.getTaskWithId = vi.fn().mockImplementation(async (id: string) => ({
+				historyItem:
+					id === "parent"
+						? phase === 0
+							? { id, status: "delegated", delegatedToId: "child-a", awaitingChildId: "child-a" }
+							: { id, status: "delegated", delegatedToId: "child-b", awaitingChildId: "child-b" }
+						: { id, status: "active" },
+			}))
+			provider.updateTaskHistory = vi.fn().mockImplementation(async (item: any) => {
+				if (item.id === "parent" && item.completedByChildId === "child-a") phase = 1
 			})
 			provider.createTaskWithHistoryItem = vi.fn().mockResolvedValue({
 				overwriteClineMessages: vi.fn(),
@@ -616,15 +620,15 @@ describe("ClineProvider parent snapshot restoration", () => {
 				completionResultSummary: "A",
 			})
 			await vi.waitFor(() => expect(provider.createTaskWithHistoryItem).toHaveBeenCalledTimes(1))
-			await expect(
-				provider.reopenParentFromDelegation({
-					parentTaskId: "parent",
-					childTaskId: "child-b",
-					completionResultSummary: "B",
-				}),
-			).rejects.toThrow("already being resumed for child child-a")
+			const second = provider.reopenParentFromDelegation({
+				parentTaskId: "parent",
+				childTaskId: "child-b",
+				completionResultSummary: "B",
+			})
 			release()
-			await first
+			await expect(first).resolves.toBeUndefined()
+			await expect(second).resolves.toBeUndefined()
+			expect(provider.createTaskWithHistoryItem).toHaveBeenCalledTimes(2)
 		})
 	})
 

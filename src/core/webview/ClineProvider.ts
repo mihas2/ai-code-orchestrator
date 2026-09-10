@@ -3685,14 +3685,12 @@ export class ClineProvider
 		;(this as any).delegationResumeInFlight = inFlight
 		const existing = inFlight.get(params.parentTaskId)
 		if (existing) {
-			if (existing.childTaskId !== params.childTaskId) {
-				return Promise.reject(
-					new Error(
-						`[reopenParentFromDelegation] Parent ${params.parentTaskId} is already being resumed for child ${existing.childTaskId}; received ${params.childTaskId}`,
-					),
-				)
-			}
-			return existing.promise
+			if (existing.childTaskId === params.childTaskId) return existing.promise
+
+			// A parent can be delegated again immediately after the first child resumes it.
+			// Do not turn that legitimate hand-off into a hard failure: serialize the
+			// second completion, then re-read durable markers in the implementation.
+			return existing.promise.then(() => this.reopenParentFromDelegation(params))
 		}
 		const promise = ClineProvider.prototype.reopenParentFromDelegationImpl.call(this, params).finally(() => {
 			if (inFlight.get(params.parentTaskId)?.promise === promise) inFlight.delete(params.parentTaskId)
