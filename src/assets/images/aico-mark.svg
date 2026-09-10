@@ -1,0 +1,18 @@
+<svg width="800" height="800" viewBox="226 152 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="frame" x1="280" y1="350" x2="980" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00d3e4"/>
+      <stop offset="0.4" stop-color="#119cff"/>
+      <stop offset="0.75" stop-color="#5134ff"/>
+      <stop offset="1" stop-color="#963fff"/>
+    </linearGradient>
+    <linearGradient id="arrow" x1="435" y1="540" x2="881" y2="895" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00d5e4"/>
+      <stop offset="0.46" stop-color="#258eff"/>
+      <stop offset="0.8" stop-color="#6240ff"/>
+      <stop offset="1" stop-color="#8534ff"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#frame)" d="M262 773V437C262 409 275 387 301 371L589 202C612 189 636 189 660 202L949 372C975 387 989 409 989 437V773C989 798 979 819 960 830L896 750C889 742 885 731 885 718V479C885 460 878 446 861 436L649 317C632 307 617 307 601 317L391 436C374 446 367 460 367 479V713C367 726 363 736 355 745L283 823C269 814 262 797 262 773Z"/>
+  <path fill="url(#arrow)" d="M334 834L577 465C589 446 606 437 624 437C643 437 660 447 672 466L919 846C928 859 926 868 912 876L857 906C837 917 816 911 803 894L632 637C627 628 622 627 617 635L446 893C433 912 411 916 393 906L337 875C322 867 321 855 334 834Z"/>
+</svg>
