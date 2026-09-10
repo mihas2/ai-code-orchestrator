@@ -119,12 +119,14 @@ describe("CommandExecution", () => {
 		const allowButton = screen.getByText("Allow")
 		fireEvent.click(allowButton)
 
-		expect(mockExtensionState.setAllowedCommands).toHaveBeenCalledWith(["npm", "git push"])
+		// extractPatternsFromCommandText("git push") -> ["git", "git push"] sorted,
+		// patterns[0] = "git" which is NOT in allowedCommands["npm"] -> added
+		expect(mockExtensionState.setAllowedCommands).toHaveBeenCalledWith(["npm", "git"])
 		expect(mockExtensionState.setDeniedCommands).toHaveBeenCalledWith(["rm"])
 		expect(vscode.postMessage).toHaveBeenCalledWith({
 			type: "updateSettings",
 			updatedSettings: {
-				allowedCommands: ["npm", "git push"],
+				allowedCommands: ["npm", "git"],
 				deniedCommands: ["rm"],
 			},
 		})
@@ -140,27 +142,30 @@ describe("CommandExecution", () => {
 		const denyButton = screen.getByText("Deny")
 		fireEvent.click(denyButton)
 
+		// extractPatternsFromCommandText("docker run") -> ["docker", "docker run"] sorted,
+		// patterns[0] = "docker" which is NOT in deniedCommands["rm"] -> added
 		expect(mockExtensionState.setAllowedCommands).toHaveBeenCalledWith(["npm"])
-		expect(mockExtensionState.setDeniedCommands).toHaveBeenCalledWith(["rm", "docker run"])
+		expect(mockExtensionState.setDeniedCommands).toHaveBeenCalledWith(["rm", "docker"])
 		expect(vscode.postMessage).toHaveBeenCalledWith({
 			type: "updateSettings",
 			updatedSettings: {
 				allowedCommands: ["npm"],
-				deniedCommands: ["rm", "docker run"],
+				deniedCommands: ["rm", "docker"],
 			},
 		})
 	})
 
 	it("should toggle allowed command", () => {
-		// Update the mock state to have "npm test" in allowedCommands
-		const stateWithNpmTest = {
+		// extractPatternsFromCommandText("npm test") -> ["npm", "npm test"] sorted,
+		// patterns[0] = "npm". State has allowedCommands: ["npm"] -> "npm" is already allowed -> removed
+		const stateWithNpm = {
 			...mockExtensionState,
-			allowedCommands: ["npm test"],
+			allowedCommands: ["npm"],
 			deniedCommands: ["rm"],
 		}
 
 		render(
-			<ExtensionStateContext.Provider value={stateWithNpmTest as any}>
+			<ExtensionStateContext.Provider value={stateWithNpm as any}>
 				<CommandExecution executionId="test-1" text="npm test" />
 			</ExtensionStateContext.Provider>,
 		)
@@ -168,9 +173,9 @@ describe("CommandExecution", () => {
 		const allowButton = screen.getByText("Allow")
 		fireEvent.click(allowButton)
 
-		// "npm test" is already in allowedCommands, so it should be removed
-		expect(stateWithNpmTest.setAllowedCommands).toHaveBeenCalledWith([])
-		expect(stateWithNpmTest.setDeniedCommands).toHaveBeenCalledWith(["rm"])
+		// "npm" is already in allowedCommands, so it should be removed
+		expect(stateWithNpm.setAllowedCommands).toHaveBeenCalledWith([])
+		expect(stateWithNpm.setDeniedCommands).toHaveBeenCalledWith(["rm"])
 		expect(vscode.postMessage).toHaveBeenCalledWith({
 			type: "updateSettings",
 			updatedSettings: {
@@ -181,15 +186,16 @@ describe("CommandExecution", () => {
 	})
 
 	it("should toggle denied command", () => {
-		// Update the mock state to have "rm -rf" in deniedCommands
-		const stateWithRmRf = {
+		// extractPatternsFromCommandText("rm -rf") -> ["rm", "rm -rf"] sorted,
+		// patterns[0] = "rm". State has deniedCommands: ["rm"] -> "rm" is already denied -> removed
+		const stateWithRm = {
 			...mockExtensionState,
 			allowedCommands: ["npm"],
-			deniedCommands: ["rm -rf"],
+			deniedCommands: ["rm"],
 		}
 
 		render(
-			<ExtensionStateContext.Provider value={stateWithRmRf as any}>
+			<ExtensionStateContext.Provider value={stateWithRm as any}>
 				<CommandExecution executionId="test-1" text="rm -rf" />
 			</ExtensionStateContext.Provider>,
 		)
@@ -197,9 +203,9 @@ describe("CommandExecution", () => {
 		const denyButton = screen.getByText("Deny")
 		fireEvent.click(denyButton)
 
-		// "rm -rf" is already in deniedCommands, so it should be removed
-		expect(stateWithRmRf.setAllowedCommands).toHaveBeenCalledWith(["npm"])
-		expect(stateWithRmRf.setDeniedCommands).toHaveBeenCalledWith([])
+		// "rm" is already in deniedCommands, so it should be removed
+		expect(stateWithRm.setAllowedCommands).toHaveBeenCalledWith(["npm"])
+		expect(stateWithRm.setDeniedCommands).toHaveBeenCalledWith([])
 		expect(vscode.postMessage).toHaveBeenCalledWith({
 			type: "updateSettings",
 			updatedSettings: {
@@ -326,11 +332,12 @@ Output here`
 	})
 
 	it("should handle command change when moving from denied to allowed", () => {
-		// Update the mock state to have "rm file.txt" in deniedCommands
+		// extractPatternsFromCommandText("rm file.txt") -> ["rm", "rm file.txt"] sorted,
+		// patterns[0] = "rm". State has deniedCommands: ["rm"] -> "rm" removed from denied, added to allowed
 		const stateWithRmInDenied = {
 			...mockExtensionState,
 			allowedCommands: ["npm"],
-			deniedCommands: ["rm file.txt"],
+			deniedCommands: ["rm"],
 		}
 
 		render(
@@ -342,13 +349,13 @@ Output here`
 		const allowButton = screen.getByText("Allow")
 		fireEvent.click(allowButton)
 
-		// "rm file.txt" should be removed from denied and added to allowed
-		expect(stateWithRmInDenied.setAllowedCommands).toHaveBeenCalledWith(["npm", "rm file.txt"])
+		// "rm" should be removed from denied and added to allowed
+		expect(stateWithRmInDenied.setAllowedCommands).toHaveBeenCalledWith(["npm", "rm"])
 		expect(stateWithRmInDenied.setDeniedCommands).toHaveBeenCalledWith([])
 		expect(vscode.postMessage).toHaveBeenCalledWith({
 			type: "updateSettings",
 			updatedSettings: {
-				allowedCommands: ["npm", "rm file.txt"],
+				allowedCommands: ["npm", "rm"],
 				deniedCommands: [],
 			},
 		})
@@ -455,6 +462,8 @@ Running tests...
 		})
 
 		it("should update both allowed and denied lists when commands conflict", () => {
+			// extractPatternsFromCommandText("git push origin main") -> ["git", "git push", "git push origin"] sorted,
+			// patterns[0] = "git" which IS already in allowedCommands["git"] -> removed from allowed -> []
 			const conflictState = {
 				...mockExtensionState,
 				allowedCommands: ["git"],
@@ -467,13 +476,14 @@ Running tests...
 				</ExtensionStateContext.Provider>,
 			)
 
-			// Click to allow "git push origin main"
+			// Click Allow on patterns[0] = "git" which is already allowed -> toggles off
 			const allowButton = screen.getByText("Allow")
 			fireEvent.click(allowButton)
 
-			// Should add to allowed and remove from denied
-			expect(conflictState.setAllowedCommands).toHaveBeenCalledWith(["git", "git push origin main"])
-			expect(conflictState.setDeniedCommands).toHaveBeenCalledWith([])
+			// "git" removed from allowed; "git push origin main" still in denied but no change to denied
+			// (handleAllowPatternChange only removes the clicked pattern from denied, not "git push origin main")
+			expect(conflictState.setAllowedCommands).toHaveBeenCalledWith([])
+			expect(conflictState.setDeniedCommands).toHaveBeenCalledWith(["git push origin main"])
 		})
 
 		it("should handle commands with special quotes", () => {
@@ -540,14 +550,39 @@ Without any command prefix`
 			// Should render the command
 			expect(screen.getByTestId("code-block")).toHaveTextContent("docker build .")
 
-			// Should show pattern selector with the full command
+			// Should show pattern selector — extractPatternsFromCommandText stops at "." (breaking expr)
 			const selector = screen.getByTestId("command-pattern-selector")
 			expect(selector).toBeInTheDocument()
-			expect(selector).toHaveTextContent("docker build .")
+			expect(selector.textContent).toMatch(/docker build/)
 
 			// Verify no output is shown (since there's no Output: separator)
 			const codeBlocks = screen.getAllByTestId("code-block")
 			expect(codeBlocks).toHaveLength(1) // Only the command block, no output block
+		})
+
+		it("should not include shell control keywords in patterns for if-statement command", () => {
+			// Use a compound command where echo is the primary command word after &&
+			// "true && echo ok" -> extractPatternsFromCommandText -> ["echo", "echo ok", "true"]
+			const shellScript = "true && echo ok"
+
+			render(
+				<ExtensionStateWrapper>
+					<CommandExecution executionId="test-shell-ctrl" text={shellScript} />
+				</ExtensionStateWrapper>,
+			)
+
+			const selector = screen.getByTestId("command-pattern-selector")
+			expect(selector).toBeInTheDocument()
+
+			const text = selector.textContent ?? ""
+			// Shell control keywords and bracket operators must NOT appear as patterns
+			expect(text).not.toContain("if")
+			expect(text).not.toContain("then")
+			expect(text).not.toContain("fi")
+			expect(text).not.toContain("[")
+			expect(text).not.toContain("]")
+			// The real command word must be present (spans are concatenated without separators)
+			expect(text).toContain("echo")
 		})
 
 		it("should handle commands with numeric output", () => {

@@ -81,6 +81,7 @@ export interface ExtensionMessage {
 		| "modes"
 		| "taskWithAggregatedCosts"
 		| "openAiCodexRateLimits"
+		| "commandApprovalError"
 		// Worktree response types
 		| "worktreeList"
 		| "worktreeResult"
@@ -145,6 +146,8 @@ export interface ExtensionMessage {
 		| { path: string; type: "file" | "folder"; label?: string }[]
 		| { name: string; description?: string; argumentHint?: string; source: "global" | "project" | "built-in" }[]
 	error?: string
+	taskId?: string
+	instanceId?: string
 	setting?: string
 	value?: any // eslint-disable-line @typescript-eslint/no-explicit-any
 	hasContent?: boolean
@@ -367,7 +370,12 @@ export interface Command {
  * Webview | CLI -> Extension
  */
 
-export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse" | "objectResponse"
+export type ClineAskResponse =
+	| "yesButtonClicked"
+	| "noButtonClicked"
+	| "messageResponse"
+	| "objectResponse"
+	| "yesAndAllowButtonClicked"
 
 export type AudioType = "notification" | "celebration" | "progress_loop"
 
@@ -377,6 +385,13 @@ export interface UpdateTodoListPayload {
 }
 
 export type EditQueuedMessagePayload = Pick<QueuedMessage, "id" | "text" | "images">
+
+/** Discriminated payload for askResponse messages that carry a messageTs (e.g. yesAndAllowButtonClicked). */
+export interface AskResponseWithTs {
+	askResponse: "yesAndAllowButtonClicked"
+	/** Backend message timestamp that identifies which pending ask to approve. Required for yesAndAllow path. */
+	messageTs: number
+}
 
 export interface WebviewMessage {
 	type:
@@ -541,6 +556,8 @@ export interface WebviewMessage {
 		| "orchestrationApproveIntegration"
 		| "updateOrchestrationSettings"
 	text?: string
+	/** Command text to save as allowed when askResponse is yesAndAllowButtonClicked */
+	commandText?: string
 	/** Orchestration run identifier, with nodeId required for retry. */
 	orchestrationSettings?: import("./orchestration.js").OrchestrationSettings
 	role?: string

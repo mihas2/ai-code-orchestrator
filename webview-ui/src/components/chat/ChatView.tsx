@@ -142,6 +142,41 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	const [enableButtons, setEnableButtons] = useState<boolean>(false)
 	const [primaryButtonText, setPrimaryButtonText] = useState<string | undefined>(undefined)
 	const [secondaryButtonText, setSecondaryButtonText] = useState<string | undefined>(undefined)
+	// "Run and Allow" button — shown only for command ask, hidden when command starts running
+	const [runCommandAndAllowButtonText, setRunCommandAndAllowButtonText] = useState<string | undefined>(undefined)
+	// Stores the command text when a "command" ask is active, used for yesAndAllowButtonClicked
+	const [pendingCommandText, setPendingCommandText] = useState<string | undefined>(undefined)
+	// Whether a command execution has started (hides approval buttons, keeps abort)
+	const [commandExecutionStarted, setCommandExecutionStarted] = useState(false)
+	// Tracks the executionId of the pending command ask (from lastMessage.ts) so we can
+	// ignore commandExecutionStatus events that belong to a different execution.
+	const [pendingCommandExecutionId, setPendingCommandExecutionId] = useState<string | undefined>(undefined)
+	// Snapshot of the active "Run and Allow" attempt. Set synchronously on button click
+	// (before postMessage), consumed (set to undefined) before UI restore on error.
+	// Fields: requestId (UUID per click), taskId, instanceId, executionId, commandText.
+	const activeAttemptRef = useRef<
+		| {
+				requestId: string
+				taskId: string | undefined
+				instanceId: string | undefined
+				executionId: string | undefined
+				commandText: string | undefined
+		  }
+		| undefined
+	>(undefined)
+	// Identity of the most recently started/exited command execution.
+	// Written synchronously in the commandExecutionStatus matching branch so that
+	// a replay of the same command ask in useDeepCompareEffect can be detected and
+	// skipped (preventing the approval buttons from reappearing after they were
+	// already hidden by a started/exited status event).
+	const lastStartedCommandRef = useRef<
+		| {
+				taskId: string | undefined
+				instanceId: string | undefined
+				executionId: string
+		  }
+		| undefined
+	>(undefined)
 	const [_didClickCancel, setDidClickCancel] = useState(false)
 	const virtuosoRef = useRef<VirtuosoHandle>(null)
 	const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({})
@@ -257,10 +292,43 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		// basically as long as a task is active, the conversation history will be persisted
 		if (lastMessage) {
 			switch (lastMessage.type) {
-				case "ask":
+				case "ask": {
+					// Pending-save guard: if an activeAttempt is in-flight for this exact
+					// command ask (same task/instance/executionId), the deep-effect fired
+					// because an unrelated field (e.g. secondLastMessage) changed — NOT
+					// because the ask itself is new. Preserve the frozen UI, snapshot,
+					// userRespondedRef and commandText by skipping all state mutations.
+					{
+						const _snap = activeAttemptRef.current
+						if (
+							_snap !== undefined &&
+							lastMessage.ask === "command" &&
+							lastMessage.ts.toString() === _snap.executionId &&
+							_snap.taskId === currentTaskId &&
+							_snap.instanceId === currentTaskInstanceId
+						) {
+							break
+						}
+					}
 					// Reset user response flag when a new ask arrives to allow auto-approval
 					userRespondedRef.current = false
 					const isPartial = lastMessage.partial === true
+					// Invalidate the snapshot when switching to a non-command ask, or when
+					// the command ask has a different executionId than the snapshot. This
+					// prevents a stale snapshot from restoring buttons for a different ask.
+					// We intentionally do NOT clear the snapshot when the same command ask
+					// arrives again (e.g. partial → full update) so that an in-flight
+					// "Run and Allow" attempt is not lost.
+					{
+						const snap = activeAttemptRef.current
+						if (snap !== undefined) {
+							const isCommandAsk = lastMessage.ask === "command"
+							const isSameExecution = isCommandAsk && lastMessage.ts.toString() === snap.executionId
+							if (!isCommandAsk || !isSameExecution) {
+								activeAttemptRef.current = undefined
+							}
+						}
+					}
 					switch (lastMessage.ask) {
 						case "api_req_failed":
 							playSound("progress_loop")
@@ -339,13 +407,37 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 									break
 							}
 							break
-						case "command":
+						case "command": {
+							// Guard: if this command ask has the same identity as the most recently
+							// started/exited execution, the deep-effect fired because a secondary field
+							// (e.g. secondLastMessage) changed — the command is already running.
+							// Skip all state mutations so approval buttons stay hidden.
+							const _lsc = lastStartedCommandRef.current
+							if (
+								_lsc !== undefined &&
+								lastMessage.ts != null &&
+								lastMessage.ts.toString() === _lsc.executionId &&
+								_lsc.taskId === currentTaskId &&
+								_lsc.instanceId === currentTaskInstanceId
+							) {
+								break
+							}
 							setSendingDisabled(isPartial)
 							setClineAsk("command")
 							setEnableButtons(!isPartial)
 							setPrimaryButtonText(t("chat:runCommand.title"))
+							setRunCommandAndAllowButtonText(isPartial ? undefined : t("chat:runCommandAndAllow.title"))
 							setSecondaryButtonText(t("chat:reject.title"))
+							setCommandExecutionStarted(false)
+							setPendingCommandText(lastMessage.text ?? undefined)
+							setPendingCommandExecutionId(lastMessage.ts != null ? lastMessage.ts.toString() : undefined)
+							// Do NOT unconditionally clear activeAttemptRef here.
+							// The snapshot is already selectively cleared above (before this switch)
+							// when the ask is a different command or a non-command type.
+							// Clearing here would destroy an in-flight "Run and Allow" attempt
+							// caused by a re-render of the same partial→full command ask.
 							break
+						}
 						case "command_output":
 							setSendingDisabled(false)
 							setClineAsk("command_output")
@@ -404,6 +496,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							break
 					}
 					break
+				} // end case "ask"
 				case "say":
 					// Don't want to reset since there could be a "say" after
 					// an "ask" while ask is waiting for response.
@@ -425,6 +518,12 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							setEnableButtons(false)
 							setPrimaryButtonText(undefined)
 							setSecondaryButtonText(undefined)
+							setRunCommandAndAllowButtonText(undefined)
+							setPendingCommandText(undefined)
+							setCommandExecutionStarted(false)
+							setPendingCommandExecutionId(undefined)
+							// Invalidate attempt snapshot when a new API request starts
+							activeAttemptRef.current = undefined
 							break
 						case "api_req_finished":
 						case "error":
@@ -460,6 +559,13 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			setEnableButtons(false)
 			setPrimaryButtonText(undefined)
 			setSecondaryButtonText(undefined)
+			setRunCommandAndAllowButtonText(undefined)
+			setPendingCommandText(undefined)
+			setCommandExecutionStarted(false)
+			// Invalidate attempt snapshot on full reset
+			activeAttemptRef.current = undefined
+			// Clear started-command guard so a fresh task's commands are not blocked
+			lastStartedCommandRef.current = undefined
 		}
 	}, [messages.length])
 
@@ -477,6 +583,15 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		}
 		userRespondedRef.current = false
 	}, [task?.ts])
+
+	// Invalidate the activeAttemptRef and lastStartedCommandRef when task identity changes
+	// (task switch or new instance). This prevents a commandApprovalError from task A restoring
+	// the command buttons in task B, and prevents the started-command guard from blocking a
+	// new command ask for a fresh task.
+	useEffect(() => {
+		activeAttemptRef.current = undefined
+		lastStartedCommandRef.current = undefined
+	}, [currentTaskId, currentTaskInstanceId])
 
 	const taskTs = task?.ts
 
@@ -593,15 +708,23 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		// Reset user response flag for new message
 		userRespondedRef.current = false
 
+		// Synchronously invalidate any in-flight command approval attempt so that
+		// a late commandApprovalError cannot restore the approval UI after a reset.
+		activeAttemptRef.current = undefined
+		// Clear started-command identity so a new command ask after reset is not blocked.
+		lastStartedCommandRef.current = undefined
+
 		// Only reset message-specific state, preserving mode.
 		setInputValue("")
 		setSendingDisabled(true)
 		setSelectedImages([])
 		setClineAsk(undefined)
 		setEnableButtons(false)
-		// Do not reset mode here as it should persist.
-		// setPrimaryButtonText(undefined)
-		// setSecondaryButtonText(undefined)
+		// Clear all button texts so no stale approval buttons survive the reset.
+		setPrimaryButtonText(undefined)
+		setSecondaryButtonText(undefined)
+		setRunCommandAndAllowButtonText(undefined)
+		setPendingCommandText(undefined)
 	}, [])
 
 	/**
@@ -776,6 +899,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				case "tool":
 				case "use_mcp_server":
 				case "mistake_limit_reached":
+					// Invalidate attempt snapshot: user chose plain Run or sent text response
+					activeAttemptRef.current = undefined
 					// Only send text/images if they exist
 					if (trimmedInput || (images && images.length > 0)) {
 						console.log("[ChatView] sending cancelTask/askResponse with:", {
@@ -889,6 +1014,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				case "command":
 				case "tool":
 				case "use_mcp_server":
+					// Invalidate attempt snapshot: user rejected the command
+					activeAttemptRef.current = undefined
 					// Only send text/images if they exist
 					if (trimmedInput || (images && images.length > 0)) {
 						vscode.postMessage({
@@ -922,6 +1049,67 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		},
 		[clineAsk, startNewTask, currentTaskId, currentTaskInstanceId],
 	)
+
+	// "Run and Allow" — saves command patterns to allowedCommands then approves the ask
+	const handleRunCommandAndAllow = useCallback(() => {
+		if (clineAsk !== "command" || !enableButtons || commandExecutionStarted) {
+			return
+		}
+		// Synchronous guard: block double-click before any async state update
+		if (activeAttemptRef.current !== undefined) {
+			return
+		}
+
+		// Guard: executionId must be a finite number (derived from command ts).
+		// Reject undefined or non-numeric values to avoid sending NaN or 0.
+		const execIdNum = Number(pendingCommandExecutionId)
+		if (!Number.isFinite(execIdNum) || execIdNum === 0) {
+			return
+		}
+
+		userRespondedRef.current = true
+
+		// Generate a fresh requestId for every click attempt
+		const requestId =
+			typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+				? crypto.randomUUID()
+				: `${Date.now()}-${Math.random().toString(36).slice(2)}`
+
+		// Record snapshot BEFORE postMessage so the error handler can match it
+		const snapshot = {
+			requestId,
+			taskId: currentTaskId,
+			instanceId: currentTaskInstanceId,
+			executionId: pendingCommandExecutionId,
+			commandText: pendingCommandText,
+		}
+		activeAttemptRef.current = snapshot
+
+		vscode.postMessage({
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: currentTaskId,
+			instanceId: currentTaskInstanceId,
+			commandText: pendingCommandText,
+			requestId: snapshot.requestId,
+			messageTs: Number(snapshot.executionId),
+		})
+
+		setSendingDisabled(true)
+		setClineAsk(undefined)
+		setEnableButtons(false)
+		setPrimaryButtonText(undefined)
+		setSecondaryButtonText(undefined)
+		setRunCommandAndAllowButtonText(undefined)
+	}, [
+		clineAsk,
+		enableButtons,
+		commandExecutionStarted,
+		currentTaskId,
+		currentTaskInstanceId,
+		pendingCommandText,
+		pendingCommandExecutionId,
+	])
 
 	const { info: model } = useSelectedModel(apiConfiguration)
 
@@ -1010,6 +1198,83 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						})
 					}
 					break
+				case "commandExecutionStatus":
+					// Hide approval buttons when a command starts executing.
+					// This handles both manually approved and auto-approved commands,
+					// including commands that produce no output.
+					// Only act if the executionId matches the pending command ask.
+					if (message.text) {
+						try {
+							const status = JSON.parse(message.text) as { status?: string; executionId?: string }
+							if (status.status === "started" || status.status === "exited") {
+								if (
+									status.executionId != null &&
+									pendingCommandExecutionId != null &&
+									status.executionId === pendingCommandExecutionId
+								) {
+									// Record identity BEFORE state updates so that useDeepCompareEffect
+									// can detect a replay of the same command ask and skip UI restoration.
+									lastStartedCommandRef.current = {
+										taskId: currentTaskId,
+										instanceId: currentTaskInstanceId,
+										executionId: status.executionId,
+									}
+									setCommandExecutionStarted(true)
+									// Only clear clineAsk and approval button texts when we are
+									// still in the command approval phase (clineAsk === 'command').
+									// If clineAsk has already advanced to 'command_output' or
+									// 'followup' (Continue/Kill buttons or follow-up input), those
+									// must NOT be wiped by a late-arriving status for the old command.
+									if (clineAsk === "command") {
+										setClineAsk(undefined)
+										setPrimaryButtonText(undefined)
+										setRunCommandAndAllowButtonText(undefined)
+										setSecondaryButtonText(undefined)
+										setEnableButtons(false)
+									}
+									// Invalidate attempt snapshot: command actually started, error recovery no longer valid
+									activeAttemptRef.current = undefined
+								}
+							}
+						} catch {
+							// ignore malformed status messages
+						}
+					}
+					break
+				case "commandApprovalError": {
+					// Backend failed to save the command approval. Restore the approval UI
+					// only if the error belongs to the active attempt snapshot (one-shot: consume ref first).
+					const snapshot = activeAttemptRef.current
+					const taskMatches =
+						snapshot !== undefined &&
+						message.taskId === snapshot.taskId &&
+						message.instanceId === snapshot.instanceId &&
+						// Additionally verify the snapshot still belongs to the CURRENT task.
+						// Without this, an error from task A can restore command buttons in task B.
+						snapshot.taskId === currentTaskId &&
+						snapshot.instanceId === currentTaskInstanceId
+					const requestMatches =
+						snapshot !== undefined && message.requestId != null && message.requestId === snapshot.requestId
+					if (taskMatches && requestMatches) {
+						// Consume the snapshot BEFORE restoring UI (prevents double-restore)
+						activeAttemptRef.current = undefined
+						// Clear the started-command guard: the command never actually ran
+						// (the save failed), so a replay of the same ask must show buttons.
+						lastStartedCommandRef.current = undefined
+						const restoredCommandText = snapshot.commandText
+						setSendingDisabled(false)
+						userRespondedRef.current = false
+						setCommandExecutionStarted(false)
+						setClineAsk("command")
+						setEnableButtons(true)
+						setPrimaryButtonText(t("chat:runCommand.title"))
+						setSecondaryButtonText(t("chat:reject.title"))
+						setRunCommandAndAllowButtonText(t("chat:runCommandAndAllow.title"))
+						// Restore the command text from snapshot so the next click can re-send it
+						setPendingCommandText(restoredCommandText)
+					}
+					break
+				}
 			}
 			// textAreaRef.current is not explicitly required here since React
 			// guarantees that ref will be stable across re-renders, and we're
@@ -1027,6 +1292,11 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			handleSecondaryButtonClick,
 			setCheckpointWarning,
 			playSound,
+			pendingCommandExecutionId,
+			currentTaskId,
+			currentTaskInstanceId,
+			clineAsk,
+			t,
 		],
 	)
 
@@ -1649,7 +1919,14 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		vscode.postMessage({ type: "condenseTaskContextRequest", text: taskId })
 	}
 
-	const areButtonsVisible = showScrollToBottom || primaryButtonText || secondaryButtonText
+	// Approval buttons are hidden once a command starts executing AND we are still
+	// in the command-approval phase (clineAsk === 'command').  When clineAsk has
+	// already advanced to 'command_output' or 'followup', commandExecutionStarted
+	// must not suppress those buttons (Continue / Kill / followup UI).
+	const approvalButtonsVisible =
+		!(commandExecutionStarted && clineAsk === "command") &&
+		(primaryButtonText || secondaryButtonText || runCommandAndAllowButtonText)
+	const areButtonsVisible = showScrollToBottom || approvalButtonsVisible
 
 	return (
 		<div
@@ -1774,7 +2051,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 								</>
 							) : (
 								<>
-									{primaryButtonText && (
+									{!(commandExecutionStarted && clineAsk === "command") && primaryButtonText && (
 										<StandardTooltip
 											content={
 												primaryButtonText === t("chat:retry.title")
@@ -1800,13 +2077,30 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 											<Button
 												variant="primary"
 												disabled={!enableButtons}
-												className={secondaryButtonText ? "flex-1 mr-[6px]" : "flex-[2] mr-0"}
+												className={
+													secondaryButtonText || runCommandAndAllowButtonText
+														? "flex-1 mr-[6px]"
+														: "flex-[2] mr-0"
+												}
 												onClick={() => handlePrimaryButtonClick(inputValue, selectedImages)}>
 												{primaryButtonText}
 											</Button>
 										</StandardTooltip>
 									)}
-									{secondaryButtonText && (
+									{!(commandExecutionStarted && clineAsk === "command") &&
+										clineAsk === "command" &&
+										runCommandAndAllowButtonText && (
+											<StandardTooltip content={t("chat:runCommandAndAllow.tooltip")}>
+												<Button
+													variant="secondary"
+													disabled={!enableButtons}
+													className="flex-1 mr-[6px]"
+													onClick={handleRunCommandAndAllow}>
+													{runCommandAndAllowButtonText}
+												</Button>
+											</StandardTooltip>
+										)}
+									{!(commandExecutionStarted && clineAsk === "command") && secondaryButtonText && (
 										<StandardTooltip
 											content={
 												secondaryButtonText === t("chat:startNewTask.title")

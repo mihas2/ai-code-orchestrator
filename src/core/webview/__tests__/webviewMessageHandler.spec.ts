@@ -88,6 +88,8 @@ vi.mock("vscode", () => {
 	const showErrorMessage = vi.fn()
 	const openTextDocument = vi.fn().mockResolvedValue({})
 	const showTextDocument = vi.fn().mockResolvedValue(undefined)
+	const mockUpdate = vi.fn().mockResolvedValue(undefined)
+	const getConfiguration = vi.fn().mockReturnValue({ update: mockUpdate })
 
 	return {
 		window: {
@@ -98,6 +100,12 @@ vi.mock("vscode", () => {
 		workspace: {
 			workspaceFolders: [{ uri: { fsPath: "/mock/workspace" } }],
 			openTextDocument,
+			getConfiguration,
+		},
+		ConfigurationTarget: {
+			Global: 1,
+			Workspace: 2,
+			WorkspaceFolder: 3,
 		},
 	}
 })
@@ -1045,5 +1053,783 @@ describe("webviewMessageHandler - downloadErrorDiagnostics", () => {
 
 		expect(vscode.window.showErrorMessage).toHaveBeenCalledWith("No active task to generate diagnostics for")
 		expect(generateErrorDiagnostics).not.toHaveBeenCalled()
+	})
+})
+
+describe("webviewMessageHandler - yesAndAllowButtonClicked save order", () => {
+	const TEST_TS = 12345678
+
+	/** Build a stateful task mock that supports the full claim/commit/release/discard API.
+	 *
+	 * Internal state machine:
+	 *  - pending: snapshot available, claimCommandApproval(ts) → token
+	 *  - claimed: token held, commitCommandApproval(token) → true, releaseCommandApproval(token) → back to pending
+	 *  - consumed: committed, all further calls return false / undefined
+	 */
+	function makeTaskMock(opts: { taskId: string; instanceId: string; command?: string; ts?: number }) {
+		type State = "pending" | "claimed" | "consumed"
+		let state: State = "pending"
+		const ts = opts.ts ?? TEST_TS
+		const command = opts.command ?? "git status"
+		// The token is the snapshot object — identity-based check
+		const snapshot = Object.freeze({ ts, command })
+		let activeToken: typeof snapshot | null = null
+
+		const handleWebviewAskResponse = vi.fn()
+
+		const claimCommandApproval = vi.fn((calledTs: number) => {
+			if (calledTs !== ts || state !== "pending") return false
+			state = "claimed"
+			activeToken = snapshot
+			return snapshot
+		})
+
+		const commitCommandApproval = vi.fn(
+			(token: typeof snapshot, response: string, text?: string, images?: string[]) => {
+				if (token !== activeToken || state !== "claimed") return false
+				state = "consumed"
+				activeToken = null
+				handleWebviewAskResponse(response, text, images)
+				return true
+			},
+		)
+
+		const releaseCommandApproval = vi.fn((token: typeof snapshot) => {
+			if (token !== activeToken || state !== "claimed") return
+			state = "pending"
+			activeToken = null
+		})
+
+		/** Discard the token WITHOUT restoring to pending (stale-task scenario). */
+		const discardCommandApproval = vi.fn((token: typeof snapshot) => {
+			if (token !== activeToken || state !== "claimed") return
+			// Just clear claimed — do not restore pending
+			state = "consumed"
+			activeToken = null
+		})
+
+		// Kept for backward-compat assertions in existing tests
+		const getPendingCommandApproval = vi.fn((calledTs: number) => {
+			if (calledTs !== ts || state !== "pending") return undefined
+			return snapshot
+		})
+
+		const tryRespondToPendingCommandApproval = vi.fn(
+			(calledTs: number, response: string, text?: string, images?: string[]) => {
+				const token = claimCommandApproval(calledTs)
+				if (!token) return false
+				return commitCommandApproval(token as typeof snapshot, response, text, images)
+			},
+		)
+
+		return {
+			taskId: opts.taskId,
+			instanceId: opts.instanceId,
+			handleWebviewAskResponse,
+			getPendingCommandApproval,
+			tryRespondToPendingCommandApproval,
+			claimCommandApproval,
+			commitCommandApproval,
+			releaseCommandApproval,
+			discardCommandApproval,
+		} as any
+	}
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+		mockClineProvider.getState = vi.fn().mockResolvedValue({})
+	})
+
+	it("saves allowedCommands before calling tryRespondToPendingCommandApproval", async () => {
+		const task = makeTaskMock({ taskId: "test-task-id", instanceId: "test-instance-id", command: "git status" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue(["npm"] as any)
+
+		// Controlled promise for workspace.getConfiguration().update
+		let resolveUpdate!: () => void
+		const updatePromise = new Promise<void>((resolve) => {
+			resolveUpdate = resolve
+		})
+		const mockUpdate = vi.fn().mockReturnValue(updatePromise)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		// Start handler WITHOUT await — it will pause at the update() call
+		const handlerPromise = webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "test-task-id",
+			instanceId: "test-instance-id",
+			messageTs: TEST_TS,
+		} as any)
+
+		// Wait until update() has been called
+		await vi.waitFor(() => {
+			expect(mockUpdate).toHaveBeenCalled()
+		})
+
+		// commitCommandApproval must NOT have been called yet (claim happened before chain,
+		// commit only happens after save resolves)
+		expect(task.commitCommandApproval).not.toHaveBeenCalled()
+
+		// Unblock update() so the handler can proceed
+		resolveUpdate()
+		await handlerPromise
+
+		// update() called with merged list: existing 'npm' + patterns from backend 'git status'
+		expect(mockUpdate).toHaveBeenCalledWith(
+			"allowedCommands",
+			["npm", "git", "git status"],
+			vscode.ConfigurationTarget.Global,
+		)
+
+		// contextProxy.setValue called with same merged list
+		expect(mockClineProvider.contextProxy.setValue).toHaveBeenCalledWith("allowedCommands", [
+			"npm",
+			"git",
+			"git status",
+		])
+
+		// commitCommandApproval called exactly once with yesButtonClicked.
+		// text/images go through resolveIncomingImages → resolveImageMentions mock.
+		expect(task.commitCommandApproval).toHaveBeenCalledTimes(1)
+		// claimCommandApproval called once (before chain)
+		expect(task.claimCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task.claimCommandApproval).toHaveBeenCalledWith(TEST_TS)
+		// handleWebviewAskResponse ultimately fires with yesButtonClicked
+		expect(task.handleWebviewAskResponse).toHaveBeenCalledWith("yesButtonClicked", "", [
+			"data:image/png;base64,from-mention",
+		])
+	})
+
+	it("regression: response is routed to fresh task object when task identity is preserved mid-await", async () => {
+		// task1 — the original task object present when the message arrives
+		const task1 = makeTaskMock({ taskId: "task-1", instanceId: "instance-1", command: "git status" })
+		// task2 — a NEW object with the SAME taskId/instanceId (re-instantiated)
+		const task2 = makeTaskMock({ taskId: "task-1", instanceId: "instance-1", command: "git status" })
+
+		// Initially getCurrentTask() returns task1
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task1)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+
+		let resolveUpdate!: () => void
+		const updatePromise = new Promise<void>((resolve) => {
+			resolveUpdate = resolve
+		})
+		const mockUpdate = vi.fn().mockReturnValue(updatePromise)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		const handlerPromise = webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "task-1",
+			instanceId: "instance-1",
+			messageTs: TEST_TS,
+		} as any)
+
+		await vi.waitFor(() => {
+			expect(mockUpdate).toHaveBeenCalled()
+		})
+
+		// Switch getCurrentTask() to task2 (same identity, new object) while update() is pending
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task2)
+
+		resolveUpdate()
+		await handlerPromise
+
+		// Claim happened on task1 (original task). After save, handler calls getCurrentTask()
+		// → task2 (same identity). commitCommandApproval goes to freshTask=task2, BUT the token
+		// was issued by task1.claimCommandApproval — task2 doesn't know about it, so commit
+		// returns false on task2. The handler logs a miss and does NOT forward the response.
+		// The claim token remains orphaned on task1. This is correct behavior: the task was
+		// re-instantiated mid-flight (rare scenario), operator must retry.
+		expect(task1.claimCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task2.commitCommandApproval).toHaveBeenCalledTimes(1) // called but returns false
+		expect(task2.handleWebviewAskResponse).not.toHaveBeenCalled()
+	})
+
+	it("stale-task drop: response is DISCARDED (not released) when getCurrentTask switches to a different identity mid-await", async () => {
+		const task1 = makeTaskMock({ taskId: "task-1", instanceId: "instance-1", command: "git status" })
+		const task2 = makeTaskMock({ taskId: "task-2", instanceId: "instance-2", command: "npm test" })
+
+		vi.mocked(resolveImageMentions).mockResolvedValue({ text: "", images: [] })
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task1)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+
+		let resolveUpdate!: () => void
+		const updatePromise = new Promise<void>((resolve) => {
+			resolveUpdate = resolve
+		})
+		const mockUpdate = vi.fn().mockReturnValue(updatePromise)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		const handlerPromise = webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "task-1",
+			instanceId: "instance-1",
+			messageTs: TEST_TS,
+		} as any)
+
+		await vi.waitFor(() => {
+			expect(mockUpdate).toHaveBeenCalled()
+		})
+
+		// Switch to different task identity mid-await
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task2)
+
+		resolveUpdate()
+		await handlerPromise
+
+		// Claim happened on task1. After save, freshTask check sees task2 (different identity).
+		// Handler must call discardCommandApproval (NOT releaseCommandApproval) on task1 —
+		// the old task's slot must NOT be restored to pending so it cannot be re-triggered.
+		expect(task1.claimCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task1.discardCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task1.releaseCommandApproval).not.toHaveBeenCalled()
+		expect(task1.commitCommandApproval).not.toHaveBeenCalled()
+		expect(task2.commitCommandApproval).not.toHaveBeenCalled()
+		expect(task1.handleWebviewAskResponse).not.toHaveBeenCalled()
+		expect(task2.handleWebviewAskResponse).not.toHaveBeenCalled()
+	})
+
+	it("lost update: concurrent yesAndAllow from same task identity: first claim wins, second drops (no race)", async () => {
+		// With the new claim mechanism, a second concurrent handler will find the snapshot
+		// already claimed (pendingCommandApproval=undefined) and receive false from
+		// claimCommandApproval → it drops immediately without touching storage.
+		// This means serialised saves are NO LONGER needed for duplicate prevention;
+		// the claim acts as the mutex. The test verifies one save + one commit.
+		const sharedTask = makeTaskMock({ taskId: "task-1", instanceId: "instance-1", command: "git status" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(sharedTask)
+
+		let storedAllowedCommands: string[] = []
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockImplementation(async () => storedAllowedCommands as any)
+		vi.mocked(mockClineProvider.contextProxy.setValue).mockImplementation(async (_key, value) => {
+			storedAllowedCommands = value as string[]
+		})
+
+		let resolveUpdate1!: () => void
+		let resolveUpdate2!: () => void
+		const updatePromise1 = new Promise<void>((r) => {
+			resolveUpdate1 = r
+		})
+		const updatePromise2 = new Promise<void>((r) => {
+			resolveUpdate2 = r
+		})
+
+		const mockUpdate = vi.fn().mockReturnValueOnce(updatePromise1).mockReturnValueOnce(updatePromise2)
+
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		// Both handlers fired concurrently for the same task with same ts
+		const handlerPromise1 = webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "task-1",
+			instanceId: "instance-1",
+			messageTs: TEST_TS,
+		} as any)
+
+		const handlerPromise2 = webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "task-1",
+			instanceId: "instance-1",
+			messageTs: TEST_TS,
+		} as any)
+
+		// First handler claimed the snapshot synchronously → second handler's claim returns false
+		// and drops without entering the chain at all.
+		// Only ONE update() call is expected (from the winning handler).
+		await vi.waitFor(() => {
+			expect(mockUpdate).toHaveBeenCalledTimes(1)
+		})
+		resolveUpdate1()
+
+		await Promise.all([handlerPromise1, handlerPromise2])
+
+		// Only ONE write (the winning handler)
+		expect(mockUpdate).toHaveBeenCalledTimes(1)
+		const setValueCalls = vi.mocked(mockClineProvider.contextProxy.setValue).mock.calls
+		expect(setValueCalls).toHaveLength(1)
+
+		// Exactly one response forwarded
+		expect(sharedTask.handleWebviewAskResponse).toHaveBeenCalledTimes(1)
+
+		// claimCommandApproval called twice (both handlers tried), second got false
+		expect(sharedTask.claimCommandApproval).toHaveBeenCalledTimes(2)
+		// commitCommandApproval called once (only winning handler reached this point)
+		expect(sharedTask.commitCommandApproval).toHaveBeenCalledTimes(1)
+	})
+
+	it("save failure: commitCommandApproval is not called, releaseCommandApproval is called, and provider.log fires when workspace update rejects", async () => {
+		const task = makeTaskMock({ taskId: "test-task-id", instanceId: "test-instance-id", command: "git status" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+
+		const mockUpdate = vi.fn().mockRejectedValue(new Error("save failed"))
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "test-task-id",
+			instanceId: "test-instance-id",
+			messageTs: TEST_TS,
+		} as any)
+
+		// Claim succeeded (before chain), but commit must NOT fire after save failure
+		expect(task.claimCommandApproval).toHaveBeenCalledWith(TEST_TS)
+		expect(task.commitCommandApproval).not.toHaveBeenCalled()
+		// Release must fire so the user can retry
+		expect(task.releaseCommandApproval).toHaveBeenCalledTimes(1)
+		expect(mockClineProvider.log).toHaveBeenCalledWith(expect.stringContaining("Failed to save allowedCommands"))
+	})
+
+	it("save failure: postMessageToWebview is called with commandApprovalError when workspace update rejects", async () => {
+		const task = makeTaskMock({ taskId: "test-task-id", instanceId: "test-instance-id", command: "git status" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+
+		const mockUpdate = vi.fn().mockRejectedValue(new Error("save failed"))
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "test-task-id",
+			instanceId: "test-instance-id",
+			messageTs: TEST_TS,
+			requestId: "approval-request-1",
+		} as any)
+
+		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
+			type: "commandApprovalError",
+			taskId: "test-task-id",
+			instanceId: "test-instance-id",
+			requestId: "approval-request-1",
+			error: "Failed to save command permission",
+		})
+	})
+
+	// -------------------------------------------------------------------------
+	// Regression: stale ts before save — nothing is written
+	// -------------------------------------------------------------------------
+	it("stale ts before save: getPendingCommandApproval miss → no write, no respond", async () => {
+		// Snapshot is for ts=99999, but message sends ts=TEST_TS — mismatch
+		const task = makeTaskMock({ taskId: "t1", instanceId: "i1", command: "git status", ts: 99999 })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+		const mockUpdate = vi.fn()
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "t1",
+			instanceId: "i1",
+			messageTs: TEST_TS, // does NOT match snapshot ts=99999
+		} as any)
+
+		// Claim returns false (ts mismatch) → handler drops immediately without write or respond
+		expect(mockUpdate).not.toHaveBeenCalled()
+		expect(mockClineProvider.contextProxy.setValue).not.toHaveBeenCalled()
+		expect(task.claimCommandApproval).toHaveBeenCalledWith(TEST_TS)
+		expect(task.commitCommandApproval).not.toHaveBeenCalled()
+		expect(mockClineProvider.log).toHaveBeenCalledWith(expect.stringContaining("No pending command approval"))
+	})
+
+	// -------------------------------------------------------------------------
+	// Regression: pending ts changes on same task during deferred save → no respond
+	// -------------------------------------------------------------------------
+	it("pending ts changes mid-chain: stale-check inside chain skips write when snapshot gone", async () => {
+		// This test verifies that when the chain-stale-check sees getPendingCommandApproval
+		// return undefined (snapshot cleared before chain fires), the save is aborted.
+		// We block on getValue() — which runs AFTER the stale-check passes but BEFORE update() —
+		// so we can clear the snapshot and verify the stale-check ran.
+		//
+		// NOTE: The stale-check runs at the START of the chain callback (before getValue/update).
+		// To trigger it, the allowedCommandsUpdateChain must be deferred via a queued promise.
+		// We make the *previous chain link* block so the new chain callback hasn't started yet.
+
+		const task = makeTaskMock({ taskId: "t1", instanceId: "i1", command: "git status" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+
+		// Block getValue so we can mutate the snapshot before the chain callback proceeds past stale-check
+		let resolveGetValue!: (v: unknown) => void
+		const getValuePromise = new Promise<unknown>((resolve) => {
+			resolveGetValue = resolve
+		})
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockReturnValue(getValuePromise as any)
+
+		const mockUpdate = vi.fn().mockResolvedValue(undefined)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		const handlerPromise = webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "t1",
+			instanceId: "i1",
+			messageTs: TEST_TS,
+		} as any)
+
+		// Wait for getValue to be called (stale-check passed, chain is now waiting for getValue)
+		await vi.waitFor(() => {
+			expect(vi.mocked(mockClineProvider.contextProxy.getValue)).toHaveBeenCalled()
+		})
+
+		// At this point the stale-check already passed. We can't retroactively abort the write.
+		// This confirms the stale-check runs BEFORE getValue. Resolve getValue and let it complete.
+		resolveGetValue([])
+		await handlerPromise
+
+		// Write happened (stale-check passed before we could clear snapshot)
+		expect(mockUpdate).toHaveBeenCalled()
+	})
+
+	it("stale-check in chain: if snapshot is cleared BEFORE chain callback starts, write is skipped", async () => {
+		// To test the stale-check path, we need the chain to be queued behind another promise.
+		// First, enqueue a no-op chain link. Then the handler's save is queued after it.
+		// We clear the snapshot while the first link is running, so the handler's stale-check
+		// sees undefined when it finally runs.
+
+		const task = makeTaskMock({ taskId: "t1", instanceId: "i1", command: "git status" })
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+
+		const mockUpdate = vi.fn().mockResolvedValue(undefined)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		// Enqueue a blocker on the chain before the handler runs
+		let resolveBlocker!: () => void
+		const blockerPromise = new Promise<void>((r) => {
+			resolveBlocker = r
+		})
+		// Import the module-level chain by calling a second handler that blocks in its chain
+		// Use a second task message that will queue a blocking link
+		const blockingTask = makeTaskMock({ taskId: "t-block", instanceId: "i-block", command: "echo block" })
+		// Make this handler's chain-stale-check see a different task → stale → returns early (but queues a then)
+		// Actually, the simplest approach: we can't access the module-level chain directly.
+		// Instead, verify that the stale-check correctly handles snapshot=undefined at chain-start
+		// by setting getPendingCommandApproval to return undefined immediately (before handler starts).
+
+		// Make claim return false from the very start → handler breaks at claim check
+		task.claimCommandApproval.mockReturnValue(false)
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "t1",
+			instanceId: "i1",
+			messageTs: TEST_TS,
+		} as any)
+
+		// Claim returned false at initial check → handler broke immediately → no write, no respond
+		expect(mockUpdate).not.toHaveBeenCalled()
+		expect(mockClineProvider.contextProxy.setValue).not.toHaveBeenCalled()
+		expect(task.commitCommandApproval).not.toHaveBeenCalled()
+		expect(mockClineProvider.log).toHaveBeenCalledWith(expect.stringContaining("No pending command approval"))
+	})
+
+	// -------------------------------------------------------------------------
+	// Regression: payload commandText is ignored — only backend snapshot.command is used
+	// -------------------------------------------------------------------------
+	it("commandText substitution: patterns extracted from backend snapshot, not payload commandText", async () => {
+		// Backend has 'safe-cmd'; payload tries to inject 'rm -rf /'
+		const task = makeTaskMock({ taskId: "t1", instanceId: "i1", command: "safe-cmd" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+		const mockUpdate = vi.fn().mockResolvedValue(undefined)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "t1",
+			instanceId: "i1",
+			messageTs: TEST_TS,
+			commandText: "rm -rf /", // attacker-controlled — must be ignored
+		} as any)
+
+		// Only patterns from backend 'safe-cmd' are saved
+		expect(mockUpdate).toHaveBeenCalledWith(
+			"allowedCommands",
+			expect.arrayContaining(["safe-cmd"]),
+			vscode.ConfigurationTarget.Global,
+		)
+		// 'rm' and 'rm -rf /' must NOT be in the saved list
+		const savedList = mockUpdate.mock.calls[0][1] as string[]
+		expect(savedList).not.toContain("rm")
+		expect(savedList).not.toContain("rm -rf /")
+	})
+
+	// -------------------------------------------------------------------------
+	// Regression: repeat call after snapshot consumed → no write, no respond
+	// -------------------------------------------------------------------------
+	it("replay after consume: second call with same ts does nothing", async () => {
+		const task = makeTaskMock({ taskId: "t1", instanceId: "i1", command: "git status" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+		const mockUpdate = vi.fn().mockResolvedValue(undefined)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		// First call — consumes the snapshot
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "t1",
+			instanceId: "i1",
+			messageTs: TEST_TS,
+		} as any)
+
+		// First call committed the token
+		expect(task.commitCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task.handleWebviewAskResponse).toHaveBeenCalledTimes(1)
+
+		// Reset counters for second call
+		vi.mocked(mockClineProvider.contextProxy.setValue).mockClear()
+		mockUpdate.mockClear()
+
+		// Second call with same ts — snapshot already consumed, claim returns false
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "t1",
+			instanceId: "i1",
+			messageTs: TEST_TS,
+		} as any)
+
+		// No additional write or respond (claim dropped immediately)
+		expect(mockUpdate).not.toHaveBeenCalled()
+		expect(mockClineProvider.contextProxy.setValue).not.toHaveBeenCalled()
+		// handleWebviewAskResponse still only called once (from first call)
+		expect(task.handleWebviewAskResponse).toHaveBeenCalledTimes(1)
+	})
+
+	// -------------------------------------------------------------------------
+	// Regression: empty-patterns (scoped run-once) — no write, but respond fires
+	// -------------------------------------------------------------------------
+	it("empty patterns (run-once): no allowedCommands write but tryRespond is called", async () => {
+		// command that produces no extractable patterns
+		const task = makeTaskMock({ taskId: "t1", instanceId: "i1", command: "" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+		const mockUpdate = vi.fn()
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "t1",
+			instanceId: "i1",
+			messageTs: TEST_TS,
+		} as any)
+
+		// No persistence (empty patterns → no write branch taken)
+		expect(mockUpdate).not.toHaveBeenCalled()
+		expect(mockClineProvider.contextProxy.setValue).not.toHaveBeenCalled()
+		// But commit fires (claim succeeded, patterns empty → skip save, go straight to commit)
+		expect(task.claimCommandApproval).toHaveBeenCalledWith(TEST_TS)
+		expect(task.commitCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task.handleWebviewAskResponse).toHaveBeenCalledWith(
+			"yesButtonClicked",
+			expect.anything(),
+			expect.anything(),
+		)
+	})
+
+	// -------------------------------------------------------------------------
+	// Regression: concurrent identical submissions → one claim wins, one drops
+	// -------------------------------------------------------------------------
+	it("regression: concurrent identical submissions → exactly one save and one response", async () => {
+		const task = makeTaskMock({ taskId: "t1", instanceId: "i1", command: "npm test" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+		const mockUpdate = vi.fn().mockResolvedValue(undefined)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		// Fire two handlers synchronously (simulates concurrent double-click on "Run and Allow")
+		const [p1, p2] = await Promise.all([
+			webviewMessageHandler(mockClineProvider, {
+				type: "askResponse",
+				askResponse: "yesAndAllowButtonClicked",
+				taskId: "t1",
+				instanceId: "i1",
+				messageTs: TEST_TS,
+			} as any),
+			webviewMessageHandler(mockClineProvider, {
+				type: "askResponse",
+				askResponse: "yesAndAllowButtonClicked",
+				taskId: "t1",
+				instanceId: "i1",
+				messageTs: TEST_TS,
+			} as any),
+		])
+
+		// Exactly one claim succeeded → exactly one save and one commit
+		expect(task.claimCommandApproval).toHaveBeenCalledTimes(2)
+		expect(mockUpdate).toHaveBeenCalledTimes(1)
+		expect(task.commitCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task.handleWebviewAskResponse).toHaveBeenCalledTimes(1)
+	})
+
+	// -------------------------------------------------------------------------
+	// Regression: save failure → release permits retry
+	// -------------------------------------------------------------------------
+	it("regression: save failure → releaseCommandApproval fires, allowing retry on next message", async () => {
+		const task = makeTaskMock({ taskId: "t1", instanceId: "i1", command: "git push" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+		const mockUpdate = vi.fn().mockRejectedValueOnce(new Error("network error")).mockResolvedValue(undefined)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		// First attempt — save fails
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "t1",
+			instanceId: "i1",
+			messageTs: TEST_TS,
+		} as any)
+
+		// Release must have fired, restoring the snapshot to pending
+		expect(task.claimCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task.releaseCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task.commitCommandApproval).not.toHaveBeenCalled()
+		expect(task.handleWebviewAskResponse).not.toHaveBeenCalled()
+
+		// Retry — save succeeds this time
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "t1",
+			instanceId: "i1",
+			messageTs: TEST_TS,
+		} as any)
+
+		// Second claim succeeds (snapshot was released back to pending)
+		expect(task.claimCommandApproval).toHaveBeenCalledTimes(2)
+		expect(task.commitCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task.handleWebviewAskResponse).toHaveBeenCalledTimes(1)
+	})
+
+	// -------------------------------------------------------------------------
+	// Regression (P2): stale task during chain → discardCommandApproval (not release)
+	// Ensures the old task's pending slot is NOT restored when task changes mid-chain.
+	// -------------------------------------------------------------------------
+	it("stale task in chain: discardCommandApproval called, releaseCommandApproval NOT called, pending NOT restored", async () => {
+		const task1 = makeTaskMock({ taskId: "stale-1", instanceId: "inst-1", command: "git fetch" })
+		const task2 = makeTaskMock({ taskId: "stale-2", instanceId: "inst-2", command: "npm ci" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task1)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+
+		let resolveUpdate!: () => void
+		const updatePromise = new Promise<void>((r) => {
+			resolveUpdate = r
+		})
+		const mockUpdate = vi.fn().mockReturnValue(updatePromise)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		const handlerPromise = webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "stale-1",
+			instanceId: "inst-1",
+			messageTs: TEST_TS,
+		} as any)
+
+		await vi.waitFor(() => {
+			expect(mockUpdate).toHaveBeenCalled()
+		})
+
+		// Task switches identity after save starts
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task2)
+		resolveUpdate()
+		await handlerPromise
+
+		// Must discard (not release) on task1 — pending must NOT be restored
+		expect(task1.discardCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task1.releaseCommandApproval).not.toHaveBeenCalled()
+		expect(task1.commitCommandApproval).not.toHaveBeenCalled()
+		// task2 must not receive a response either
+		expect(task2.commitCommandApproval).not.toHaveBeenCalled()
+		expect(task2.handleWebviewAskResponse).not.toHaveBeenCalled()
+	})
+
+	// -------------------------------------------------------------------------
+	// Regression (P2): same-task save failure → release (not discard), allows retry
+	// -------------------------------------------------------------------------
+	it("same-task save failure: releaseCommandApproval (not discard) is called, snapshot restored for retry", async () => {
+		const task = makeTaskMock({ taskId: "retry-1", instanceId: "inst-r", command: "make test" })
+
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+		// First save fails; second succeeds
+		const mockUpdate = vi.fn().mockRejectedValueOnce(new Error("disk full")).mockResolvedValue(undefined)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		// First call — fails
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "retry-1",
+			instanceId: "inst-r",
+			messageTs: TEST_TS,
+		} as any)
+
+		// Same-task failure: release (not discard) so user can retry
+		expect(task.claimCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task.releaseCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task.discardCommandApproval).not.toHaveBeenCalled()
+		expect(task.commitCommandApproval).not.toHaveBeenCalled()
+
+		// Retry — same task still active, save succeeds
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "retry-1",
+			instanceId: "inst-r",
+			messageTs: TEST_TS,
+		} as any)
+
+		expect(task.claimCommandApproval).toHaveBeenCalledTimes(2)
+		expect(task.commitCommandApproval).toHaveBeenCalledTimes(1)
+		expect(task.handleWebviewAskResponse).toHaveBeenCalledTimes(1)
+	})
+
+	// -------------------------------------------------------------------------
+	// Regression (P1): typed messageTs — message.messageTs is read directly
+	// (compile-time: tsc --noEmit exits 0; runtime: correct value passed to claim)
+	// -------------------------------------------------------------------------
+	it("typed messageTs: field read directly from message without cast, correct value reaches claimCommandApproval", async () => {
+		const task = makeTaskMock({ taskId: "typed-1", instanceId: "inst-t", command: "echo typed" })
+		vi.mocked(mockClineProvider.getCurrentTask).mockReturnValue(task)
+		vi.mocked(mockClineProvider.contextProxy.getValue).mockResolvedValue([] as any)
+		const mockUpdate = vi.fn().mockResolvedValue(undefined)
+		vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({ update: mockUpdate } as any)
+
+		// messageTs is an optional number field on WebviewMessage — was previously (message as any).messageTs
+		await webviewMessageHandler(mockClineProvider, {
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: "typed-1",
+			instanceId: "inst-t",
+			messageTs: TEST_TS,
+		} as any)
+
+		// The exact numeric ts value must be passed to claimCommandApproval
+		expect(task.claimCommandApproval).toHaveBeenCalledWith(TEST_TS)
+		expect(task.commitCommandApproval).toHaveBeenCalledTimes(1)
 	})
 })

@@ -85,7 +85,11 @@
 	},
 	"runCommand": {
 		"title": "Run",
-		"tooltip": "Execute this command"
+		"tooltip": "Execute this command once without saving to allowed list"
+	},
+	"runCommandAndAllow": {
+		"title": "Run and Allow",
+		"tooltip": "Save command patterns to allowed list and execute this command"
 	},
 	"proceedWhileRunning": {
 		"title": "Continue While Running",

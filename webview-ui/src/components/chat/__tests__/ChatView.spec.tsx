@@ -1113,6 +1113,217 @@ describe("ChatView - Message Queueing Tests", () => {
 	})
 })
 
+describe("ChatView - commandExecutionStatus executionId filtering", () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
+
+	it("foreign started leaves three approval buttons; matching started hides them", async () => {
+		// The command ask has ts=123, so pendingCommandExecutionId="123".
+		// A commandExecutionStatus started with executionId="999" (foreign) must NOT hide
+		// the approval buttons. A subsequent started with executionId="123" (matching) must
+		// hide all three approval buttons (Run, Run-and-Allow, Reject).
+		const { container } = renderChatView()
+
+		// Hydrate with a command ask at ts=123
+		mockPostMessage({
+			clineMessages: [
+				{
+					type: "say",
+					say: "task",
+					ts: 1,
+					text: "Initial task",
+				},
+				{
+					type: "ask",
+					ask: "command",
+					ts: 123,
+					text: "ls -la",
+					partial: false,
+				},
+			],
+		})
+
+		// Wait for approval buttons to appear
+		await waitFor(() => {
+			const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+			expect(btns).toContain("chat:runCommand.title")
+			expect(btns).toContain("chat:runCommandAndAllow.title")
+			expect(btns).toContain("chat:reject.title")
+		})
+
+		// Allow useEvent hook to register and effects to settle
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 20))
+		})
+
+		// Fire commandExecutionStatus with WRONG executionId (999 != 123) — buttons must stay
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandExecutionStatus",
+						text: JSON.stringify({ status: "started", executionId: "999" }),
+					},
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+
+		// Buttons still present after foreign executionId
+		await waitFor(() => {
+			const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+			expect(btns).toContain("chat:runCommand.title")
+			expect(btns).toContain("chat:runCommandAndAllow.title")
+			expect(btns).toContain("chat:reject.title")
+		})
+
+		// Fire commandExecutionStatus with CORRECT executionId (123) — buttons must disappear
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandExecutionStatus",
+						text: JSON.stringify({ status: "started", executionId: "123" }),
+					},
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+
+		// All three approval buttons must be gone after matching started
+		await waitFor(() => {
+			const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+			expect(btns).not.toContain("chat:runCommand.title")
+			expect(btns).not.toContain("chat:runCommandAndAllow.title")
+			expect(btns).not.toContain("chat:reject.title")
+		})
+	})
+
+	it.each([{ statusKind: "started" as const }, { statusKind: "exited" as const }])(
+		"Run-and-Allow → status($statusKind) → replay same command ts with changed secondLastMessage → buttons do not return and invoke primaryButtonClick sends no askResponse; new command ts shows buttons",
+		async ({ statusKind }) => {
+			// Scenario:
+			//   1. Hydrate command ask ts=500 → buttons appear.
+			//   2. Click "Run and Allow" → buttons hidden.
+			//   3. commandExecutionStatus started/exited with matching executionId="500" arrives
+			//      → commandExecutionStarted=true, lastStartedCommandRef set.
+			//   4. Re-hydrate state with SAME command ts=500 but changed secondLastMessage
+			//      → useDeepCompareEffect fires → lastStartedCommandRef guard skips UI restore
+			//      → buttons stay hidden.
+			//   5. invoke primaryButtonClick → no askResponse sent (clineAsk was cleared by status).
+			//   6. Hydrate NEW command ts=600 → buttons appear again.
+
+			const { container } = renderChatView()
+
+			const TASK_ID = "task-status-guard"
+			const INSTANCE_ID = "inst-status-guard"
+			const CMD_TS = 500
+			const CMD_TEXT = "echo hello"
+
+			// Step 1: hydrate command ask
+			mockPostMessage({
+				currentTaskId: TASK_ID,
+				currentTaskInstanceId: INSTANCE_ID,
+				clineMessages: [
+					{ type: "say", say: "task", ts: 1, text: "task" },
+					{ type: "say", say: "text", ts: 2, text: "ctx-v1" },
+					{ type: "ask", ask: "command", ts: CMD_TS, text: CMD_TEXT },
+				],
+			})
+
+			// Wait for buttons
+			await waitFor(() => {
+				const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+				expect(btns).toContain("chat:runCommandAndAllow.title")
+			})
+
+			await act(async () => {
+				await new Promise((resolve) => setTimeout(resolve, 10))
+			})
+
+			// Step 2: click "Run and Allow"
+			const runAndAllowBtn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)!
+			await act(async () => {
+				fireEvent.click(runAndAllowBtn)
+			})
+
+			// Buttons gone after click
+			await waitFor(() => {
+				const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+				expect(btns).not.toContain("chat:runCommandAndAllow.title")
+			})
+
+			// Step 3: commandExecutionStatus matching → hide buttons and set lastStartedCommandRef
+			await act(async () => {
+				window.dispatchEvent(
+					new MessageEvent("message", {
+						data: {
+							type: "commandExecutionStatus",
+							text: JSON.stringify({ status: statusKind, executionId: String(CMD_TS) }),
+						},
+					}),
+				)
+				await new Promise((resolve) => setTimeout(resolve, 0))
+			})
+
+			// Step 4: re-hydrate with SAME command ts but changed secondLastMessage
+			vi.mocked(vscode.postMessage).mockClear()
+			mockPostMessage({
+				currentTaskId: TASK_ID,
+				currentTaskInstanceId: INSTANCE_ID,
+				clineMessages: [
+					{ type: "say", say: "task", ts: 1, text: "task" },
+					{ type: "say", say: "text", ts: 2, text: "ctx-v2-changed" },
+					{ type: "ask", ask: "command", ts: CMD_TS, text: CMD_TEXT },
+				],
+			})
+			await act(async () => {
+				await new Promise((resolve) => setTimeout(resolve, 10))
+			})
+
+			// Approval buttons must still be absent (guard skipped restore)
+			const btnsAfterReplay = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+			expect(btnsAfterReplay).not.toContain("chat:runCommand.title")
+			expect(btnsAfterReplay).not.toContain("chat:runCommandAndAllow.title")
+			expect(btnsAfterReplay).not.toContain("chat:reject.title")
+
+			// Step 5: invoke primaryButtonClick → no askResponse (clineAsk was cleared)
+			vi.mocked(vscode.postMessage).mockClear()
+			await act(async () => {
+				window.dispatchEvent(
+					new MessageEvent("message", {
+						data: { type: "invoke", invoke: "primaryButtonClick", text: "", images: [] },
+					}),
+				)
+				await new Promise((resolve) => setTimeout(resolve, 0))
+			})
+			expect(
+				vi.mocked(vscode.postMessage).mock.calls.find((c) => (c[0] as any)?.type === "askResponse"),
+			).toBeFalsy()
+
+			// Step 6: NEW command ts=600 must show buttons
+			mockPostMessage({
+				currentTaskId: TASK_ID,
+				currentTaskInstanceId: INSTANCE_ID,
+				clineMessages: [
+					{ type: "say", say: "task", ts: 1, text: "task" },
+					{ type: "say", say: "text", ts: 2, text: "ctx-v2-changed" },
+					{ type: "ask", ask: "command", ts: 600, text: "new-cmd" },
+				],
+			})
+			await waitFor(() => {
+				const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+				expect(btns).toContain("chat:runCommand.title")
+				expect(btns).toContain("chat:runCommandAndAllow.title")
+				expect(btns).toContain("chat:reject.title")
+			})
+		},
+	)
+})
+
 describe("ChatView - Context Condensing Indicator Tests", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
@@ -1180,5 +1391,1259 @@ describe("ChatView - Context Condensing Indicator Tests", () => {
 			},
 			{ timeout: 2000 },
 		)
+	})
+})
+
+describe("ChatView - commandApprovalError handling", () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
+
+	it("ignores a commandApprovalError with a foreign requestId — does NOT restore buttons", async () => {
+		const { container } = renderChatView()
+
+		const TASK_ID = "task-foreign"
+		const INSTANCE_ID = "inst-foreign"
+		const CMD_TEXT = "ls -la"
+
+		// Hydrate with an active task and a pending command ask
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{
+					type: "say",
+					say: "task",
+					ts: 1,
+					text: "test task",
+				},
+				{
+					type: "ask",
+					ask: "command",
+					ts: 1000,
+					text: CMD_TEXT,
+				},
+			],
+		})
+
+		await waitFor(() => {
+			expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+		})
+
+		// Allow useEvent listener to register
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Click "Run and Allow" to start an attempt; this sets activeAttemptRef with a UUID
+		const runAndAllowBtn = await waitFor(() => {
+			const btn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(btn).toBeTruthy()
+			return btn!
+		})
+
+		await act(async () => {
+			fireEvent.click(runAndAllowBtn)
+		})
+
+		// After click, buttons disappear and sendingDisabled=true
+		await waitFor(() => {
+			const btn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(btn).toBeFalsy()
+		})
+
+		const textarea = container.querySelector('[data-testid="chat-textarea"] input')
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("true")
+
+		// Fire a commandApprovalError with a DIFFERENT requestId — must NOT restore buttons
+		await act(async () => {
+			const event = new MessageEvent("message", {
+				data: {
+					type: "commandApprovalError",
+					taskId: TASK_ID,
+					instanceId: INSTANCE_ID,
+					requestId: "FOREIGN-UUID-THAT-DOES-NOT-MATCH",
+					error: "save failed",
+				},
+			})
+			window.dispatchEvent(event)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+
+		// Component still mounted
+		expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+
+		// Buttons must still be absent (foreign error must not restore UI)
+		const runAllowBtnAfter = Array.from(container.querySelectorAll("button")).find(
+			(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+		)
+		expect(runAllowBtnAfter).toBeFalsy()
+
+		// sendingDisabled still true
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("true")
+	})
+
+	it("restores approval buttons and allows retry after commandApprovalError", async () => {
+		const { container } = renderChatView()
+
+		const TASK_ID = "task-retry"
+		const INSTANCE_ID = "inst-retry"
+		const CMD_TS = 5000
+		const CMD_TEXT = "echo hello"
+
+		// 1. Hydrate with active task + command ask
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{
+					type: "say",
+					say: "task",
+					ts: 1,
+					text: "test task",
+				},
+				{
+					type: "ask",
+					ask: "command",
+					ts: CMD_TS,
+					text: CMD_TEXT,
+				},
+			],
+		})
+
+		await waitFor(() => {
+			expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+		})
+
+		// Allow useEvent listener to register
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// 2. Find and click "Run and Allow" button
+		const runAndAllowBtn = await waitFor(() => {
+			const btn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(btn).toBeTruthy()
+			return btn!
+		})
+
+		vi.mocked(vscode.postMessage).mockClear()
+
+		await act(async () => {
+			fireEvent.click(runAndAllowBtn)
+		})
+
+		// 3. Capture the requestId from the outgoing message (UUID generated per click)
+		const firstCall = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find(
+				(call) =>
+					(call[0] as any)?.type === "askResponse" &&
+					(call[0] as any)?.askResponse === "yesAndAllowButtonClicked",
+			)
+		expect(firstCall).toBeTruthy()
+		const firstRequestId = (firstCall![0] as any).requestId as string
+		expect(firstRequestId).toBeTruthy()
+		expect(typeof firstRequestId).toBe("string")
+
+		// Verify commandText and messageTs (= command ask ts) are preserved in outgoing message
+		expect(firstCall![0]).toMatchObject({
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: TASK_ID,
+			instanceId: INSTANCE_ID,
+			commandText: CMD_TEXT,
+			requestId: firstRequestId,
+			messageTs: CMD_TS,
+		})
+
+		// 4. After clicking, approval buttons should be gone
+		await waitFor(() => {
+			const btn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(btn).toBeFalsy()
+		})
+
+		const textarea = container.querySelector('[data-testid="chat-textarea"] input')
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("true")
+
+		// 5. Backend sends commandApprovalError with matching requestId → restore UI
+		await act(async () => {
+			const event = new MessageEvent("message", {
+				data: {
+					type: "commandApprovalError",
+					taskId: TASK_ID,
+					instanceId: INSTANCE_ID,
+					requestId: firstRequestId,
+					error: "save failed",
+				},
+			})
+			window.dispatchEvent(event)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+
+		// 6. All three approval buttons must be enabled again
+		await waitFor(() => {
+			const runBtn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommand.title",
+			)
+			const runAllowBtn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			const rejectBtn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:reject.title",
+			)
+			expect(runBtn).toBeTruthy()
+			expect(runAllowBtn).toBeTruthy()
+			expect(rejectBtn).toBeTruthy()
+			expect(runBtn?.hasAttribute("disabled")).toBe(false)
+			expect(runAllowBtn?.hasAttribute("disabled")).toBe(false)
+			expect(rejectBtn?.hasAttribute("disabled")).toBe(false)
+		})
+
+		// sendingDisabled should be restored to false
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("false")
+
+		// 7. Click "Run and Allow" again — must send NEW requestId (UUID is regenerated per click)
+		//    and same commandText (restored from snapshot)
+		const runAndAllowBtn2 = Array.from(container.querySelectorAll("button")).find(
+			(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+		)!
+
+		vi.mocked(vscode.postMessage).mockClear()
+
+		await act(async () => {
+			fireEvent.click(runAndAllowBtn2)
+		})
+
+		const secondCall = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find(
+				(call) =>
+					(call[0] as any)?.type === "askResponse" &&
+					(call[0] as any)?.askResponse === "yesAndAllowButtonClicked",
+			)
+		expect(secondCall).toBeTruthy()
+		const secondRequestId = (secondCall![0] as any).requestId as string
+
+		// New requestId must be different (UUID regenerated per click)
+		expect(secondRequestId).toBeTruthy()
+		expect(secondRequestId).not.toBe(firstRequestId)
+
+		// commandText and messageTs preserved from snapshot; requestId must differ between attempts
+		expect(secondCall![0]).toMatchObject({
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: TASK_ID,
+			instanceId: INSTANCE_ID,
+			commandText: CMD_TEXT,
+			requestId: secondRequestId,
+			messageTs: CMD_TS,
+		})
+
+		// requestId must differ between the two clicks (UUID regenerated per attempt)
+		expect(firstRequestId).not.toBe(secondRequestId)
+	})
+
+	it("second attempt's error restores UI; replayed first error does not", async () => {
+		const { container } = renderChatView()
+
+		const TASK_ID = "task-double"
+		const INSTANCE_ID = "inst-double"
+		const CMD_TEXT = "npm test"
+
+		// Hydrate with active task + command ask
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "test task" },
+				{ type: "ask", ask: "command", ts: 9000, text: CMD_TEXT },
+			],
+		})
+
+		await waitFor(() => {
+			expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+		})
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// === ATTEMPT 1 ===
+		const btn1 = await waitFor(() => {
+			const b = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(b).toBeTruthy()
+			return b!
+		})
+
+		vi.mocked(vscode.postMessage).mockClear()
+		await act(async () => {
+			fireEvent.click(btn1)
+		})
+
+		// Capture first requestId
+		const firstMsg = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find((c) => (c[0] as any)?.askResponse === "yesAndAllowButtonClicked")
+		const requestId1 = (firstMsg![0] as any).requestId as string
+		expect(requestId1).toBeTruthy()
+
+		// Buttons gone
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeFalsy()
+		})
+
+		// Error 1 arrives → restore UI (ref is consumed)
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandApprovalError",
+						taskId: TASK_ID,
+						instanceId: INSTANCE_ID,
+						requestId: requestId1,
+						error: "err1",
+					},
+				}),
+			)
+			await new Promise((r) => setTimeout(r, 0))
+		})
+
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeTruthy()
+		})
+
+		// === ATTEMPT 2 ===
+		const btn2 = Array.from(container.querySelectorAll("button")).find(
+			(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+		)!
+
+		vi.mocked(vscode.postMessage).mockClear()
+		await act(async () => {
+			fireEvent.click(btn2)
+		})
+
+		const secondMsg = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find((c) => (c[0] as any)?.askResponse === "yesAndAllowButtonClicked")
+		const requestId2 = (secondMsg![0] as any).requestId as string
+		expect(requestId2).toBeTruthy()
+		expect(requestId2).not.toBe(requestId1)
+
+		// Buttons gone again
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeFalsy()
+		})
+
+		const textarea = container.querySelector('[data-testid="chat-textarea"] input')
+
+		// Replay first error → must NOT restore buttons (ref was already consumed/replaced)
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandApprovalError",
+						taskId: TASK_ID,
+						instanceId: INSTANCE_ID,
+						requestId: requestId1,
+						error: "err1-replay",
+					},
+				}),
+			)
+			await new Promise((r) => setTimeout(r, 0))
+		})
+
+		// Buttons must still be absent after stale error
+		await waitFor(() => {
+			const btn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(btn).toBeFalsy()
+		})
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("true")
+
+		// Error 2 arrives with correct second requestId → restore UI
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandApprovalError",
+						taskId: TASK_ID,
+						instanceId: INSTANCE_ID,
+						requestId: requestId2,
+						error: "err2",
+					},
+				}),
+			)
+			await new Promise((r) => setTimeout(r, 0))
+		})
+
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeTruthy()
+		})
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("false")
+	})
+})
+
+describe("ChatView - commandApprovalError cross-task and same-task followup isolation", () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
+
+	it("error from task A does NOT restore command buttons after switching to task B with followup", async () => {
+		// Scenario:
+		//   1. Task A has a command ask; user clicks "Run and Allow" → snapshot stored with taskId=A
+		//   2. Extension switches to task B (new taskId/instanceId) with a followup ask
+		//   3. A late commandApprovalError arrives with taskId=A and the matching requestId
+		// Expected: buttons for task B must NOT be restored (no command buttons appear)
+
+		const { container } = renderChatView()
+
+		const TASK_A_ID = "task-A-cross"
+		const TASK_A_INST = "inst-A-cross"
+		const CMD_TEXT_A = "make build"
+
+		// Step 1: Hydrate task A with command ask
+		mockPostMessage({
+			currentTaskId: TASK_A_ID,
+			currentTaskInstanceId: TASK_A_INST,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "task A" },
+				{ type: "ask", ask: "command", ts: 2000, text: CMD_TEXT_A },
+			],
+		})
+
+		await waitFor(() => {
+			expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+		})
+
+		// Allow useEvent listener to register
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Step 2: Click "Run and Allow" in task A
+		const runAndAllowBtnA = await waitFor(() => {
+			const btn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(btn).toBeTruthy()
+			return btn!
+		})
+
+		vi.mocked(vscode.postMessage).mockClear()
+
+		await act(async () => {
+			fireEvent.click(runAndAllowBtnA)
+		})
+
+		// Capture requestId from outgoing message
+		const callA = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find((c) => (c[0] as any)?.askResponse === "yesAndAllowButtonClicked")
+		expect(callA).toBeTruthy()
+		const requestIdA = (callA![0] as any).requestId as string
+		expect(requestIdA).toBeTruthy()
+
+		// Buttons are gone after click
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeFalsy()
+		})
+
+		// Step 3: Switch to task B — different taskId and instanceId — with a followup ask
+		mockPostMessage({
+			currentTaskId: "task-B-cross",
+			currentTaskInstanceId: "inst-B-cross",
+			clineMessages: [
+				{ type: "say", say: "task", ts: 100, text: "task B" },
+				{ type: "ask", ask: "followup", ts: 101, text: "Shall I proceed?" },
+			],
+		})
+
+		await waitFor(() => {
+			// Task B has no command buttons — verify chat-view is still mounted
+			expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+		})
+
+		// Allow effects to process (task identity change → activeAttemptRef cleared)
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 20))
+		})
+
+		// Step 4: Late commandApprovalError from task A arrives with matching requestId
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandApprovalError",
+						taskId: TASK_A_ID,
+						instanceId: TASK_A_INST,
+						requestId: requestIdA,
+						error: "save failed - late delivery",
+					},
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+
+		// Must NOT restore command buttons in task B
+		const runAllowAfter = Array.from(container.querySelectorAll("button")).find(
+			(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+		)
+		expect(runAllowAfter).toBeFalsy()
+
+		const runAfter = Array.from(container.querySelectorAll("button")).find(
+			(b) => b.textContent?.trim() === "chat:runCommand.title",
+		)
+		expect(runAfter).toBeFalsy()
+
+		// sendingDisabled must NOT be reset to false by the stale error
+		// In task B with a followup ask, sendingDisabled = false (followup enables input).
+		// The key assertion: no command approval buttons appeared. This proves the stale
+		// error did not call the restore path (setClineAsk("command") etc.).
+		expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+	})
+
+	it("new followup in SAME task/instance invalidates old command snapshot; stale error does not restore buttons", async () => {
+		// Scenario:
+		//   1. Task X has a command ask; user clicks "Run and Allow" → snapshot stored
+		//   2. SAME task gets a new followup ask (not a command) → snapshot must be cleared
+		//   3. A late commandApprovalError with the original requestId arrives
+		// Expected: no command buttons appear; input state unchanged
+
+		const { container } = renderChatView()
+
+		const TASK_X_ID = "task-X-same"
+		const TASK_X_INST = "inst-X-same"
+		const CMD_TEXT_X = "npm run lint"
+
+		// Step 1: Hydrate task X with command ask
+		mockPostMessage({
+			currentTaskId: TASK_X_ID,
+			currentTaskInstanceId: TASK_X_INST,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "task X" },
+				{ type: "ask", ask: "command", ts: 3000, text: CMD_TEXT_X },
+			],
+		})
+
+		await waitFor(() => {
+			expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+		})
+
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Step 2: Click "Run and Allow" in task X
+		const runAndAllowBtnX = await waitFor(() => {
+			const btn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(btn).toBeTruthy()
+			return btn!
+		})
+
+		vi.mocked(vscode.postMessage).mockClear()
+
+		await act(async () => {
+			fireEvent.click(runAndAllowBtnX)
+		})
+
+		// Capture requestId
+		const callX = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find((c) => (c[0] as any)?.askResponse === "yesAndAllowButtonClicked")
+		expect(callX).toBeTruthy()
+		const requestIdX = (callX![0] as any).requestId as string
+		expect(requestIdX).toBeTruthy()
+
+		// Buttons gone
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeFalsy()
+		})
+
+		// Step 3: SAME task/instance now emits a followup ask (different ask type)
+		// This should clear the snapshot (non-command ask invalidates it)
+		mockPostMessage({
+			currentTaskId: TASK_X_ID,
+			currentTaskInstanceId: TASK_X_INST,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "task X" },
+				{ type: "ask", ask: "followup", ts: 4000, text: "Continue with next step?" },
+			],
+		})
+
+		await waitFor(() => {
+			expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+		})
+
+		// Allow useDeepCompareEffect and useEffect to settle
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 20))
+		})
+
+		// Step 4: Stale commandApprovalError with original requestId arrives
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandApprovalError",
+						taskId: TASK_X_ID,
+						instanceId: TASK_X_INST,
+						requestId: requestIdX,
+						error: "save failed - stale",
+					},
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+
+		// Must NOT restore command buttons
+		const runAllowBtnAfter = Array.from(container.querySelectorAll("button")).find(
+			(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+		)
+		expect(runAllowBtnAfter).toBeFalsy()
+
+		const runBtnAfter = Array.from(container.querySelectorAll("button")).find(
+			(b) => b.textContent?.trim() === "chat:runCommand.title",
+		)
+		expect(runBtnAfter).toBeFalsy()
+
+		// Component still mounted (no crash)
+		expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+	})
+
+	it("invoke newChat after Run-and-Allow clears snapshot; matching save error does NOT restore buttons and sends no extra approval", async () => {
+		// Scenario:
+		//   1. Command ask active; user clicks "Run and Allow" → snapshot stored, buttons hidden.
+		//   2. Extension invokes "newChat" (handleChatReset) → activeAttemptRef cleared synchronously.
+		//   3. A commandApprovalError with the MATCHING requestId arrives.
+		// Expected: no command buttons appear; no extra askResponse emitted.
+
+		const { container } = renderChatView()
+
+		const TASK_ID = "task-newchat-reset"
+		const INSTANCE_ID = "inst-newchat-reset"
+		const CMD_TEXT = "git status"
+
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "task newchat" },
+				{ type: "ask", ask: "command", ts: 6000, text: CMD_TEXT },
+			],
+		})
+
+		await waitFor(() => {
+			expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+		})
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Click "Run and Allow"
+		const runAndAllowBtn = await waitFor(() => {
+			const btn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(btn).toBeTruthy()
+			return btn!
+		})
+
+		vi.mocked(vscode.postMessage).mockClear()
+		await act(async () => {
+			fireEvent.click(runAndAllowBtn)
+		})
+
+		const clickCall = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find((c) => (c[0] as any)?.askResponse === "yesAndAllowButtonClicked")
+		expect(clickCall).toBeTruthy()
+		const requestId = (clickCall![0] as any).requestId as string
+		expect(requestId).toBeTruthy()
+
+		// Buttons gone after click
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeFalsy()
+		})
+
+		// Extension invokes "newChat" — triggers handleChatReset, clears activeAttemptRef
+		vi.mocked(vscode.postMessage).mockClear()
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: { type: "invoke", invoke: "newChat" },
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Matching commandApprovalError arrives — snapshot was cleared by reset
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandApprovalError",
+						taskId: TASK_ID,
+						instanceId: INSTANCE_ID,
+						requestId,
+						error: "save failed - after newChat",
+					},
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+
+		// Must NOT restore command buttons
+		expect(
+			Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			),
+		).toBeFalsy()
+		expect(
+			Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommand.title",
+			),
+		).toBeFalsy()
+
+		// No approval message sent after newChat reset
+		expect(
+			vi
+				.mocked(vscode.postMessage)
+				.mock.calls.find((c) => (c[0] as any)?.askResponse === "yesAndAllowButtonClicked"),
+		).toBeFalsy()
+
+		expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+	})
+
+	it("invoke sendMessage (queued path) after Run-and-Allow keeps snapshot; matching save error restores buttons without extra askResponse", async () => {
+		// Scenario:
+		//   1. Command ask active; user clicks "Run and Allow" → snapshot stored, sendingDisabled=true.
+		//   2. Extension invokes "sendMessage" while sendingDisabled=true → queueMessage path (early return),
+		//      handleChatReset NOT called, snapshot remains intact.
+		//   3. Matching commandApprovalError arrives → must restore all three approval buttons.
+		// Verify: queueMessage called; no additional askResponse emitted.
+
+		const { container } = renderChatView()
+
+		const TASK_ID = "task-queued-send"
+		const INSTANCE_ID = "inst-queued-send"
+		const CMD_TEXT = "make test"
+
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "task queued" },
+				{ type: "ask", ask: "command", ts: 7000, text: CMD_TEXT },
+			],
+		})
+
+		await waitFor(() => {
+			expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+		})
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Click "Run and Allow" — snapshot recorded, sendingDisabled=true
+		const runAndAllowBtn = await waitFor(() => {
+			const btn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(btn).toBeTruthy()
+			return btn!
+		})
+
+		vi.mocked(vscode.postMessage).mockClear()
+		await act(async () => {
+			fireEvent.click(runAndAllowBtn)
+		})
+
+		const clickCall = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find((c) => (c[0] as any)?.askResponse === "yesAndAllowButtonClicked")
+		expect(clickCall).toBeTruthy()
+		const requestId = (clickCall![0] as any).requestId as string
+		expect(requestId).toBeTruthy()
+
+		// Buttons gone
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeFalsy()
+		})
+
+		const textarea = container.querySelector('[data-testid="chat-textarea"] input')
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("true")
+
+		// Extension invokes "sendMessage" while sendingDisabled=true → queued path
+		vi.mocked(vscode.postMessage).mockClear()
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: { type: "invoke", invoke: "sendMessage", text: "queued followup" },
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Must have called queueMessage (not askResponse)
+		const queueCall = vi.mocked(vscode.postMessage).mock.calls.find((c) => (c[0] as any)?.type === "queueMessage")
+		expect(queueCall).toBeTruthy()
+		expect((queueCall![0] as any).text).toBe("queued followup")
+
+		// No askResponse emitted (snapshot intact, not consumed)
+		expect(vi.mocked(vscode.postMessage).mock.calls.find((c) => (c[0] as any)?.type === "askResponse")).toBeFalsy()
+
+		// Matching commandApprovalError arrives — snapshot still intact → restore buttons
+		vi.mocked(vscode.postMessage).mockClear()
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandApprovalError",
+						taskId: TASK_ID,
+						instanceId: INSTANCE_ID,
+						requestId,
+						error: "save failed - queued path",
+					},
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+
+		// All three approval buttons must be restored
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommand.title",
+				),
+			).toBeTruthy()
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeTruthy()
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:reject.title",
+				),
+			).toBeTruthy()
+		})
+
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("false")
+
+		// No extra askResponse emitted during error handling
+		expect(vi.mocked(vscode.postMessage).mock.calls.find((c) => (c[0] as any)?.type === "askResponse")).toBeFalsy()
+
+		expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+	})
+
+	it("pending-save replay: deep-effect with same command ts during activeAttempt keeps UI frozen; matching error restores buttons; retry sends original commandText", async () => {
+		// Scenario:
+		//   1. Hydrate full (non-partial) command ask — buttons appear.
+		//   2. Click "Run and Allow" → activeAttemptRef set, buttons hidden, sendingDisabled=true.
+		//      Save outgoing requestId.
+		//   3. Re-hydrate state with SAME command ts but changed secondLastMessage.text so
+		//      useDeepCompareEffect fires again — this is the "pending-save replay".
+		//      Guard must detect activeAttempt matches (taskId/instanceId/executionId) and
+		//      skip all state mutations: buttons stay hidden, sendingDisabled stays true,
+		//      exactly one askResponse was sent (no duplicate).
+		//   4. Matching commandApprovalError arrives → all three approval buttons restored,
+		//      sendingDisabled=false.
+		//   5. Click "Run and Allow" again → new requestId, same original commandText.
+
+		const { container } = renderChatView()
+
+		const TASK_ID = "task-pending-save"
+		const INSTANCE_ID = "inst-pending-save"
+		const CMD_TS = 42000
+		const CMD_TEXT = "make build"
+
+		// Step 1: hydrate full command ask
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "task text" },
+				{ type: "say", say: "text", ts: 2, text: "first context" },
+				{ type: "ask", ask: "command", ts: CMD_TS, text: CMD_TEXT },
+			],
+		})
+
+		await waitFor(() => {
+			expect(container.querySelector('[data-testid="chat-view"]')).toBeInTheDocument()
+		})
+		// Allow useEvent listener to register
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Step 2: click "Run and Allow"
+		const runAndAllowBtn = await waitFor(() => {
+			const btn = Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			)
+			expect(btn).toBeTruthy()
+			return btn!
+		})
+
+		vi.mocked(vscode.postMessage).mockClear()
+		await act(async () => {
+			fireEvent.click(runAndAllowBtn)
+		})
+
+		// Capture outgoing requestId
+		const clickCall = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find((c) => (c[0] as any)?.askResponse === "yesAndAllowButtonClicked")
+		expect(clickCall).toBeTruthy()
+		const outgoingRequestId = (clickCall![0] as any).requestId as string
+		expect(outgoingRequestId).toBeTruthy()
+
+		// Buttons gone, sendingDisabled=true
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeFalsy()
+		})
+		const textarea = container.querySelector('[data-testid="chat-textarea"] input')
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("true")
+
+		// Step 3: re-hydrate with SAME command ts but changed secondLastMessage.text
+		// This triggers useDeepCompareEffect (deep comparison detects difference in secondLastMessage).
+		vi.mocked(vscode.postMessage).mockClear()
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "task text" },
+				{ type: "say", say: "text", ts: 2, text: "CHANGED context — triggers deep-effect" },
+				{ type: "ask", ask: "command", ts: CMD_TS, text: CMD_TEXT },
+			],
+		})
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Assert: all three approval buttons still absent (UI still frozen)
+		expect(
+			Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommand.title",
+			),
+		).toBeFalsy()
+		expect(
+			Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+			),
+		).toBeFalsy()
+		expect(
+			Array.from(container.querySelectorAll("button")).find((b) => b.textContent?.trim() === "chat:reject.title"),
+		).toBeFalsy()
+		// sendingDisabled still true
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("true")
+		// Exactly zero additional askResponse messages sent during replay
+		expect(vi.mocked(vscode.postMessage).mock.calls.find((c) => (c[0] as any)?.type === "askResponse")).toBeFalsy()
+
+		// Step 4: matching commandApprovalError → restore all three approval buttons
+		vi.mocked(vscode.postMessage).mockClear()
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandApprovalError",
+						taskId: TASK_ID,
+						instanceId: INSTANCE_ID,
+						requestId: outgoingRequestId,
+						error: "pending-save failed",
+					},
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+
+		await waitFor(() => {
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommand.title",
+				),
+			).toBeTruthy()
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+				),
+			).toBeTruthy()
+			expect(
+				Array.from(container.querySelectorAll("button")).find(
+					(b) => b.textContent?.trim() === "chat:reject.title",
+				),
+			).toBeTruthy()
+		})
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("false")
+
+		// Step 5: click "Run and Allow" again → new requestId, same original commandText
+		const retryBtn = Array.from(container.querySelectorAll("button")).find(
+			(b) => b.textContent?.trim() === "chat:runCommandAndAllow.title",
+		)!
+		vi.mocked(vscode.postMessage).mockClear()
+		await act(async () => {
+			fireEvent.click(retryBtn)
+		})
+
+		const retryCall = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find((c) => (c[0] as any)?.askResponse === "yesAndAllowButtonClicked")
+		expect(retryCall).toBeTruthy()
+		const retryRequestId = (retryCall![0] as any).requestId as string
+		// New requestId (regenerated per click)
+		expect(retryRequestId).toBeTruthy()
+		expect(retryRequestId).not.toBe(outgoingRequestId)
+		// Original commandText preserved from snapshot
+		expect(retryCall![0]).toMatchObject({
+			type: "askResponse",
+			askResponse: "yesAndAllowButtonClicked",
+			taskId: TASK_ID,
+			instanceId: INSTANCE_ID,
+			commandText: CMD_TEXT,
+			requestId: retryRequestId,
+		})
+	})
+})
+
+describe("ChatView - commandExecutionStatus scope guard", () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
+
+	it("command ask → matching started → command_output ask → Continue/Kill enabled; repeated started does not remove them; Kill sends terminalOperation abort", async () => {
+		// Scenario:
+		//   1. Hydrate with command ask ts=700  → approval buttons appear.
+		//   2. commandExecutionStatus started executionId=700 → approval buttons disappear (clineAsk cleared).
+		//   3. Backend hydrates command_output ask → Continue ("chat:proceedWhileRunning.title") and
+		//      Kill ("chat:killCommand.title") appear.
+		//   4. A second commandExecutionStatus started executionId=700 arrives (late duplicate) →
+		//      Continue/Kill must NOT disappear (clineAsk is now "command_output", not "command").
+		//   5. Click Kill → postMessage receives terminalOperation abort.
+
+		const { container } = renderChatView()
+
+		const TASK_ID = "task-scope-1"
+		const INSTANCE_ID = "inst-scope-1"
+		const CMD_TS = 700
+
+		// Step 1: hydrate command ask
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "do task" },
+				{ type: "ask", ask: "command", ts: CMD_TS, text: "ls -la", partial: false },
+			],
+		})
+
+		// Wait for approval buttons
+		await waitFor(() => {
+			const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+			expect(btns).toContain("chat:runCommand.title")
+		})
+
+		// Allow event listener to settle
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 20))
+		})
+
+		// Step 2: matching commandExecutionStatus started → approval buttons disappear
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandExecutionStatus",
+						text: JSON.stringify({ status: "started", executionId: String(CMD_TS) }),
+					},
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+
+		await waitFor(() => {
+			const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+			expect(btns).not.toContain("chat:runCommand.title")
+			expect(btns).not.toContain("chat:reject.title")
+		})
+
+		// Step 3: backend sends command_output ask → Continue + Kill should appear
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "do task" },
+				{ type: "ask", ask: "command", ts: CMD_TS, text: "ls -la", partial: false },
+				{ type: "ask", ask: "command_output", ts: CMD_TS + 1, text: "some output", partial: false },
+			],
+		})
+
+		await waitFor(() => {
+			const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+			expect(btns).toContain("chat:proceedWhileRunning.title")
+			expect(btns).toContain("chat:killCommand.title")
+		})
+
+		// Step 4: duplicate matching started arrives → Continue/Kill must NOT disappear
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandExecutionStatus",
+						text: JSON.stringify({ status: "started", executionId: String(CMD_TS) }),
+					},
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Continue and Kill must still be present
+		await waitFor(() => {
+			const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+			expect(btns).toContain("chat:proceedWhileRunning.title")
+			expect(btns).toContain("chat:killCommand.title")
+		})
+
+		// Step 5: click Kill → must send terminalOperation abort
+		vi.mocked(vscode.postMessage).mockClear()
+		const killBtn = Array.from(container.querySelectorAll("button")).find(
+			(b) => b.textContent?.trim() === "chat:killCommand.title",
+		)!
+		expect(killBtn).toBeTruthy()
+
+		await act(async () => {
+			fireEvent.click(killBtn)
+		})
+
+		const abortCall = vi
+			.mocked(vscode.postMessage)
+			.mock.calls.find(
+				(c) => (c[0] as any)?.type === "terminalOperation" && (c[0] as any)?.terminalOperation === "abort",
+			)
+		expect(abortCall).toBeTruthy()
+	})
+
+	it("command → followup → late matching commandExecutionStatus does not remove followup UI (input enabled, no command buttons)", async () => {
+		// Scenario:
+		//   1. Hydrate command ask ts=800 → approval buttons.
+		//   2. Backend advances to followup ask → no approval buttons, input enabled.
+		//   3. Late commandExecutionStatus started executionId=800 arrives →
+		//      followup UI must be preserved (no command buttons appear, input stays enabled).
+
+		const { container } = renderChatView()
+
+		const TASK_ID = "task-scope-2"
+		const INSTANCE_ID = "inst-scope-2"
+		const CMD_TS = 800
+
+		// Step 1: hydrate command ask
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "task" },
+				{ type: "ask", ask: "command", ts: CMD_TS, text: "echo hi", partial: false },
+			],
+		})
+
+		await waitFor(() => {
+			const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+			expect(btns).toContain("chat:runCommand.title")
+		})
+
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 20))
+		})
+
+		// Step 2: backend advances to followup ask (command already approved/ran, AI asks next step)
+		mockPostMessage({
+			currentTaskId: TASK_ID,
+			currentTaskInstanceId: INSTANCE_ID,
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "task" },
+				{ type: "ask", ask: "command", ts: CMD_TS, text: "echo hi", partial: false },
+				{ type: "ask", ask: "followup", ts: CMD_TS + 100, text: "Continue with next step?", partial: false },
+			],
+		})
+
+		// Followup ask: no command approval buttons, input not disabled
+		await waitFor(() => {
+			const btns = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+			expect(btns).not.toContain("chat:runCommand.title")
+			expect(btns).not.toContain("chat:runCommandAndAllow.title")
+			expect(btns).not.toContain("chat:reject.title")
+		})
+
+		const textarea = container.querySelector("[data-sending-disabled]")
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("false")
+
+		// Step 3: late commandExecutionStatus started for the original command executionId
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", {
+					data: {
+						type: "commandExecutionStatus",
+						text: JSON.stringify({ status: "started", executionId: String(CMD_TS) }),
+					},
+				}),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// Followup UI must be intact: no command buttons, input still enabled
+		const btnsAfterLateStatus = Array.from(container.querySelectorAll("button")).map((b) => b.textContent?.trim())
+		expect(btnsAfterLateStatus).not.toContain("chat:runCommand.title")
+		expect(btnsAfterLateStatus).not.toContain("chat:runCommandAndAllow.title")
+		expect(btnsAfterLateStatus).not.toContain("chat:reject.title")
+		// Input must remain enabled (sendingDisabled=false for followup)
+		expect(textarea?.getAttribute("data-sending-disabled")).toBe("false")
 	})
 })

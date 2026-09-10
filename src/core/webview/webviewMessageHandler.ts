@@ -58,6 +58,7 @@ import { getVsCodeLmModels } from "../../api/providers/vscode-lm"
 import { openMention } from "../mentions"
 import { resolveImageMentions } from "../mentions/resolveImageMentions"
 import { AicoIgnoreController } from "../ignore/AicoIgnoreController"
+import { extractPatternsFromCommandText } from "../../shared/command-patterns"
 import { getWorkspacePath } from "../../utils/path"
 import { isPathOutsideWorkspace } from "../../utils/pathUtils"
 import { Mode, defaultModeSlug } from "../../shared/modes"
@@ -82,6 +83,10 @@ import {
 	handleCreateWorktreeInclude,
 	handleCheckoutBranch,
 } from "./worktree"
+
+// Module-level promise chain — ensures sequential read/merge/write for allowedCommands
+// to prevent lost-update when two yesAndAllow handlers run concurrently.
+let allowedCommandsUpdateChain: Promise<void> = Promise.resolve()
 
 export const webviewMessageHandler = async (provider: ClineProvider, message: WebviewMessage) => {
 	// Utility functions provided for concise get/update of global state via contextProxy API.
@@ -751,7 +756,153 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 					)
 					break
 				}
+
+				// Handle "Run and Allow" — scoped path: read command from backend snapshot only
+				if (message.askResponse === "yesAndAllowButtonClicked") {
+					// message.messageTs is typed as number (required for yesAndAllowButtonClicked).
+					// The field exists on WebviewMessage (optional number) and is populated by the UI
+					// for this specific askResponse variant.
+					const messageTs = message.messageTs
+					if (typeof messageTs !== "number" || !Number.isFinite(messageTs)) {
+						provider.log(
+							`[askResponse] yesAndAllowButtonClicked missing valid messageTs for ${message.taskId ?? "unknown"}.${message.instanceId ?? "unknown"}`,
+						)
+						break
+					}
+
+					// Claim the backend snapshot BEFORE entering allowedCommandsUpdateChain.
+					// A duplicate concurrent call will find pendingCommandApproval === undefined
+					// (already moved to claimedCommandApproval) and receive false here → drop.
+					const approvalToken = task!.claimCommandApproval(messageTs)
+					if (!approvalToken) {
+						provider.log(
+							`[askResponse] No pending command approval for ts=${messageTs} in task ${message.taskId ?? "unknown"}.${message.instanceId ?? "unknown"} (already claimed or stale)`,
+						)
+						break
+					}
+
+					const newPatterns = extractPatternsFromCommandText(approvalToken.command)
+					if (newPatterns.length > 0) {
+						const capturedTaskId = message.taskId
+						const capturedInstanceId = message.instanceId
+						const savePromise = allowedCommandsUpdateChain.then(async () => {
+							// Stale-check inside chain: re-verify task identity.
+							// We do NOT re-check getPendingCommandApproval here because the snapshot
+							// is already claimed (moved to claimedCommandApproval). Instead we verify
+							// task identity so we don't write to a replacement task's settings.
+							const chainTask = provider.getCurrentTask()
+							if (
+								!chainTask ||
+								chainTask.taskId !== capturedTaskId ||
+								chainTask.instanceId !== capturedInstanceId
+							) {
+								// Stale task — skip write. Caller will discard the token (not release),
+								// since it belongs to the old task and must not be re-claimable.
+								throw new Error("stale-task")
+							}
+							const raw: unknown = await provider.contextProxy.getValue("allowedCommands")
+							// --- token validity check BEFORE persistence update ---
+							// Re-verify the original task is still active before writing settings.
+							// If the task changed between getValue and update, discard and skip.
+							const preUpdateTask = provider.getCurrentTask()
+							if (
+								!preUpdateTask ||
+								preUpdateTask.taskId !== capturedTaskId ||
+								preUpdateTask.instanceId !== capturedInstanceId
+							) {
+								throw new Error("stale-task")
+							}
+							const existing = Array.isArray(raw)
+								? (raw.filter(
+										(p) => typeof p === "string" && (p as string).trim().length > 0,
+									) as string[])
+								: []
+							const merged = Array.from(new Set([...existing, ...newPatterns]))
+							await vscode.workspace
+								.getConfiguration(Package.name)
+								.update("allowedCommands", merged, vscode.ConfigurationTarget.Global)
+							// --- token validity check AFTER update, BEFORE setValue ---
+							// Narrow window: if task changed after update but before setValue,
+							// skip setValue (settings were already written, but we avoid committing
+							// state to a new task's context). This is best-effort; the update
+							// already succeeded so we log the residual but don't rollback.
+							const postUpdateTask = provider.getCurrentTask()
+							if (
+								!postUpdateTask ||
+								postUpdateTask.taskId !== capturedTaskId ||
+								postUpdateTask.instanceId !== capturedInstanceId
+							) {
+								provider.log(
+									`[askResponse] Token invalidated after settings update (narrow window) for ${capturedTaskId ?? "unknown"}.${capturedInstanceId ?? "unknown"} — skipping setValue`,
+								)
+								throw new Error("stale-task")
+							}
+							await provider.contextProxy.setValue("allowedCommands", merged)
+						})
+						allowedCommandsUpdateChain = savePromise.catch(() => {})
+						try {
+							await savePromise
+						} catch (err) {
+							const errMsg = err instanceof Error ? err.message : String(err)
+							if (errMsg === "stale-task") {
+								// Stale-task: discard the token without restoring to pending.
+								// The old task's slot must not be re-claimable (task changed).
+								task!.discardCommandApproval(approvalToken)
+								provider.log(
+									`[askResponse] Discarding stale claim for ${message.taskId ?? "unknown"}.${message.instanceId ?? "unknown"} (task changed during chain)`,
+								)
+							} else {
+								// Same-task save failure: release so user can retry.
+								task!.releaseCommandApproval(approvalToken)
+								provider.log(`[askResponse] Failed to save allowedCommands: ${errMsg}`)
+								await provider.postMessageToWebview({
+									type: "commandApprovalError",
+									taskId: message.taskId,
+									instanceId: message.instanceId,
+									requestId: message.requestId,
+									error: "Failed to save command permission",
+								})
+							}
+							break
+						}
+					}
+
+					const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
+
+					// After all awaits, re-verify task identity then commit the claimed token.
+					const freshTask = provider.getCurrentTask()
+					if (
+						!freshTask ||
+						freshTask.taskId !== message.taskId ||
+						freshTask.instanceId !== message.instanceId
+					) {
+						// Task changed mid-await — discard the claim (do NOT release back to pending).
+						// The original task is stale; re-enabling its slot would allow an orphaned
+						// commit on a task the handler no longer owns.
+						task!.discardCommandApproval(approvalToken)
+						provider.log(
+							`[askResponse] Aborting yesAndAllow response for ${message.taskId ?? "unknown"}.${message.instanceId ?? "unknown"}: task changed mid-await; current is ${freshTask?.taskId ?? "none"}.${freshTask?.instanceId ?? "none"}`,
+						)
+						break
+					}
+
+					// Commit — consume the claimed token and forward response.
+					const committed = freshTask.commitCommandApproval(
+						approvalToken,
+						"yesButtonClicked",
+						resolved.text,
+						resolved.images,
+					)
+					if (!committed) {
+						provider.log(
+							`[askResponse] commitCommandApproval returned false for ts=${messageTs} in task ${message.taskId ?? "unknown"}.${message.instanceId ?? "unknown"} — snapshot already consumed`,
+						)
+					}
+					break
+				}
+
 				const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
+
 				task?.handleWebviewAskResponse(message.askResponse!, resolved.text, resolved.images)
 			}
 			break

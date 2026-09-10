@@ -313,6 +313,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	private askResponseImages?: string[]
 	public lastMessageTs?: number
 	private autoApprovalTimeoutRef?: NodeJS.Timeout
+	/** Backend-owned snapshot of the most-recent pending command ask, cleared on any response. */
+	private pendingCommandApproval?: Readonly<{ ts: number; command: string }>
+	/**
+	 * When a caller invokes `claim(ts)`, the snapshot is moved here and a reference to this
+	 * object is returned as the opaque `ClaimToken`. This prevents a second concurrent caller
+	 * from claiming the same snapshot (they will see `pendingCommandApproval === undefined`).
+	 */
+	private claimedCommandApproval?: Readonly<{ ts: number; command: string }>
 
 	// Tool Use
 	consecutiveMistakeCount: number = 0
@@ -1245,6 +1253,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			throw new Error(`[AiCodeOrchestrator#ask] task ${this.taskId}.${this.instanceId} aborted`)
 		}
 
+		// Clear any stale pending-command snapshot at the start of each ask.
+		this.pendingCommandApproval = undefined
+
 		let askTs: number
 
 		if (partial !== undefined) {
@@ -1297,6 +1308,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// never altered after first setting it.
 					askTs = lastMessage.ts
 					this.lastMessageTs = askTs
+					// Register backend snapshot for command ask BEFORE any await/publish.
+					if (type === "command") {
+						this.pendingCommandApproval = Object.freeze({ ts: askTs, command: text ?? "" })
+					}
 					lastMessage.text = text
 					lastMessage.partial = false
 					lastMessage.progressStatus = progressStatus
@@ -1310,6 +1325,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					this.askResponseImages = undefined
 					askTs = Date.now()
 					this.lastMessageTs = askTs
+					// Register backend snapshot for command ask BEFORE any await/publish.
+					if (type === "command") {
+						this.pendingCommandApproval = Object.freeze({ ts: askTs, command: text ?? "" })
+					}
 					await this.addToClineMessages({ ts: askTs, type: "ask", ask: type, text, isProtected })
 				}
 			}
@@ -1320,6 +1339,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this.askResponseImages = undefined
 			askTs = Date.now()
 			this.lastMessageTs = askTs
+			// Register backend snapshot for command ask BEFORE any await/publish.
+			if (type === "command") {
+				this.pendingCommandApproval = Object.freeze({ ts: askTs, command: text ?? "" })
+			}
 			await this.addToClineMessages({ ts: askTs, type: "ask", ask: type, text, isProtected })
 		}
 
@@ -1466,6 +1489,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	handleWebviewAskResponse(askResponse: ClineAskResponse, text?: string, images?: string[]) {
 		// Clear any pending auto-approval timeout when user responds
 		this.cancelAutoApprovalTimeout()
+		// Invalidate scoped pending-command snapshot so a late scoped response
+		// cannot replay after a regular/auto/queued response has already consumed the slot.
+		this.pendingCommandApproval = undefined
+		this.claimedCommandApproval = undefined
 
 		this.askResponse = askResponse
 		this.askResponseText = text
@@ -1532,7 +1559,142 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	public supersedePendingAsk(): void {
+		this.pendingCommandApproval = undefined
+		this.claimedCommandApproval = undefined
 		this.lastMessageTs = Date.now()
+	}
+
+	/**
+	 * Returns a copy of the pending command approval snapshot if and only if
+	 * the snapshot ts matches `ts`, the task's `lastMessageTs` still points to
+	 * the same message, the task is not aborted, and no response has been
+	 * received yet. Otherwise returns `undefined`.
+	 *
+	 * NOTE: Once `claimCommandApproval(ts)` has been called, the snapshot moves
+	 * into `claimedCommandApproval` and this getter returns `undefined` (consistent
+	 * with the stale-check behaviour seen inside allowedCommandsUpdateChain).
+	 */
+	public getPendingCommandApproval(ts: number): Readonly<{ ts: number; command: string }> | undefined {
+		const snap = this.pendingCommandApproval
+		if (snap && snap.ts === ts && this.lastMessageTs === ts && !this.abort && this.askResponse === undefined) {
+			return { ts: snap.ts, command: snap.command }
+		}
+		return undefined
+	}
+
+	/**
+	 * Atomically claim the pending command approval snapshot.
+	 *
+	 * Synchronously checks `ts`, `lastMessageTs`, `!abort`, `askResponse === undefined`
+	 * (via `getPendingCommandApproval`) and, if valid, moves the snapshot from
+	 * `pendingCommandApproval` into `claimedCommandApproval`, returning the snapshot
+	 * object as the opaque token.
+	 *
+	 * A second concurrent caller receives `false` because `pendingCommandApproval`
+	 * is now `undefined` — the race is closed before any async operation begins.
+	 *
+	 * @returns The snapshot token if claimed; `false` if the snapshot is missing / stale.
+	 */
+	public claimCommandApproval(ts: number): Readonly<{ ts: number; command: string }> | false {
+		const snap = this.getPendingCommandApproval(ts)
+		if (!snap) {
+			return false
+		}
+		// Atomically move pending → claimed.
+		this.pendingCommandApproval = undefined
+		this.claimedCommandApproval = snap
+		return snap
+	}
+
+	/**
+	 * Consume the claimed token and forward the approval response.
+	 *
+	 * @param token   - The exact object reference returned by `claimCommandApproval()`.
+	 * @param response - Ask response to send.
+	 * @returns `true` if the token was valid and the response was forwarded; `false` otherwise (no side-effects).
+	 */
+	public commitCommandApproval(
+		token: Readonly<{ ts: number; command: string }>,
+		response: ClineAskResponse,
+		text?: string,
+		images?: string[],
+	): boolean {
+		if (this.claimedCommandApproval !== token) {
+			return false
+		}
+		// Clear before delegating; handleWebviewAskResponse will also clear it.
+		this.claimedCommandApproval = undefined
+		this.handleWebviewAskResponse(response, text, images)
+		return true
+	}
+
+	/**
+	 * Release the claimed token back to pending state, allowing a future `claimCommandApproval()`.
+	 *
+	 * Only restores the snapshot if the token is still the active claimed token AND
+	 * no response has been set yet (`askResponse === undefined`) AND the task is not
+	 * aborted. Otherwise the token is simply discarded.
+	 *
+	 * Use this for **same-task** save failures where a retry on the same task is desired.
+	 * For stale-task scenarios (task changed mid-await), use `discardCommandApproval()` instead.
+	 *
+	 * @param token - The exact object reference returned by `claimCommandApproval()`.
+	 */
+	public releaseCommandApproval(token: Readonly<{ ts: number; command: string }>): void {
+		if (this.claimedCommandApproval !== token) {
+			return
+		}
+		if (this.askResponse !== undefined || this.abort) {
+			// Slot was already consumed or task aborted — discard silently.
+			this.claimedCommandApproval = undefined
+			return
+		}
+		// Restore so a retry can claim it again.
+		this.claimedCommandApproval = undefined
+		this.pendingCommandApproval = token
+	}
+
+	/**
+	 * Discard the claimed token WITHOUT restoring it to pending state.
+	 *
+	 * Use this when the handler learns the token belongs to a **stale / different task**
+	 * (e.g. task identity changed mid-await). Unlike `releaseCommandApproval()`, this
+	 * never restores `pendingCommandApproval`, so the old task cannot be re-triggered.
+	 *
+	 * If the token is not the currently active claimed token (already consumed or wrong
+	 * reference), this is a no-op.
+	 *
+	 * @param token - The exact object reference returned by `claimCommandApproval()`.
+	 */
+	public discardCommandApproval(token: Readonly<{ ts: number; command: string }>): void {
+		if (this.claimedCommandApproval !== token) {
+			return
+		}
+		// Simply clear — do not restore to pending.
+		this.claimedCommandApproval = undefined
+	}
+
+	/**
+	 * Atomically consume the pending command approval snapshot and forward the
+	 * response through the existing `handleWebviewAskResponse` channel.
+	 *
+	 * Returns `true` if the snapshot was valid and the response was forwarded;
+	 * `false` if the snapshot was stale / already consumed (no side-effects).
+	 *
+	 * Preserved for backward compatibility — internally delegates to
+	 * `claimCommandApproval` + `commitCommandApproval`.
+	 */
+	public tryRespondToPendingCommandApproval(
+		ts: number,
+		response: ClineAskResponse,
+		text?: string,
+		images?: string[],
+	): boolean {
+		const token = this.claimCommandApproval(ts)
+		if (!token) {
+			return false
+		}
+		return this.commitCommandApproval(token, response, text, images)
 	}
 
 	/**
@@ -2261,6 +2423,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	public dispose(): void {
 		console.log(`[Task#dispose] disposing task ${this.taskId}.${this.instanceId}`)
+
+		// Invalidate any pending-command snapshot so scoped responders cannot fire after disposal.
+		this.pendingCommandApproval = undefined
+		this.claimedCommandApproval = undefined
 
 		// Cancel any in-progress HTTP request
 		try {
