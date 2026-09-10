@@ -161,16 +161,14 @@ describe("OrchestrationExecutor auto-approval inheritance", () => {
 		const parentTask = { taskId: "root" } as any
 		provider.getCurrentTask = vi.fn(() => parentTask)
 
-		// Act: Start orchestration with two parallel workers
+		// Act: Starting creates the run; dispatching launches its ready workers.
 		const service = await provider.getOrchestrationService()
 		const input = createInput(["worker1", "worker2"])
 		await service.start(input)
-
-		// Wait for workers to be started
-		await new Promise((resolve) => setTimeout(resolve, 50))
+		await service.dispatch(input.runId)
 
 		// Assert: Both workers should receive parent's auto-approval settings in configuration
-		expect(workerConfigurations.length).toBeGreaterThanOrEqual(1)
+		expect(workerConfigurations).toHaveLength(2)
 
 		// This is the failing assertion - first worker does NOT receive auto-approval settings
 		const firstWorkerConfig = workerConfigurations[0]
@@ -230,15 +228,14 @@ describe("OrchestrationExecutor auto-approval inheritance", () => {
 		const parentTask = { taskId: "root" } as any
 		provider.getCurrentTask = vi.fn(() => parentTask)
 
-		// Act: Start orchestration with three workers
+		// Act: Start the run and explicitly dispatch up to the configured parallel limit.
 		const service = await provider.getOrchestrationService()
 		const input = createInput(["w1", "w2", "w3"])
 		await service.start(input)
+		await service.dispatch(input.runId)
 
-		await new Promise((resolve) => setTimeout(resolve, 100))
-
-		// Assert: All workers should receive identical auto-approval settings
-		expect(workerConfigurations.length).toBeGreaterThanOrEqual(1)
+		// Assert: Every worker started in the first wave receives identical settings.
+		expect(workerConfigurations).toHaveLength(settings.maxParallelWorkers)
 
 		for (let i = 0; i < workerConfigurations.length; i++) {
 			const config = workerConfigurations[i]
