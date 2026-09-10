@@ -20,6 +20,14 @@ vi.mock("react-i18next", () => ({
 				return key
 			},
 			changeLanguage: vi.fn(),
+			getFixedT: (_lng: string) => (key: string, options?: Record<string, any>) => {
+				// Mock specific translations used in tests
+				if (key === "settings.autoApprove.title") return "Auto-Approve"
+				if (key === "notifications.error") {
+					return options?.message ? `Operation failed: ${options.message}` : "Operation failed"
+				}
+				return key
+			},
 		},
 	}),
 }))

@@ -1358,7 +1358,7 @@ export class ClineProvider
 											`Unable to create configuration for orchestration node '${node.nodeId}'`,
 										)
 									})(),
-						explicitRole: node.role,
+						explicitRole: node.mode,
 					})
 					node.taskId = child.taskId
 					const complete = async (_taskId: string, usage: TokenUsage) => {
