@@ -1,6 +1,4 @@
 import { EventEmitter } from "node:events"
-import os from "node:os"
-import path from "node:path"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const execFile = vi.hoisted(() => vi.fn())
@@ -20,33 +18,52 @@ function respond(error: Error | null, stdout = "") {
 describe("GitWorkerWorkspaceRegistry", () => {
 	beforeEach(() => execFile.mockReset())
 
-	it("prunes stale worktree metadata before its first allocation", async () => {
-		respond(null)
-		respond(null, "base-hash\n")
-		respond(null)
-		const registry = new GitWorkerWorkspaceRegistry("/repo", path.join(os.tmpdir(), "aico-test-workers-prune"))
+	it("allocates workspace in main repository", async () => {
+		respond(null, "abc123def456\n")
+		const registry = new GitWorkerWorkspaceRegistry("/repo")
 
-		await registry.allocate("run", "node", 1)
+		const workspace = await registry.allocate("run1", "node1", 1)
 
-		expect(execFile.mock.calls[0][1]).toEqual(["worktree", "prune"])
-		expect(execFile.mock.calls[1][1]).toEqual(["rev-parse", "HEAD"])
+		expect(workspace.workerId).toBe("run1-node1-1")
+		expect(workspace.path).toBe("/repo") // Main repository, not /tmp
+		expect(workspace.baseHash).toBe("abc123def456")
+		expect(execFile.mock.calls[0][1]).toEqual(["rev-parse", "HEAD"])
 	})
 
-	it("removes an orphan when setup fails after git worktree add", async () => {
-		respond(null)
-		respond(null, "base-hash\n")
-		respond(new Error("setup failed"))
-		respond(null)
-		const registry = new GitWorkerWorkspaceRegistry("/repo", path.join(os.tmpdir(), "aico-test-workers"))
+	it("returns same workspace for duplicate allocation", async () => {
+		respond(null, "abc123\n")
+		const registry = new GitWorkerWorkspaceRegistry("/repo")
 
-		await expect(registry.allocate("run", "node", 1)).rejects.toThrow("setup failed")
+		const ws1 = await registry.allocate("run1", "node1", 1)
+		const ws2 = await registry.allocate("run1", "node1", 1)
 
-		expect(execFile.mock.calls.at(-1)?.[1]).toEqual([
-			"worktree",
-			"remove",
-			"--force",
-			path.join(os.tmpdir(), "aico-test-workers", "run-node-1"),
-		])
-		expect(registry.get("run-node-1")).toBeUndefined()
+		expect(ws1).toBe(ws2)
+		expect(execFile).toHaveBeenCalledTimes(1) // Only one git call
+	})
+
+	it("sanitizes worker IDs by replacing special characters", async () => {
+		respond(null, "hash\n")
+		const registry = new GitWorkerWorkspaceRegistry("/repo")
+
+		const workspace = await registry.allocate("run@123", "node/456", 1)
+
+		expect(workspace.workerId).toBe("run_123-node_456-1")
+	})
+
+	it("release is no-op and does not call git", async () => {
+		respond(null, "hash\n")
+		const registry = new GitWorkerWorkspaceRegistry("/repo")
+
+		await registry.allocate("run1", "node1", 1)
+		await registry.release("run1-node1-1")
+
+		expect(execFile).toHaveBeenCalledTimes(1) // Only allocate call
+		expect(registry.get("run1-node1-1")).toBeUndefined()
+	})
+
+	it("get returns undefined for non-existent worker", () => {
+		const registry = new GitWorkerWorkspaceRegistry("/repo")
+
+		expect(registry.get("nonexistent")).toBeUndefined()
 	})
 })

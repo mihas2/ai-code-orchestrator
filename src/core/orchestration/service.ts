@@ -192,19 +192,12 @@ export class OrchestrationService implements OrchestratorService {
 		const active = s.nodes.filter((node) => s.run.activeNodeIds.includes(node.nodeId))
 		for (const candidate of ready) {
 			if (selected.length >= capacity) break
+			// Check if candidate's fileScopes overlap with active or already selected nodes
+			// Workers in the main repository must not have conflicting write scopes
 			const writes = candidate.inputContract.fileScopes.write ?? candidate.inputContract.fileScopes.include
 			const overlaps = [...active, ...selected].some((other) => {
 				const otherWrites = other.inputContract.fileScopes.write ?? other.inputContract.fileScopes.include
-				return writes.some((left) =>
-					otherWrites.some(
-						(right) =>
-							left === "." ||
-							right === "." ||
-							left === right ||
-							left.startsWith(`${right}/`) ||
-							right.startsWith(`${left}/`),
-					),
-				)
+				return this.hasScopeOverlap(writes, otherWrites)
 			})
 			if (!overlaps) selected.push(candidate)
 		}
@@ -789,5 +782,38 @@ export class OrchestrationService implements OrchestratorService {
 			throw new OrchestrationOwnershipError(id)
 		}
 		return s
+	}
+
+	/**
+	 * Check if two sets of file scopes overlap.
+	 * Scopes overlap if any path in one set is a prefix of or equal to any path in the other set.
+	 */
+	private hasScopeOverlap(scopes1: string[], scopes2: string[]): boolean {
+		for (const scope1 of scopes1) {
+			for (const scope2 of scopes2) {
+				if (this.pathsOverlap(scope1, scope2)) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+	/**
+	 * Check if two file paths overlap (one is a prefix of the other or they are equal).
+	 * Special case: "." overlaps with everything.
+	 */
+	private pathsOverlap(path1: string, path2: string): boolean {
+		const norm1 = path1.replace(/\/$/, "")
+		const norm2 = path2.replace(/\/$/, "")
+
+		// "." overlaps with everything
+		if (norm1 === "." || norm2 === ".") return true
+
+		// Exact match
+		if (norm1 === norm2) return true
+
+		// One path is a prefix of the other
+		return norm1.startsWith(norm2 + "/") || norm2.startsWith(norm1 + "/")
 	}
 }
