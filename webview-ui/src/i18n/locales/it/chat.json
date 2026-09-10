@@ -236,7 +236,7 @@
 	"response": "Risposta",
 	"arguments": "Argomenti",
 	"text": {
-		"aicoSaid": "AI Code Orchestrator ha detto"
+		"aicoSaid": "AIco ha detto"
 	},
 	"feedback": {
 		"youSaid": "Hai detto"

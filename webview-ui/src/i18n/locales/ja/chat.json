@@ -236,7 +236,7 @@
 	"response": "応答",
 	"arguments": "引数",
 	"text": {
-		"aicoSaid": "AI Code Orchestratorの発言"
+		"aicoSaid": "AIcoの発言"
 	},
 	"feedback": {
 		"youSaid": "あなたの発言"

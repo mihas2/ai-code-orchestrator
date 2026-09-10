@@ -283,7 +283,7 @@
 	"response": "Response",
 	"arguments": "Arguments",
 	"text": {
-		"aicoSaid": "AI Code Orchestrator said"
+		"aicoSaid": "AIco said"
 	},
 	"feedback": {
 		"youSaid": "You said"

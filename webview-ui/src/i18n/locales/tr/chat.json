@@ -236,7 +236,7 @@
 	"response": "Yanıt",
 	"arguments": "Argümanlar",
 	"text": {
-		"aicoSaid": "AI Code Orchestrator dedi"
+		"aicoSaid": "AIco dedi"
 	},
 	"feedback": {
 		"youSaid": "Dediniz ki"

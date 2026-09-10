@@ -231,7 +231,7 @@
 	"response": "Antwoord",
 	"arguments": "Argumenten",
 	"text": {
-		"aicoSaid": "AI Code Orchestrator zei"
+		"aicoSaid": "AIco zei"
 	},
 	"feedback": {
 		"youSaid": "Jij zei"

@@ -236,7 +236,7 @@
 	"response": "응답",
 	"arguments": "인수",
 	"text": {
-		"aicoSaid": "루가 말했다"
+		"aicoSaid": "AIco가 말했다"
 	},
 	"feedback": {
 		"youSaid": "당신은 말했다"
