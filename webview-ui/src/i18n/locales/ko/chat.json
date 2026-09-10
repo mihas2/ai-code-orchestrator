@@ -331,8 +331,8 @@
 		"support": "<githubLink>GitHub</githubLink>에서 별표를 눌러 AI Code Orchestrator를 응원해 주세요.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}}에서 역할별 모델 선택이 개선되었습니다. 역할에 할당된 모델이 채팅 UI와 작업 실행 모두에서 일관되게 우선 적용되며, 모델을 할당하지 않은 역할은 기본 모델을 상속합니다.",
-			"continuity": "또한 프로필 이름 없이 역할 모델을 할당했을 때 모델이 올바르게 선택되지 않던 문제를 수정했습니다.",
+			"intro": "AI Code Orchestrator {{version}}에서 새로운 \"실행 및 허용\" 버튼으로 더 빠른 승인 워크플로우를 추가하고, 공식 로고를 기반으로 한 업데이트된 AIco 아이콘과 더 나은 일관성을 위해 리팩터링된 i18n 텍스트 키를 제공합니다.",
+			"continuity": "이 릴리스는 또한 자동 승인 및 오케스트레이터 모드의 경합 조건과 역할 할당 및 작업 공간 격리 문제를 수정합니다.",
 			"alternatives": "역할별 모델 선택이 구성부터 실행까지 일관되게 작동합니다.",
 			"signoff": "즐거운 코딩 되세요!"
 		},

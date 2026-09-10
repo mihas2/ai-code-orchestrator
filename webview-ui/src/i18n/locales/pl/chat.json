@@ -331,8 +331,8 @@
 		"support": "Wesprzyj AI Code Orchestrator, dając nam gwiazdkę na <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} usprawnia wybór modeli dla ról. Modele przypisane do ról są teraz konsekwentnie traktowane priorytetowo zarówno w interfejsie czatu, jak i podczas wykonywania zadań, a role bez przypisanego modelu dziedziczą model główny.",
-			"continuity": "To wydanie naprawia również wybór modelu, gdy przypisanie modelu do roli jest skonfigurowane bez nazwy profilu.",
+			"intro": "AI Code Orchestrator {{version}} dodaje szybszy przepływ zatwierdzania z nowym przyciskiem \"Uruchom i Zezwól\", zaktualizowane ikony AIco oparte na oficjalnym logo oraz zrefaktoryzowane klucze tekstowe i18n dla większej spójności.",
+			"continuity": "To wydanie naprawia również warunki wyścigu w automatycznym zatwierdzaniu i trybie orkiestratora, a także problemy z przypisywaniem ról i izolacją obszaru roboczego.",
 			"alternatives": "Wybór modeli dla ról jest teraz spójny od konfiguracji do wykonania.",
 			"signoff": "Udanej pracy!"
 		},

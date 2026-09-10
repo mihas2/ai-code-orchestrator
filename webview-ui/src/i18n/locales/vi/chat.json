@@ -331,8 +331,8 @@
 		"support": "Hãy ủng hộ AI Code Orchestrator bằng cách gắn sao cho chúng tôi trên <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} cải thiện việc chọn model theo vai trò. Các model được gán cho vai trò giờ đây luôn được ưu tiên nhất quán trong giao diện chat và khi thực thi tác vụ, còn vai trò không được gán model sẽ kế thừa model chính.",
-			"continuity": "Bản phát hành này cũng sửa lỗi chọn model khi cấu hình gán model cho vai trò mà không có tên hồ sơ.",
+			"intro": "AI Code Orchestrator {{version}} bổ sung quy trình phê duyệt nhanh hơn với nút \"Chạy và Cho phép\" mới, biểu tượng AIco được cập nhật dựa trên logo chính thức và các khóa văn bản i18n được tái cấu trúc để nhất quán hơn.",
+			"continuity": "Bản phát hành này cũng sửa các điều kiện race trong phê duyệt tự động và chế độ orchestrator, cùng với các vấn đề gán vai trò và cô lập không gian làm việc.",
 			"alternatives": "Việc chọn model theo vai trò giờ đây nhất quán từ cấu hình đến thực thi.",
 			"signoff": "Chúc bạn lập trình vui vẻ!"
 		},

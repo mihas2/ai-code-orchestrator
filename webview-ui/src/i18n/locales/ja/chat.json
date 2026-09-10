@@ -331,8 +331,8 @@
 		"support": "<githubLink>GitHub</githubLink>でスターを付けてAI Code Orchestratorを応援してください。",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} では、ロールごとのモデル選択が改善されました。ロールに割り当てたモデルがチャット UI とタスク実行の両方で一貫して優先され、モデルを割り当てていないロールはプライマリモデルを継承します。",
-			"continuity": "また、プロファイル名なしでロールモデルを設定した場合のモデル選択を修正しました。",
+			"intro": "AI Code Orchestrator {{version}} では、新しい「実行して許可」ボタンによる高速承認ワークフロー、公式ロゴに基づいて更新された AIco アイコン、一貫性を高めるためにリファクタリングされた i18n テキストキーが追加されました。",
+			"continuity": "このリリースでは、自動承認とオーケストレーターモードでの競合状態、ロール割り当てとワークスペース分離の問題も修正されました。",
 			"alternatives": "ロールモデルの選択が、設定から実行まで一貫して機能するようになりました。",
 			"signoff": "コーディングをお楽しみください！"
 		},

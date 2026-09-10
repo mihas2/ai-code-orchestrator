@@ -331,8 +331,8 @@
 		"support": "Si us plau, dona suport a AI Code Orchestrator fent una estrella al nostre <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} millora la selecció de models per rol. Els models assignats als rols ara tenen prioritat de manera coherent tant a la interfície del xat com durant l’execució de tasques, i els rols sense model assignat hereten el model principal.",
-			"continuity": "Aquesta versió també corregeix la selecció del model quan es configura una assignació de rol sense nom de perfil.",
+			"intro": "AI Code Orchestrator {{version}} afegeix un flux d'aprovació més ràpid amb el nou botó \"Executar i Permetre\", icones AIco actualitzades basades en el logotip oficial i claus de text i18n refactoritzades per a una millor coherència.",
+			"continuity": "Aquesta versió també corregeix les condicions de carrera en l'aprovació automàtica i el mode orquestrador, juntament amb problemes d'assignació de rols i aïllament de l'espai de treball.",
 			"alternatives": "La selecció de models per rol ara és coherent des de la configuració fins a l’execució.",
 			"signoff": "Bona programació!"
 		},

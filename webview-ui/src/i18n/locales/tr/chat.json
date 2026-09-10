@@ -331,8 +331,8 @@
 		"support": "<githubLink>GitHub</githubLink>'da yıldız vererek AI Code Orchestrator'u destekle.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} rol modeli seçimini geliştiriyor. Rollere atanan modeller artık hem sohbet arayüzünde hem de görev yürütme sırasında tutarlı biçimde önceliklendiriliyor; model atanmamış roller ise ana modeli devralıyor.",
-			"continuity": "Bu sürüm ayrıca profil adı olmadan rol modeli atandığında yaşanan model seçimi sorununu düzeltiyor.",
+			"intro": "AI Code Orchestrator {{version}}, yeni \"Çalıştır ve İzin Ver\" düğmesiyle daha hızlı onay iş akışı, resmi logoya dayalı güncellenmiş AIco simgeleri ve daha iyi tutarlılık için yeniden düzenlenmiş i18n metin anahtarları ekliyor.",
+			"continuity": "Bu sürüm ayrıca otomatik onay ve orkestratör modunda yarış koşullarını ve rol atama ve çalışma alanı izolasyonu sorunlarını düzeltiyor.",
 			"alternatives": "Rol modeli seçimi artık yapılandırmadan yürütmeye kadar tutarlı çalışıyor.",
 			"signoff": "İyi kodlamalar!"
 		},

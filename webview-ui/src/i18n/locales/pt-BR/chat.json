@@ -331,8 +331,8 @@
 		"support": "Apoie o AI Code Orchestrator nos dando uma estrela no <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "O AI Code Orchestrator {{version}} melhora a seleção de modelos por função. Os modelos atribuídos às funções agora têm prioridade de forma consistente tanto na interface do chat quanto na execução das tarefas, enquanto funções sem modelo atribuído herdam o modelo principal.",
-			"continuity": "Esta versão também corrige a seleção do modelo quando uma atribuição de função é configurada sem nome de perfil.",
+			"intro": "O AI Code Orchestrator {{version}} adiciona um fluxo de aprovação mais rápido com o novo botão \"Executar e Permitir\", ícones AIco atualizados baseados no logo oficial e chaves de texto i18n refatoradas para maior consistência.",
+			"continuity": "Esta versão também corrige condições de corrida na aprovação automática e no modo orquestrador, além de problemas de atribuição de função e isolamento do espaço de trabalho.",
 			"alternatives": "A seleção de modelos por função agora é consistente da configuração à execução.",
 			"signoff": "Bom trabalho!"
 		},

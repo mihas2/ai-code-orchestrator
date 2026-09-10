@@ -331,8 +331,8 @@
 		"support": "Bitte unterstütze AI Code Orchestrator, indem du uns auf <githubLink>GitHub</githubLink> einen Stern gibst.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} verbessert die Modellauswahl für Rollen. Rollen zugewiesene Modelle haben jetzt sowohl in der Chat-Oberfläche als auch bei der Aufgabenausführung zuverlässig Vorrang; Rollen ohne eigenes Modell übernehmen das primäre Modell.",
-			"continuity": "Diese Version behebt außerdem die Modellauswahl, wenn eine Rollenzuweisung ohne Profilnamen konfiguriert ist.",
+			"intro": "AI Code Orchestrator {{version}} fügt einen schnelleren Genehmigungsworkflow mit der neuen Schaltfläche \"Ausführen und Erlauben\" hinzu, aktualisierte AIco-Icons basierend auf dem offiziellen Logo und überarbeitete i18n-Textschlüssel für bessere Konsistenz.",
+			"continuity": "Diese Version behebt auch Race Conditions bei der automatischen Genehmigung und im Orchestrator-Modus sowie Probleme bei der Rollenzuweisung und Workspace-Isolation.",
 			"alternatives": "Die Modellauswahl für Rollen ist jetzt von der Konfiguration bis zur Ausführung konsistent.",
 			"signoff": "Viel Spaß beim Programmieren!"
 		},

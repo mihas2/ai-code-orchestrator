@@ -331,8 +331,8 @@
 		"support": "请在 <githubLink>GitHub</githubLink> 上为我们点星支持 AI Code Orchestrator。",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} 改进了角色模型选择。为角色分配的模型现在会在聊天界面和任务执行中始终优先使用；未分配模型的角色则继承主模型。",
-			"continuity": "此版本还修复了在未配置配置文件名称时角色模型分配的选择问题。",
+			"intro": "AI Code Orchestrator {{version}} 添加了新的「运行并允许」按钮以实现更快的审批工作流，基于官方徽标更新了 AIco 图标，并重构了 i18n 文本键以提高一致性。",
+			"continuity": "此版本还修复了自动审批和编排器模式中的竞态条件，以及角色分配和工作区隔离问题。",
 			"alternatives": "角色模型选择现在从配置到执行都保持一致。",
 			"signoff": "祝你编码愉快！"
 		},

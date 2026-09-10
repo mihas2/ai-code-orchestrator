@@ -304,8 +304,8 @@
 		"support": "Steun AI Code Orchestrator door ons een ster te geven op <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} verbetert de modelselectie per rol. Aan rollen toegewezen modellen krijgen nu consistent voorrang in zowel de chatinterface als tijdens de uitvoering van taken; rollen zonder toegewezen model nemen het primaire model over.",
-			"continuity": "Deze release verhelpt ook de modelselectie wanneer een roltoewijzing zonder profielnaam is geconfigureerd.",
+			"intro": "AI Code Orchestrator {{version}} voegt een snellere goedkeuringsworkflow toe met de nieuwe knop \"Uitvoeren en Toestaan\", bijgewerkte AIco-iconen gebaseerd op het officiële logo en geherstructureerde i18n-tekstsleutels voor betere consistentie.",
+			"continuity": "Deze release lost ook race conditions op in automatische goedkeuring en orchestrator-modus, samen met problemen met roltoewijzing en workspace-isolatie.",
 			"alternatives": "Modelselectie per rol werkt nu consistent van configuratie tot uitvoering.",
 			"signoff": "Veel programmeerplezier!"
 		},

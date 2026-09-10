@@ -356,8 +356,8 @@
 		"support": "Dukung AI Code Orchestrator dengan memberi kami bintang di <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} meningkatkan pemilihan model berdasarkan peran. Model yang ditetapkan ke peran kini selalu diprioritaskan di UI chat dan saat menjalankan tugas, sedangkan peran tanpa model khusus mewarisi model utama.",
-			"continuity": "Rilis ini juga memperbaiki pemilihan model ketika penetapan model peran dikonfigurasi tanpa nama profil.",
+			"intro": "AI Code Orchestrator {{version}} menambahkan alur persetujuan yang lebih cepat dengan tombol \"Jalankan dan Izinkan\" yang baru, ikon AIco yang diperbarui berdasarkan logo resmi, dan kunci teks i18n yang direfaktor untuk konsistensi yang lebih baik.",
+			"continuity": "Rilis ini juga memperbaiki kondisi race dalam persetujuan otomatis dan mode orchestrator, bersama dengan masalah penetapan peran dan isolasi workspace.",
 			"alternatives": "Pemilihan model berdasarkan peran kini konsisten dari konfigurasi hingga eksekusi.",
 			"signoff": "Selamat melakukan coding!"
 		},
