@@ -89,6 +89,12 @@ async function generatePrompt(
 
 	const basePrompt = `${roleDefinition}
 
+${await addCustomInstructions(baseInstructions, globalCustomInstructions || "", cwd, mode, {
+	language: language ?? formatLanguage(vscode.env.language),
+	aicoIgnoreInstructions,
+	settings,
+})}
+
 ${markdownFormattingSection()}
 
 ${getSharedToolUseSection()}${toolsCatalog}
@@ -99,17 +105,12 @@ ${getCapabilitiesSection(cwd, shouldIncludeMcp ? mcpHub : undefined)}
 
 ${modesSection}
 ${skillsSection ? `\n${skillsSection}` : ""}
-${getRulesSection(cwd, settings)}
 
 ${getSystemInfoSection(cwd)}
 
 ${getObjectiveSection()}
 
-${await addCustomInstructions(baseInstructions, globalCustomInstructions || "", cwd, mode, {
-	language: language ?? formatLanguage(vscode.env.language),
-	aicoIgnoreInstructions,
-	settings,
-})}`
+${getRulesSection(cwd, settings)}`
 
 	return basePrompt
 }

@@ -565,7 +565,8 @@ describe("SYSTEM_PROMPT", () => {
 		expect(prompt).not.toContain("<read_file>")
 		expect(prompt).not.toContain("<path>")
 		expect(prompt).not.toContain("Usage:")
-		expect(prompt).not.toContain("Examples:")
+		// Note: orchestrator mode may contain "Examples:" in its custom instructions
+		expect(prompt).not.toMatch(/Examples:\s*\n\s*</)
 
 		// Should still contain the selected mode's role definition and other non-XML sections
 		expect(prompt).toContain(modes.find((mode) => mode.slug === defaultModeSlug)!.roleDefinition)

@@ -111,10 +111,11 @@ describe("default orchestrator mode", () => {
 	})
 
 	it("contains enhanced protocol content", () => {
-		expect(orchestrator?.customInstructions).toContain("simple, moderate, or complex")
-		expect(orchestrator?.customInstructions).toContain("stage gate")
-		expect(orchestrator?.customInstructions).toContain("mini-spec")
-		expect(orchestrator?.customInstructions).toContain("evidence")
+		const instructions = orchestrator?.customInstructions?.toLowerCase() ?? ""
+		expect(instructions).toMatch(/simple[\s\S]*moderate[\s\S]*complex/)
+		expect(instructions).toContain("stage gate")
+		expect(instructions).toContain("mini-spec")
+		expect(instructions).toContain("evidence")
 	})
 })
 
