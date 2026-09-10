@@ -1,5 +1,29 @@
 # AI Code Orchestrator
 
+## [1.3.1] - 2026-09-10
+
+### Added
+
+- Added "Run and Allow" button for commands in webview for faster approval workflow.
+- Added translations for `runCommandAndAllow` across 16 locales.
+
+### Changed
+
+- Updated AI Code Orchestrator icons based on the official AIco reference logo.
+- Refactored i18n text keys: shortened `text.aicoSaid` to "AIco <verb>" format across all 17 languages.
+
+### Fixed
+
+- Fixed race condition in auto-approval orchestration tests.
+- Fixed auto-approval settings inheritance in orchestrator workers.
+- Fixed file operation race conditions with proper protection mechanisms.
+- Fixed role assignment issues in orchestrator mode.
+- Fixed delegation race condition in `reopenParentFromDelegation`.
+- Fixed path normalization in read-file provider argument.
+- Fixed workspace isolation preservation for child tasks.
+- Replaced incorrect "Ru said" with "AIco said" in Russian localization.
+- Fixed critical orchestrator prompt architecture issues.
+
 ## [1.3.0] - 2026-09-09
 
 ### Changed
@@ -61,8 +85,8 @@
 
 ### Patch Changes
 
-- Fixed: ошибка Could not find ripgrep binary — бинарник ripgrep теперь копируется в dist при сборке
-- Chore: синхронизация версий во всех манифестах монорепо
+- Fixed: Could not find ripgrep binary error — ripgrep binary is now copied to dist during build
+- Chore: version synchronization across all monorepo manifests
 
 ## 1.1.2
 
@@ -96,17 +120,17 @@
 
 ### Patch Changes
 
-- Исправлены критические проблемы в orchestration и delegation flow:
-- Исправлена ошибка, из-за которой роли использовали модели активного профиля вместо назначенных им моделей.
-- Исправлен бесконечный цикл при создании дочерних задач оркестратором.
-- Устранена race condition между подтверждением действий в UI и делегированием задач.
-- Добавлены тесты и инфраструктура для повышения надежности:
-- Добавлены 6 integration-тестов delegation flow в `src/core/webview/__tests__/ClineProvider.delegation.spec.ts`.
-- Добавлены 4 E2E-теста orchestration flow в `apps/vscode-e2e/src/suite/orchestration-flow.test.ts`.
-- Добавлены 5 E2E-тестов назначения моделей ролям в `apps/vscode-e2e/src/suite/role-model-assignment.test.ts`.
-- Создан полнофункциональный mock AI provider со streaming-поддержкой в `apps/vscode-e2e/src/suite/mock-provider.ts`.
-- Mock provider интегрирован в E2E harness с автоматической настройкой.
-- Обновлена документация E2E-тестов в `apps/vscode-e2e/README.md`.
+- Fixed critical issues in orchestration and delegation flow:
+- Fixed bug where roles used active profile models instead of their assigned models.
+- Fixed infinite loop when orchestrator creates child tasks.
+- Eliminated race condition between UI action confirmation and task delegation.
+- Added tests and infrastructure for improved reliability:
+- Added 6 delegation flow integration tests in `src/core/webview/__tests__/ClineProvider.delegation.spec.ts`.
+- Added 4 orchestration flow E2E tests in `apps/vscode-e2e/src/suite/orchestration-flow.test.ts`.
+- Added 5 role model assignment E2E tests in `apps/vscode-e2e/src/suite/role-model-assignment.test.ts`.
+- Created full-featured mock AI provider with streaming support in `apps/vscode-e2e/src/suite/mock-provider.ts`.
+- Mock provider integrated into E2E harness with automatic setup.
+- Updated E2E test documentation in `apps/vscode-e2e/README.md`.
 - Update all documentation for the first release:
 - Rename terminology from "Modes" to "Roles"
 - Add Reviewer role documentation
