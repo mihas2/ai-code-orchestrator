@@ -1,5 +1,5 @@
 ---
-description: Understand how switch_mode enables seamless transitions between Code, Architect, Ask, and Debug modes for specialized task handling in AI Code Orchestrator.
+description: Understand how switch_mode enables seamless transitions between Code, Architect, Ask, Debug, Reviewer, and Orchestrator modes for specialized task handling in AI Code Orchestrator.
 keywords:
     - switch_mode
     - AI Code Orchestrator tools
@@ -9,6 +9,8 @@ keywords:
     - Architect mode
     - Debug mode
     - Ask mode
+    - Reviewer mode
+    - Orchestrator mode
     - task transitions
     - VS Code AI
 ---
@@ -128,6 +130,8 @@ The core modes provide these specialized capabilities:
 - **Architect Mode**: Specialized for system design and architecture planning, limited to editing markdown files only
 - **Ask Mode**: Optimized for answering questions and providing information
 - **Debug Mode**: Equipped for systematic problem diagnosis and resolution
+- **Reviewer Mode**: Specialized for independent quality validation and verification without modifying code
+- **Orchestrator Mode**: Strategic workflow orchestrator that delegates subtasks to specialized modes
 
 ---
 
@@ -157,6 +161,8 @@ Different modes may have specific file type restrictions:
 - When discussing a new feature, AI Code Orchestrator switches from Ask mode to Architect mode to help design the system structure.
 - After completing architecture planning in Architect mode, AI Code Orchestrator switches to Code mode to implement the designed features.
 - When encountering bugs during development, AI Code Orchestrator switches from Code mode to Debug mode for systematic troubleshooting.
+- After implementing a feature in Code mode, AI Code Orchestrator switches to Reviewer mode to validate quality and test coverage.
+- When coordinating a complex multi-step project, AI Code Orchestrator switches to Orchestrator mode to delegate subtasks to specialized modes.
 
 ---
 
@@ -195,5 +201,23 @@ Switching to Ask mode for information:
 <switch_mode>
 <mode_slug>ask</mode_slug>
 <reason>Need to answer questions about the implemented feature</reason>
+</switch_mode>
+```
+
+Switching to Reviewer mode for quality validation:
+
+```
+<switch_mode>
+<mode_slug>reviewer</mode_slug>
+<reason>Need to validate the implementation against acceptance criteria and verify test coverage</reason>
+</switch_mode>
+```
+
+Switching to Orchestrator mode for workflow coordination:
+
+```
+<switch_mode>
+<mode_slug>orchestrator</mode_slug>
+<reason>Need to coordinate a complex multi-step project by delegating subtasks to specialized modes</reason>
 </switch_mode>
 ```

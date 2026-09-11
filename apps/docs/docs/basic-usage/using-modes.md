@@ -1,11 +1,12 @@
 ---
-description: Learn how to use AI Code Orchestrator's specialized modes for different tasks. Switch between Code, Ask, Architect, Debug, and Orchestrator modes for optimal AI assistance.
+description: Learn how to use AI Code Orchestrator's specialized modes for different tasks. Switch between Code, Ask, Architect, Debug, Reviewer, and Orchestrator modes for optimal AI assistance.
 keywords:
     - AI Code Orchestrator modes
     - Code mode
     - Ask mode
     - Architect mode
     - Debug mode
+    - Reviewer mode
     - Orchestrator mode
     - AI assistant modes
     - mode switching
@@ -106,9 +107,19 @@ Four ways to switch modes:
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Name**             | `🪃 Orchestrator`                                                                                                                                                                             |
 | **Description**      | A strategic workflow orchestrator (aka Boomerang Mode) that breaks down complex tasks and delegates them to specialized modes. Learn more about [Boomerang Tasks](/features/boomerang-tasks). |
-| **Tool Access**      | No direct tool access (uses `new_task` tool to delegate work to other modes)                                                                                                                  |
+| **Tool Access**      | Limited access: `read` group access only (uses `new_task` tool to delegate work to other modes)                                                                                               |
 | **Ideal For**        | Managing multi-step projects, coordinating work across different modes, and automating complex workflows                                                                                      |
 | **Special Features** | Uses the [`new_task`](/advanced-usage/available-tools/new-task) tool to delegate subtasks to other modes.                                                                                     |
+
+### Reviewer Mode
+
+| Aspect               | Details                                                                                                                       |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Name**             | `🔍 Reviewer`                                                                                                                 |
+| **Description**      | An independent quality validator focused on verifying correctness, test coverage, security, and absence of regressions       |
+| **Tool Access**      | Limited access: `read`, `mcp` only (cannot edit files or run commands)                                                        |
+| **Ideal For**        | Post-implementation quality assurance, validating acceptance criteria, security review, and regression testing                |
+| **Special Features** | Validates work against acceptance criteria with evidence, identifies issues without modifying code, prepares validation reports |
 
 ---
 

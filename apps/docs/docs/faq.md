@@ -99,7 +99,10 @@ Open the AI Code Orchestrator panel (<KangaaicoIcon />) and type your task in th
 - **Architect:** For planning and technical leadership.
 - **Ask:** For answering questions and providing information.
 - **Debug:** For systematic problem diagnosis.
-  You can also create [Custom Modes](/features/custom-modes).
+- **Reviewer:** For independent quality validation and verification.
+- **Orchestrator:** For coordinating complex workflows by delegating subtasks to specialized modes.
+
+You can also create [Custom Modes](/features/custom-modes).
 
 ### How do I switch between modes?
 
