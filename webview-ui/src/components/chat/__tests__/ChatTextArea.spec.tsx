@@ -283,13 +283,13 @@ describe("ChatTextArea", () => {
 			fireEvent.keyUp(window, { key: "Shift" })
 		})
 
-		it("rejects a drop when Shift is not pressed", () => {
+		it("rejects a drop when Shift is not pressed and no valid file data", () => {
 			fireEvent.keyUp(window, { key: "Shift" })
 			const setInputValue = vi.fn()
 			const { container } = render(<ChatTextArea {...defaultProps} setInputValue={setInputValue} inputValue="" />)
 			const dropTarget = container.querySelector(".chat-text-area")!
 			const dataTransfer = {
-				getData: vi.fn().mockReturnValue("/Users/test/project/file.js"),
+				getData: vi.fn().mockReturnValue(""),
 				files: [],
 				dropEffect: "none",
 			}
@@ -298,6 +298,89 @@ describe("ChatTextArea", () => {
 			fireEvent.drop(dropTarget, { dataTransfer, shiftKey: false })
 
 			expect(setInputValue).not.toHaveBeenCalled()
+		})
+
+		it("accepts a drop without Shift when valid file data exists (text/uri-list)", () => {
+			fireEvent.keyUp(window, { key: "Shift" })
+			const setInputValue = vi.fn()
+			const { container } = render(<ChatTextArea {...defaultProps} setInputValue={setInputValue} inputValue="" />)
+			const dropTarget = container.querySelector(".chat-text-area")!
+			const dataTransfer = {
+				getData: vi.fn((type: string) => {
+					if (type === "text/uri-list") return "file:///Users/test/project/file.js"
+					return ""
+				}),
+				files: [],
+				dropEffect: "none",
+			}
+
+			fireEvent.drop(dropTarget, { dataTransfer, shiftKey: false })
+
+			expect(dataTransfer.getData).toHaveBeenCalledWith("text/uri-list")
+			expect(setInputValue).toHaveBeenCalledWith("file:///Users/test/project/file.js ")
+		})
+
+		it("reads text/uri-list before application/vnd.code.uri-list", () => {
+			const setInputValue = vi.fn()
+			const { container } = render(<ChatTextArea {...defaultProps} setInputValue={setInputValue} inputValue="" />)
+			const dropTarget = container.querySelector(".chat-text-area")!
+			const dataTransfer = {
+				getData: vi.fn((type: string) => {
+					if (type === "text/uri-list") return "file:///Users/test/project/file1.js"
+					if (type === "application/vnd.code.uri-list") return "file:///Users/test/project/file2.js"
+					return ""
+				}),
+				files: [],
+			}
+
+			fireEvent.drop(dropTarget, { dataTransfer, shiftKey: true })
+
+			// Should read text/uri-list first
+			expect(dataTransfer.getData).toHaveBeenCalledWith("text/uri-list")
+			// Should use text/uri-list value, not application/vnd.code.uri-list
+			expect(setInputValue).toHaveBeenCalledWith("file:///Users/test/project/file1.js ")
+		})
+
+		it("falls back to application/vnd.code.uri-list when text/uri-list is empty", () => {
+			const setInputValue = vi.fn()
+			const { container } = render(<ChatTextArea {...defaultProps} setInputValue={setInputValue} inputValue="" />)
+			const dropTarget = container.querySelector(".chat-text-area")!
+			const dataTransfer = {
+				getData: vi.fn((type: string) => {
+					if (type === "text/uri-list") return ""
+					if (type === "application/vnd.code.uri-list") return "file:///Users/test/project/file.js"
+					return ""
+				}),
+				files: [],
+			}
+
+			fireEvent.drop(dropTarget, { dataTransfer, shiftKey: true })
+
+			expect(dataTransfer.getData).toHaveBeenCalledWith("text/uri-list")
+			expect(dataTransfer.getData).toHaveBeenCalledWith("application/vnd.code.uri-list")
+			expect(setInputValue).toHaveBeenCalledWith("file:///Users/test/project/file.js ")
+		})
+
+		it("filters out comment lines starting with # in URI list", () => {
+			const setInputValue = vi.fn()
+			const { container } = render(<ChatTextArea {...defaultProps} setInputValue={setInputValue} inputValue="" />)
+			const dropTarget = container.querySelector(".chat-text-area")!
+			const dataTransfer = {
+				getData: vi.fn((type: string) => {
+					if (type === "text/uri-list") {
+						return "# This is a comment\nfile:///Users/test/project/file1.js\n# Another comment\nfile:///Users/test/project/file2.js"
+					}
+					return ""
+				}),
+				files: [],
+			}
+
+			fireEvent.drop(dropTarget, { dataTransfer, shiftKey: true })
+
+			// Should only process non-comment lines
+			expect(mockConvertToMentionPath).toHaveBeenCalledTimes(2)
+			expect(mockConvertToMentionPath).toHaveBeenCalledWith("file:///Users/test/project/file1.js", mockCwd)
+			expect(mockConvertToMentionPath).toHaveBeenCalledWith("file:///Users/test/project/file2.js", mockCwd)
 		})
 
 		it("accepts a drop using tracked Shift state when drag events omit shiftKey", () => {

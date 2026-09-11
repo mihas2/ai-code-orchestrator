@@ -1,5 +1,23 @@
 # AI Code Orchestrator
 
+## [1.3.2] - 2026-09-11
+
+### Added
+
+- Added Translate role to all README files across all locales.
+
+### Changed
+
+- Improved Shift+Drop file reliability in webview by tracking keyboard state.
+- Replaced CHANGELOG.md symlink with actual file for better compatibility.
+
+### Fixed
+
+- Removed worktree isolation for orchestration workers to improve task execution.
+- Fixed Shift+Drag file functionality in ChatTextArea component.
+- Fixed documentation inconsistencies in apps/docs.
+- Updated outdated build commands and marketplace ID in localization files.
+
 ## [1.3.1] - 2026-09-10
 
 ### Added

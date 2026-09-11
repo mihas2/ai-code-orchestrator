@@ -849,19 +849,35 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				e.preventDefault()
 				setIsDraggingOver(false)
 
+				// Parse URI list according to RFC 2483
+				// Try text/uri-list first (VS Code Explorer drag), then fallback to application/vnd.code.uri-list
+				const parseUriList = (uriListText: string): string[] => {
+					if (!uriListText) return []
+					return uriListText
+						.split(/\r?\n/)
+						.filter((line) => line.trim() !== "" && !line.startsWith("#"))
+						.map((line) => line.trim())
+				}
+
+				const textUriList = e.dataTransfer.getData("text/uri-list")
+				const vscodeUriList = e.dataTransfer.getData("application/vnd.code.uri-list")
+				const textFieldList = e.dataTransfer.getData("text")
+
+				// Priority: text/uri-list > application/vnd.code.uri-list > text
+				const uriList = textUriList || vscodeUriList
+				const hasValidFileData = uriList || textFieldList
+
+				// Check Shift key state for drag acceptance
 				const shiftDropAllowed = e.shiftKey || shiftKeyDownRef.current || dragAcceptedRef.current !== false
 				dragAcceptedRef.current = null
-				if (!shiftDropAllowed) {
+
+				// Only reject if Shift is not pressed AND no valid file data exists
+				if (!shiftDropAllowed && !hasValidFileData) {
 					return
 				}
 
-				const textFieldList = e.dataTransfer.getData("text")
-				const textUriList = e.dataTransfer.getData("application/vnd.code.uri-list")
-				// When textFieldList is empty, it may attempt to use textUriList obtained from drag-and-drop tabs; if not empty, it will use textFieldList.
-				const text = textFieldList || textUriList
-				if (text) {
-					// Split text on newlines to handle multiple files
-					const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "")
+				if (uriList) {
+					const lines = parseUriList(uriList)
 
 					if (lines.length > 0) {
 						// Process each line as a separate file path
@@ -884,6 +900,38 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 						}
 
 						// Add space after the last mention and append the rest of the input
+						newValue += " " + inputValue.slice(cursorPosition)
+						totalLength += 1
+
+						setInputValue(newValue)
+						const newCursorPosition = cursorPosition + totalLength
+						setCursorPosition(newCursorPosition)
+						setIntendedCursorPosition(newCursorPosition)
+					}
+
+					return
+				}
+
+				// Fallback to plain text if no URI list
+				if (textFieldList) {
+					const lines = textFieldList.split(/\r?\n/).filter((line) => line.trim() !== "")
+
+					if (lines.length > 0) {
+						let newValue = inputValue.slice(0, cursorPosition)
+						let totalLength = 0
+
+						for (let i = 0; i < lines.length; i++) {
+							const line = lines[i]
+							const mentionText = convertToMentionPath(line, cwd)
+							newValue += mentionText
+							totalLength += mentionText.length
+
+							if (i < lines.length - 1) {
+								newValue += " "
+								totalLength += 1
+							}
+						}
+
 						newValue += " " + inputValue.slice(cursorPosition)
 						totalLength += 1
 
