@@ -276,6 +276,47 @@ describe("ChatTextArea", () => {
 				cwd: mockCwd,
 			})
 			mockConvertToMentionPath.mockClear()
+			fireEvent.keyDown(window, { key: "Shift" })
+		})
+
+		afterEach(() => {
+			fireEvent.keyUp(window, { key: "Shift" })
+		})
+
+		it("rejects a drop when Shift is not pressed", () => {
+			fireEvent.keyUp(window, { key: "Shift" })
+			const setInputValue = vi.fn()
+			const { container } = render(<ChatTextArea {...defaultProps} setInputValue={setInputValue} inputValue="" />)
+			const dropTarget = container.querySelector(".chat-text-area")!
+			const dataTransfer = {
+				getData: vi.fn().mockReturnValue("/Users/test/project/file.js"),
+				files: [],
+				dropEffect: "none",
+			}
+
+			fireEvent.dragOver(dropTarget, { dataTransfer, shiftKey: false })
+			fireEvent.drop(dropTarget, { dataTransfer, shiftKey: false })
+
+			expect(setInputValue).not.toHaveBeenCalled()
+		})
+
+		it("accepts a drop using tracked Shift state when drag events omit shiftKey", () => {
+			const setInputValue = vi.fn()
+			const { container } = render(<ChatTextArea {...defaultProps} setInputValue={setInputValue} inputValue="" />)
+			const dropTarget = container.querySelector(".chat-text-area")!
+			const dataTransfer = {
+				getData: vi.fn().mockReturnValue("/Users/test/project/file.js"),
+				files: [],
+				dropEffect: "none",
+			}
+
+			fireEvent.keyDown(window, { key: "Shift" })
+			fireEvent.dragOver(dropTarget, { dataTransfer, shiftKey: false })
+			fireEvent.drop(dropTarget, { dataTransfer, shiftKey: false })
+			fireEvent.keyUp(window, { key: "Shift" })
+
+			expect(dataTransfer.dropEffect).toBe("copy")
+			expect(setInputValue).toHaveBeenCalledWith("@/file.js ")
 		})
 
 		it("should process multiple file paths separated by newlines", () => {
@@ -295,6 +336,7 @@ describe("ChatTextArea", () => {
 			fireEvent.drop(container.querySelector(".chat-text-area")!, {
 				dataTransfer,
 				preventDefault: vi.fn(),
+				shiftKey: true,
 			})
 
 			// Verify convertToMentionPath was called for each file path
@@ -324,6 +366,7 @@ describe("ChatTextArea", () => {
 			fireEvent.drop(container.querySelector(".chat-text-area")!, {
 				dataTransfer,
 				preventDefault: vi.fn(),
+				shiftKey: true,
 			})
 
 			// Verify convertToMentionPath was called only for non-empty lines
@@ -358,6 +401,7 @@ describe("ChatTextArea", () => {
 			fireEvent.drop(container.querySelector(".chat-text-area")!, {
 				dataTransfer,
 				preventDefault: vi.fn(),
+				shiftKey: true,
 			})
 
 			// The cursor position should be updated based on the implementation in the component
@@ -383,6 +427,7 @@ describe("ChatTextArea", () => {
 			fireEvent.drop(container.querySelector(".chat-text-area")!, {
 				dataTransfer,
 				preventDefault: vi.fn(),
+				shiftKey: true,
 			})
 
 			// Verify convertToMentionPath was called with the long path
@@ -415,6 +460,7 @@ describe("ChatTextArea", () => {
 			fireEvent.drop(container.querySelector(".chat-text-area")!, {
 				dataTransfer,
 				preventDefault: vi.fn(),
+				shiftKey: true,
 			})
 
 			// Verify convertToMentionPath was called for each path
@@ -453,6 +499,7 @@ describe("ChatTextArea", () => {
 			fireEvent.drop(container.querySelector(".chat-text-area")!, {
 				dataTransfer,
 				preventDefault: vi.fn(),
+				shiftKey: true,
 			})
 
 			// Verify convertToMentionPath was called with the outside path
@@ -479,6 +526,7 @@ describe("ChatTextArea", () => {
 			fireEvent.drop(container.querySelector(".chat-text-area")!, {
 				dataTransfer,
 				preventDefault: vi.fn(),
+				shiftKey: true,
 			})
 
 			// Verify convertToMentionPath was not called
