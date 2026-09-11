@@ -44,7 +44,7 @@ VS Code Marketplace से **AI Code Orchestrator** extension इंस्टॉ
 
 ```bash
 pnpm install
-pnpm vsix
+pnpm rebuild:vsix
 ```
 
 Development के दौरान CLI monorepo से उपलब्ध है:

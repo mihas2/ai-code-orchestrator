@@ -44,7 +44,7 @@ Installeer de **AI Code Orchestrator**-extensie vanuit de VS Code Marketplace of
 
 ```bash
 pnpm install
-pnpm vsix
+pnpm rebuild:vsix
 ```
 
 Tijdens de ontwikkeling is de CLI beschikbaar vanuit de monorepo:

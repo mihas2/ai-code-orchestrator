@@ -44,7 +44,7 @@ AI Code Orchestrator 会适应当前工作：
 
 ```bash
 pnpm install
-pnpm vsix
+pnpm rebuild:vsix
 ```
 
 开发期间可从 monorepo 使用 CLI：

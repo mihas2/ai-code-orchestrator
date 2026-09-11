@@ -44,7 +44,7 @@ VS Code Marketplaceから**AI Code Orchestrator**拡張機能をインストー�
 
 ```bash
 pnpm install
-pnpm vsix
+pnpm rebuild:vsix
 ```
 
 開発時にはモノレポからCLIを利用できます：
