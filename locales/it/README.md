@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-  </details>
+    </details>
 
 ---
 
@@ -50,6 +50,7 @@ AI Code Orchestrator si adatta al tuo modo di lavorare, non il contrario:
 - Modalità Architetto: pianifica sistemi, specifiche e migrazioni
 - Modalità Chiedi: risposte rapide, spiegazioni e documenti
 - Modalità Debug: traccia problemi, aggiungi log, isola le cause principali
+- Modalità Traduzione: traduci e gestisci i file di localizzazione
 - Modalità Personalizzate: crea modalità specializzate per il tuo team o flusso di lavoro
 
 Scopri di più: [Usare le Modalità](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [Modalità personalizzate](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)

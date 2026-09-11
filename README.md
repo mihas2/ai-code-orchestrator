@@ -30,6 +30,7 @@ AI Code Orchestrator adapts to the work at hand:
 - **Debug** - isolate root causes and validate fixes
 - **Reviewer** - validate changes, identify issues, and ensure quality
 - **Orchestrator** - coordinate dependency-aware task graphs and parallel agents; this is the default role
+- **Translate** - translate and manage localization files
 - **Custom** - create specialized workflows for a team
 
 Each role can use its own model configuration. When no role-specific model is assigned, it inherits the primary model, making it easy to balance capability, speed, and cost across a workflow.

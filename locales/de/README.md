@@ -30,6 +30,7 @@ AI Code Orchestrator passt sich der jeweiligen Aufgabe an:
 - **Debug** – Ursachen isolieren und Korrekturen validieren
 - **Reviewer** – Änderungen validieren, Probleme identifizieren und Qualität sicherstellen
 - **Orchestrator** – abhängigkeitsbewusste Aufgabengraphen und parallele Agenten koordinieren; dies ist der Standardrolle
+- **Translate** – Lokalisierungsdateien übersetzen und verwalten
 - **Custom** – spezialisierte Arbeitsabläufe für ein Team erstellen
 
 Jede Rolle kann eine eigene Modellkonfiguration verwenden. Ist kein rollenspezifisches Modell zugewiesen, wird das primäre Modell geerbt. So lassen sich Leistungsfähigkeit, Geschwindigkeit und Kosten eines Workflows einfach ausbalancieren.

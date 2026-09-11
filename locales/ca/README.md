@@ -30,6 +30,7 @@ AI Code Orchestrator s'adapta a la feina que tens entre mans:
 - **Debug** — aïllar les causes arrel i validar les correccions
 - **Reviewer** — validar els canvis, identificar problemes i garantir la qualitat
 - **Orchestrator** — coordinar gràfics de tasques amb dependències i agents paral·lels; és el rol predeterminat
+- **Translate** — traduir i gestionar fitxers de localització
 - **Custom** — crear fluxos de treball especialitzats per a un equip
 
 Cada rol pot utilitzar la seva pròpia configuració de model. Quan no s'assigna cap model específic al rol, hereta el model principal, cosa que facilita equilibrar capacitat, velocitat i cost.

@@ -30,6 +30,7 @@ AI Code Orchestrator past zich aan het werk aan:
 - **Debug** — hoofdoorzaken isoleren en oplossingen valideren
 - **Reviewer** — wijzigingen valideren, problemen identificeren en kwaliteit waarborgen
 - **Orchestrator** — afhankelijkheidsbewuste taakkaarten en parallelle agents coördineren; dit is de standaardrol
+- **Translate** — lokalisatiebestanden vertalen en beheren
 - **Custom** — gespecialiseerde workflows voor een team maken
 
 Elke rol kan een eigen modelconfiguratie gebruiken. Als er geen modelspecifieke rol is toegewezen, wordt het primaire model overgenomen. Zo kun je mogelijkheden, snelheid en kosten binnen een workflow eenvoudig balanceren.

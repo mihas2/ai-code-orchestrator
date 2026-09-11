@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-  </details>
+    </details>
 
 ---
 
@@ -50,6 +50,7 @@ AI Code Orchestrator beradaptasi dengan cara Anda bekerja, bukan sebaliknya:
 - Mode Arsitek: merencanakan sistem, spesifikasi, dan migrasi
 - Mode Tanya: jawaban cepat, penjelasan, dan dokumen
 - Mode Debug: melacak masalah, menambahkan log, mengisolasi akar penyebab
+- Mode Terjemahan: menerjemahkan dan mengelola file lokalisasi
 - Mode Kustom: buat mode khusus untuk tim atau alur kerja Anda
 
 Pelajari lebih lanjut: [Menggunakan Mode](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [Mode Kustom](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)

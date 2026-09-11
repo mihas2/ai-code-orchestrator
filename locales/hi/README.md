@@ -30,6 +30,7 @@ AI Code Orchestrator आपके काम के अनुसार ढलत�
 - **Debug** — मूल कारण अलग करना और fixes को validate करना
 - **Reviewer** — बदलावों को validate करना, समस्याएँ पहचानना और quality सुनिश्चित करना
 - **Orchestrator** — dependency-aware task graphs और parallel agents का समन्वय; यह default role है
+- **Translate** — स्थानीयकरण फ़ाइलों का अनुवाद और प्रबंधन करना
 - **Custom** — टीम के लिए विशेष workflows बनाना
 
 हर role अपनी model configuration इस्तेमाल कर सकता है। Role-specific model न होने पर primary model inherit होता है, जिससे workflow में capability, speed और cost का संतुलन आसान होता है।

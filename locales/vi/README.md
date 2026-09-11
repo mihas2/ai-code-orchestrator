@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-  </details>
+    </details>
 
 ---
 
@@ -50,6 +50,7 @@ AI Code Orchestrator thích ứng với cách bạn làm việc, chứ không ph
 - Chế độ Kiến trúc sư: lập kế hoạch hệ thống, thông số kỹ thuật và di chuyển
 - Chế độ Hỏi: câu trả lời nhanh, giải thích và tài liệu
 - Chế độ Gỡ lỗi: theo dõi sự cố, thêm nhật ký, cô lập nguyên nhân gốc rễ
+- Chế độ Dịch: dịch và quản lý các tệp bản địa hóa
 - Chế độ Tùy chỉnh: xây dựng các chế độ chuyên biệt cho nhóm hoặc quy trình làm việc của bạn
 
 Xem thêm: [Sử dụng Chế độ](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [Chế độ tùy chỉnh](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)

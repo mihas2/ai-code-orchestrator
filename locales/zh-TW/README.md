@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-      </details>
+  </details>
 
 ---
 
@@ -50,6 +50,7 @@ AI Code Orchestrator 會配合您的工作方式，而非要您配合它：
 - 架構師模式：規劃系統、規格和遷移
 - 詢問模式：快速回答、解釋和文件
 - 偵錯模式：追蹤問題、新增日誌、鎖定根本原因
+- 翻譯模式：翻譯和管理本地化檔案
 - 自訂模式：為您的團隊或工作流程建置專門的模式
 
 更多資訊：[使用模式](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [自訂模式](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)

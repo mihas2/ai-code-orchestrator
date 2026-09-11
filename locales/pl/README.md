@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-  </details>
+    </details>
 
 ---
 
@@ -50,6 +50,7 @@ AI Code Orchestrator dostosowuje się do Twojego sposobu pracy, a nie odwrotnie:
 - Tryb Architekt: planowanie systemów, specyfikacji i migracji
 - Tryb Zapytaj: szybkie odpowiedzi, wyjaśnienia i dokumenty
 - Tryb Debugowanie: śledzenie problemów, dodawanie logów, izolowanie przyczyn źródłowych
+- Tryb Tłumaczenie: tłumaczenie i zarządzanie plikami lokalizacji
 - Tryby niestandardowe: buduj specjalistyczne tryby dla swojego zespołu lub przepływu pracy
 
 Więcej: [Korzystanie z trybów](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [Tryby niestandardowe](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)

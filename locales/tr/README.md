@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-  </details>
+    </details>
 
 ---
 
@@ -50,6 +50,7 @@ AI Code Orchestrator, sizin çalışma şeklinize uyum sağlar, tam tersi değil
 - Mimar Modu: sistemleri, özellikleri ve geçişleri planlayın
 - Sor Modu: hızlı cevaplar, açıklamalar ve belgeler
 - Hata Ayıklama Modu: sorunları izleyin, günlükler ekleyin, kök nedenleri izole edin
+- Çeviri Modu: yerelleştirme dosyalarını çevirin ve yönetin
 - Özel Modlar: ekibiniz veya iş akışınız için özel modlar oluşturun
 
 Daha fazla: [Modları kullanma](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [Özel modlar](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)
