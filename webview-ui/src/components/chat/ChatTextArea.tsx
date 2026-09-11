@@ -113,6 +113,9 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 		const [gitCommits, setGitCommits] = useState<any[]>([])
 		const [showDropdown, setShowDropdown] = useState(false)
+		// DragEvent.shiftKey is not reliable in VS Code webviews while a drag is in progress.
+		const shiftKeyDownRef = useRef(false)
+		const dragAcceptedRef = useRef<boolean | null>(null)
 		const [fileSearchResults, setFileSearchResults] = useState<SearchResult[]>([])
 		const [searchLoading, setSearchLoading] = useState(false)
 		const [searchRequestId, setSearchRequestId] = useState<string>("")
@@ -822,10 +825,35 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			[updateCursorPosition],
 		)
 
+		useEffect(() => {
+			const handleKeyDown = (event: KeyboardEvent) => {
+				if (event.key === "Shift") {
+					shiftKeyDownRef.current = true
+				}
+			}
+			const handleKeyUp = (event: KeyboardEvent) => {
+				if (event.key === "Shift") {
+					shiftKeyDownRef.current = false
+				}
+			}
+			window.addEventListener("keydown", handleKeyDown)
+			window.addEventListener("keyup", handleKeyUp)
+			return () => {
+				window.removeEventListener("keydown", handleKeyDown)
+				window.removeEventListener("keyup", handleKeyUp)
+			}
+		}, [])
+
 		const handleDrop = useCallback(
 			async (e: React.DragEvent<HTMLDivElement>) => {
 				e.preventDefault()
 				setIsDraggingOver(false)
+
+				const shiftDropAllowed = e.shiftKey || shiftKeyDownRef.current || dragAcceptedRef.current !== false
+				dragAcceptedRef.current = null
+				if (!shiftDropAllowed) {
+					return
+				}
 
 				const textFieldList = e.dataTransfer.getData("text")
 				const textUriList = e.dataTransfer.getData("application/vnd.code.uri-list")
@@ -973,12 +1001,14 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 						onDragOver={(e) => {
 							e.preventDefault()
 
-							// Only allowed to drop images/files on shift key pressed.
-							if (!e.shiftKey) {
+							// Use the keyboard state as a fallback because VS Code may omit shiftKey from drag events.
+							if (!e.shiftKey && !shiftKeyDownRef.current) {
+								dragAcceptedRef.current = false
 								setIsDraggingOver(false)
 								return
 							}
 
+							dragAcceptedRef.current = true
 							setIsDraggingOver(true)
 							e.dataTransfer.dropEffect = "copy"
 						}}
@@ -992,6 +1022,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								e.clientY <= rect.top ||
 								e.clientY >= rect.bottom
 							) {
+								dragAcceptedRef.current = null
 								setIsDraggingOver(false)
 							}
 						}}>
