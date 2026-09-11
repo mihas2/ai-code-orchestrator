@@ -1,5 +1,11 @@
 # AI Code Orchestrator
 
+## [1.3.2] - 2026-09-11
+
+### Changed
+
+- Updated project version to 1.3.2.
+
 ## [1.3.1] - 2026-09-10
 
 ### Added
