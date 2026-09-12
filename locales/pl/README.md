@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-    </details>
+      </details>
 
 ---
 
@@ -67,6 +67,25 @@ Więcej: [Korzystanie z trybów](https://aiorchestrator.github.io/ai-code-orches
 **Uwaga** AI Code Orchestrator, Inc. **nie** składa żadnych oświadczeń ani nie udziela żadnych gwarancji dotyczących jakiegokolwiek kodu, modeli lub innych narzędzi dostarczonych lub udostępnionych w związku z AI Code Orchestrator, jakimikolwiek powiązanymi narzędziami stron trzecich ani żadnymi wynikami. Użytkownik przyjmuje na siebie **wszelkie ryzyko** związane z korzystaniem z takich narzędzi lub wyników; takie narzędzia są dostarczane na zasadzie **"TAK JAK JEST"** i **"W MIARĘ DOSTĘPNOŚCI"**. Takie ryzyko może obejmować, bez ograniczeń, naruszenie własności intelektualnej, luki w zabezpieczeniach cybernetycznych lub ataki, stronniczość, niedokładności, błędy, wady, wirusy, przestoje, utratę lub uszkodzenie mienia i/lub obrażenia ciała. Użytkownik ponosi wyłączną odpowiedzialność za korzystanie z takich narzędzi lub wyników (w tym, bez ograniczeń, za ich legalność, stosowność i wyniki).
 
 ---
+
+## Instalacja
+
+Zainstaluj rozszerzenie **AI Code Orchestrator** z VS Code Marketplace, lub przebuduj lokalnie VSIX:
+
+```bash
+pnpm install
+pnpm rebuild:vsix
+```
+
+Aby przebudować, a następnie zainstalować interaktywnie, uruchom `pnpm install:vsix`. To jawnie przebudowuje webview przed zbieraniem i pakowaniem rozszerzenia. Zwykłe `pnpm install` instaluje tylko zależności.
+
+Podczas developmentu CLI jest dostępny z monorepo:
+
+```bash
+pnpm --filter @ai-code-orchestrator/cli dev
+```
+
+Zakres pakietu i legacy identyfikatory poleceń są zachowane dla kompatybilności z istniejącymi integracjami.
 
 ## Licencja
 

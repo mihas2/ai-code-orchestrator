@@ -45,8 +45,10 @@ Installiere die Erweiterung **AI Code Orchestrator** aus dem VS Code Marketplace
 
 ```bash
 pnpm install
-pnpm vsix
+pnpm rebuild:vsix
 ```
+
+Um es interaktiv zu bauen und dann zu installieren, führt `pnpm install:vsix` aus. Dies baut die Webview ausdrücklich vor dem Bündeln neu, bevor das Erweiterungspaket verpackt wird. Ein normales `pnpm install` installiert nur Abhängigkeiten.
 
 Während der Entwicklung ist die CLI aus dem Monorepo verfügbar:
 

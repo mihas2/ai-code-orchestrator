@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-    </details>
+      </details>
 
 ---
 
@@ -67,6 +67,25 @@ Xem thêm: [Sử dụng Chế độ](https://aiorchestrator.github.io/ai-code-or
 **Xin lưu ý** rằng AI Code Orchestrator, Inc. **không** đưa ra bất kỳ tuyên bố hay bảo đảm nào liên quan đến bất kỳ mã, mô hình hoặc công cụ nào khác được cung cấp hoặc cung cấp liên quan đến AI Code Orchestrator, bất kỳ công cụ nào của bên thứ ba được liên kết hoặc bất kỳ kết quả đầu ra nào. Bạn chịu **mọi rủi ro** liên quan đến việc sử dụng bất kỳ công cụ hoặc kết quả đầu ra nào như vậy; các công cụ đó được cung cấp trên cơ sở **"NGUYÊN TRẠNG"** và **"NHƯ HIỆN CÓ"**. Những rủi ro đó có thể bao gồm, nhưng không giới hạn ở, vi phạm sở hữu trí tuệ, các lỗ hổng hoặc tấn công mạng, thiên vị, không chính xác, lỗi, khiếm khuyết, vi-rút, thời gian ngừng hoạt động, mất mát hoặc hư hỏng tài sản và/hoặc thương tích cá nhân. Bạn hoàn toàn chịu trách nhiệm về việc sử dụng bất kỳ công cụ hoặc kết quả đầu ra nào đó (bao gồm, nhưng không giới hạn ở, tính hợp pháp, tính phù hợp và kết quả của chúng).
 
 ---
+
+## Cài đặt
+
+Cài đặt mở rộng **AI Code Orchestrator** từ VS Code Marketplace, hoặc xây dựng lại VSIX cục bộ:
+
+```bash
+pnpm install
+pnpm rebuild:vsix
+```
+
+Để xây dựng lại sau đó cài đặt tương tác, chạy `pnpm install:vsix`. Điều này xây dựng rõ ràng webview trước khi đóng gói và đóng gói mở rộng. `pnpm install` thông thường chỉ cài đặt các phụ thuộc.
+
+Trong quá trình phát triển, CLI có sẵn từ monorepo:
+
+```bash
+pnpm --filter @ai-code-orchestrator/cli dev
+```
+
+Phạm vi gói và các định danh lệnh cũ được giữ lại để duy trì tính tương thích với các tích hợp hiện có.
 
 ## Giấy phép
 

@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-    </details>
+      </details>
 
 ---
 
@@ -67,6 +67,25 @@ Daha fazla: [Modları kullanma](https://aiorchestrator.github.io/ai-code-orchest
 **Lütfen dikkat** AI Code Orchestrator, Inc., AI Code Orchestrator ile bağlantılı olarak sağlanan veya kullanıma sunulan herhangi bir kod, model veya diğer araçlar, ilgili üçüncü taraf araçları veya ortaya çıkan çıktılarla ilgili olarak **hiçbir** beyanda bulunmaz veya garanti vermez. Bu tür araçların veya çıktıların kullanımıyla ilişkili **tüm riskleri** üstlenirsiniz; bu tür araçlar **"OLDUĞU GİBİ"** ve **"MEVCUT OLDUĞU GİBİ"** esasına göre sağlanır. Bu tür riskler, fikri mülkiyet ihlali, siber güvenlik açıkları veya saldırıları, önyargı, yanlışlıklar, hatalar, kusurlar, virüsler, kesintiler, mal kaybı veya hasarı ve/veya kişisel yaralanmaları içerebilir, ancak bunlarla sınırlı değildir. Bu tür araçların veya çıktıların kullanımından (yasallığı, uygunluğu ve sonuçları dahil ancak bunlarla sınırlı olmamak üzere) yalnızca siz sorumlusunuz.
 
 ---
+
+## Yükleme
+
+**AI Code Orchestrator** uzantısını VS Code Marketplace'den yükleyin veya yerel olarak VSIX yeniden oluşturun:
+
+```bash
+pnpm install
+pnpm rebuild:vsix
+```
+
+İnteraktif olarak yeniden oluşturup ardından yüklemek için `pnpm install:vsix` çalıştırın. Bu, uzantının paketlenmesi ve paketlenmesi öncesinde webview'i açıkça yeniden oluşturur. Normal bir `pnpm install` yalnızca bağımlılıkları yükler.
+
+Geliştirme sırasında CLI monorepo'dan kullanılabilir:
+
+```bash
+pnpm --filter @ai-code-orchestrator/cli dev
+```
+
+Paket kapsamı ve eski komut kimlikleri, mevcut entegrasyonlarla uyumluluğu korumak için korundu.
 
 ## Lisans
 

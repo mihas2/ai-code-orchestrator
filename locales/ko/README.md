@@ -45,8 +45,10 @@ VS Code Marketplace에서 **AI Code Orchestrator** 확장 프로그램을 설치
 
 ```bash
 pnpm install
-pnpm vsix
+pnpm rebuild:vsix
 ```
+
+인터랙티브하게 재빌드한 뒤 설치하려면 `pnpm install:vsix`를 실행하세요. 이 명령은 번들링 전에 웹вью를 명시적으로 재빌드한 뒤 확장 프로그램을 패키징합니다. 일반 `pnpm install`은 오직 의존성을 설치합니다.
 
 개발 중에는 모노레포에서 CLI를 사용할 수 있습니다.
 

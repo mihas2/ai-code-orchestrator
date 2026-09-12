@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-    </details>
+      </details>
 
 ---
 
@@ -67,6 +67,25 @@ Pelajari lebih lanjut: [Menggunakan Mode](https://aiorchestrator.github.io/ai-co
 **Harap dicatat** bahwa AI Code Orchestrator, Inc. **tidak** membuat pernyataan atau jaminan apapun mengenai kode, model, atau alat lain yang disediakan atau tersedia sehubungan dengan AI Code Orchestrator, alat pihak ketiga terkait, atau output yang dihasilkan. Anda menanggung **semua risiko** yang terkait dengan penggunaan alat atau output tersebut; alat tersebut disediakan atas dasar **"SEBAGAIMANA ADANYA"** dan **"SEBAGAIMANA TERSEDIA"**. Risiko tersebut dapat mencakup, namun tidak terbatas pada, pelanggaran kekayaan intelektual, kerentanan atau serangan siber, bias, ketidakakuratan, kesalahan, cacat, virus, waktu henti, kehilangan atau kerusakan properti, dan/atau cedera pribadi. Anda sepenuhnya bertanggung jawab atas penggunaan Anda atas alat atau output tersebut (termasuk, namun tidak terbatas pada, legalitas, kesesuaian, dan hasilnya).
 
 ---
+
+## Instalasi
+
+Instal ekstensi **AI Code Orchestrator** dari VS Code Marketplace, atau bangun ulang VSIX secara lokal:
+
+```bash
+pnpm install
+pnpm rebuild:vsix
+```
+
+Untuk membangun ulang lalu menginstalnya secara interaktif, jalankan `pnpm install:vsix`. Ini secara eksplisit membangun ulang webview sebelum pengelompokan dan pengemasan ekstensi. `pnpm install` normal hanya menginstal dependensi.
+
+Selama pengembangan, CLI tersedia dari monorepo:
+
+```bash
+pnpm --filter @ai-code-orchestrator/cli dev
+```
+
+Scope paket dan identifier perintah legasi dipertahankan untuk menjaga kompatibilitas dengan integrasi yang ada.
 
 ## Lisensi
 

@@ -28,7 +28,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-  </details>
+    </details>
 
 ---
 
@@ -67,6 +67,25 @@ AI Code Orchestrator 會配合您的工作方式，而非要您配合它：
 **請注意**，AI Code Orchestrator, Inc. **不**對與 AI Code Orchestrator 相關的任何程式碼、模型或其他工具、任何相關的第三方工具或任何由此產生的輸出作出任何陳述或保證。您承擔使用任何此類工具或輸出的**所有風險**；此類工具均按**「原樣」**和**「可用」**的基礎提供。此類風險可能包括但不限於智慧財產權侵權、網路漏洞或攻擊、偏見、不準確、錯誤、缺陷、病毒、停機、財產損失或損害和/或人身傷害。您對自己使用任何此類工具或輸出負全部責任（包括但不限於其合法性、適當性和結果）。
 
 ---
+
+## 安裝
+
+從 VS Code Marketplace 安裝 **AI Code Orchestrator** 擴充功能，或在本地建置 VSIX：
+
+```bash
+pnpm install
+pnpm rebuild:vsix
+```
+
+若要重新建置並互動式安裝，請執行 `pnpm install:vsix`。這會在打包和封裝擴充功能之前，明確地重新建置 webview。一般的 `pnpm install` 僅安裝依賴項目。
+
+開發期間可從 monorepo 使用 CLI：
+
+```bash
+pnpm --filter @ai-code-orchestrator/cli dev
+```
+
+套件作用域和舊版命令識別符會繼續保留，以維持與現有集成的相容性。
 
 ## 授權
 
