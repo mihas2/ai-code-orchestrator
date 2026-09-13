@@ -64,7 +64,7 @@ describe("ErrorBoundary", () => {
 		// Check for the GitHub link
 		const githubLink = screen.getByRole("link", { name: /errorBoundary.githubText/ })
 		expect(githubLink).toBeInTheDocument()
-		expect(githubLink).toHaveAttribute("href", "https://github.com/AIOrchestrator/ai-code-orchestrator/issues")
+		expect(githubLink).toHaveAttribute("href", "https://github.com/mihas2/ai-code-orchestrator/issues")
 
 		// Check for other error boundary elements
 		expect(screen.getByText(/errorBoundary.copyInstructions/)).toBeInTheDocument()

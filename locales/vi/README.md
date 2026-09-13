@@ -1,6 +1,5 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/AI Code Orchestrator"><img src="https://img.shields.io/badge/AI Code Orchestrator-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=mihas2.ai-code-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
 # AI Code Orchestrator
 
@@ -28,7 +27,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-      </details>
+  </details>
 
 ---
 
@@ -53,11 +52,11 @@ AI Code Orchestrator thích ứng với cách bạn làm việc, chứ không ph
 - Chế độ Dịch: dịch và quản lý các tệp bản địa hóa
 - Chế độ Tùy chỉnh: xây dựng các chế độ chuyên biệt cho nhóm hoặc quy trình làm việc của bạn
 
-Xem thêm: [Sử dụng Chế độ](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [Chế độ tùy chỉnh](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)
+Xem thêm: [Sử dụng Chế độ](https://github.com/mihas2/ai-code-orchestrator/basic-usage/using-modes) • [Chế độ tùy chỉnh](https://github.com/mihas2/ai-code-orchestrator/advanced-usage/custom-modes)
 
 ## Tài nguyên
 
-- **[Tài liệu](https://aiorchestrator.github.io/ai-code-orchestrator/):** Hướng dẫn chính thức để cài đặt, cấu hình và sử dụng thành thạo AI Code Orchestrator.
+- **[Tài liệu](https://github.com/mihas2/ai-code-orchestrator):** Hướng dẫn chính thức để cài đặt, cấu hình và sử dụng thành thạo AI Code Orchestrator.
 - **[Vấn đề trên GitHub](https://github.com/AIOrchestrator/ai-code-orchestrator/issues):** Báo cáo lỗi và theo dõi quá trình phát triển.
 
 ---

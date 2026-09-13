@@ -2,13 +2,10 @@ import { themes as prismThemes } from "prism-react-renderer"
 import type { Config } from "@docusaurus/types"
 import type * as Preset from "@docusaurus/preset-classic"
 import {
-	TWITTER_URL,
-	BLUESKY_URL,
 	GITHUB_MAIN_REPO_URL,
 	GITHUB_ISSUES_MAIN_URL,
 	VSCODE_MARKETPLACE_URL,
 	OPEN_VSX_URL,
-	EXTENSION_PRIVACY_URL,
 	GITHUB_REPO_URL,
 } from "./src/constants"
 
@@ -20,7 +17,7 @@ const config: Config = {
 	favicon: "img/favicon.ico",
 
 	// Set the production url of your site here
-	url: "https://aiorchestrator.github.io",
+	url: "https://github.com/mihas2/ai-code-orchestrator",
 	// Set the /<baseUrl>/ pathname under which your site is served
 	// For GitHub pages deployment, it is often '/<projectName>/'
 	baseUrl: "/AI Code Orchestrator-Code/",
@@ -399,14 +396,6 @@ const config: Config = {
 					title: "Social",
 					items: [
 						{
-							label: "Twitter",
-							href: TWITTER_URL,
-						},
-						{
-							label: "Bluesky",
-							href: BLUESKY_URL,
-						},
-						{
 							label: "GitHub",
 							href: GITHUB_MAIN_REPO_URL,
 						},
@@ -431,15 +420,6 @@ const config: Config = {
 						{
 							label: "Open VSX Registry",
 							href: OPEN_VSX_URL,
-						},
-					],
-				},
-				{
-					title: "Privacy",
-					items: [
-						{
-							label: "Extension Privacy Policy",
-							href: EXTENSION_PRIVACY_URL,
 						},
 					],
 				},

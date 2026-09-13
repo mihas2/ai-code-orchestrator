@@ -1,6 +1,6 @@
 import React from "react"
-import { FaBluesky, FaGithub, FaXTwitter } from "react-icons/fa6"
-import { TWITTER_URL, BLUESKY_URL, GITHUB_MAIN_REPO_URL } from "../../constants"
+import { FaGithub } from "react-icons/fa6"
+import { GITHUB_MAIN_REPO_URL } from "../../constants"
 
 const SocialIcons: React.FC = () => {
 	const socialLinks = [
@@ -8,16 +8,6 @@ const SocialIcons: React.FC = () => {
 			href: GITHUB_MAIN_REPO_URL,
 			icon: FaGithub,
 			label: "GitHub",
-		},
-		{
-			href: TWITTER_URL,
-			icon: FaXTwitter,
-			label: "X (Twitter)",
-		},
-		{
-			href: BLUESKY_URL,
-			icon: FaBluesky,
-			label: "Bluesky",
 		},
 	]
 

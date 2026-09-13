@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Thank you for your report! Please search existing issues first:
-        https://github.com/AIOrchestrator/ai-code-orchestrator/issues
+        https://github.com/mihas2/ai-code-orchestrator/issues
 
   - type: textarea
     id: problem

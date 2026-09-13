@@ -22,7 +22,7 @@ We release updates regularly, sometimes multiple times a day, so make sure you'r
 **AI Code Orchestrator** is a fork of the original Roo-Cline project, extended with support for multi-agent orchestration, role-based model assignment, and enhanced AI capabilities for development automation.
 
 - **GitHub**: [mihas2/ai-code-orchestrator](https://github.com/mihas2/ai-code-orchestrator)
-- **Documentation**: [aiorchestrator.github.io/ai-code-orchestrator](https://aiorchestrator.github.io/ai-code-orchestrator/)
+- **Documentation**: [github.com/mihas2/ai-code-orchestrator](https://github.com/mihas2/ai-code-orchestrator)
 
 ---
 

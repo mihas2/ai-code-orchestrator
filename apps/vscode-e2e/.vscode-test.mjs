@@ -12,5 +12,5 @@ export default defineConfig({
 		ui: "tdd",
 		timeout: 60000,
 	},
-	launchArgs: ["--enable-proposed-api=AicoVeterinaryInc.ai-code-orchestrator", "--disable-extensions"],
+	launchArgs: ["--enable-proposed-api=mihas2.ai-code-orchestrator", "--disable-extensions"],
 })

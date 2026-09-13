@@ -1,6 +1,5 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/AI Code Orchestrator"><img src="https://img.shields.io/badge/AI Code Orchestrator-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=mihas2.ai-code-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
 # AI Code Orchestrator
 
@@ -28,7 +27,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-      </details>
+  </details>
 
 ---
 
@@ -53,11 +52,11 @@ AI Code Orchestrator beradaptasi dengan cara Anda bekerja, bukan sebaliknya:
 - Mode Terjemahan: menerjemahkan dan mengelola file lokalisasi
 - Mode Kustom: buat mode khusus untuk tim atau alur kerja Anda
 
-Pelajari lebih lanjut: [Menggunakan Mode](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [Mode Kustom](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)
+Pelajari lebih lanjut: [Menggunakan Mode](https://github.com/mihas2/ai-code-orchestrator/basic-usage/using-modes) • [Mode Kustom](https://github.com/mihas2/ai-code-orchestrator/advanced-usage/custom-modes)
 
 ## Sumber daya
 
-- **[Dokumentasi](https://aiorchestrator.github.io/ai-code-orchestrator/):** Panduan resmi untuk menginstal, mengonfigurasi, dan menguasai AI Code Orchestrator.
+- **[Dokumentasi](https://github.com/mihas2/ai-code-orchestrator):** Panduan resmi untuk menginstal, mengonfigurasi, dan menguasai AI Code Orchestrator.
 - **[Masalah GitHub](https://github.com/AIOrchestrator/ai-code-orchestrator/issues):** Laporkan bug dan lacak pengembangan.
 
 ---

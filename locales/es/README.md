@@ -1,6 +1,5 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/AI Code Orchestrator"><img src="https://img.shields.io/badge/AI Code Orchestrator-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=mihas2.ai-code-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
 # AI Code Orchestrator
 
@@ -28,7 +27,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-      </details>
+  </details>
 
 ---
 
@@ -53,11 +52,11 @@ AI Code Orchestrator se adapta a tu forma de trabajar, no al revés:
 - Modo Traducción: traducir y gestionar archivos de localización
 - Modos Personalizados: crea modos especializados para tu equipo o flujo de trabajo
 
-Más info: [Usar Modos](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [Modos Personalizados](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)
+Más info: [Usar Modos](https://github.com/mihas2/ai-code-orchestrator/basic-usage/using-modes) • [Modos Personalizados](https://github.com/mihas2/ai-code-orchestrator/advanced-usage/custom-modes)
 
 ## Recursos
 
-- **[Documentación](https://aiorchestrator.github.io/ai-code-orchestrator/):** La guía oficial para instalar, configurar y dominar AI Code Orchestrator.
+- **[Documentación](https://github.com/mihas2/ai-code-orchestrator):** La guía oficial para instalar, configurar y dominar AI Code Orchestrator.
 - **[Incidencias de GitHub](https://github.com/AIOrchestrator/ai-code-orchestrator/issues):** Reporta errores y sigue el desarrollo.
 
 ---

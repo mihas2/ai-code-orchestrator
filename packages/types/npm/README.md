@@ -10,7 +10,7 @@ To use this API in your extension:
 ```typescript
 import { AiCodeOrchestratorAPI } from "@AI Code Orchestrator/types"
 
-const extension = vscode.extensions.getExtension<AiCodeOrchestratorAPI>("AicoVeterinaryInc.ai-code-orchestrator")
+const extension = vscode.extensions.getExtension<AiCodeOrchestratorAPI>("mihas2.ai-code-orchestrator")
 
 if (!extension?.isActive) {
 	throw new Error("Extension is not activated")
@@ -38,10 +38,10 @@ await api.pressPrimaryButton()
 await api.pressSecondaryButton()
 ```
 
-**NOTE:** To ensure that the `AicoVeterinaryInc.ai-code-orchestrator` extension is activated before your extension, add it to the `extensionDependencies` in your `package.json`:
+**NOTE:** To ensure that the `mihas2.ai-code-orchestrator` extension is activated before your extension, add it to the `extensionDependencies` in your `package.json`:
 
 ```json
-"extensionDependencies": ["AicoVeterinaryInc.ai-code-orchestrator"]
+"extensionDependencies": ["mihas2.ai-code-orchestrator"]
 ```
 
 For detailed information on the available methods and their usage, refer to the `AI Code Orchestrator.d.ts` file.

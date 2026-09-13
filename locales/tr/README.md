@@ -1,6 +1,5 @@
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=AIOrchestrator.ai-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
-  <a href="https://x.com/AI Code Orchestrator"><img src="https://img.shields.io/badge/AI Code Orchestrator-000000?style=flat&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=mihas2.ai-code-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
 # AI Code Orchestrator
 
@@ -28,7 +27,7 @@
 - [简体中文](../zh-CN/README.md)
 - [繁體中文](../zh-TW/README.md)
 - ...
-      </details>
+  </details>
 
 ---
 
@@ -53,11 +52,11 @@ AI Code Orchestrator, sizin çalışma şeklinize uyum sağlar, tam tersi değil
 - Çeviri Modu: yerelleştirme dosyalarını çevirin ve yönetin
 - Özel Modlar: ekibiniz veya iş akışınız için özel modlar oluşturun
 
-Daha fazla: [Modları kullanma](https://aiorchestrator.github.io/ai-code-orchestrator/basic-usage/using-modes) • [Özel modlar](https://aiorchestrator.github.io/ai-code-orchestrator/advanced-usage/custom-modes)
+Daha fazla: [Modları kullanma](https://github.com/mihas2/ai-code-orchestrator/basic-usage/using-modes) • [Özel modlar](https://github.com/mihas2/ai-code-orchestrator/advanced-usage/custom-modes)
 
 ## Kaynaklar
 
-- **[Dokümantasyon](https://aiorchestrator.github.io/ai-code-orchestrator/):** AI Code Orchestrator'u yükleme, yapılandırma ve ustalaşma konusundaki resmi kılavuz.
+- **[Dokümantasyon](https://github.com/mihas2/ai-code-orchestrator):** AI Code Orchestrator'u yükleme, yapılandırma ve ustalaşma konusundaki resmi kılavuz.
 - **[GitHub Sorunları](https://github.com/AIOrchestrator/ai-code-orchestrator/issues):** Hataları bildirin ve gelişimi takip edin.
 
 ---

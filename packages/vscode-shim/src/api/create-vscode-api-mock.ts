@@ -280,7 +280,7 @@ export function createVSCodeAPIMock(
 			all: [],
 			getExtension: (extensionId: string) => {
 				// Mock the extension object with extensionUri for theme loading
-				if (extensionId === "AicoVeterinaryInc.ai-code-orchestrator") {
+				if (extensionId === "mihas2.ai-code-orchestrator") {
 					return {
 						id: extensionId,
 						extensionUri: context.extensionUri,

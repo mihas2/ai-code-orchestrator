@@ -1,6 +1,6 @@
 # AI Code Orchestrator Docs
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator, and lives at https://aiorchestrator.github.io/ai-code-orchestrator/
+This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator, and lives at https://github.com/mihas2/ai-code-orchestrator
 
 ### Installation
 

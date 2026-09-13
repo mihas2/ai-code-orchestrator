@@ -17,7 +17,7 @@ function formatNumber(num: number): string {
 // GitHub Stars API
 async function getGitHubStars() {
 	try {
-		const res = await fetch("https://api.github.com/repos/AIOrchestrator/ai-code-orchestrator")
+		const res = await fetch("https://api.github.com/repos/mihas2/ai-code-orchestrator")
 		const data = await res.json()
 
 		if (typeof data.stargazers_count !== "number") {
@@ -47,7 +47,7 @@ async function getVSCodeDownloads() {
 						criteria: [
 							{
 								filterType: 7,
-								value: "AicoVeterinaryInc.ai-code-orchestrator",
+								value: "mihas2.ai-code-orchestrator",
 							},
 						],
 					},
