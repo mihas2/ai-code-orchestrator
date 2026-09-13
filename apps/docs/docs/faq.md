@@ -50,7 +50,7 @@ AI Code Orchestrator can help with a variety of coding tasks, including:
 
 ### Is AI Code Orchestrator free to use?
 
-The AI Code Orchestrator extension is free and [open-source](https://github.com/AIOrchestrator/ai-code-orchestrator/).
+The AI Code Orchestrator extension is free and [open-source](https://github.com/mihas2/ai-code-orchestrator/).
 
 AI Code Orchestrator relies on external LLM inference providers (like [Anthropic](providers/anthropic), [OpenAI](providers/openai), [OpenRouter](providers/openrouter), [Requesty](providers/requesty), etc.) for its AI capabilities.
 These providers typically charge for API usage based on the number of tokens processed. You will need to create an account and obtain an API key from your chosen provider. Learn more [about providers and how to set them up](/providers/) for details.

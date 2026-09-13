@@ -11,10 +11,10 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/AIOrchestrator/ai-code-orchestrator.git"
+		"url": "git+https://github.com/mihas2/ai-code-orchestrator.git"
 	},
 	"bugs": {
-		"url": "https://github.com/AIOrchestrator/ai-code-orchestrator/issues"
+		"url": "https://github.com/mihas2/ai-code-orchestrator/issues"
 	},
 	"homepage": "https://ai-code-orchestrator.dev",
 	"keywords": ["aico", "ai-code-orchestrator", "ai"],

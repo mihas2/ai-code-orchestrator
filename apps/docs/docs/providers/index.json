@@ -6,6 +6,11 @@
 			"extension": true
 		},
 		{
+			"id": "providers/anymodel",
+			"title": "AnyModel",
+			"extension": true
+		},
+		{
 			"id": "providers/openai-chatgpt-plus-pro",
 			"title": "ChatGPT Plus/Pro",
 			"extension": true

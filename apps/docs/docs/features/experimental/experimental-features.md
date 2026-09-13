@@ -39,6 +39,6 @@ The following experimental features are currently available:
 
 ## Providing Feedback
 
-If you encounter any issues with experimental features, or if you have suggestions for improvements, please report them on the [AI Code Orchestrator GitHub Issues page](https://github.com/AIOrchestrator/ai-code-orchestrator/issues).
+If you encounter any issues with experimental features, or if you have suggestions for improvements, please report them on the [AI Code Orchestrator GitHub Issues page](https://github.com/mihas2/ai-code-orchestrator/issues).
 
 Your feedback is valuable and helps us improve AI Code Orchestrator!

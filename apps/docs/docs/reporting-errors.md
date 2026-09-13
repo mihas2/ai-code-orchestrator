@@ -55,6 +55,6 @@ The Error Details modal offers two buttons, each serving different needs:
 After copying error information:
 
 - **Email**: Send to [support@AI Code Orchestrator.com](mailto:support@AI Code Orchestrator.com)
-- **GitHub Issues**: File at [github.com/AIOrchestrator/ai-code-orchestrator/issues](https://github.com/AIOrchestrator/ai-code-orchestrator/issues)
+- **GitHub Issues**: File at [github.com/mihas2/ai-code-orchestrator/issues](https://github.com/mihas2/ai-code-orchestrator/issues)
 
 Include a brief description of what you were trying to do when the error occurred. The exported diagnostics handle the technical details.

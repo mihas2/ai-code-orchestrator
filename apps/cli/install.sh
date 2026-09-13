@@ -1,6 +1,6 @@
 #!/bin/sh
 # AI Code Orchestrator CLI Installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/AIOrchestrator/ai-code-orchestrator/main/apps/cli/install.sh | sh
+# Usage: curl -fsSL https://raw.githubusercontent.com/mihas2/ai-code-orchestrator/main/apps/cli/install.sh | sh
 #
 # Environment variables:
 #   AICO_INSTALL_DIR   - Installation directory (default: ~/.ai-code-orchestrator/cli)
@@ -13,7 +13,7 @@ set -e
 # Configuration
 INSTALL_DIR="${AICO_INSTALL_DIR:-$HOME/.ai-code-orchestrator/cli}"
 BIN_DIR="${AICO_BIN_DIR:-$HOME/.local/bin}"
-REPO="AIOrchestrator/ai-code-orchestrator"
+REPO="mihas2/ai-code-orchestrator"
 MIN_NODE_VERSION=20
 
 # Color output (only if terminal supports it)

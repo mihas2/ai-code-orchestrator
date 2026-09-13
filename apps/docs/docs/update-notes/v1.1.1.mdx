@@ -1,0 +1,48 @@
+---
+description: AI Code Orchestrator 1.1.1 adds reviewer role, updates orchestrator prompts, adds orchestration UI, and fixes critical delegation issues.
+keywords:
+  - AI Code Orchestrator 1.1.1
+  - reviewer role
+  - orchestrator prompts
+  - orchestration UI
+  - delegation fixes
+  - E2E tests
+---
+
+# AI Code Orchestrator 1.1.1 Release Notes
+
+## Features
+
+- Added **reviewer role** with specialized prompts for code review workflow
+- Updated orchestrator mode prompts for team-lead protocol
+- Added support for float encoding for OpenAI-compatible embeddings with UI toggle
+- Implemented **orchestration runtime UI panel** with DAG visualization and task cards
+- Added context optimization infrastructure (content-digest cache, deduplication, stable prefixes)
+- Added provider capabilities interface for capability discovery
+
+## Fixes
+
+- Fixed persistence of float encoding checkbox state after save
+- Fixed critical issues in orchestration and delegation flow:
+  - Fixed error where roles used active profile models instead of their assigned models
+  - Fixed infinite loop when creating child tasks by orchestrator
+  - Eliminated race condition between UI action confirmation and task delegation
+
+## Tests
+
+- Added comprehensive orchestration test coverage (14 new tests: UI, integration, performance)
+- Added 6 integration tests for delegation flow in `src/core/webview/__tests__/ClineProvider.delegation.spec.ts`
+- Added 4 E2E tests for orchestration flow in `apps/vscode-e2e/src/suite/orchestration-flow.test.ts`
+- Added 5 E2E tests for role model assignment in `apps/vscode-e2e/src/suite/role-model-assignment.test.ts`
+- Created full-featured mock AI provider with streaming support in `apps/vscode-e2e/src/suite/mock-provider.ts`
+
+## Documentation
+
+- Updated all documentation for the first release:
+  - Changed terminology from "Modes" to "Roles"
+  - Added Reviewer role documentation
+  - Expanded descriptions of orchestration and role models
+  - Added Vercel AI Gateway and Unbound provider documentation
+  - Added context optimization documentation
+  - Updated all 8 localized READMEs
+  - Updated package descriptions and keywords

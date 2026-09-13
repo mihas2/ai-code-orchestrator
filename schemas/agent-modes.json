@@ -108,7 +108,7 @@
 	"required": ["customModes"],
 	"additionalProperties": false,
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"$id": "https://github.com/AIOrchestrator/ai-code-orchestrator/blob/main/schemas/agent-modes.json",
+	"$id": "https://github.com/mihas2/ai-code-orchestrator/blob/main/schemas/agent-modes.json",
 	"title": "AI Code Orchestrator Custom Modes",
 	"description": "Schema for .agent-modes configuration files used by AI Code Orchestrator to define custom modes."
 }

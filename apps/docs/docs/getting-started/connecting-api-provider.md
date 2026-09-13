@@ -21,6 +21,8 @@ A great model to start is **Claude Sonnet 4.5**, which offers a lot of power at 
 
 - **OpenRouter (Recommended):** Provides access to multiple AI models from different labs through a single API key. Great for flexibility and getting started reasonably fast. To get an API key, [follow these instructions <LucideIcon name="ArrowRight" />](/providers/openrouter#getting-an-api-key)
 
+- **AnyModel:** Access to multiple AI models at competitive prices with 5 million free tokens for new users. Great for cost-conscious development and experimentation. To get an API key, [follow these instructions <LucideIcon name="ArrowRight" />](/providers/anymodel#getting-an-api-key)
+
 - **Anthropic:** Direct access to the Claude family of models. Requires API access approval and may have [rate limits depending on your tier](https://docs.anthropic.com/en/api/rate-limits#requirements-to-advance-tier). To get an API key, [follow these instructions <LucideIcon name="ArrowRight" />](/providers/anthropic#getting-an-api-key)
 
 AI Code Orchestrator is compatible with [other providers](/providers) which offer Claude, and with a wide range of different models you can try.

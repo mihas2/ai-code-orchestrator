@@ -13,7 +13,7 @@ This CLI uses the `@AI Code Orchestrator/vscode-shim` package to provide a VSCod
 Install the AI Code Orchestrator CLI with a single command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AIOrchestrator/ai-code-orchestrator/main/apps/cli/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/mihas2/ai-code-orchestrator/main/apps/cli/install.sh | sh
 ```
 
 **Requirements:**
@@ -30,7 +30,7 @@ AICO_INSTALL_DIR=/opt/ai-code-orchestrator AICO_BIN_DIR=/usr/local/bin curl -fsS
 **Install a specific version:**
 
 ```bash
-AICO_VERSION=0.1.0 curl -fsSL https://raw.githubusercontent.com/AIOrchestrator/ai-code-orchestrator/main/apps/cli/install.sh | sh
+AICO_VERSION=0.1.0 curl -fsSL https://raw.githubusercontent.com/mihas2/ai-code-orchestrator/main/apps/cli/install.sh | sh
 ```
 
 ### Updating
@@ -38,7 +38,7 @@ AICO_VERSION=0.1.0 curl -fsSL https://raw.githubusercontent.com/AIOrchestrator/a
 Re-run the install script to update to the latest version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AIOrchestrator/ai-code-orchestrator/main/apps/cli/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/mihas2/ai-code-orchestrator/main/apps/cli/install.sh | sh
 ```
 
 Or run:

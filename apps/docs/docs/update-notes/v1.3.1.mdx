@@ -1,0 +1,33 @@
+---
+description: AI Code Orchestrator 1.3.1 adds "Run and Allow" button for commands, updates icons, and fixes numerous orchestration issues.
+keywords:
+  - AI Code Orchestrator 1.3.1
+  - Run and Allow
+  - auto-approval
+  - race condition fixes
+  - orchestrator improvements
+---
+
+# AI Code Orchestrator 1.3.1 Release Notes (2026-09-10)
+
+## Added
+
+- Added **"Run and Allow"** button for commands in webview for faster approval workflow
+- Added translations for `runCommandAndAllow` across 16 languages
+
+## Changed
+
+- Updated AI Code Orchestrator icons based on the official AIco reference logo
+- Refactored i18n text keys: shortened `text.aicoSaid` to "AIco <verb>" format across all 17 languages
+
+## Fixed
+
+- Fixed **race condition** in orchestration auto-approval tests
+- Fixed auto-approval settings inheritance in orchestrator workers
+- Fixed file operation race conditions with proper guard mechanisms
+- Fixed role assignment issues in orchestrator mode
+- Fixed delegation race condition in `reopenParentFromDelegation`
+- Fixed path normalization in read-file provider arguments
+- Fixed workspace isolation persistence for child tasks
+- Replaced incorrect "Ru said" with "AIco said" in Russian localization
+- Fixed critical orchestrator prompt architecture issues

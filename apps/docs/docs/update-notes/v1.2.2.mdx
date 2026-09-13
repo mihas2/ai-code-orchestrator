@@ -1,0 +1,29 @@
+---
+description: AI Code Orchestrator 1.2.2 completes branding migration, simplifies orchestration UI, and improves delegated task context.
+keywords:
+  - AI Code Orchestrator 1.2.2
+  - branding migration
+  - orchestration UI
+  - provider error handling
+  - indexer retries
+---
+
+# AI Code Orchestrator 1.2.2 Release Notes (2026-09-08)
+
+## Changed
+
+- Completed **AI Code Orchestrator** branding and identifier migration across all extension manifests, localizations, documentation, and webview
+- Rebuild webview before VSIX packaging and added reproducible `install:vsix` workflow
+- Simplified orchestration UI state and task representation by removing legacy panels and noisy task details while preserving useful delegation context
+- Improved delegated task context so child tasks receive relevant orchestration and parent task details
+
+## Fixed
+
+- Fixed reviewer delegation so reviewer tasks use the intended reviewer flow and context
+- Preserved provider error details in chat, including model information and readable overflow handling
+- Added retries with capped backoff for transient code indexer API failures
+
+## Validation
+
+- Added and updated targeted tests for orchestration planning/delegation, provider errors, task UI, and indexer retries
+- Release validation covers formatting, linting, type checking, tests, and builds

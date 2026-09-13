@@ -40,7 +40,7 @@ export const About = ({ debug, setDebug, className, ...props }: AboutProps) => {
 						<Bug className="size-4 text-vscode-descriptionForeground shrink-0" />
 						<span>
 							{t("settings:about.bugReport.label")}{" "}
-							<VSCodeLink href="https://github.com/AIOrchestrator/ai-code-orchestrator/issues/new?template=bug_report.yml">
+							<VSCodeLink href="https://github.com/mihas2/ai-code-orchestrator/issues/new?template=bug_report.yml">
 								{t("settings:about.bugReport.link")}
 							</VSCodeLink>
 						</span>
@@ -49,7 +49,7 @@ export const About = ({ debug, setDebug, className, ...props }: AboutProps) => {
 						<Shield className="size-4 text-vscode-descriptionForeground shrink-0" />
 						<span>
 							{t("settings:about.securityIssue.label")}{" "}
-							<VSCodeLink href="https://github.com/AIOrchestrator/ai-code-orchestrator/security/policy">
+							<VSCodeLink href="https://github.com/mihas2/ai-code-orchestrator/security/policy">
 								{t("settings:about.securityIssue.link")}
 							</VSCodeLink>
 						</span>

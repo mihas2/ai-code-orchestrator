@@ -3,9 +3,9 @@ import { spawn } from "child_process"
 import { VERSION } from "@/lib/utils/version.js"
 import { isRecord } from "@/lib/utils/guards.js"
 
-const RELEASES_URL = "https://api.github.com/repos/AIOrchestrator/ai-code-orchestrator/releases?per_page=100"
+const RELEASES_URL = "https://api.github.com/repos/mihas2/ai-code-orchestrator/releases?per_page=100"
 export const INSTALL_SCRIPT_COMMAND =
-	"curl -fsSL https://raw.githubusercontent.com/AIOrchestrator/ai-code-orchestrator/main/apps/cli/install.sh | sh"
+	"curl -fsSL https://raw.githubusercontent.com/mihas2/ai-code-orchestrator/main/apps/cli/install.sh | sh"
 
 export interface UpgradeOptions {
 	currentVersion?: string

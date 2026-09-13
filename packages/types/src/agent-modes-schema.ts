@@ -43,7 +43,7 @@ export function generateAgentModesJsonSchema(): Record<string, unknown> {
 		target: "jsonSchema7",
 	}) as Record<string, unknown>
 
-	jsonSchema["$id"] = "https://github.com/AIOrchestrator/ai-code-orchestrator/blob/main/schemas/agent-modes.json"
+	jsonSchema["$id"] = "https://github.com/mihas2/ai-code-orchestrator/blob/main/schemas/agent-modes.json"
 	jsonSchema["title"] = "AI Code Orchestrator Custom Modes"
 	jsonSchema["description"] =
 		"Schema for .agent-modes configuration files used by AI Code Orchestrator to define custom modes."

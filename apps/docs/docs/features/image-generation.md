@@ -145,4 +145,4 @@ Include these elements in your prompts:
 
 ## Status
 
-This feature is experimental and may change or be removed in future versions. Provide feedback through [GitHub Issues](https://github.com/AIOrchestrator/ai-code-orchestrator/issues).
+This feature is experimental and may change or be removed in future versions. Provide feedback through [GitHub Issues](https://github.com/mihas2/ai-code-orchestrator/issues).
