@@ -9,7 +9,7 @@ import { MockAIProvider } from "./mock-provider"
 import { waitFor } from "./utils"
 
 export async function run() {
-	const extension = vscode.extensions.getExtension<AiCodeOrchestratorAPI>("AIOrchestrator.ai-code-orchestrator")
+	const extension = vscode.extensions.getExtension<AiCodeOrchestratorAPI>("mihas2.ai-code-orchestrator")
 
 	if (!extension) {
 		throw new Error("Extension not found")
