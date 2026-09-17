@@ -3230,26 +3230,73 @@ export class ClineProvider
 		return task
 	}
 
-	public async cancelTask(taskId?: string, instanceId?: string, bypassValidation = false): Promise<void> {
+	public async cancelTask(
+		taskId?: string,
+		instanceId?: string,
+		bypassValidation = false,
+		executionId?: string,
+	): Promise<void> {
 		const task = this.getCurrentTask()
 
 		console.log("[cancelTask] received:", {
 			messageTaskId: taskId,
 			messageInstanceId: instanceId,
+			messageExecutionId: executionId,
 			currentTaskId: task?.taskId,
 			currentInstanceId: task?.instanceId,
+			currentExecutionId: task?.lastMessageTs?.toString(),
 		})
 		console.log("[cancelTask] stack trace:", new Error().stack)
 
-		if (
-			!bypassValidation &&
-			(!taskId || !instanceId || taskId !== task?.taskId || instanceId !== task?.instanceId)
-		) {
-			console.log("[cancelTask] Ignoring cancel - task identity mismatch or missing", {
-				provided: { taskId, instanceId },
-				current: { currentTaskId: task?.taskId, currentInstanceId: task?.instanceId },
-			})
-			return
+		// STOP-004A: Strict validation - reject if task identity is incomplete or mismatched
+		if (!bypassValidation) {
+			if (!taskId || !instanceId) {
+				console.log("[cancelTask] Rejecting cancel - missing taskId or instanceId", {
+					provided: { taskId, instanceId, executionId },
+				})
+				return
+			}
+
+			if (!task) {
+				console.log("[cancelTask] Rejecting cancel - no current task", {
+					provided: { taskId, instanceId, executionId },
+				})
+				return
+			}
+
+			if (taskId !== task.taskId || instanceId !== task.instanceId) {
+				console.log("[cancelTask] Rejecting cancel - task identity mismatch", {
+					provided: { taskId, instanceId, executionId },
+					current: {
+						currentTaskId: task.taskId,
+						currentInstanceId: task.instanceId,
+						currentExecutionId: task.lastMessageTs?.toString(),
+					},
+				})
+				return
+			}
+
+			// STOP-004A: Strict executionId validation
+			// For non-command streaming scenarios, executionId may be undefined.
+			// We validate executionId ONLY if both sides have it.
+			const currentExecutionId = task.lastMessageTs?.toString()
+			if (executionId !== undefined && currentExecutionId !== undefined) {
+				if (executionId !== currentExecutionId) {
+					console.log("[cancelTask] Rejecting cancel - executionId mismatch (stale request)", {
+						provided: { taskId, instanceId, executionId },
+						current: { currentTaskId: task.taskId, currentInstanceId: task.instanceId, currentExecutionId },
+					})
+					return
+				}
+			} else if (executionId === undefined && currentExecutionId !== undefined) {
+				// Frontend sent cancel without executionId, but backend has one.
+				// This is a kill-path scenario where frontend doesn't track executionId.
+				// Safe fallback: allow cancel if taskId/instanceId match.
+				console.log("[cancelTask] Allowing cancel without executionId (kill-path fallback)", {
+					provided: { taskId, instanceId, executionId },
+					current: { currentTaskId: task.taskId, currentInstanceId: task.instanceId, currentExecutionId },
+				})
+			}
 		}
 
 		if (!task) {

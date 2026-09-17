@@ -1007,7 +1007,33 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 		case "terminalOperation":
 			if (message.terminalOperation) {
-				provider.getCurrentTask()?.handleTerminalOperation(message.terminalOperation)
+				const currentTask = provider.getCurrentTask()
+				if (!currentTask) {
+					console.warn("[webviewMessageHandler] No current task for terminal operation")
+					break
+				}
+
+				// STOP-004: Validate terminal operation identity before execution
+				const { taskId, instanceId, executionId } = message
+				if (!taskId || !instanceId || !executionId) {
+					console.warn("[webviewMessageHandler] Terminal operation missing identity", {
+						taskId,
+						instanceId,
+						executionId,
+					})
+					break
+				}
+
+				// Verify identity matches current task
+				if (currentTask.taskId !== taskId || currentTask.instanceId !== instanceId) {
+					console.warn("[webviewMessageHandler] Terminal operation identity mismatch", {
+						expected: { taskId: currentTask.taskId, instanceId: currentTask.instanceId },
+						received: { taskId, instanceId, executionId },
+					})
+					break
+				}
+
+				currentTask.handleTerminalOperation(message.terminalOperation, executionId)
 			}
 			break
 		case "clearTask":
@@ -1459,7 +1485,8 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			break
 		}
 		case "cancelTask":
-			await provider.cancelTask(message.taskId, message.instanceId)
+			// STOP-004A: Pass executionId for validation
+			await provider.cancelTask(message.taskId, message.instanceId, false, message.executionId)
 			break
 		case "cancelAutoApproval":
 			// Cancel any pending auto-approval timeout for the current task

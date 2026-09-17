@@ -375,6 +375,8 @@ export async function executeCommandInTerminal(
 
 	const process = terminal.runCommand(command, callbacks)
 	task.terminalProcess = process
+	// STOP-004: Assign executionId for terminal operation validation
+	process.executionId = executionId
 
 	// Dual-timeout logic:
 	// - Agent timeout: transitions the command to background (continues running)

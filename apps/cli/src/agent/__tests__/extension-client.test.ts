@@ -847,4 +847,56 @@ describe("Edge Cases", () => {
 			expect(state.state).toBe(AgentLoopState.RUNNING)
 		})
 	})
+
+	describe("STOP-001: cancelTask with taskId and instanceId", () => {
+		it("should send taskId and instanceId from extension state when cancelling", () => {
+			const { client, sentMessages } = createMockClient()
+			const testTaskId = "test-task-123"
+			const testInstanceId = "test-instance-456"
+
+			// Send state message with task identity
+			client.handleMessage({
+				type: "state",
+				state: {
+					clineMessages: [createMessage({ say: "text", text: "Working..." })],
+					currentTaskId: testTaskId,
+					currentTaskInstanceId: testInstanceId,
+				},
+			} as ExtensionMessage)
+
+			// Call cancelTask
+			client.cancelTask()
+
+			// Verify the message was sent with taskId and instanceId
+			expect(sentMessages).toHaveLength(1)
+			expect(sentMessages[0]).toEqual({
+				type: "cancelTask",
+				taskId: testTaskId,
+				instanceId: testInstanceId,
+			})
+		})
+
+		it("should send cancelTask with undefined taskId/instanceId when not in state", () => {
+			const { client, sentMessages } = createMockClient()
+
+			// Send state without task identity
+			client.handleMessage({
+				type: "state",
+				state: {
+					clineMessages: [],
+				},
+			} as ExtensionMessage)
+
+			// Call cancelTask
+			client.cancelTask()
+
+			// Verify the message was sent with undefined values
+			expect(sentMessages).toHaveLength(1)
+			expect(sentMessages[0]).toEqual({
+				type: "cancelTask",
+				taskId: undefined,
+				instanceId: undefined,
+			})
+		})
+	})
 })

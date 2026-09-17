@@ -1760,7 +1760,16 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 	}
 
-	async handleTerminalOperation(terminalOperation: "continue" | "abort") {
+	async handleTerminalOperation(terminalOperation: "continue" | "abort", executionId?: string) {
+		// STOP-004: Validate executionId if provided
+		if (executionId && this.terminalProcess?.executionId !== executionId) {
+			console.warn(`[Task#${this.taskId}] Terminal operation executionId mismatch`, {
+				expected: this.terminalProcess?.executionId,
+				received: executionId,
+			})
+			return
+		}
+
 		if (terminalOperation === "continue") {
 			this.terminalProcess?.continue()
 		} else if (terminalOperation === "abort") {

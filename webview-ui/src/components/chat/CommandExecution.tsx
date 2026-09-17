@@ -42,6 +42,8 @@ export const CommandExecution = ({ executionId, text, icon, title }: CommandExec
 		deniedCommands = [],
 		setAllowedCommands,
 		setDeniedCommands,
+		currentTaskId, // STOP-004: Get task identity for terminal abort
+		currentTaskInstanceId,
 	} = useExtensionState()
 
 	const { command, output: parsedOutput } = useMemo(() => parseCommandAndOutput(text), [text])
@@ -157,9 +159,13 @@ export const CommandExecution = ({ executionId, text, icon, title }: CommandExec
 										variant="ghost"
 										size="icon"
 										onClick={() =>
+											// STOP-004 FIX: Pass taskId, instanceId, and executionId for terminal abort
 											vscode.postMessage({
 												type: "terminalOperation",
 												terminalOperation: "abort",
+												taskId: currentTaskId,
+												instanceId: currentTaskInstanceId,
+												executionId,
 											})
 										}>
 										<OctagonX className="size-4" />

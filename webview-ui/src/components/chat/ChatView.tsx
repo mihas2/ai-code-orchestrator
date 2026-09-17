@@ -178,6 +178,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		| undefined
 	>(undefined)
 	const [_didClickCancel, setDidClickCancel] = useState(false)
+	const [cancelPending, setCancelPending] = useState(false) // STOP-003: Optimistic pending lock
 	const virtuosoRef = useRef<VirtuosoHandle>(null)
 	const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({})
 	const prevExpandedRowsRef = useRef<Record<number, boolean>>()
@@ -485,6 +486,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 								setSecondaryButtonText(t("chat:terminate.title"))
 							}
 							setDidClickCancel(false) // special case where we reset the cancel button state
+							setCancelPending(false) // STOP-003: Reset optimistic lock
 							break
 						case "resume_completed_task":
 							setSendingDisabled(false)
@@ -493,6 +495,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							setPrimaryButtonText(t("chat:startNewTask.title"))
 							setSecondaryButtonText(undefined)
 							setDidClickCancel(false)
+							setCancelPending(false) // STOP-003: Reset optimistic lock
 							break
 					}
 					break
@@ -521,7 +524,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							setRunCommandAndAllowButtonText(undefined)
 							setPendingCommandText(undefined)
 							setCommandExecutionStarted(false)
-							setPendingCommandExecutionId(undefined)
+							// STOP-004: Track executionId from api_req_started for terminal operations
+							setPendingCommandExecutionId(lastMessage.ts != null ? lastMessage.ts.toString() : undefined)
 							// Invalidate attempt snapshot when a new API request starts
 							activeAttemptRef.current = undefined
 							break
@@ -621,6 +625,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	const taskIdentity =
 		currentTaskId && currentTaskInstanceId ? `${currentTaskId}.${currentTaskInstanceId}` : undefined
 	const streamingTaskIdentityRef = useRef<string | undefined>(undefined)
+
 	const isStreaming = useMemo(() => {
 		// Do not reuse message-derived streaming state while switching tasks. The
 		// old task's messages can remain in state for one render after identity changes.
@@ -691,6 +696,14 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			loggedTaskIdentityRef.current = taskIdentity
 		}
 	}, [taskIdentity, isStreaming])
+
+	// STOP-002 & STOP-003: Reset cancel lock when streaming stops
+	useEffect(() => {
+		if (!isStreaming && cancelPending) {
+			console.log("[ChatView] Streaming stopped, resetting cancel lock")
+			setCancelPending(false)
+		}
+	}, [isStreaming, cancelPending])
 
 	const markFollowUpAsAnswered = useCallback(() => {
 		const lastFollowUpMessage = messagesRef.current.findLast((msg: ClineMessage) => msg.ask === "followup")
@@ -851,6 +864,12 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	// Handle stop button click from textarea
 	const handleStopTask = useCallback(() => {
+		// STOP-003: Prevent repeated clicks with optimistic lock
+		if (cancelPending) {
+			console.log("[ChatView] Ignoring repeated cancel click - already pending")
+			return
+		}
+
 		const latestTaskId = currentTaskId
 		if (!latestTaskId || latestTaskId !== currentTaskId) {
 			console.warn(
@@ -864,10 +883,20 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			type: "cancelTask",
 			taskId: currentTaskId,
 			instanceId: currentTaskInstanceId,
+			executionId: pendingCommandExecutionId,
 		})
-		vscode.postMessage({ type: "cancelTask", taskId: currentTaskId, instanceId: currentTaskInstanceId })
+
+		// STOP-003: Set optimistic lock before sending message
+		setCancelPending(true)
+		// STOP-004B: Include executionId for proper task identity validation
+		vscode.postMessage({
+			type: "cancelTask",
+			taskId: currentTaskId,
+			instanceId: currentTaskInstanceId,
+			executionId: pendingCommandExecutionId,
+		})
 		setDidClickCancel(true)
-	}, [currentTaskId, currentTaskInstanceId, setDidClickCancel])
+	}, [currentTaskId, currentTaskInstanceId, pendingCommandExecutionId, setDidClickCancel, cancelPending])
 
 	// Handle enqueue button click from textarea
 	const handleEnqueueCurrentMessage = useCallback(() => {

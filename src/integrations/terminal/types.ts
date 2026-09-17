@@ -31,6 +31,7 @@ export interface AicoTerminalCallbacks {
 export interface AicoTerminalProcess extends EventEmitter<AicoTerminalProcessEvents> {
 	command: string
 	isHot: boolean
+	executionId?: string // STOP-004: Terminal execution identity for validation
 	run: (command: string) => Promise<void>
 	continue: () => void
 	abort: () => void

@@ -187,10 +187,9 @@ export class MessageProcessor {
 		// Get previous state for comparison.
 		const previousState = this.store.getAgentState()
 
-		// Update the store with new messages
-		// Note: We only call setMessages, NOT setExtensionState, to avoid
-		// double processing (setExtensionState would call setMessages again)
-		this.store.setMessages(clineMessages)
+		// Update the store with new messages and extension state
+		// STOP-001: Store full extension state including taskId/instanceId
+		this.store.setExtensionState(message.state)
 
 		// Get new state after update
 		const currentState = this.store.getAgentState()

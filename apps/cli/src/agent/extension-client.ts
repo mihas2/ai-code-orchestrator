@@ -435,8 +435,15 @@ export class ExtensionClient {
 	 * Use this to interrupt a task that is currently processing.
 	 */
 	cancelTask(): void {
+		// STOP-001 FIX: Pass taskId and instanceId from extension state
+		const extensionState = this.store.getState().extensionState
+		const taskId = extensionState?.currentTaskId
+		const instanceId = extensionState?.currentTaskInstanceId
+
 		const message: WebviewMessage = {
 			type: "cancelTask",
+			taskId,
+			instanceId,
 		}
 		this.sendMessage(message)
 	}
