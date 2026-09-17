@@ -32,15 +32,16 @@ export async function createDirectoriesForFile(filePath: string): Promise<string
 }
 
 /**
- * Helper function to check if a path exists.
+ * Checks if a file exists at the given path.
+ * Returns true only for files, not directories.
  *
- * @param path - The path to check.
- * @returns A promise that resolves to true if the path exists, false otherwise.
+ * @param filePath - The path to check.
+ * @returns A promise that resolves to true if a file exists at the path, false otherwise (including directories).
  */
 export async function fileExistsAtPath(filePath: string): Promise<boolean> {
 	try {
-		await fs.access(filePath)
-		return true
+		const stats = await fs.stat(filePath)
+		return stats.isFile()
 	} catch {
 		return false
 	}
