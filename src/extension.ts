@@ -55,6 +55,7 @@ import { initializeModelCacheRefresh } from "./api/providers/fetchers/modelCache
 
 let outputChannel: vscode.OutputChannel
 let extensionContext: vscode.ExtensionContext
+let sidebarProvider: ClineProvider | undefined
 
 /**
  * Check if we should auto-open the AI Code Orchestrator sidebar after switching to a worktree.
@@ -169,6 +170,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	}
 
 	const provider = new ClineProvider(context, outputChannel, "sidebar", contextProxy)
+
+	// Store reference for cleanup in deactivate
+	sidebarProvider = provider
+
+	// Add provider to subscriptions for automatic dispose
+	context.subscriptions.push(provider)
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(ClineProvider.sideBarId, provider, {
@@ -299,6 +306,11 @@ export async function activate(context: vscode.ExtensionContext) {
 // This method is called when your extension is deactivated.
 export async function deactivate() {
 	outputChannel.appendLine(`${Package.name} extension deactivated`)
+
+	// Explicitly dispose sidebar provider to close file watchers
+	if (sidebarProvider) {
+		await sidebarProvider.dispose()
+	}
 
 	await McpServerManager.cleanup(extensionContext)
 	TerminalRegistry.cleanup()

@@ -78,6 +78,16 @@ export class TaskHistoryStore {
 	 * Load index, reconcile if needed, start watchers.
 	 */
 	async initialize(): Promise<void> {
+		if (this.disposed) {
+			throw new Error("Cannot initialize disposed TaskHistoryStore")
+		}
+
+		// Prevent double initialization
+		if (this.fsWatcher) {
+			console.warn("TaskHistoryStore already initialized, skipping")
+			return
+		}
+
 		try {
 			const tasksDir = await this.getTasksDir()
 			await fs.mkdir(tasksDir, { recursive: true })
@@ -107,6 +117,7 @@ export class TaskHistoryStore {
 
 		if (this.fsWatcher) {
 			this.fsWatcher.close()
+			console.log("TaskHistoryStore: File watcher closed successfully")
 			this.fsWatcher = null
 		}
 
@@ -481,7 +492,17 @@ export class TaskHistoryStore {
 	 * Start watching the tasks directory for external changes.
 	 */
 	private async startWatcher(): Promise<void> {
-		if (this.disposed) return
+		if (this.disposed) {
+			console.warn("TaskHistoryStore: Cannot start watcher on disposed instance")
+			return
+		}
+
+		// Check for existing watcher leak
+		if (this.fsWatcher) {
+			console.error("TaskHistoryStore: Watcher already exists! Closing old watcher to prevent leak.")
+			this.fsWatcher.close()
+			this.fsWatcher = null
+		}
 
 		const tasksDir = await this.getTasksDir()
 
@@ -507,6 +528,7 @@ export class TaskHistoryStore {
 					}
 				},
 			)
+			console.log(`TaskHistoryStore: Started watching ${tasksDir}`)
 		} catch {
 			// fs.watch may not be available on all platforms
 		}
