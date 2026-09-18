@@ -187,7 +187,7 @@ describe("ClineProvider delegation flow", () => {
 		expect(child.apiConfiguration.openRouterApiKey).toBe("new")
 	})
 
-	it("switches mode before creating the child", async () => {
+	it("switches mode after creating the child but before starting it", async () => {
 		const provider = makeProvider()
 		const parent = task(provider, "parent")
 		const child = task(provider, "child", { parentTask: parent })
@@ -195,10 +195,13 @@ describe("ClineProvider delegation flow", () => {
 		const order: string[] = []
 		provider.handleModeSwitch.mockImplementation(async () => {
 			order.push("mode")
+			// At this point, child should already be in stack so getCurrentTask() returns child
+			const currentTask = provider.getCurrentTask()
+			expect(currentTask).toBe(child)
 		})
 		provider.createTask = vi.fn().mockImplementation(async () => {
 			order.push("create")
-			provider.clineStack.push(child)
+			// Child is added to stack by delegateParentAndOpenChild after createTask returns
 			return child
 		})
 		await provider.delegateParentAndOpenChild({
@@ -208,7 +211,8 @@ describe("ClineProvider delegation flow", () => {
 			mode: "architect",
 		})
 		expect(provider.handleModeSwitch).toHaveBeenCalledWith("architect")
-		expect(order).toEqual(["mode", "create"])
+		// NEW CORRECT ORDER: create first, then add to stack, then mode switch
+		expect(order).toEqual(["create", "mode"])
 	})
 
 	it("flushes parent state and starts the child cleanly", async () => {

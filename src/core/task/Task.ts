@@ -2084,7 +2084,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			return
 		}
 		this._started = true
-		console.log(`[Task.start] Task ${this.taskId} marked as started, about to call startTask()`)
 
 		const { task, images } = this.metadata
 
@@ -2455,7 +2454,15 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	public dispose(): void {
-		console.log(`[Task#dispose] disposing task ${this.taskId}.${this.instanceId}`)
+		// Диагностическое логирование для отладки проблемы с disposal дочерних задач
+		const stack = new Error().stack
+		console.log(`[Task#dispose] disposing task ${this.taskId}.${this.instanceId}`, {
+			status: this.taskStatus,
+			abort: this.abort,
+			abandoned: this.abandoned,
+			parentTaskId: this.parentTaskId,
+			callStack: stack?.split("\n").slice(1, 6).join("\n"),
+		})
 
 		// Invalidate any pending-command snapshot so scoped responders cannot fire after disposal.
 		this.pendingCommandApproval = undefined
@@ -2646,9 +2653,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		let nextUserContent = userContent
 		let includeFileDetails = true
 
-		console.log(`[Task.initiateTaskLoop] About to emit TaskStarted for task ${this.taskId}`)
 		this.emit(AiCodeOrchestratorEventName.TaskStarted)
-		console.log(`[Task.initiateTaskLoop] TaskStarted event emitted`)
 
 		while (!this.abort) {
 			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent, includeFileDetails)

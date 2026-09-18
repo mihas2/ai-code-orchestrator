@@ -1734,7 +1734,6 @@ export class ClineProvider
 
 	/** Persist the user's default mode and reset the active runtime mode to it. */
 	public async setDefaultMode(newMode: string) {
-		console.log("[ClineProvider] Received default mode change:", newMode)
 		const task = this.getCurrentTask()
 		if (task) {
 			await this.switchRuntimeMode(task, newMode)
@@ -3625,24 +3624,7 @@ export class ClineProvider
 				throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
 			}
 
-			// 3) Switch provider mode to child's requested mode BEFORE creating the child task
-			//    This ensures the child's system prompt and configuration are based on the correct mode.
-			//    The mode switch must happen before createTask() because the Task constructor
-			//    initializes its mode from provider.getState() during initializeTaskMode().
-			try {
-				await this.handleModeSwitch(mode as any)
-			} catch (e) {
-				const errorMsg = `Failed to switch to child mode '${mode}': ${(e as Error)?.message ?? String(e)}`
-				this.log(`[delegateParentAndOpenChild] ${errorMsg}`)
-				;(parent as any).abort = parentRuntimeState.abort
-				;(parent as any).abandoned = parentRuntimeState.abandoned
-				;(parent as any).abortReason = parentRuntimeState.abortReason
-				;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
-				if (this.clineStack.length === 0) this.clineStack.push(parent)
-				throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
-			}
-
-			// 4) Create child as sole active (parent reference preserved for lineage)
+			// 3) Create child as sole active (parent reference preserved for lineage)
 			// Pass initialStatus: "active" to ensure the child task's historyItem is created
 			// with status from the start, avoiding race conditions where the task might
 			// call attempt_completion before status is persisted separately.
@@ -3685,7 +3667,47 @@ export class ClineProvider
 				throw error
 			}
 
-			// 5) Persist parent delegation metadata WITH snapshot BEFORE the child starts writing.
+			// 4) Add child to stack BEFORE mode switch to ensure getCurrentTask() returns child
+			//    This is critical: handleModeSwitch → setDefaultMode → getCurrentTask() must see the child
+			//    so that switchRuntimeMode can be called on the child task.
+			this.clineStack.push(child)
+
+			// 5) Switch provider mode to child's requested mode NOW that child is in stack
+			//    This ensures getCurrentTask() returns child, allowing switchRuntimeMode to work correctly.
+			try {
+				await this.handleModeSwitch(mode as any)
+			} catch (e) {
+				const errorMsg = `Failed to switch to child mode '${mode}': ${(e as Error)?.message ?? String(e)}`
+				this.log(`[delegateParentAndOpenChild] ${errorMsg}`)
+
+				// Remove child from stack since mode switch failed
+				const childIndex = this.clineStack.indexOf(child)
+				if (childIndex >= 0) {
+					this.clineStack.splice(childIndex, 1)
+				}
+
+				// Restore parent
+				;(parent as any).abort = parentRuntimeState.abort
+				;(parent as any).abandoned = parentRuntimeState.abandoned
+				;(parent as any).abortReason = parentRuntimeState.abortReason
+				;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
+				if (this.clineStack.length === 0) this.clineStack.push(parent)
+
+				// Abort child
+				try {
+					await child.abortTask(true)
+				} catch (abortErr) {
+					this.log(
+						`[delegateParentAndOpenChild] Failed to abort child after mode switch failure: ${
+							(abortErr as Error)?.message ?? String(abortErr)
+						}`,
+					)
+				}
+
+				throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
+			}
+
+			// 6) Persist parent delegation metadata WITH snapshot BEFORE the child starts writing.
 			//    Snapshot persistence is CRITICAL: child must not start if this fails.
 			//    Use atomic parent-child link update to ensure consistency.
 			try {
@@ -3751,26 +3773,14 @@ export class ClineProvider
 				throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
 			}
 
-			// 6) Add child to stack BEFORE starting it, to maintain stack invariant.
-			//    This ensures that if child.start() fails, the rollback logic has a consistent
-			//    stack state to work with (child is present, can be removed if needed).
-			this.clineStack.push(child)
-
-			// 7) Start the child task now that parent metadata WITH SNAPSHOT is safely persisted
-			//    and child is in the stack.
+			// 7) Start the child task now that parent metadata WITH SNAPSHOT is safely persisted,
+			//    child is in the stack, and mode has been switched.
 			try {
 				await child.start()
-
-				// Диагностическое логирование
-				this.log(`[delegateParentAndOpenChild] Child ${child.taskId} started successfully`)
-				this.log(`[delegateParentAndOpenChild] clineStack length: ${this.clineStack.length}`)
-				this.log(`[delegateParentAndOpenChild] Current task ID: ${this.getCurrentTask()?.taskId}`)
-				this.log(`[delegateParentAndOpenChild] Child task ID: ${child.taskId}`)
 
 				// Критично: явно синхронизировать frontend с новой активной подзадачей
 				// чтобы messageUpdated работал корректно
 				await this.postStateToWebview()
-				this.log(`[delegateParentAndOpenChild] Frontend synchronized with child task`)
 			} catch (startErr) {
 				const errorMsg = `Failed to start child task: ${(startErr as Error)?.message ?? String(startErr)}`
 				this.log(`[delegateParentAndOpenChild] CRITICAL: ${errorMsg}`)
