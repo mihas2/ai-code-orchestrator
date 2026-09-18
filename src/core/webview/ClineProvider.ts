@@ -3739,7 +3739,13 @@ export class ClineProvider
 			throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
 		}
 
-		// 6) Start the child task now that parent metadata WITH SNAPSHOT is safely persisted.
+		// 6) Add child to stack BEFORE starting it, to maintain stack invariant.
+		//    This ensures that if child.start() fails, the rollback logic has a consistent
+		//    stack state to work with (child is present, can be removed if needed).
+		this.clineStack.push(child)
+
+		// 7) Start the child task now that parent metadata WITH SNAPSHOT is safely persisted
+		//    and child is in the stack.
 		try {
 			await child.start()
 		} catch (startErr) {
@@ -3757,14 +3763,19 @@ export class ClineProvider
 				)
 			}
 
+			// Remove child from stack (it was added before start() call)
+			const childIndex = this.clineStack.indexOf(child)
+			if (childIndex >= 0) {
+				this.clineStack.splice(childIndex, 1)
+			}
+
 			// Restore the parent so delegation is atomic.
 			;(parent as any).abort = parentRuntimeState.abort
 			;(parent as any).abandoned = parentRuntimeState.abandoned
 			;(parent as any).abortReason = parentRuntimeState.abortReason
 			;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
-			if (this.clineStack.length === 0) {
-				this.clineStack.push(parent)
-			}
+			// Always restore parent to stack since it was removed earlier
+			this.clineStack.push(parent)
 			try {
 				await this.updateGlobalState("mode", parentSnapshot.mode)
 				const originalHistory = await this.getTaskWithId(parentTaskId)
@@ -3775,6 +3786,10 @@ export class ClineProvider
 					awaitingChildId: undefined,
 					parentSnapshot: undefined,
 				})
+
+				// Явно уведомляем UI о возврате к родительской задаче после ошибки
+				await parent.resumeAfterDelegation()
+				await this.postStateToWebview()
 			} catch (rollbackError) {
 				this.log(
 					`[delegateParentAndOpenChild] Failed to persist rollback after start failure: ${String(rollbackError)}`,
