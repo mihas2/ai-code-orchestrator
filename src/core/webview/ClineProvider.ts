@@ -3221,7 +3221,9 @@ export class ClineProvider
 		})
 
 		await this.addClineToStack(task)
-		task.start()
+		task.start().catch((error) => {
+			console.error(`[ClineProvider] Unhandled rejection from task.start():`, error)
+		})
 
 		this.log(
 			`[createTask] ${task.parentTask ? "child" : "parent"} task ${task.taskId}.${task.instanceId} instantiated`,
@@ -3673,18 +3675,27 @@ export class ClineProvider
 
 		// 5) Persist parent delegation metadata WITH snapshot BEFORE the child starts writing.
 		//    Snapshot persistence is CRITICAL: child must not start if this fails.
+		//    Use atomic parent-child link update to ensure consistency.
 		try {
-			const { historyItem } = await this.getTaskWithId(parentTaskId)
-			const childIds = Array.from(new Set([...(historyItem.childIds ?? []), child.taskId]))
-			const updatedHistory: typeof historyItem = {
-				...historyItem,
-				status: "delegated",
-				delegatedToId: child.taskId,
-				awaitingChildId: child.taskId,
-				childIds,
-				parentSnapshot,
-			}
-			await this.updateTaskHistory(updatedHistory)
+			const { historyItem: parentHistory } = await this.getTaskWithId(parentTaskId)
+			const { historyItem: childHistory } = await this.getTaskWithId(child.taskId)
+
+			const childIds = Array.from(new Set([...(parentHistory.childIds ?? []), child.taskId]))
+
+			await this.taskHistoryStore.updateParentChildLinks({
+				parentId: parentTaskId,
+				parentUpdate: {
+					status: "delegated",
+					delegatedToId: child.taskId,
+					awaitingChildId: child.taskId,
+					childIds,
+					parentSnapshot,
+				},
+				childId: child.taskId,
+				childUpdate: {
+					parentTaskId,
+				},
+			})
 		} catch (err) {
 			const errorMsg = `Failed to persist parent delegation metadata with snapshot: ${
 				(err as Error)?.message ?? String(err)
@@ -3729,7 +3740,52 @@ export class ClineProvider
 		}
 
 		// 6) Start the child task now that parent metadata WITH SNAPSHOT is safely persisted.
-		child.start()
+		try {
+			await child.start()
+		} catch (startErr) {
+			const errorMsg = `Failed to start child task: ${(startErr as Error)?.message ?? String(startErr)}`
+			this.log(`[delegateParentAndOpenChild] CRITICAL: ${errorMsg}`)
+
+			// CRITICAL: Rollback parent delegation metadata if child start fails.
+			try {
+				await child.abortTask(true)
+			} catch (abortErr) {
+				this.log(
+					`[delegateParentAndOpenChild] Failed to abort child after start failure: ${
+						(abortErr as Error)?.message ?? String(abortErr)
+					}`,
+				)
+			}
+
+			// Restore the parent so delegation is atomic.
+			;(parent as any).abort = parentRuntimeState.abort
+			;(parent as any).abandoned = parentRuntimeState.abandoned
+			;(parent as any).abortReason = parentRuntimeState.abortReason
+			;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
+			if (this.clineStack.length === 0) {
+				this.clineStack.push(parent)
+			}
+			try {
+				await this.updateGlobalState("mode", parentSnapshot.mode)
+				const originalHistory = await this.getTaskWithId(parentTaskId)
+				await this.updateTaskHistory({
+					...originalHistory.historyItem,
+					status: parentRuntimeState.abandoned ? "active" : originalHistory.historyItem.status,
+					delegatedToId: undefined,
+					awaitingChildId: undefined,
+					parentSnapshot: undefined,
+				})
+			} catch (rollbackError) {
+				this.log(
+					`[delegateParentAndOpenChild] Failed to persist rollback after start failure: ${String(rollbackError)}`,
+				)
+			}
+
+			throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
+		}
+
+		// Note: child.start() is now awaited. The child task will handle
+		// its own errors internally via its own .catch() handler in start().
 
 		// 7) Emit TaskDelegated (provider-level)
 		try {

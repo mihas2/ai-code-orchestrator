@@ -571,7 +571,15 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			if (task || images) {
 				this.startTask(task, images)
 			} else if (historyItem) {
-				this.resumeTaskFromHistory()
+				this.resumeTaskFromHistory().catch((error) => {
+					console.error(`[Task#${this.taskId}] Unhandled rejection in resumeTaskFromHistory:`, error)
+					const prov = this.provider
+					if (prov) {
+						prov.log(
+							`Failed to resume task from history: ${error instanceof Error ? error.message : String(error)}`,
+						)
+					}
+				})
 			} else {
 				throw new Error("Either historyItem or task/images must be provided")
 			}
@@ -2063,7 +2071,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * child task begins writing its own history (avoiding a read-modify-write
 	 * race on globalState).
 	 */
-	public start(): void {
+	public async start(): Promise<void> {
 		if (this._started) {
 			return
 		}
@@ -2072,7 +2080,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		const { task, images } = this.metadata
 
 		if (task || images) {
-			this.startTask(task ?? undefined, images ?? undefined)
+			await this.startTask(task ?? undefined, images ?? undefined)
 		}
 	}
 

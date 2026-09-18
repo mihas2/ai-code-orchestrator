@@ -79,7 +79,7 @@ export class TaskHistoryStore {
 	 */
 	async initialize(): Promise<void> {
 		try {
-			const tasksDir = await this.getTasksDir()
+			const tasksDir = this.getTasksDir()
 			await fs.mkdir(tasksDir, { recursive: true })
 
 			// 1. Load existing index into the cache
@@ -100,10 +100,15 @@ export class TaskHistoryStore {
 	}
 
 	/**
-	 * Flush pending writes, clear watchers, release resources.
+	 * Stop watchers and clear timers.
 	 */
 	dispose(): void {
 		this.disposed = true
+
+		if (this.fsWatcher) {
+			this.fsWatcher.close()
+			this.fsWatcher = null
+		}
 
 		if (this.indexWriteTimer) {
 			clearTimeout(this.indexWriteTimer)
@@ -111,42 +116,25 @@ export class TaskHistoryStore {
 		}
 
 		if (this.reconcileTimer) {
-			clearTimeout(this.reconcileTimer)
+			clearInterval(this.reconcileTimer)
 			this.reconcileTimer = null
 		}
-
-		if (this.fsWatcher) {
-			this.fsWatcher.close()
-			this.fsWatcher = null
-		}
-
-		// Synchronously flush the index (best-effort)
-		this.flushIndex().catch((err) => {
-			console.error("[TaskHistoryStore] Error flushing index on dispose:", err)
-		})
 	}
 
 	// ────────────────────────────── Reads ──────────────────────────────
 
 	/**
-	 * Get a single history item by task ID.
+	 * Get a single task's history item.
 	 */
 	get(taskId: string): HistoryItem | undefined {
 		return this.cache.get(taskId)
 	}
 
 	/**
-	 * Get all history items, sorted by timestamp descending (newest first).
+	 * Get all tasks' history items.
 	 */
 	getAll(): HistoryItem[] {
-		return Array.from(this.cache.values()).sort((a, b) => b.ts - a.ts)
-	}
-
-	/**
-	 * Get history items filtered by workspace path.
-	 */
-	getByWorkspace(workspace: string): HistoryItem[] {
-		return this.getAll().filter((item) => item.workspace === workspace)
+		return Array.from(this.cache.values())
 	}
 
 	// ────────────────────────────── Mutations ──────────────────────────────
@@ -181,6 +169,55 @@ export class TaskHistoryStore {
 			}
 
 			return all
+		})
+	}
+
+	/**
+	 * Atomically update parent-child links.
+	 * Ensures both parent and child history items are updated together or both fail.
+	 */
+	async updateParentChildLinks(updates: {
+		parentId: string
+		parentUpdate: Partial<HistoryItem>
+		childId: string
+		childUpdate: Partial<HistoryItem>
+	}): Promise<void> {
+		return this.withLock(async () => {
+			const { parentId, parentUpdate, childId, childUpdate } = updates
+
+			// 1. Read current state
+			const parentItem = this.cache.get(parentId)
+			const childItem = this.cache.get(childId)
+
+			if (!parentItem) {
+				throw new Error(`Parent task ${parentId} not found in history`)
+			}
+			if (!childItem) {
+				throw new Error(`Child task ${childId} not found in history`)
+			}
+
+			// 2. Prepare merged updates
+			const mergedParent = { ...parentItem, ...parentUpdate }
+			const mergedChild = { ...childItem, ...childUpdate }
+
+			// 3. Write both files (if either fails, both fail)
+			try {
+				await Promise.all([this.writeTaskFile(mergedParent), this.writeTaskFile(mergedChild)])
+			} catch (err) {
+				throw new Error(`Failed to write parent-child link updates: ${(err as Error)?.message ?? String(err)}`)
+			}
+
+			// 4. Update in-memory cache only after successful writes
+			this.cache.set(parentId, mergedParent)
+			this.cache.set(childId, mergedChild)
+
+			// 5. Schedule debounced index write
+			this.scheduleIndexWrite()
+
+			// 6. Call onWrite callback inside the lock for serialized write-through
+			if (this.onWrite) {
+				await this.onWrite(this.getAll())
+			}
 		})
 	}
 
@@ -244,7 +281,7 @@ export class TaskHistoryStore {
 	async reconcile(): Promise<void> {
 		// Run through the write lock to prevent interleaving with upsert/delete
 		return this.withLock(async () => {
-			const tasksDir = await this.getTasksDir()
+			const tasksDir = this.getTasksDir()
 
 			let dirEntries: string[]
 			try {
@@ -333,7 +370,7 @@ export class TaskHistoryStore {
 			}
 
 			// Check if task directory exists on disk
-			const tasksDir = await this.getTasksDir()
+			const tasksDir = this.getTasksDir()
 			const taskDir = path.join(tasksDir, item.id)
 
 			try {
@@ -347,48 +384,74 @@ export class TaskHistoryStore {
 			const filePath = path.join(taskDir, GlobalFileNames.historyItem)
 			try {
 				await fs.access(filePath)
-				// File already exists, skip (don't overwrite existing per-task files)
+				// File already exists; skip
 			} catch {
-				// File doesn't exist, write it
+				// File doesn't exist; write it
 				await safeWriteJson(filePath, item)
-				this.cache.set(item.id, item)
 			}
 		}
 
-		// Write the index
-		await this.writeIndex()
+		// After migration, reconcile to update cache
+		await this.reconcile()
 	}
 
-	// ────────────────────────────── Private: Index management ──────────────────────────────
+	// ────────────────────────────── Helpers ──────────────────────────────
+
+	private getTasksDir(): string {
+		const base = getStorageBasePath(this.globalStoragePath)
+		return path.join(base, "tasks")
+	}
+
+	private getTaskFilePath(taskId: string): string {
+		const tasksDir = this.getTasksDir()
+		return path.join(tasksDir, taskId, GlobalFileNames.historyItem)
+	}
 
 	/**
-	 * Load the `_index.json` file into the in-memory cache.
+	 * Read a single task's history_item.json from disk.
+	 */
+	private async readTaskFile(taskId: string): Promise<HistoryItem | null> {
+		const filePath = this.getTaskFilePath(taskId)
+		try {
+			const content = await fs.readFile(filePath, "utf-8")
+			return JSON.parse(content) as HistoryItem
+		} catch {
+			return null
+		}
+	}
+
+	/**
+	 * Write a single task's history_item.json to disk using safeWriteJson.
+	 */
+	private async writeTaskFile(item: HistoryItem): Promise<void> {
+		const filePath = this.getTaskFilePath(item.id)
+		await safeWriteJson(filePath, item)
+	}
+
+	/**
+	 * Load the index file into cache.
 	 */
 	private async loadIndex(): Promise<void> {
-		const indexPath = await this.getIndexPath()
+		const tasksDir = this.getTasksDir()
+		const indexPath = path.join(tasksDir, "_index.json")
 
 		try {
-			const raw = await fs.readFile(indexPath, "utf8")
-			const index: HistoryIndex = JSON.parse(raw)
-
-			if (index.version === 1 && Array.isArray(index.entries)) {
-				for (const entry of index.entries) {
-					if (entry.id) {
-						this.cache.set(entry.id, entry)
-					}
-				}
-			}
+			const content = await fs.readFile(indexPath, "utf-8")
+			const index = JSON.parse(content) as HistoryIndex
+			this.cache = new Map(index.entries.map((item) => [item.id, item]))
 		} catch {
-			// Index doesn't exist or is corrupted; cache stays empty.
-			// Reconciliation will rebuild it from per-task files.
+			// Index doesn't exist or is corrupted; start with empty cache
+			this.cache = new Map()
 		}
 	}
 
 	/**
-	 * Write the full index to disk.
+	 * Write the index file from current cache.
 	 */
 	private async writeIndex(): Promise<void> {
-		const indexPath = await this.getIndexPath()
+		const tasksDir = this.getTasksDir()
+		const indexPath = path.join(tasksDir, "_index.json")
+
 		const index: HistoryIndex = {
 			version: 1,
 			updatedAt: Date.now(),
@@ -402,171 +465,83 @@ export class TaskHistoryStore {
 	 * Schedule a debounced index write.
 	 */
 	private scheduleIndexWrite(): void {
-		if (this.disposed) {
-			return
-		}
-
 		if (this.indexWriteTimer) {
 			clearTimeout(this.indexWriteTimer)
 		}
 
-		this.indexWriteTimer = setTimeout(async () => {
+		this.indexWriteTimer = setTimeout(() => {
 			this.indexWriteTimer = null
-			try {
-				await this.writeIndex()
-			} catch (err) {
-				console.error("[TaskHistoryStore] Failed to write index:", err)
-			}
+			this.writeIndex().catch(() => {
+				// Non-fatal: index is just a cache
+			})
 		}, TaskHistoryStore.INDEX_WRITE_DEBOUNCE_MS)
 	}
 
 	/**
-	 * Force an immediate index write (called on dispose/shutdown).
-	 */
-	async flushIndex(): Promise<void> {
-		if (this.indexWriteTimer) {
-			clearTimeout(this.indexWriteTimer)
-			this.indexWriteTimer = null
-		}
-
-		await this.writeIndex()
-	}
-
-	// ────────────────────────────── Private: Per-task file I/O ──────────────────────────────
-
-	/**
-	 * Write a HistoryItem to its per-task `history_item.json` file.
-	 */
-	private async writeTaskFile(item: HistoryItem): Promise<void> {
-		const filePath = await this.getTaskFilePath(item.id)
-		await safeWriteJson(filePath, item)
-	}
-
-	/**
-	 * Read a HistoryItem from its per-task `history_item.json` file.
-	 */
-	private async readTaskFile(taskId: string): Promise<HistoryItem | null> {
-		const filePath = await this.getTaskFilePath(taskId)
-
-		try {
-			const raw = await fs.readFile(filePath, "utf8")
-			const item: HistoryItem = JSON.parse(raw)
-			return item.id ? item : null
-		} catch {
-			return null
-		}
-	}
-
-	// ────────────────────────────── Private: fs.watch ──────────────────────────────
-
-	/**
-	 * Watch the tasks directory for changes from other instances.
+	 * Start watching the tasks directory for external changes.
 	 */
 	private startWatcher(): void {
-		if (this.disposed) {
-			return
+		if (this.disposed) return
+
+		const tasksDir = this.getTasksDir()
+
+		try {
+			this.fsWatcher = fsSync.watch(
+				tasksDir,
+				{ recursive: true },
+				(eventType: string, filename: string | null) => {
+					if (this.disposed) return
+					if (!filename) return
+
+					// Only react to changes in history_item.json files
+					if (filename.endsWith(GlobalFileNames.historyItem)) {
+						const taskId = path.dirname(filename)
+						// Debounce invalidation to avoid thrashing
+						setTimeout(() => {
+							if (!this.disposed) {
+								this.invalidate(taskId).catch(() => {
+									// Non-fatal
+								})
+							}
+						}, 100)
+					}
+				},
+			)
+		} catch {
+			// fs.watch may not be available on all platforms
 		}
-
-		// Use a debounced handler to avoid excessive reconciliation
-		let watchDebounce: ReturnType<typeof setTimeout> | null = null
-
-		this.getTasksDir()
-			.then((tasksDir) => {
-				if (this.disposed) {
-					return
-				}
-
-				try {
-					this.fsWatcher = fsSync.watch(tasksDir, { recursive: false }, (_eventType, _filename) => {
-						if (this.disposed) {
-							return
-						}
-
-						// Debounce the reconciliation triggered by fs.watch
-						if (watchDebounce) {
-							clearTimeout(watchDebounce)
-						}
-						watchDebounce = setTimeout(() => {
-							this.reconcile().catch((err) => {
-								console.error("[TaskHistoryStore] Reconciliation after fs.watch failed:", err)
-							})
-						}, 500)
-					})
-
-					this.fsWatcher.on("error", (err) => {
-						console.error("[TaskHistoryStore] fs.watch error:", err)
-						// fs.watch is unreliable on some platforms; periodic reconciliation
-						// serves as the fallback.
-					})
-				} catch (err) {
-					console.error("[TaskHistoryStore] Failed to start fs.watch:", err)
-				}
-			})
-			.catch((err) => {
-				console.error("[TaskHistoryStore] Failed to get tasks dir for watcher:", err)
-			})
 	}
 
 	/**
-	 * Start periodic reconciliation as a defensive fallback for platforms
-	 * where fs.watch is unreliable.
+	 * Start periodic reconciliation as a defensive fallback.
 	 */
 	private startPeriodicReconciliation(): void {
-		if (this.disposed) {
-			return
-		}
+		if (this.disposed) return
 
-		this.reconcileTimer = setTimeout(async () => {
-			if (this.disposed) {
-				return
+		this.reconcileTimer = setInterval(() => {
+			if (!this.disposed) {
+				this.reconcile().catch(() => {
+					// Non-fatal
+				})
 			}
-			try {
-				await this.reconcile()
-			} catch (err) {
-				console.error("[TaskHistoryStore] Periodic reconciliation failed:", err)
-			}
-			this.startPeriodicReconciliation()
 		}, TaskHistoryStore.RECONCILE_INTERVAL_MS)
 	}
 
-	// ────────────────────────────── Private: Write lock ──────────────────────────────
-
 	/**
-	 * Serializes all read-modify-write operations within a single extension
-	 * host process to prevent concurrent interleaving.
+	 * Run a function inside the write lock.
 	 */
-	private withLock<T>(fn: () => Promise<T>): Promise<T> {
-		const result = this.writeLock.then(fn, fn)
-		this.writeLock = result.then(
-			() => {},
-			() => {},
-		)
-		return result
-	}
+	private async withLock<T>(fn: () => Promise<T>): Promise<T> {
+		const previous = this.writeLock
+		let resolve!: () => void
+		this.writeLock = new Promise<void>((r) => {
+			resolve = r
+		})
 
-	// ────────────────────────────── Private: Path helpers ──────────────────────────────
-
-	/**
-	 * Get the tasks base directory path, resolving custom storage paths.
-	 */
-	private async getTasksDir(): Promise<string> {
-		const basePath = await getStorageBasePath(this.globalStoragePath)
-		return path.join(basePath, "tasks")
-	}
-
-	/**
-	 * Get the path to a task's `history_item.json` file.
-	 */
-	private async getTaskFilePath(taskId: string): Promise<string> {
-		const tasksDir = await this.getTasksDir()
-		return path.join(tasksDir, taskId, GlobalFileNames.historyItem)
-	}
-
-	/**
-	 * Get the path to the `_index.json` file.
-	 */
-	private async getIndexPath(): Promise<string> {
-		const tasksDir = await this.getTasksDir()
-		return path.join(tasksDir, GlobalFileNames.historyIndex)
+		try {
+			await previous
+			return await fn()
+		} finally {
+			resolve()
+		}
 	}
 }

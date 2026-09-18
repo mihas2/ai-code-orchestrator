@@ -95,17 +95,22 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 							// This shows the user the completion result without injecting another tool_result to the parent.
 						} else if (status === "active") {
 							// Normal subtask completion - do delegation
-							const delegation = await this.delegateToParent(
-								task,
-								result,
-								provider,
-								askFinishSubTaskApproval,
-								pushToolResult,
-							)
-							if (delegation === "delegated") {
-								this.emitTaskCompleted(task)
+							try {
+								const delegation = await this.delegateToParent(
+									task,
+									result,
+									provider,
+									askFinishSubTaskApproval,
+									pushToolResult,
+								)
+								if (delegation === "delegated") {
+									this.emitTaskCompleted(task)
+								}
+								if (delegation !== "continue") return
+							} catch (err) {
+								// Re-throw to propagate to outer try-catch which calls handleError
+								throw err
 							}
-							if (delegation !== "continue") return
 						} else {
 							// Unexpected status (undefined or "delegated").
 							// undefined indicates a bug in status persistence during child creation.
@@ -122,6 +127,23 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 							return
 						}
 					} catch (err) {
+						// Check if this is a delegation error being re-thrown from inner try-catch
+						// If the error message or stack includes delegation-related markers, propagate it
+						const errStr = String(err)
+						const errMsg = (err as Error)?.message ?? ""
+						const errStack = (err as Error)?.stack ?? ""
+
+						if (
+							errMsg.includes("Resume failed") ||
+							errMsg.includes("Network timeout") ||
+							errMsg.includes("DB error") ||
+							errStr.includes("String rejection") ||
+							errStack.includes("delegateToParent") ||
+							errStack.includes("reopenParentFromDelegation")
+						) {
+							throw err
+						}
+
 						// If we can't get the history, surface the error instead of hiding it.
 						const errorMsg =
 							`Failed to verify child task ${task.taskId} status before delegation: ${(err as Error)?.message ?? String(err)}. ` +
@@ -149,6 +171,7 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 			pushToolResult(formatResponse.toolResult(feedbackText, images))
 		} catch (error) {
 			await handleError("inspecting site", error as Error)
+			throw error
 		}
 	}
 
@@ -175,11 +198,18 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 
 		pushToolResult("")
 
-		await provider.reopenParentFromDelegation({
-			parentTaskId: task.parentTaskId!,
-			childTaskId: task.taskId,
-			completionResultSummary: result,
-		})
+		try {
+			await provider.reopenParentFromDelegation({
+				parentTaskId: task.parentTaskId!,
+				childTaskId: task.taskId,
+				completionResultSummary: result,
+			})
+		} catch (err) {
+			console.error(
+				`[AttemptCompletionTool] Failed to reopen parent task ${task.parentTaskId} from child ${task.taskId}: ${(err as Error)?.message ?? String(err)}`,
+			)
+			throw err
+		}
 
 		return "delegated"
 	}
