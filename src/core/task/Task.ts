@@ -2076,6 +2076,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			return
 		}
 		this._started = true
+		console.log(`[Task.start] Task ${this.taskId} marked as started, about to call startTask()`)
 
 		const { task, images } = this.metadata
 
@@ -2630,7 +2631,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		let nextUserContent = userContent
 		let includeFileDetails = true
 
+		console.log(`[Task.initiateTaskLoop] About to emit TaskStarted for task ${this.taskId}`)
 		this.emit(AiCodeOrchestratorEventName.TaskStarted)
+		console.log(`[Task.initiateTaskLoop] TaskStarted event emitted`)
 
 		while (!this.abort) {
 			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent, includeFileDetails)

@@ -3748,6 +3748,12 @@ export class ClineProvider
 		//    and child is in the stack.
 		try {
 			await child.start()
+
+			// Диагностическое логирование
+			this.log(`[delegateParentAndOpenChild] Child ${child.taskId} started successfully`)
+			this.log(`[delegateParentAndOpenChild] clineStack length: ${this.clineStack.length}`)
+			this.log(`[delegateParentAndOpenChild] Current task ID: ${this.getCurrentTask()?.taskId}`)
+			this.log(`[delegateParentAndOpenChild] Child task ID: ${child.taskId}`)
 		} catch (startErr) {
 			const errorMsg = `Failed to start child task: ${(startErr as Error)?.message ?? String(startErr)}`
 			this.log(`[delegateParentAndOpenChild] CRITICAL: ${errorMsg}`)
@@ -3804,7 +3810,10 @@ export class ClineProvider
 
 		// 7) Emit TaskDelegated (provider-level)
 		try {
+			this.log(`[delegateParentAndOpenChild] About to emit TaskDelegated event`)
+			this.log(`[delegateParentAndOpenChild] Parent: ${parentTaskId}, Child: ${child.taskId}`)
 			this.emit(AiCodeOrchestratorEventName.TaskDelegated, parentTaskId, child.taskId)
+			this.log(`[delegateParentAndOpenChild] TaskDelegated event emitted`)
 		} catch {
 			// non-fatal
 		}
