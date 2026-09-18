@@ -73,68 +73,64 @@ describe("ClineProvider child task start error handling", () => {
 
 		// Simulate the delegateParentAndOpenChild logic
 		const delegateFlow = async () => {
+			// Step 5: Persist parent delegation metadata
+			const { historyItem } = await mockProvider.getTaskWithId!("parent-123")
+			const childIds = Array.from(new Set([...(historyItem.childIds ?? []), mockChild.taskId!]))
+			const updatedHistory = {
+				...historyItem,
+				status: "delegated" as const,
+				delegatedToId: mockChild.taskId,
+				awaitingChildId: mockChild.taskId,
+				childIds,
+				parentSnapshot,
+			}
+			await mockProvider.updateTaskHistory!(updatedHistory)
+
+			// Step 6: Start the child task - THIS SHOULD THROW
 			try {
-				// Step 5: Persist parent delegation metadata
-				const { historyItem } = await mockProvider.getTaskWithId!("parent-123")
-				const childIds = Array.from(new Set([...(historyItem.childIds ?? []), mockChild.taskId!]))
-				const updatedHistory = {
-					...historyItem,
-					status: "delegated" as const,
-					delegatedToId: mockChild.taskId,
-					awaitingChildId: mockChild.taskId,
-					childIds,
-					parentSnapshot,
-				}
-				await mockProvider.updateTaskHistory!(updatedHistory)
+				await mockChild.start!()
+			} catch (startErr) {
+				const errorMsg = `Failed to start child task: ${(startErr as Error)?.message ?? String(startErr)}`
+				mockProvider.log!(`[delegateParentAndOpenChild] CRITICAL: ${errorMsg}`)
 
-				// Step 6: Start the child task - THIS SHOULD THROW
+				// Abort the child
 				try {
-					await mockChild.start!()
-				} catch (startErr) {
-					const errorMsg = `Failed to start child task: ${(startErr as Error)?.message ?? String(startErr)}`
-					mockProvider.log!(`[delegateParentAndOpenChild] CRITICAL: ${errorMsg}`)
-
-					// Abort the child
-					try {
-						await mockChild.abortTask!(true)
-					} catch (abortErr) {
-						mockProvider.log!(
-							`[delegateParentAndOpenChild] Failed to abort child after start failure: ${
-								(abortErr as Error)?.message ?? String(abortErr)
-							}`,
-						)
-					}
-
-					// Restore the parent runtime state
-					;(mockParent as any).abort = parentRuntimeState.abort
-					;(mockParent as any).abandoned = parentRuntimeState.abandoned
-					;(mockParent as any).abortReason = parentRuntimeState.abortReason
-					;(mockParent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
-					if (mockProvider.clineStack!.length === 0) {
-						mockProvider.clineStack!.push(mockParent as any)
-					}
-
-					// Rollback parent metadata
-					try {
-						await mockProvider.updateGlobalState!("mode", parentSnapshot.mode)
-						const originalHistory = await mockProvider.getTaskWithId!("parent-123")
-						await mockProvider.updateTaskHistory!({
-							...originalHistory.historyItem,
-							status: parentRuntimeState.abandoned ? "active" : originalHistory.historyItem.status,
-							delegatedToId: undefined,
-							awaitingChildId: undefined,
-							parentSnapshot: undefined,
-						})
-					} catch (rollbackError) {
-						mockProvider.log!(
-							`[delegateParentAndOpenChild] Failed to persist rollback after start failure: ${String(rollbackError)}`,
-						)
-					}
-
-					throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
+					await mockChild.abortTask!(true)
+				} catch (abortErr) {
+					mockProvider.log!(
+						`[delegateParentAndOpenChild] Failed to abort child after start failure: ${
+							(abortErr as Error)?.message ?? String(abortErr)
+						}`,
+					)
 				}
-			} catch (err) {
-				throw err
+
+				// Restore the parent runtime state
+				;(mockParent as any).abort = parentRuntimeState.abort
+				;(mockParent as any).abandoned = parentRuntimeState.abandoned
+				;(mockParent as any).abortReason = parentRuntimeState.abortReason
+				;(mockParent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
+				if (mockProvider.clineStack!.length === 0) {
+					mockProvider.clineStack!.push(mockParent as any)
+				}
+
+				// Rollback parent metadata
+				try {
+					await mockProvider.updateGlobalState!("mode", parentSnapshot.mode)
+					const originalHistory = await mockProvider.getTaskWithId!("parent-123")
+					await mockProvider.updateTaskHistory!({
+						...originalHistory.historyItem,
+						status: parentRuntimeState.abandoned ? "active" : originalHistory.historyItem.status,
+						delegatedToId: undefined,
+						awaitingChildId: undefined,
+						parentSnapshot: undefined,
+					})
+				} catch (rollbackError) {
+					mockProvider.log!(
+						`[delegateParentAndOpenChild] Failed to persist rollback after start failure: ${String(rollbackError)}`,
+					)
+				}
+
+				throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
 			}
 		}
 

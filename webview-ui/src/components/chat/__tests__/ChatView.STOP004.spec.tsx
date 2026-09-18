@@ -81,17 +81,20 @@ vi.mock("../../common/VersionIndicator", () => ({
 	default: vi.fn(() => null),
 }))
 
-vi.mock("../Announcement", () => ({
-	default: function MockAnnouncement({ hideAnnouncement }: { hideAnnouncement: () => void }) {
-		const React = require("react")
-		return React.createElement(
-			"div",
-			{ "data-testid": "announcement-modal" },
-			React.createElement("div", null, "What's New"),
-			React.createElement("button", { onClick: hideAnnouncement }, "Close"),
-		)
-	},
-}))
+vi.mock("../Announcement", () => {
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
+	const React = require("react")
+	return {
+		default: function MockAnnouncement({ hideAnnouncement }: { hideAnnouncement: () => void }) {
+			return React.createElement(
+				"div",
+				{ "data-testid": "announcement-modal" },
+				React.createElement("div", null, "What's New"),
+				React.createElement("button", { onClick: hideAnnouncement }, "Close"),
+			)
+		},
+	}
+})
 
 vi.mock("@/components/common/DismissibleUpsell", () => ({
 	default: function MockDismissibleUpsell({ children }: { children: React.ReactNode }) {
@@ -173,6 +176,7 @@ const mockInputRef = React.createRef<HTMLInputElement>()
 const mockFocus = vi.fn()
 
 vi.mock("../ChatTextArea", () => {
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
 	const mockReact = require("react")
 
 	const ChatTextAreaComponent = mockReact.forwardRef(function MockChatTextArea(

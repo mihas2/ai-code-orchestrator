@@ -95,22 +95,17 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 							// This shows the user the completion result without injecting another tool_result to the parent.
 						} else if (status === "active") {
 							// Normal subtask completion - do delegation
-							try {
-								const delegation = await this.delegateToParent(
-									task,
-									result,
-									provider,
-									askFinishSubTaskApproval,
-									pushToolResult,
-								)
-								if (delegation === "delegated") {
-									this.emitTaskCompleted(task)
-								}
-								if (delegation !== "continue") return
-							} catch (err) {
-								// Re-throw to propagate to outer try-catch which calls handleError
-								throw err
+							const delegation = await this.delegateToParent(
+								task,
+								result,
+								provider,
+								askFinishSubTaskApproval,
+								pushToolResult,
+							)
+							if (delegation === "delegated") {
+								this.emitTaskCompleted(task)
 							}
+							if (delegation !== "continue") return
 						} else {
 							// Unexpected status (undefined or "delegated").
 							// undefined indicates a bug in status persistence during child creation.
