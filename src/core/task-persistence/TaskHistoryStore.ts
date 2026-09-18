@@ -79,7 +79,7 @@ export class TaskHistoryStore {
 	 */
 	async initialize(): Promise<void> {
 		try {
-			const tasksDir = this.getTasksDir()
+			const tasksDir = await this.getTasksDir()
 			await fs.mkdir(tasksDir, { recursive: true })
 
 			// 1. Load existing index into the cache
@@ -89,7 +89,7 @@ export class TaskHistoryStore {
 			await this.reconcile()
 
 			// 3. Start fs.watch for cross-instance reactivity
-			this.startWatcher()
+			await this.startWatcher()
 
 			// 4. Start periodic reconciliation as a defensive fallback
 			this.startPeriodicReconciliation()
@@ -281,7 +281,7 @@ export class TaskHistoryStore {
 	async reconcile(): Promise<void> {
 		// Run through the write lock to prevent interleaving with upsert/delete
 		return this.withLock(async () => {
-			const tasksDir = this.getTasksDir()
+			const tasksDir = await this.getTasksDir()
 
 			let dirEntries: string[]
 			try {
@@ -370,7 +370,7 @@ export class TaskHistoryStore {
 			}
 
 			// Check if task directory exists on disk
-			const tasksDir = this.getTasksDir()
+			const tasksDir = await this.getTasksDir()
 			const taskDir = path.join(tasksDir, item.id)
 
 			try {
@@ -397,13 +397,13 @@ export class TaskHistoryStore {
 
 	// ────────────────────────────── Helpers ──────────────────────────────
 
-	private getTasksDir(): string {
-		const base = getStorageBasePath(this.globalStoragePath)
+	private async getTasksDir(): Promise<string> {
+		const base = await getStorageBasePath(this.globalStoragePath)
 		return path.join(base, "tasks")
 	}
 
-	private getTaskFilePath(taskId: string): string {
-		const tasksDir = this.getTasksDir()
+	private async getTaskFilePath(taskId: string): Promise<string> {
+		const tasksDir = await this.getTasksDir()
 		return path.join(tasksDir, taskId, GlobalFileNames.historyItem)
 	}
 
@@ -411,7 +411,7 @@ export class TaskHistoryStore {
 	 * Read a single task's history_item.json from disk.
 	 */
 	private async readTaskFile(taskId: string): Promise<HistoryItem | null> {
-		const filePath = this.getTaskFilePath(taskId)
+		const filePath = await this.getTaskFilePath(taskId)
 		try {
 			const content = await fs.readFile(filePath, "utf-8")
 			return JSON.parse(content) as HistoryItem
@@ -424,7 +424,7 @@ export class TaskHistoryStore {
 	 * Write a single task's history_item.json to disk using safeWriteJson.
 	 */
 	private async writeTaskFile(item: HistoryItem): Promise<void> {
-		const filePath = this.getTaskFilePath(item.id)
+		const filePath = await this.getTaskFilePath(item.id)
 		await safeWriteJson(filePath, item)
 	}
 
@@ -432,7 +432,7 @@ export class TaskHistoryStore {
 	 * Load the index file into cache.
 	 */
 	private async loadIndex(): Promise<void> {
-		const tasksDir = this.getTasksDir()
+		const tasksDir = await this.getTasksDir()
 		const indexPath = path.join(tasksDir, "_index.json")
 
 		try {
@@ -449,7 +449,7 @@ export class TaskHistoryStore {
 	 * Write the index file from current cache.
 	 */
 	private async writeIndex(): Promise<void> {
-		const tasksDir = this.getTasksDir()
+		const tasksDir = await this.getTasksDir()
 		const indexPath = path.join(tasksDir, "_index.json")
 
 		const index: HistoryIndex = {
@@ -480,10 +480,10 @@ export class TaskHistoryStore {
 	/**
 	 * Start watching the tasks directory for external changes.
 	 */
-	private startWatcher(): void {
+	private async startWatcher(): Promise<void> {
 		if (this.disposed) return
 
-		const tasksDir = this.getTasksDir()
+		const tasksDir = await this.getTasksDir()
 
 		try {
 			this.fsWatcher = fsSync.watch(
