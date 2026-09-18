@@ -19,7 +19,9 @@ vi.mock("../core/task/Task", () => {
 			this.apiConfiguration = opts.apiConfiguration ?? { apiProvider: "anthropic" }
 			opts.onCreated?.(this)
 		}
-		start() {}
+		start() {
+			return Promise.resolve()
+		}
 		on() {}
 		off() {}
 		emit() {}

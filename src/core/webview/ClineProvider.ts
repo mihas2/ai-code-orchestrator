@@ -156,6 +156,7 @@ export class ClineProvider
 		string,
 		{ childTaskId: string; task: Task; runtimeResumed: boolean }
 	>()
+	private delegationInProgress = new Set<string>()
 	private globalStateWriteThroughTimer: ReturnType<typeof setTimeout> | null = null
 	private static readonly GLOBAL_STATE_WRITE_THROUGH_DEBOUNCE_MS = 5000 // 5 seconds
 	private pendingOperations: Map<string, PendingEditOperation> = new Map()
@@ -1406,11 +1407,13 @@ export class ClineProvider
 										}
 									: undefined,
 							})
+							// Use ready_to_integrate when integration approval is required, otherwise integrated
+							const status = settings.requireIntegrationApproval ? "ready_to_integrate" : "integrated"
 							await this.orchestrationService?.handleChildEvent({
 								runId: run.runId,
 								nodeId: node.nodeId,
 								idempotencyKey: `${idempotencyKey}:completed`,
-								status: "integrated",
+								status,
 								result: extracted.result,
 								usage: extracted.usage,
 							})
@@ -1427,7 +1430,7 @@ export class ClineProvider
 								},
 								error: {
 									code:
-										error instanceof Error && error.message.startsWith("result_contract_missing")
+										error instanceof Error && error.message.includes("result_contract_missing")
 											? "result_contract_unavailable"
 											: "result_contract_invalid",
 									message: error instanceof Error ? error.message : String(error),
@@ -3489,336 +3492,353 @@ export class ClineProvider
 			configuration ?? {},
 		)
 
-		// Metadata-driven delegation is always enabled
+		// Проверить, что parent не находится в процессе делегирования
+		if (this.delegationInProgress.has(parentTaskId)) {
+			throw new Error(`[delegateParentAndOpenChild] Parent ${parentTaskId} is already delegating`)
+		}
+		this.delegationInProgress.add(parentTaskId)
 
-		// 1) Get parent (must be current task) and capture authoritative snapshot
-		const parent = this.getCurrentTask()
-		if (!parent) {
-			throw new Error("[delegateParentAndOpenChild] No current task")
-		}
-		if (parent.taskId !== parentTaskId) {
-			throw new Error(
-				`[delegateParentAndOpenChild] Parent mismatch: expected ${parentTaskId}, current ${parent.taskId}`,
-			)
-		}
-
-		// Normalize legacy/re-hydrated providers before taking the snapshot. A current task
-		// without a stack entry cannot safely transition to a child while preserving the
-		// single-open-task invariant.
-		if (!Array.isArray(this.clineStack)) {
-			this.clineStack = [parent]
-		}
-
-		// Capture authoritative parent state and the exact stack topology before any mutation.
-		// A failed remove may have popped the task or partially changed provider state.
-		const parentRuntimeState = {
-			abort: parent.abort,
-			abandoned: parent.abandoned,
-			abortReason: parent.abortReason,
-			didFinishAbortingStream: parent.didFinishAbortingStream,
-		}
-		const parentStack = this.clineStack.slice()
-		const parentStackIndex = parentStack.lastIndexOf(parent)
-		const parentConfiguration = parent.apiConfiguration ? structuredClone(parent.apiConfiguration) : undefined
-		const state = await this.getState()
-		const parentSnapshot = {
-			mode: state.mode,
-			apiConfigName: state.currentApiConfigName,
-			modelId: parentConfiguration ? getModelId(parentConfiguration) : undefined,
-			capturedAt: Date.now(),
-		}
-		this.log(
-			`[delegateParentAndOpenChild] Captured parent snapshot: mode=${parentSnapshot.mode}, ` +
-				`apiConfigName=${parentSnapshot.apiConfigName}, modelId=${parentSnapshot.modelId}`,
-		)
-		// 2) Flush pending tool results to API history BEFORE disposing the parent.
-		//    This is critical: when tools are called before new_task,
-		//    their tool_result blocks are in userMessageContent but not yet saved to API history.
-		//    If we don't flush them, the parent's API conversation will be incomplete and
-		//    cause 400 errors when resumed (missing tool_result for tool_use blocks).
-		//
-		//    NOTE: We do NOT pass the assistant message here because the assistant message
-		//    is already added to apiConversationHistory by the normal flow in
-		//    recursivelyMakeClineRequests BEFORE tools start executing. We only need to
-		//    flush the pending user message with tool_results.
 		try {
-			const flushSuccess = await parent.flushPendingToolResultsToHistory()
+			// Metadata-driven delegation is always enabled
 
-			if (!flushSuccess) {
-				console.warn(`[delegateParentAndOpenChild] Flush failed for parent ${parentTaskId}, retrying...`)
-				const retrySuccess = await parent.retrySaveApiConversationHistory()
+			// 1) Get parent (must be current task) and capture authoritative snapshot
+			const parent = this.getCurrentTask()
+			if (!parent) {
+				throw new Error("[delegateParentAndOpenChild] No current task")
+			}
+			if (parent.taskId !== parentTaskId) {
+				throw new Error(
+					`[delegateParentAndOpenChild] Parent mismatch: expected ${parentTaskId}, current ${parent.taskId}`,
+				)
+			}
 
-				if (!retrySuccess) {
-					console.error(
-						`[delegateParentAndOpenChild] CRITICAL: Parent ${parentTaskId} API history not persisted to disk. Child return may produce stale state.`,
-					)
-					vscode.window.showWarningMessage(
-						"Warning: Parent task state could not be saved. The parent task may lose recent context when resumed.",
+			// Normalize legacy/re-hydrated providers before taking the snapshot. A current task
+			// without a stack entry cannot safely transition to a child while preserving the
+			// single-open-task invariant.
+			if (!Array.isArray(this.clineStack)) {
+				this.clineStack = [parent]
+			}
+
+			// Capture authoritative parent state and the exact stack topology before any mutation.
+			// A failed remove may have popped the task or partially changed provider state.
+			const parentRuntimeState = {
+				abort: parent.abort,
+				abandoned: parent.abandoned,
+				abortReason: parent.abortReason,
+				didFinishAbortingStream: parent.didFinishAbortingStream,
+			}
+			const parentStack = this.clineStack.slice()
+			const parentStackIndex = parentStack.lastIndexOf(parent)
+			const parentConfiguration = parent.apiConfiguration ? structuredClone(parent.apiConfiguration) : undefined
+			const state = await this.getState()
+			const parentSnapshot = {
+				mode: state.mode,
+				apiConfigName: state.currentApiConfigName,
+				modelId: parentConfiguration ? getModelId(parentConfiguration) : undefined,
+				capturedAt: Date.now(),
+			}
+			this.log(
+				`[delegateParentAndOpenChild] Captured parent snapshot: mode=${parentSnapshot.mode}, ` +
+					`apiConfigName=${parentSnapshot.apiConfigName}, modelId=${parentSnapshot.modelId}`,
+			)
+			// 2) Flush pending tool results to API history BEFORE disposing the parent.
+			//    This is critical: when tools are called before new_task,
+			//    their tool_result blocks are in userMessageContent but not yet saved to API history.
+			//    If we don't flush them, the parent's API conversation will be incomplete and
+			//    cause 400 errors when resumed (missing tool_result for tool_use blocks).
+			//
+			//    NOTE: We do NOT pass the assistant message here because the assistant message
+			//    is already added to apiConversationHistory by the normal flow in
+			//    recursivelyMakeClineRequests BEFORE tools start executing. We only need to
+			//    flush the pending user message with tool_results.
+			try {
+				const flushSuccess = await parent.flushPendingToolResultsToHistory()
+
+				if (!flushSuccess) {
+					console.warn(`[delegateParentAndOpenChild] Flush failed for parent ${parentTaskId}, retrying...`)
+					const retrySuccess = await parent.retrySaveApiConversationHistory()
+
+					if (!retrySuccess) {
+						console.error(
+							`[delegateParentAndOpenChild] CRITICAL: Parent ${parentTaskId} API history not persisted to disk. Child return may produce stale state.`,
+						)
+						vscode.window.showWarningMessage(
+							"Warning: Parent task state could not be saved. The parent task may lose recent context when resumed.",
+						)
+					}
+				}
+			} catch (error) {
+				this.log(
+					`[delegateParentAndOpenChild] Error flushing pending tool results (non-fatal): ${
+						error instanceof Error ? error.message : String(error)
+					}`,
+				)
+			}
+
+			// 3) Enforce single-open invariant by closing/disposing the parent first.
+			//    A failed disposal is fatal: continuing would create a child without a
+			//    reliable single-open-task transition.
+			try {
+				await this.removeClineFromStack({ skipDelegationRepair: true })
+			} catch (error) {
+				const errorMsg = `Failed to dispose parent task '${parentTaskId}': ${
+					error instanceof Error ? error.message : String(error)
+				}`
+				this.log(`[delegateParentAndOpenChild] ${errorMsg}`)
+
+				// Never append into an arbitrary stack position. Restore the exact topology only
+				// when the instance is still usable; a disposed task is deliberately left out and
+				// remains retryable through persisted history.
+				const parentIsUsable = !parent.abort && !parent.abandoned
+				if (parentIsUsable) {
+					;(parent as any).abort = parentRuntimeState.abort
+					;(parent as any).abandoned = parentRuntimeState.abandoned
+					;(parent as any).abortReason = parentRuntimeState.abortReason
+					;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
+					if (parentStackIndex >= 0) {
+						this.clineStack.splice(0, this.clineStack.length, ...parentStack)
+					} else if (this.clineStack.length === 0) {
+						// Test doubles and legacy callers may expose the current task without
+						// registering it in the stack; keep that compatibility isolated here.
+						this.clineStack.push(parent)
+					}
+				} else {
+					this.clineStack.splice(0, this.clineStack.length, ...parentStack.filter((task) => task !== parent))
+				}
+				try {
+					await this.updateGlobalState("mode", parentSnapshot.mode)
+					if (parentSnapshot.apiConfigName) {
+						await this.activateProviderProfile(
+							{ name: parentSnapshot.apiConfigName },
+							{ persistModeConfig: false, persistTaskHistory: false, syncGlobalProviderState: true },
+						)
+					}
+					if (parentIsUsable && parentConfiguration) {
+						;(parent as any).apiConfiguration = structuredClone(parentConfiguration)
+						this.updateTaskApiHandlerIfNeeded(parentConfiguration, { forceRebuild: true })
+					}
+				} catch (restoreError) {
+					this.log(
+						`[delegateParentAndOpenChild] Failed to restore parent runtime state: ${String(restoreError)}`,
 					)
 				}
+				throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
 			}
-		} catch (error) {
-			this.log(
-				`[delegateParentAndOpenChild] Error flushing pending tool results (non-fatal): ${
-					error instanceof Error ? error.message : String(error)
-				}`,
-			)
-		}
 
-		// 3) Enforce single-open invariant by closing/disposing the parent first.
-		//    A failed disposal is fatal: continuing would create a child without a
-		//    reliable single-open-task transition.
-		try {
-			await this.removeClineFromStack({ skipDelegationRepair: true })
-		} catch (error) {
-			const errorMsg = `Failed to dispose parent task '${parentTaskId}': ${
-				error instanceof Error ? error.message : String(error)
-			}`
-			this.log(`[delegateParentAndOpenChild] ${errorMsg}`)
-
-			// Never append into an arbitrary stack position. Restore the exact topology only
-			// when the instance is still usable; a disposed task is deliberately left out and
-			// remains retryable through persisted history.
-			const parentIsUsable = !parent.abort && !parent.abandoned
-			if (parentIsUsable) {
+			// 3) Switch provider mode to child's requested mode BEFORE creating the child task
+			//    This ensures the child's system prompt and configuration are based on the correct mode.
+			//    The mode switch must happen before createTask() because the Task constructor
+			//    initializes its mode from provider.getState() during initializeTaskMode().
+			try {
+				await this.handleModeSwitch(mode as any)
+			} catch (e) {
+				const errorMsg = `Failed to switch to child mode '${mode}': ${(e as Error)?.message ?? String(e)}`
+				this.log(`[delegateParentAndOpenChild] ${errorMsg}`)
 				;(parent as any).abort = parentRuntimeState.abort
 				;(parent as any).abandoned = parentRuntimeState.abandoned
 				;(parent as any).abortReason = parentRuntimeState.abortReason
 				;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
-				if (parentStackIndex >= 0) {
-					this.clineStack.splice(0, this.clineStack.length, ...parentStack)
-				} else if (this.clineStack.length === 0) {
-					// Test doubles and legacy callers may expose the current task without
-					// registering it in the stack; keep that compatibility isolated here.
+				if (this.clineStack.length === 0) this.clineStack.push(parent)
+				throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
+			}
+
+			// 4) Create child as sole active (parent reference preserved for lineage)
+			// Pass initialStatus: "active" to ensure the child task's historyItem is created
+			// with status from the start, avoiding race conditions where the task might
+			// call attempt_completion before status is persisted separately.
+			//
+			// Pass startTask: false to prevent the child from beginning its task loop
+			// (and writing to globalState via saveClineMessages → updateTaskHistory)
+			// before we persist the parent's delegation metadata in step 5.
+			// Without this, the child's fire-and-forget startTask() races with step 5,
+			// and the last writer to globalState overwrites the other's changes—
+			// causing the parent's delegation fields to be lost.
+			let child: Task
+			try {
+				child = await this.createTask(
+					message,
+					undefined,
+					parent as any,
+					{
+						initialTodos,
+						initialStatus: "active",
+						startTask: false,
+						workspacePath,
+					},
+					configuration,
+					explicitRole,
+				)
+			} catch (error) {
+				// Restore the parent when child creation fails so delegation is atomic.
+				;(parent as any).abort = parentRuntimeState.abort
+				;(parent as any).abandoned = parentRuntimeState.abandoned
+				;(parent as any).abortReason = parentRuntimeState.abortReason
+				;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
+				if (this.clineStack.length === 0) {
 					this.clineStack.push(parent)
 				}
-			} else {
-				this.clineStack.splice(0, this.clineStack.length, ...parentStack.filter((task) => task !== parent))
+				try {
+					await this.updateGlobalState("mode", parentSnapshot.mode)
+				} catch {
+					this.log(`[delegateParentAndOpenChild] Failed to restore parent mode after child creation failure`)
+				}
+				throw error
 			}
+
+			// 5) Persist parent delegation metadata WITH snapshot BEFORE the child starts writing.
+			//    Snapshot persistence is CRITICAL: child must not start if this fails.
+			//    Use atomic parent-child link update to ensure consistency.
 			try {
-				await this.updateGlobalState("mode", parentSnapshot.mode)
-				if (parentSnapshot.apiConfigName) {
-					await this.activateProviderProfile(
-						{ name: parentSnapshot.apiConfigName },
-						{ persistModeConfig: false, persistTaskHistory: false, syncGlobalProviderState: true },
+				const { historyItem: parentHistory } = await this.getTaskWithId(parentTaskId)
+				const { historyItem: childHistory } = await this.getTaskWithId(child.taskId)
+
+				const childIds = Array.from(new Set([...(parentHistory.childIds ?? []), child.taskId]))
+
+				await this.taskHistoryStore.updateParentChildLinks({
+					parentId: parentTaskId,
+					parentUpdate: {
+						status: "delegated",
+						delegatedToId: child.taskId,
+						awaitingChildId: child.taskId,
+						childIds,
+						parentSnapshot,
+					},
+					childId: child.taskId,
+					childUpdate: {
+						parentTaskId,
+					},
+				})
+			} catch (err) {
+				const errorMsg = `Failed to persist parent delegation metadata with snapshot: ${
+					(err as Error)?.message ?? String(err)
+				}`
+				this.log(`[delegateParentAndOpenChild] CRITICAL: ${errorMsg}`)
+
+				// CRITICAL: Child cannot start if snapshot persistence failed.
+				// Abort the child and restore the parent to maintain consistency.
+				try {
+					await child.abortTask(true)
+				} catch (abortErr) {
+					this.log(
+						`[delegateParentAndOpenChild] Failed to abort child after metadata failure: ${
+							(abortErr as Error)?.message ?? String(abortErr)
+						}`,
 					)
 				}
-				if (parentIsUsable && parentConfiguration) {
-					;(parent as any).apiConfiguration = structuredClone(parentConfiguration)
-					this.updateTaskApiHandlerIfNeeded(parentConfiguration, { forceRebuild: true })
+
+				// Restore the parent so delegation is atomic.
+				;(parent as any).abort = parentRuntimeState.abort
+				;(parent as any).abandoned = parentRuntimeState.abandoned
+				;(parent as any).abortReason = parentRuntimeState.abortReason
+				;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
+				if (this.clineStack.length === 0) {
+					this.clineStack.push(parent)
 				}
-			} catch (restoreError) {
-				this.log(`[delegateParentAndOpenChild] Failed to restore parent runtime state: ${String(restoreError)}`)
-			}
-			throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
-		}
+				try {
+					await this.updateGlobalState("mode", parentSnapshot.mode)
+					const originalHistory = await this.getTaskWithId(parentTaskId)
+					await this.updateTaskHistory({
+						...originalHistory.historyItem,
+						status: parentRuntimeState.abandoned ? "active" : originalHistory.historyItem.status,
+						delegatedToId: undefined,
+						awaitingChildId: undefined,
+						parentSnapshot: undefined,
+					})
+				} catch (rollbackError) {
+					this.log(`[delegateParentAndOpenChild] Failed to persist rollback: ${String(rollbackError)}`)
+				}
 
-		// 3) Switch provider mode to child's requested mode BEFORE creating the child task
-		//    This ensures the child's system prompt and configuration are based on the correct mode.
-		//    The mode switch must happen before createTask() because the Task constructor
-		//    initializes its mode from provider.getState() during initializeTaskMode().
-		try {
-			await this.handleModeSwitch(mode as any)
-		} catch (e) {
-			const errorMsg = `Failed to switch to child mode '${mode}': ${(e as Error)?.message ?? String(e)}`
-			this.log(`[delegateParentAndOpenChild] ${errorMsg}`)
-			;(parent as any).abort = parentRuntimeState.abort
-			;(parent as any).abandoned = parentRuntimeState.abandoned
-			;(parent as any).abortReason = parentRuntimeState.abortReason
-			;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
-			if (this.clineStack.length === 0) this.clineStack.push(parent)
-			throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
-		}
-
-		// 4) Create child as sole active (parent reference preserved for lineage)
-		// Pass initialStatus: "active" to ensure the child task's historyItem is created
-		// with status from the start, avoiding race conditions where the task might
-		// call attempt_completion before status is persisted separately.
-		//
-		// Pass startTask: false to prevent the child from beginning its task loop
-		// (and writing to globalState via saveClineMessages → updateTaskHistory)
-		// before we persist the parent's delegation metadata in step 5.
-		// Without this, the child's fire-and-forget startTask() races with step 5,
-		// and the last writer to globalState overwrites the other's changes—
-		// causing the parent's delegation fields to be lost.
-		let child: Task
-		try {
-			child = await this.createTask(
-				message,
-				undefined,
-				parent as any,
-				{
-					initialTodos,
-					initialStatus: "active",
-					startTask: false,
-					workspacePath,
-				},
-				configuration,
-				explicitRole,
-			)
-		} catch (error) {
-			// Restore the parent when child creation fails so delegation is atomic.
-			;(parent as any).abort = parentRuntimeState.abort
-			;(parent as any).abandoned = parentRuntimeState.abandoned
-			;(parent as any).abortReason = parentRuntimeState.abortReason
-			;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
-			if (this.clineStack.length === 0) {
-				this.clineStack.push(parent)
+				throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
 			}
+
+			// 6) Add child to stack BEFORE starting it, to maintain stack invariant.
+			//    This ensures that if child.start() fails, the rollback logic has a consistent
+			//    stack state to work with (child is present, can be removed if needed).
+			this.clineStack.push(child)
+
+			// 7) Start the child task now that parent metadata WITH SNAPSHOT is safely persisted
+			//    and child is in the stack.
 			try {
-				await this.updateGlobalState("mode", parentSnapshot.mode)
-			} catch {
-				this.log(`[delegateParentAndOpenChild] Failed to restore parent mode after child creation failure`)
-			}
-			throw error
-		}
+				await child.start()
 
-		// 5) Persist parent delegation metadata WITH snapshot BEFORE the child starts writing.
-		//    Snapshot persistence is CRITICAL: child must not start if this fails.
-		//    Use atomic parent-child link update to ensure consistency.
-		try {
-			const { historyItem: parentHistory } = await this.getTaskWithId(parentTaskId)
-			const { historyItem: childHistory } = await this.getTaskWithId(child.taskId)
+				// Диагностическое логирование
+				this.log(`[delegateParentAndOpenChild] Child ${child.taskId} started successfully`)
+				this.log(`[delegateParentAndOpenChild] clineStack length: ${this.clineStack.length}`)
+				this.log(`[delegateParentAndOpenChild] Current task ID: ${this.getCurrentTask()?.taskId}`)
+				this.log(`[delegateParentAndOpenChild] Child task ID: ${child.taskId}`)
 
-			const childIds = Array.from(new Set([...(parentHistory.childIds ?? []), child.taskId]))
-
-			await this.taskHistoryStore.updateParentChildLinks({
-				parentId: parentTaskId,
-				parentUpdate: {
-					status: "delegated",
-					delegatedToId: child.taskId,
-					awaitingChildId: child.taskId,
-					childIds,
-					parentSnapshot,
-				},
-				childId: child.taskId,
-				childUpdate: {
-					parentTaskId,
-				},
-			})
-		} catch (err) {
-			const errorMsg = `Failed to persist parent delegation metadata with snapshot: ${
-				(err as Error)?.message ?? String(err)
-			}`
-			this.log(`[delegateParentAndOpenChild] CRITICAL: ${errorMsg}`)
-
-			// CRITICAL: Child cannot start if snapshot persistence failed.
-			// Abort the child and restore the parent to maintain consistency.
-			try {
-				await child.abortTask(true)
-			} catch (abortErr) {
-				this.log(
-					`[delegateParentAndOpenChild] Failed to abort child after metadata failure: ${
-						(abortErr as Error)?.message ?? String(abortErr)
-					}`,
-				)
-			}
-
-			// Restore the parent so delegation is atomic.
-			;(parent as any).abort = parentRuntimeState.abort
-			;(parent as any).abandoned = parentRuntimeState.abandoned
-			;(parent as any).abortReason = parentRuntimeState.abortReason
-			;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
-			if (this.clineStack.length === 0) {
-				this.clineStack.push(parent)
-			}
-			try {
-				await this.updateGlobalState("mode", parentSnapshot.mode)
-				const originalHistory = await this.getTaskWithId(parentTaskId)
-				await this.updateTaskHistory({
-					...originalHistory.historyItem,
-					status: parentRuntimeState.abandoned ? "active" : originalHistory.historyItem.status,
-					delegatedToId: undefined,
-					awaitingChildId: undefined,
-					parentSnapshot: undefined,
-				})
-			} catch (rollbackError) {
-				this.log(`[delegateParentAndOpenChild] Failed to persist rollback: ${String(rollbackError)}`)
-			}
-
-			throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
-		}
-
-		// 6) Add child to stack BEFORE starting it, to maintain stack invariant.
-		//    This ensures that if child.start() fails, the rollback logic has a consistent
-		//    stack state to work with (child is present, can be removed if needed).
-		this.clineStack.push(child)
-
-		// 7) Start the child task now that parent metadata WITH SNAPSHOT is safely persisted
-		//    and child is in the stack.
-		try {
-			await child.start()
-
-			// Диагностическое логирование
-			this.log(`[delegateParentAndOpenChild] Child ${child.taskId} started successfully`)
-			this.log(`[delegateParentAndOpenChild] clineStack length: ${this.clineStack.length}`)
-			this.log(`[delegateParentAndOpenChild] Current task ID: ${this.getCurrentTask()?.taskId}`)
-			this.log(`[delegateParentAndOpenChild] Child task ID: ${child.taskId}`)
-		} catch (startErr) {
-			const errorMsg = `Failed to start child task: ${(startErr as Error)?.message ?? String(startErr)}`
-			this.log(`[delegateParentAndOpenChild] CRITICAL: ${errorMsg}`)
-
-			// CRITICAL: Rollback parent delegation metadata if child start fails.
-			try {
-				await child.abortTask(true)
-			} catch (abortErr) {
-				this.log(
-					`[delegateParentAndOpenChild] Failed to abort child after start failure: ${
-						(abortErr as Error)?.message ?? String(abortErr)
-					}`,
-				)
-			}
-
-			// Remove child from stack (it was added before start() call)
-			const childIndex = this.clineStack.indexOf(child)
-			if (childIndex >= 0) {
-				this.clineStack.splice(childIndex, 1)
-			}
-
-			// Restore the parent so delegation is atomic.
-			;(parent as any).abort = parentRuntimeState.abort
-			;(parent as any).abandoned = parentRuntimeState.abandoned
-			;(parent as any).abortReason = parentRuntimeState.abortReason
-			;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
-			// Always restore parent to stack since it was removed earlier
-			this.clineStack.push(parent)
-			try {
-				await this.updateGlobalState("mode", parentSnapshot.mode)
-				const originalHistory = await this.getTaskWithId(parentTaskId)
-				await this.updateTaskHistory({
-					...originalHistory.historyItem,
-					status: parentRuntimeState.abandoned ? "active" : originalHistory.historyItem.status,
-					delegatedToId: undefined,
-					awaitingChildId: undefined,
-					parentSnapshot: undefined,
-				})
-
-				// Явно уведомляем UI о возврате к родительской задаче после ошибки
-				await parent.resumeAfterDelegation()
+				// Критично: явно синхронизировать frontend с новой активной подзадачей
+				// чтобы messageUpdated работал корректно
 				await this.postStateToWebview()
-			} catch (rollbackError) {
-				this.log(
-					`[delegateParentAndOpenChild] Failed to persist rollback after start failure: ${String(rollbackError)}`,
-				)
+				this.log(`[delegateParentAndOpenChild] Frontend synchronized with child task`)
+			} catch (startErr) {
+				const errorMsg = `Failed to start child task: ${(startErr as Error)?.message ?? String(startErr)}`
+				this.log(`[delegateParentAndOpenChild] CRITICAL: ${errorMsg}`)
+
+				// CRITICAL: Rollback parent delegation metadata if child start fails.
+				try {
+					await child.abortTask(true)
+				} catch (abortErr) {
+					this.log(
+						`[delegateParentAndOpenChild] Failed to abort child after start failure: ${
+							(abortErr as Error)?.message ?? String(abortErr)
+						}`,
+					)
+				}
+
+				// Remove child from stack (it was added before start() call)
+				const childIndex = this.clineStack.indexOf(child)
+				if (childIndex >= 0) {
+					this.clineStack.splice(childIndex, 1)
+				}
+
+				// Restore the parent so delegation is atomic.
+				;(parent as any).abort = parentRuntimeState.abort
+				;(parent as any).abandoned = parentRuntimeState.abandoned
+				;(parent as any).abortReason = parentRuntimeState.abortReason
+				;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
+				// Always restore parent to stack since it was removed earlier
+				this.clineStack.push(parent)
+				try {
+					await this.updateGlobalState("mode", parentSnapshot.mode)
+					const originalHistory = await this.getTaskWithId(parentTaskId)
+					await this.updateTaskHistory({
+						...originalHistory.historyItem,
+						status: parentRuntimeState.abandoned ? "active" : originalHistory.historyItem.status,
+						delegatedToId: undefined,
+						awaitingChildId: undefined,
+						parentSnapshot: undefined,
+					})
+
+					// Явно уведомляем UI о возврате к родительской задаче после ошибки
+					await parent.resumeAfterDelegation()
+					await this.postStateToWebview()
+				} catch (rollbackError) {
+					this.log(
+						`[delegateParentAndOpenChild] Failed to persist rollback after start failure: ${String(rollbackError)}`,
+					)
+				}
+
+				throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
 			}
 
-			throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
+			// Note: child.start() is now awaited. The child task will handle
+			// its own errors internally via its own .catch() handler in start().
+
+			// 7) Emit TaskDelegated (provider-level)
+			try {
+				this.log(`[delegateParentAndOpenChild] About to emit TaskDelegated event`)
+				this.log(`[delegateParentAndOpenChild] Parent: ${parentTaskId}, Child: ${child.taskId}`)
+				this.emit(AiCodeOrchestratorEventName.TaskDelegated, parentTaskId, child.taskId)
+				this.log(`[delegateParentAndOpenChild] TaskDelegated event emitted`)
+			} catch {
+				// non-fatal
+			}
+
+			return child
+		} finally {
+			this.delegationInProgress.delete(parentTaskId)
 		}
-
-		// Note: child.start() is now awaited. The child task will handle
-		// its own errors internally via its own .catch() handler in start().
-
-		// 7) Emit TaskDelegated (provider-level)
-		try {
-			this.log(`[delegateParentAndOpenChild] About to emit TaskDelegated event`)
-			this.log(`[delegateParentAndOpenChild] Parent: ${parentTaskId}, Child: ${child.taskId}`)
-			this.emit(AiCodeOrchestratorEventName.TaskDelegated, parentTaskId, child.taskId)
-			this.log(`[delegateParentAndOpenChild] TaskDelegated event emitted`)
-		} catch {
-			// non-fatal
-		}
-
-		return child
 	}
 
 	/** Reopen a delegated parent at most once, even if completion signals race. */

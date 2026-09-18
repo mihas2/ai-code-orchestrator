@@ -120,6 +120,15 @@ function makeProvider() {
 		currentApiConfigName: "parent-profile",
 		apiConfiguration: config,
 	})
+
+	// Mock TaskHistoryStore to prevent "not found in history" errors
+	provider.taskHistoryStore = {
+		initialized: Promise.resolve(),
+		get: vi.fn((id: string) => ({ id, childIds: [], status: "active" })),
+		getAll: vi.fn(() => []),
+		updateParentChildLinks: vi.fn().mockResolvedValue(undefined),
+	}
+
 	return provider
 }
 
@@ -139,10 +148,8 @@ describe("ClineProvider parent snapshot restoration", () => {
 				provider.clineStack.pop()
 			})
 			provider.handleModeSwitch = vi.fn()
-			provider.createTask = vi.fn().mockImplementation(async () => {
-				provider.clineStack.push(child)
-				return child
-			})
+			// Don't push child to stack in createTask - delegateParentAndOpenChild does it
+			provider.createTask = vi.fn().mockResolvedValue(child)
 
 			await expect(
 				provider.delegateParentAndOpenChild({
@@ -173,13 +180,16 @@ describe("ClineProvider parent snapshot restoration", () => {
 				mode: "code",
 			})
 
-			expect(provider.updateTaskHistory).toHaveBeenCalledWith(
+			expect(provider.taskHistoryStore.updateParentChildLinks).toHaveBeenCalledWith(
 				expect.objectContaining({
-					parentSnapshot: expect.objectContaining({
-						mode: "orchestrator",
-						apiConfigName: "parent-profile",
-						modelId: "parent-model",
-						capturedAt: expect.any(Number),
+					parentId: "parent",
+					parentUpdate: expect.objectContaining({
+						parentSnapshot: expect.objectContaining({
+							mode: "orchestrator",
+							apiConfigName: "parent-profile",
+							modelId: "parent-model",
+							capturedAt: expect.any(Number),
+						}),
 					}),
 				}),
 			)
@@ -302,7 +312,9 @@ describe("ClineProvider parent snapshot restoration", () => {
 			provider.handleModeSwitch = vi.fn()
 			const mockChild = { taskId: "child", start: vi.fn(), abortTask: vi.fn() }
 			provider.createTask = vi.fn().mockResolvedValue(mockChild)
-			provider.updateTaskHistory = vi.fn().mockRejectedValue(new Error("Persistence failed"))
+			provider.taskHistoryStore.updateParentChildLinks = vi
+				.fn()
+				.mockRejectedValue(new Error("Persistence failed"))
 
 			await expect(
 				provider.delegateParentAndOpenChild({
@@ -311,7 +323,7 @@ describe("ClineProvider parent snapshot restoration", () => {
 					initialTodos: [],
 					mode: "code",
 				}),
-			).rejects.toThrow("Persistence failed")
+			).rejects.toThrow("Failed to persist parent delegation metadata with snapshot: Persistence failed")
 
 			// Child must not start
 			expect(mockChild.start).not.toHaveBeenCalled()
@@ -635,7 +647,7 @@ describe("ClineProvider parent snapshot restoration", () => {
 	describe("Nested delegation isolation", () => {
 		it("preserves independent parent snapshots across nested delegations", async () => {
 			const provider = makeProvider()
-			const updateTaskHistorySpy = vi.spyOn(provider, "updateTaskHistory")
+			const updateParentChildLinksSpy = vi.spyOn(provider.taskHistoryStore, "updateParentChildLinks")
 
 			// Root → Worker1
 			provider.getCurrentTask = vi.fn(() => ({ taskId: "root", apiConfiguration: { apiModelId: "root-model" } }))
@@ -655,7 +667,7 @@ describe("ClineProvider parent snapshot restoration", () => {
 				mode: "code",
 			})
 
-			const rootSnapshot = (updateTaskHistorySpy.mock.calls[0][0] as HistoryItem).parentSnapshot
+			const rootSnapshot = (updateParentChildLinksSpy.mock.calls[0][0] as any).parentUpdate.parentSnapshot
 			expect(rootSnapshot).toMatchObject({
 				mode: "orchestrator",
 				apiConfigName: "root-profile",
@@ -663,7 +675,7 @@ describe("ClineProvider parent snapshot restoration", () => {
 			})
 
 			// Worker1 → Worker2 (nested)
-			updateTaskHistorySpy.mockClear()
+			updateParentChildLinksSpy.mockClear()
 			provider.getCurrentTask = vi.fn(() => ({
 				taskId: "worker1",
 				apiConfiguration: { apiModelId: "worker1-model" },
@@ -674,7 +686,7 @@ describe("ClineProvider parent snapshot restoration", () => {
 				apiConfiguration: config,
 			})
 			provider.getTaskWithId = vi.fn().mockResolvedValue({
-				historyItem: { id: "worker1", status: "active" },
+				historyItem: { id: "worker1", status: "active", childIds: [] },
 			})
 			provider.createTask = vi.fn().mockResolvedValue({ taskId: "worker2", start: vi.fn() })
 
@@ -685,7 +697,7 @@ describe("ClineProvider parent snapshot restoration", () => {
 				mode: "debug",
 			})
 
-			const worker1Snapshot = (updateTaskHistorySpy.mock.calls[0][0] as HistoryItem).parentSnapshot
+			const worker1Snapshot = (updateParentChildLinksSpy.mock.calls[0][0] as any).parentUpdate.parentSnapshot
 			expect(worker1Snapshot).toMatchObject({
 				mode: "code",
 				apiConfigName: "worker1-profile",

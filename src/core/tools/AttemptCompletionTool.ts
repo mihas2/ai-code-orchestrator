@@ -193,6 +193,13 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 
 		pushToolResult("")
 
+		// TODO: Replace this timing-based workaround with event-based synchronization
+		// Currently we wait for backend to complete delegation state updates before
+		// reopening the parent task. A better solution would be to emit an event
+		// when delegation state is fully persisted and wait for that event instead.
+		// Дать время backend завершить делегирование и синхронизировать frontend
+		await new Promise((resolve) => setTimeout(resolve, 100))
+
 		try {
 			await provider.reopenParentFromDelegation({
 				parentTaskId: task.parentTaskId!,

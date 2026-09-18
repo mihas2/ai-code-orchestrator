@@ -116,7 +116,7 @@ describe("TaskHistoryStore", () => {
 		})
 	})
 
-	describe("getByWorkspace()", () => {
+	describe("getAll() filtering by workspace", () => {
 		it("filters by workspace path", async () => {
 			await store.initialize()
 
@@ -124,11 +124,11 @@ describe("TaskHistoryStore", () => {
 			await store.upsert(makeHistoryItem({ id: "ws-a-2", workspace: "/workspace-a" }))
 			await store.upsert(makeHistoryItem({ id: "ws-b-1", workspace: "/workspace-b" }))
 
-			const wsA = store.getByWorkspace("/workspace-a")
+			const wsA = store.getAll().filter((item) => item.workspace === "/workspace-a")
 			expect(wsA).toHaveLength(2)
 			expect(wsA.every((item) => item.workspace === "/workspace-a")).toBe(true)
 
-			const wsB = store.getByWorkspace("/workspace-b")
+			const wsB = store.getAll().filter((item) => item.workspace === "/workspace-b")
 			expect(wsB).toHaveLength(1)
 			expect(wsB[0].id).toBe("ws-b-1")
 		})
@@ -373,12 +373,14 @@ describe("TaskHistoryStore", () => {
 		})
 	})
 
-	describe("flushIndex()", () => {
-		it("writes index to disk on flush", async () => {
+	describe("index persistence", () => {
+		it("writes index to disk after upsert", async () => {
 			await store.initialize()
 
 			await store.upsert(makeHistoryItem({ id: "flush-task" }))
-			await store.flushIndex()
+
+			// Index is written automatically with debounce, wait for it
+			await new Promise((resolve) => setTimeout(resolve, 2500))
 
 			const indexPath = path.join(tmpDir, "tasks", GlobalFileNames.historyIndex)
 			const raw = await fs.readFile(indexPath, "utf8")

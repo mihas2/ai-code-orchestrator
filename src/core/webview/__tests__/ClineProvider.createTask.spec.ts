@@ -46,7 +46,13 @@ vi.mock("@ai-code-orchestrator/types", async () => {
 vi.mock("../../task/Task", () => ({
 	Task: vi.fn().mockImplementation((args) => {
 		taskConstructor(args)
-		return { ...args, taskId: "task", instanceId: "instance", start: vi.fn(), emit: vi.fn() }
+		return {
+			...args,
+			taskId: "task",
+			instanceId: "instance",
+			start: vi.fn().mockResolvedValue(undefined),
+			emit: vi.fn(),
+		}
 	}),
 }))
 vi.mock("fs/promises", () => ({

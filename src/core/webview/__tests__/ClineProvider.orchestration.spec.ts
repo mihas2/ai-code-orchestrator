@@ -318,6 +318,21 @@ describe("ClineProvider TaskCompleted result boundary", () => {
 			abortTask: vi.fn(async () => undefined),
 		})
 		provider.getCurrentTask = vi.fn(() => ({ taskId: "root" }))
+		provider.getState = vi.fn(async () => ({
+			currentApiConfigName: "default",
+			autoApprovalEnabled: false,
+			alwaysAllowReadOnly: false,
+			alwaysAllowReadOnlyOutsideWorkspace: false,
+			alwaysAllowWrite: false,
+			alwaysAllowWriteOutsideWorkspace: false,
+			alwaysAllowWriteProtected: false,
+			alwaysAllowExecute: false,
+			alwaysAllowMcp: false,
+			alwaysAllowModeSwitch: false,
+			alwaysAllowSubtasks: false,
+			alwaysAllowFollowupQuestions: false,
+			followupAutoApproveTimeoutMs: 0,
+		}))
 		provider.delegateParentAndOpenChild = vi.fn(async () => child)
 		const service = await provider.getOrchestrationService()
 		await service.start({ ...input, settings: { ...settings, requireIntegrationApproval: true } })
@@ -343,6 +358,21 @@ describe("ClineProvider TaskCompleted result boundary", () => {
 			apiConversationHistory: [],
 		})
 		provider.getCurrentTask = vi.fn(() => ({ taskId: "root" }))
+		provider.getState = vi.fn(async () => ({
+			currentApiConfigName: "default",
+			autoApprovalEnabled: false,
+			alwaysAllowReadOnly: false,
+			alwaysAllowReadOnlyOutsideWorkspace: false,
+			alwaysAllowWrite: false,
+			alwaysAllowWriteOutsideWorkspace: false,
+			alwaysAllowWriteProtected: false,
+			alwaysAllowExecute: false,
+			alwaysAllowMcp: false,
+			alwaysAllowModeSwitch: false,
+			alwaysAllowSubtasks: false,
+			alwaysAllowFollowupQuestions: false,
+			followupAutoApproveTimeoutMs: 0,
+		}))
 		provider.delegateParentAndOpenChild = vi.fn(async () => child)
 		const service = await provider.getOrchestrationService()
 		await service.start(input)

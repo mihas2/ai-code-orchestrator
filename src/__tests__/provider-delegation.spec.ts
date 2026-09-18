@@ -53,6 +53,12 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 				apiConfiguration: {},
 			}),
 			log: vi.fn(),
+			delegationInProgress: new Set<string>(),
+			taskHistoryStore: {
+				updateParentChildLinks: vi.fn().mockResolvedValue(undefined),
+			},
+			postStateToWebview: vi.fn().mockResolvedValue(undefined),
+			clineStack: [],
 		} as unknown as ClineProvider
 
 		const params = {
@@ -84,21 +90,28 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 		)
 
 		// Metadata persistence - parent gets "delegated" status (child status is set at creation via initialStatus)
-		expect(updateTaskHistory).toHaveBeenCalledTimes(1)
+		// Now uses taskHistoryStore.updateParentChildLinks instead of updateTaskHistory
+		expect(provider.taskHistoryStore.updateParentChildLinks).toHaveBeenCalledTimes(1)
 
 		// Parent set to "delegated" with snapshot
-		const parentSaved = updateTaskHistory.mock.calls[0][0]
-		expect(parentSaved).toEqual(
+		const updateCall = (provider.taskHistoryStore.updateParentChildLinks as any).mock.calls[0][0]
+		expect(updateCall).toEqual(
 			expect.objectContaining({
-				id: "parent-1",
-				status: "delegated",
-				delegatedToId: "child-1",
-				awaitingChildId: "child-1",
-				childIds: expect.arrayContaining(["child-1"]),
-				parentSnapshot: expect.objectContaining({
-					mode: "orchestrator",
-					apiConfigName: "test-profile",
-					capturedAt: expect.any(Number),
+				parentId: "parent-1",
+				parentUpdate: expect.objectContaining({
+					status: "delegated",
+					delegatedToId: "child-1",
+					awaitingChildId: "child-1",
+					childIds: expect.arrayContaining(["child-1"]),
+					parentSnapshot: expect.objectContaining({
+						mode: "orchestrator",
+						apiConfigName: "test-profile",
+						capturedAt: expect.any(Number),
+					}),
+				}),
+				childId: "child-1",
+				childUpdate: expect.objectContaining({
+					parentTaskId: "parent-1",
 				}),
 			}),
 		)
@@ -119,9 +132,6 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 		const parentTask = { taskId: "parent-1", emit: vi.fn() } as any
 		const childStart = vi.fn(() => callOrder.push("child.start"))
 
-		const updateTaskHistory = vi.fn(async () => {
-			callOrder.push("updateTaskHistory")
-		})
 		const removeClineFromStack = vi.fn().mockResolvedValue(undefined)
 		const createTask = vi.fn(async () => {
 			callOrder.push("createTask")
@@ -139,13 +149,16 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 			},
 		})
 
+		const updateParentChildLinks = vi.fn(async () => {
+			callOrder.push("updateParentChildLinks")
+		})
+
 		const provider = {
 			emit: vi.fn(),
 			getCurrentTask: vi.fn(() => parentTask),
 			removeClineFromStack,
 			createTask,
 			getTaskWithId,
-			updateTaskHistory,
 			handleModeSwitch,
 			getState: vi.fn().mockResolvedValue({
 				mode: "orchestrator",
@@ -153,6 +166,12 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 				apiConfiguration: {},
 			}),
 			log: vi.fn(),
+			delegationInProgress: new Set<string>(),
+			taskHistoryStore: {
+				updateParentChildLinks,
+			},
+			postStateToWebview: vi.fn().mockResolvedValue(undefined),
+			clineStack: [],
 		} as unknown as ClineProvider
 
 		await (ClineProvider.prototype as any).delegateParentAndOpenChild.call(provider, {
@@ -162,7 +181,7 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 			mode: "code",
 		})
 
-		// Verify ordering: createTask → updateTaskHistory → child.start
-		expect(callOrder).toEqual(["createTask", "updateTaskHistory", "child.start"])
+		// Verify ordering: createTask → updateParentChildLinks → child.start
+		expect(callOrder).toEqual(["createTask", "updateParentChildLinks", "child.start"])
 	})
 })

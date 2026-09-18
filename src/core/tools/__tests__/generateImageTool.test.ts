@@ -127,6 +127,19 @@ describe("generateImageTool", () => {
 		})
 
 		it("should process when block is not partial", async () => {
+			// Mock the OpenRouterHandler generateImage method BEFORE the test
+			const mockGenerateImage = vi.fn().mockResolvedValue({
+				success: true,
+				imageData: "data:image/png;base64,fakebase64data",
+			})
+
+			vi.mocked(OpenRouterHandler).mockImplementation(
+				() =>
+					({
+						generateImage: mockGenerateImage,
+					}) as any,
+			)
+
 			const completeBlock: ToolUse = {
 				type: "tool_use",
 				name: "generate_image",
@@ -140,19 +153,6 @@ describe("generateImageTool", () => {
 				},
 				partial: false,
 			}
-
-			// Mock the OpenRouterHandler generateImage method
-			const mockGenerateImage = vi.fn().mockResolvedValue({
-				success: true,
-				imageData: "data:image/png;base64,fakebase64data",
-			})
-
-			vi.mocked(OpenRouterHandler).mockImplementation(
-				() =>
-					({
-						generateImage: mockGenerateImage,
-					}) as any,
-			)
 
 			await generateImageTool.handle(mockCline as Task, completeBlock as ToolUse<"generate_image">, {
 				askApproval: mockAskApproval,

@@ -573,7 +573,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			} else if (historyItem) {
 				this.resumeTaskFromHistory().catch((error) => {
 					console.error(`[Task#${this.taskId}] Unhandled rejection in resumeTaskFromHistory:`, error)
-					const prov = this.provider
+					const prov = this.providerRef.deref()
 					if (prov) {
 						prov.log(
 							`Failed to resume task from history: ${error instanceof Error ? error.message : String(error)}`,
@@ -2070,6 +2070,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * parent's metadata must be persisted to globalState **before** the
 	 * child task begins writing its own history (avoiding a read-modify-write
 	 * race on globalState).
+	 *
+	 * **Important**: This method uses a fire-and-forget pattern. The returned promise
+	 * resolves immediately after marking the task as started, without waiting for
+	 * task completion. The actual execution runs in the background with internal
+	 * error handling that logs unhandled rejections. This design is intentional
+	 * for the delegation flow where the parent needs to continue without blocking.
+	 *
+	 * @returns Promise<void> that resolves immediately after marking task as started
 	 */
 	public async start(): Promise<void> {
 		if (this._started) {
@@ -2081,7 +2089,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		const { task, images } = this.metadata
 
 		if (task || images) {
-			await this.startTask(task ?? undefined, images ?? undefined)
+			// Fire startTask as a background operation and catch unhandled rejections
+			// This prevents unhandled promise rejections from bubbling up
+			this.startTask(task ?? undefined, images ?? undefined).catch((error) => {
+				// Only log if the task was not intentionally abandoned
+				if (!this.abandoned) {
+					console.error("Unhandled rejection from startTask:", error)
+				}
+			})
 		}
 	}
 

@@ -106,6 +106,15 @@ function makeProvider() {
 	provider.getTaskWithId = vi.fn().mockResolvedValue({ historyItem: { id: "parent", childIds: [] } })
 	provider.updateTaskHistory = vi.fn().mockResolvedValue(undefined)
 	provider.handleModeSwitch = vi.fn().mockResolvedValue(undefined)
+
+	// Mock TaskHistoryStore to prevent "not found in history" errors
+	provider.taskHistoryStore = {
+		initialized: Promise.resolve(),
+		get: vi.fn((id: string) => ({ id, childIds: [], status: "active" })),
+		getAll: vi.fn(() => []),
+		updateParentChildLinks: vi.fn().mockResolvedValue(undefined),
+	}
+
 	return provider
 }
 
@@ -145,7 +154,8 @@ describe("ClineProvider delegation flow", () => {
 		expect(parent.abortTask).toHaveBeenCalled()
 		expect(provider.getCurrentTaskStack()).toContain("child")
 		expect(result).toBe(child)
-		expect(provider.postStateToWebview).not.toHaveBeenCalled()
+		// postStateToWebview is now called to sync the frontend with the child task
+		expect(provider.postStateToWebview).toHaveBeenCalled()
 	})
 
 	it("preserves the child's role assignment and does not reuse parent provider keys", async () => {

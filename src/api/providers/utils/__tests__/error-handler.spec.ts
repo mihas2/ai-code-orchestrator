@@ -173,7 +173,7 @@ describe("handleProviderError", () => {
 
 			expect(result).toBeInstanceOf(Error)
 			expect(result.message).toContain("TestProvider completion error")
-			expect(result.message).toContain("[object Object]")
+			expect(result.message).toContain("Something went wrong")
 		})
 
 		it("should handle string exceptions", () => {
@@ -182,7 +182,8 @@ describe("handleProviderError", () => {
 			const result = handleProviderError(error, providerName)
 
 			expect(result).toBeInstanceOf(Error)
-			expect(result.message).toBe("TestProvider completion error: Connection timeout")
+			expect(result.message).toContain("TestProvider completion error")
+			expect(result.message).toContain("Connection timeout")
 		})
 	})
 

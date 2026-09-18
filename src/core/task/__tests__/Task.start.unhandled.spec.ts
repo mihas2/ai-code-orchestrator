@@ -20,6 +20,7 @@ describe("Task.start() unhandled rejection handling", () => {
 
 		// Mock provider with minimal required functionality
 		mockProvider = {
+			log: vi.fn(),
 			postStateToWebview: vi.fn().mockResolvedValue(undefined),
 			postStateToWebviewWithoutTaskHistory: vi.fn().mockResolvedValue(undefined),
 			getGlobalState: vi.fn().mockReturnValue({

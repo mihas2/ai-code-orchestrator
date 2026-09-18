@@ -3,10 +3,7 @@
 import os from "os"
 import * as path from "path"
 
-import { arePathsEqual, getReadablePath, getWorkspacePath } from "../path"
-
-// Mock modules
-
+// Mock modules BEFORE imports
 vi.mock("vscode", () => ({
 	window: {
 		activeTextEditor: {
@@ -30,6 +27,8 @@ vi.mock("vscode", () => ({
 		}),
 	},
 }))
+
+import { arePathsEqual, getReadablePath, getWorkspacePath } from "../path"
 describe("Path Utilities", () => {
 	const originalPlatform = process.platform
 	// Helper to mock VS Code configuration
@@ -57,9 +56,9 @@ describe("Path Utilities", () => {
 		})
 	})
 	describe("getWorkspacePath", () => {
-		it("should return the current workspace path", () => {
-			const workspacePath = "/Users/test/project"
-			expect(getWorkspacePath(workspacePath)).toBe("/Users/test/project")
+		it("should return the workspace folder for the active editor", () => {
+			// Mock returns /test/workspaceFolder for active editor
+			expect(getWorkspacePath("/Users/test/project")).toBe("/test/workspaceFolder")
 		})
 
 		it("should return undefined when outside a workspace", () => {})

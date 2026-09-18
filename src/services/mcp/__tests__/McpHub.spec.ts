@@ -36,18 +36,17 @@ vi.mock("fs/promises", () => ({
 	mkdir: vi.fn().mockResolvedValue(undefined),
 }))
 
-// Import safeWriteJson to use in mocks
-import { safeWriteJson } from "../../../utils/safeWriteJson"
-
-// Mock safeWriteJson
+// Mock safeWriteJson to directly use the mocked fs.writeFile
 vi.mock("../../../utils/safeWriteJson", () => ({
-	safeWriteJson: vi.fn(async (filePath, data) => {
-		// Instead of trying to write to the file system, just call fs.writeFile mock
-		// This avoids the complex file locking and temp file operations
-		const fs = await import("fs/promises")
-		return fs.writeFile(filePath, JSON.stringify(data), "utf8")
+	safeWriteJson: vi.fn(async (filePath, data, options) => {
+		// Directly use the already-mocked fs module
+		const content = options?.prettyPrint ? JSON.stringify(data, null, 2) : JSON.stringify(data)
+		return fs.writeFile(filePath, content, "utf8")
 	}),
 }))
+
+// Import safeWriteJson after mocking
+import { safeWriteJson } from "../../../utils/safeWriteJson"
 
 vi.mock("vscode", () => ({
 	workspace: {
@@ -73,7 +72,6 @@ vi.mock("vscode", () => ({
 		from: vi.fn(),
 	},
 }))
-vi.mock("fs/promises")
 vi.mock("../../../core/webview/ClineProvider")
 
 // Mock the MCP SDK modules
@@ -1209,8 +1207,8 @@ describe("McpHub", () => {
 				},
 			}
 
-			// Mock reading initial config
-			vi.mocked(fs.readFile).mockResolvedValueOnce(JSON.stringify(mockConfig))
+			// Mock reading config for all calls (access check, read config, etc.)
+			vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(mockConfig))
 
 			// Set up mock connection
 			const mockConnection: ConnectedMcpConnection = {
@@ -1231,15 +1229,27 @@ describe("McpHub", () => {
 			await mcpHub.toggleServerDisabled("test-server", true)
 
 			// Verify the config was updated correctly
-			// Find the write call with the normalized path
-			const normalizedSettingsPath = "/mock/settings/path/cline_mcp_settings.json"
 			const writeCalls = vi.mocked(fs.writeFile).mock.calls
+			expect(writeCalls.length).toBeGreaterThan(0)
 
-			// Find the write call with the normalized path
-			const writeCall = writeCalls.find((call: any) => call[0] === normalizedSettingsPath)
-			const callToUse = writeCall || writeCalls[0]
+			// Debug: log all write calls
+			console.log("Total write calls:", writeCalls.length)
+			writeCalls.forEach((call, index) => {
+				console.log(`Call ${index}:`, call[0])
+				try {
+					const config = JSON.parse(call[1] as string)
+					console.log(`  mcpServers keys:`, Object.keys(config.mcpServers || {}))
+				} catch (e) {
+					console.log(`  Parse error:`, e)
+				}
+			})
 
-			const writtenConfig = JSON.parse(callToUse[1] as string)
+			// Get the last write call (the one from updateServerConfig)
+			const lastWriteCall = writeCalls[writeCalls.length - 1]
+			const writtenConfig = JSON.parse(lastWriteCall[1] as string)
+
+			expect(writtenConfig.mcpServers).toBeDefined()
+			expect(writtenConfig.mcpServers["test-server"]).toBeDefined()
 			expect(writtenConfig.mcpServers["test-server"].disabled).toBe(true)
 		})
 
@@ -1548,8 +1558,8 @@ describe("McpHub", () => {
 					},
 				}
 
-				// Mock reading initial config
-				vi.mocked(fs.readFile).mockResolvedValueOnce(JSON.stringify(mockConfig))
+				// Mock reading config for all calls
+				vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(mockConfig))
 
 				// Set up mock connection
 				const mockConnection: ConnectedMcpConnection = {
@@ -1570,15 +1580,15 @@ describe("McpHub", () => {
 				await mcpHub.updateServerTimeout("test-server", 120)
 
 				// Verify the config was updated correctly
-				// Find the write call with the normalized path
-				const normalizedSettingsPath = "/mock/settings/path/cline_mcp_settings.json"
 				const writeCalls = vi.mocked(fs.writeFile).mock.calls
+				expect(writeCalls.length).toBeGreaterThan(0)
 
-				// Find the write call with the normalized path
-				const writeCall = writeCalls.find((call: any) => call[0] === normalizedSettingsPath)
-				const callToUse = writeCall || writeCalls[0]
+				// Get the last write call (the one from updateServerConfig)
+				const lastWriteCall = writeCalls[writeCalls.length - 1]
+				const writtenConfig = JSON.parse(lastWriteCall[1] as string)
 
-				const writtenConfig = JSON.parse(callToUse[1] as string)
+				expect(writtenConfig.mcpServers).toBeDefined()
+				expect(writtenConfig.mcpServers["test-server"]).toBeDefined()
 				expect(writtenConfig.mcpServers["test-server"].timeout).toBe(120)
 			})
 

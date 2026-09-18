@@ -7,11 +7,33 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { ClineProvider } from "../ClineProvider"
 import { AiCodeOrchestratorEventName } from "@ai-code-orchestrator/types"
 
+// Mock storage utilities to prevent filesystem access
+vi.mock("../../../utils/storage", () => ({
+	getTaskDirectoryPath: vi.fn().mockResolvedValue("/tmp/test-tasks/task"),
+	getSettingsDirectoryPath: vi.fn().mockResolvedValue("/tmp/test-settings"),
+	getGlobalStoragePath: vi.fn().mockResolvedValue("/tmp/test-storage"),
+}))
+
+vi.mock("fs/promises", () => ({
+	mkdir: vi.fn().mockResolvedValue(undefined),
+	writeFile: vi.fn().mockResolvedValue(undefined),
+	readFile: vi.fn().mockResolvedValue("[]"),
+	unlink: vi.fn().mockResolvedValue(undefined),
+	rmdir: vi.fn().mockResolvedValue(undefined),
+	readdir: vi.fn().mockResolvedValue([]),
+	stat: vi.fn().mockRejectedValue({ code: "ENOENT" }),
+	access: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock("../../../utils/safeWriteJson", () => ({
+	safeWriteJson: vi.fn().mockResolvedValue(undefined),
+}))
+
 describe("reopenParentFromDelegation race condition handling", () => {
 	const makeProvider = () => {
 		const provider = Object.create(ClineProvider.prototype) as any
 		provider.log = vi.fn()
-		provider.contextProxy = { globalStorageUri: { fsPath: "/mock/storage" } }
+		provider.contextProxy = { globalStorageUri: { fsPath: "/tmp/test-storage" } }
 		provider.customModesManager = { getCustomModes: vi.fn().mockResolvedValue([]) }
 		provider.providerSettingsManager = {
 			listConfig: vi.fn().mockResolvedValue([]),

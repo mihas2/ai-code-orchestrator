@@ -110,7 +110,7 @@ export class TaskHistoryStore {
 	}
 
 	/**
-	 * Stop watchers and clear timers.
+	 * Stop watchers and clear timers. Flushes the index file before disposing.
 	 */
 	dispose(): void {
 		this.disposed = true
@@ -130,6 +130,11 @@ export class TaskHistoryStore {
 			clearInterval(this.reconcileTimer)
 			this.reconcileTimer = null
 		}
+
+		// Flush index file on dispose (fire-and-forget)
+		this.writeIndex().catch(() => {
+			// Non-fatal: best-effort flush
+		})
 	}
 
 	// ────────────────────────────── Reads ──────────────────────────────
@@ -142,10 +147,10 @@ export class TaskHistoryStore {
 	}
 
 	/**
-	 * Get all tasks' history items.
+	 * Get all tasks' history items, sorted by timestamp descending (newest first).
 	 */
 	getAll(): HistoryItem[] {
-		return Array.from(this.cache.values())
+		return Array.from(this.cache.values()).sort((a, b) => b.ts - a.ts)
 	}
 
 	// ────────────────────────────── Mutations ──────────────────────────────

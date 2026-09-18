@@ -17,7 +17,11 @@ describe("TaskHistoryStore - Atomic Parent-Child Links", () => {
 
 	afterEach(async () => {
 		store.dispose()
-		await fs.rm(tempDir, { recursive: true, force: true })
+		// Wait a bit to ensure all async file operations complete
+		await new Promise((resolve) => setTimeout(resolve, 50))
+		await fs.rm(tempDir, { recursive: true, force: true }).catch((err) => {
+			console.warn(`Failed to clean up test directory ${tempDir}:`, err)
+		})
 	})
 
 	describe("updateParentChildLinks", () => {
