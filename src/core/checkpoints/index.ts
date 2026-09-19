@@ -26,10 +26,14 @@ function sendCheckpointInitWarn(task: Task, type?: "WAIT_TIMEOUT" | "INIT_TIMEOU
 
 export async function getCheckpointService(task: Task, { interval = 250 }: { interval?: number } = {}) {
 	if (!task.enableCheckpoints) {
+		console.log(`[getCheckpointService] Checkpoints disabled for task ${task.taskId}`)
 		return undefined
 	}
 
 	if (task.checkpointService) {
+		console.log(
+			`[getCheckpointService] Returning existing service for task ${task.taskId}, initialized=${task.checkpointService.isInitialized}`,
+		)
 		return task.checkpointService
 	}
 
@@ -46,7 +50,9 @@ export async function getCheckpointService(task: Task, { interval = 250 }: { int
 		}
 	}
 
-	console.log("[Task#getCheckpointService] initializing checkpoints service")
+	console.log(
+		`[getCheckpointService] Initializing checkpoints service for task ${task.taskId}, timeout=${checkpointTimeoutMs}ms`,
+	)
 
 	try {
 		const workspaceDir = task.cwd || getWorkspacePath()
@@ -73,34 +79,48 @@ export async function getCheckpointService(task: Task, { interval = 250 }: { int
 		}
 
 		if (task.checkpointServiceInitializing) {
+			console.log(`[getCheckpointService] Service already initializing for task ${task.taskId}, waiting...`)
 			const checkpointInitStartTime = Date.now()
 			let warningShown = false
 
-			await pWaitFor(
-				() => {
-					const elapsed = Date.now() - checkpointInitStartTime
+			try {
+				await pWaitFor(
+					() => {
+						const elapsed = Date.now() - checkpointInitStartTime
 
-					// Show warning if we're past the threshold and haven't shown it yet
-					if (!warningShown && elapsed >= WARNING_THRESHOLD_MS) {
-						warningShown = true
-						sendCheckpointInitWarn(task, "WAIT_TIMEOUT", WARNING_THRESHOLD_MS / 1000)
-					}
+						// Show warning if we're past the threshold and haven't shown it yet
+						if (!warningShown && elapsed >= WARNING_THRESHOLD_MS) {
+							warningShown = true
+							sendCheckpointInitWarn(task, "WAIT_TIMEOUT", WARNING_THRESHOLD_MS / 1000)
+							console.log(
+								`[getCheckpointService] Initialization taking longer than ${WARNING_THRESHOLD_MS}ms for task ${task.taskId}`,
+							)
+						}
 
-					console.log(
-						`[Task#getCheckpointService] waiting for service to initialize (${Math.round(elapsed / 1000)}s)`,
+						console.log(
+							`[getCheckpointService] waiting for service to initialize (${Math.round(elapsed / 1000)}s), abort=${task.abort}`,
+						)
+						return !!task.checkpointService && !!task?.checkpointService?.isInitialized
+					},
+					{ interval, timeout: checkpointTimeoutMs },
+				)
+				if (!task?.checkpointService) {
+					console.error(
+						`[getCheckpointService] Service initialization timeout after ${checkpointTimeoutMs}ms for task ${task.taskId}`,
 					)
-					return !!task.checkpointService && !!task?.checkpointService?.isInitialized
-				},
-				{ interval, timeout: checkpointTimeoutMs },
-			)
-			if (!task?.checkpointService) {
-				sendCheckpointInitWarn(task, "INIT_TIMEOUT", task.checkpointTimeout)
+					sendCheckpointInitWarn(task, "INIT_TIMEOUT", task.checkpointTimeout)
+					task.enableCheckpoints = false
+					return undefined
+				} else {
+					console.log(`[getCheckpointService] Service initialization complete for task ${task.taskId}`)
+					sendCheckpointInitWarn(task)
+				}
+				return task.checkpointService
+			} catch (err) {
+				console.error(`[getCheckpointService] Error during initialization wait for task ${task.taskId}:`, err)
 				task.enableCheckpoints = false
 				return undefined
-			} else {
-				sendCheckpointInitWarn(task)
 			}
-			return task.checkpointService
 		}
 
 		if (!task.enableCheckpoints) {
@@ -171,18 +191,30 @@ async function checkGitInstallation(
 
 				// Always create the chat message but include the suppress flag in the payload
 				// so the chatview can choose not to render it while keeping it in history.
-				task.say(
-					"checkpoint_saved",
-					to,
-					undefined,
-					undefined,
-					{ from, to, suppressMessage: !!suppressMessage },
-					undefined,
-					{ isNonInteractive: true },
-				).catch((err) => {
-					log("[Task#getCheckpointService] caught unexpected error in say('checkpoint_saved')")
-					console.error(err)
-				})
+				// Wrap in async IIFE to properly handle errors without blocking
+				;(async () => {
+					try {
+						// Check if task is aborted before attempting to save
+						if (task.abort) {
+							log("[Task#getCheckpointService] skipping checkpoint message - task aborted")
+							return
+						}
+
+						await task.say(
+							"checkpoint_saved",
+							to,
+							undefined,
+							undefined,
+							{ from, to, suppressMessage: !!suppressMessage },
+							undefined,
+							{ isNonInteractive: true },
+						)
+					} catch (err) {
+						log("[Task#getCheckpointService] caught unexpected error in say('checkpoint_saved')")
+						console.error(err)
+						// Don't disable checkpoints for individual say() failures
+					}
+				})()
 			} catch (err) {
 				log("[Task#getCheckpointService] caught unexpected error in on('checkpoint'), disabling checkpoints")
 				console.error(err)
@@ -207,19 +239,31 @@ async function checkGitInstallation(
 }
 
 export async function checkpointSave(task: Task, force = false, suppressMessage = false) {
-	const service = await getCheckpointService(task)
+	try {
+		console.log(`[checkpointSave] Starting checkpoint save for task ${task.taskId}, abort=${task.abort}`)
 
-	if (!service) {
-		return
+		const service = await getCheckpointService(task)
+
+		if (!service) {
+			console.log(`[checkpointSave] No checkpoint service available for task ${task.taskId}`)
+			return
+		}
+
+		// Start the checkpoint process in the background.
+		const result = await service
+			.saveCheckpoint(`Task: ${task.taskId}, Time: ${Date.now()}`, { allowEmpty: force, suppressMessage })
+			.catch((err) => {
+				console.error("[checkpointSave] caught unexpected error, disabling checkpoints", err)
+				task.enableCheckpoints = false
+				throw err // Re-throw to allow caller to handle
+			})
+
+		console.log(`[checkpointSave] Checkpoint save completed for task ${task.taskId}, result=${!!result}`)
+		return result
+	} catch (err) {
+		console.error(`[checkpointSave] Failed to save checkpoint for task ${task.taskId}:`, err)
+		// Don't re-throw - this is called with void, errors should be logged only
 	}
-
-	// Start the checkpoint process in the background.
-	return service
-		.saveCheckpoint(`Task: ${task.taskId}, Time: ${Date.now()}`, { allowEmpty: force, suppressMessage })
-		.catch((err) => {
-			console.error("[Task#checkpointSave] caught unexpected error, disabling checkpoints", err)
-			task.enableCheckpoints = false
-		})
 }
 
 export type CheckpointRestoreOptions = {
