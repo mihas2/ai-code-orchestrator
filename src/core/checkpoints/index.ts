@@ -181,6 +181,9 @@ async function checkGitInstallation(
 
 		service.on("checkpoint", ({ fromHash: from, toHash: to, suppressMessage }) => {
 			try {
+				console.log(
+					`[checkpoint event] Checkpoint created: from=${from?.slice(0, 7)}, to=${to.slice(0, 7)}, abort=${task.abort}, taskStatus=${task.taskStatus}, isStreaming=${task.isStreaming}`,
+				)
 				sendCheckpointInitWarn(task)
 				// Always update the current checkpoint hash in the webview, including the suppress flag
 				provider?.postMessageToWebview({
@@ -240,7 +243,9 @@ async function checkGitInstallation(
 
 export async function checkpointSave(task: Task, force = false, suppressMessage = false) {
 	try {
-		console.log(`[checkpointSave] Starting checkpoint save for task ${task.taskId}, abort=${task.abort}`)
+		console.log(
+			`[checkpointSave] Starting checkpoint save for task ${task.taskId}, abort=${task.abort}, taskStatus=${task.taskStatus}`,
+		)
 
 		const service = await getCheckpointService(task)
 
@@ -248,6 +253,10 @@ export async function checkpointSave(task: Task, force = false, suppressMessage 
 			console.log(`[checkpointSave] No checkpoint service available for task ${task.taskId}`)
 			return
 		}
+
+		console.log(
+			`[checkpointSave] Before saveCheckpoint call: abort=${task.abort}, taskStatus=${task.taskStatus}, isStreaming=${task.isStreaming}`,
+		)
 
 		// Start the checkpoint process in the background.
 		const result = await service
@@ -258,7 +267,9 @@ export async function checkpointSave(task: Task, force = false, suppressMessage 
 				throw err // Re-throw to allow caller to handle
 			})
 
-		console.log(`[checkpointSave] Checkpoint save completed for task ${task.taskId}, result=${!!result}`)
+		console.log(
+			`[checkpointSave] Checkpoint save completed for task ${task.taskId}, result=${!!result}, abort=${task.abort}, taskStatus=${task.taskStatus}, isStreaming=${task.isStreaming}`,
+		)
 		return result
 	} catch (err) {
 		console.error(`[checkpointSave] Failed to save checkpoint for task ${task.taskId}:`, err)

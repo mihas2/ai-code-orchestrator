@@ -1510,7 +1510,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// Use allowEmpty=true to ensure a checkpoint is recorded even if there are no file changes.
 		// Suppress the checkpoint_saved chat row for this particular checkpoint to keep the timeline clean.
 		if (askResponse === "messageResponse") {
+			console.log(
+				`[handleWebviewAskResponse] Before checkpoint: abort=${this.abort}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}`,
+			)
 			void this.checkpointSave(false, true)
+			console.log(
+				`[handleWebviewAskResponse] After checkpoint call (async): abort=${this.abort}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}`,
+			)
 		}
 
 		// Mark the last follow-up question as answered
@@ -2427,6 +2433,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this.abandoned = true
 		}
 
+		console.log(
+			`[abortTask] Setting abort=true, isAbandoned=${isAbandoned}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}`,
+		)
 		this.abort = true
 
 		// Reset consecutive error counters on abort (manual intervention)
@@ -2656,7 +2665,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.emit(AiCodeOrchestratorEventName.TaskStarted)
 
 		while (!this.abort) {
+			console.log(
+				`[startTask] Loop iteration start: abort=${this.abort}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}`,
+			)
 			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent, includeFileDetails)
+			console.log(
+				`[startTask] After recursivelyMakeClineRequests: abort=${this.abort}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}, didEndLoop=${didEndLoop}`,
+			)
 			includeFileDetails = false // We only need file details the first time.
 
 			// The way this agentic loop works is that cline will be given a
@@ -2673,11 +2688,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			if (didEndLoop) {
 				// For now a task never 'completes'. This will only happen if
 				// the user hits max requests and denies resetting the count.
+				console.log(`[startTask] Loop ending: didEndLoop=true`)
 				break
 			} else {
+				console.log(`[startTask] Continuing loop with noToolsUsed response`)
 				nextUserContent = [{ type: "text", text: formatResponse.noToolsUsed() }]
 			}
 		}
+		console.log(`[startTask] Loop exited: abort=${this.abort}, taskStatus=${this.taskStatus}`)
 	}
 
 	public async recursivelyMakeClineRequests(
@@ -2698,7 +2716,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const currentUserContent = currentItem.userContent
 			const currentIncludeFileDetails = currentItem.includeFileDetails
 
+			console.log(
+				`[recursivelyMakeClineRequests] Stack iteration: abort=${this.abort}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}, stackLength=${stack.length}`,
+			)
+
 			if (this.abort) {
+				console.log(`[recursivelyMakeClineRequests] Task aborted, throwing error`)
 				throw new Error(
 					`[AiCodeOrchestrator#recursivelyMakeAicoRequests] task ${this.taskId}.${this.instanceId} aborted`,
 				)
