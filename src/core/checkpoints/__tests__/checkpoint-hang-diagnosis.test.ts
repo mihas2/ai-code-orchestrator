@@ -81,11 +81,12 @@ describe("Checkpoint Hang Diagnosis - Fixed", () => {
 				}
 			})
 
-			// This should complete without throwing
-			await checkpointSave(mockTask, false, true)
-
-			// Verify diagnostic logging was added
-			expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining("Starting checkpoint save"))
+			// This should complete without throwing.
+			// NOTE: `checkpointSave()` itself does not depend on `task.abort` - it is the
+			// `on("checkpoint")` event handler that skips `task.say()` when aborted.
+			// This assertion only verifies that `checkpointSave` resolves without throwing
+			// even though the task is aborted (behavioral check, not log-string based).
+			await expect(checkpointSave(mockTask, false, true)).resolves.not.toThrow()
 		})
 
 		it("should handle abort during checkpoint event gracefully", async () => {
@@ -141,7 +142,7 @@ describe("Checkpoint Hang Diagnosis - Fixed", () => {
 	})
 
 	describe("FIX: enhanced error logging", () => {
-		it("should log checkpoint save start and completion", async () => {
+		it("should save checkpoint successfully and return the result", async () => {
 			// Setup
 			mockCheckpointService.isInitialized = true
 			mockCheckpointService.saveCheckpoint.mockResolvedValue({
@@ -150,11 +151,13 @@ describe("Checkpoint Hang Diagnosis - Fixed", () => {
 			mockTask.checkpointService = mockCheckpointService
 
 			// Execute
-			await checkpointSave(mockTask, false, true)
+			const result = await checkpointSave(mockTask, false, true)
 
-			// Verify diagnostic logs
-			expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining("Starting checkpoint save"))
-			expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining("Checkpoint save completed"))
+			// Verify behavior (functional outcome) rather than diagnostic log text,
+			// since verbose per-call debug logging was removed as part of the
+			// checkpoint race-condition fix (see plans/checkpoint-race-condition-audit.md).
+			expect(mockCheckpointService.saveCheckpoint).toHaveBeenCalledTimes(1)
+			expect(result).toEqual({ commit: "test-hash" })
 		})
 
 		it("should log when checkpoints are disabled", async () => {
@@ -199,9 +202,10 @@ describe("Checkpoint Hang Diagnosis - Fixed", () => {
 			// Execute - should not throw (errors are logged)
 			await checkpointSave(mockTask, false, true)
 
-			// Verify error was logged
+			// Verify error was logged (current implementation logs from the
+			// `.catch()` handler in `checkpointSave`, not a diagnostic wrapper)
 			expect(consoleErrorSpy).toHaveBeenCalledWith(
-				expect.stringContaining("Failed to save checkpoint"),
+				expect.stringContaining("caught unexpected error, disabling checkpoints"),
 				expect.any(Error),
 			)
 
@@ -224,8 +228,12 @@ describe("Checkpoint Hang Diagnosis - Fixed", () => {
 			// Should disable checkpoints
 			expect(mockTask.enableCheckpoints).toBe(false)
 
-			// Should log error
-			expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining("Service initialization timeout"))
+			// Should log error (actual implementation logs the full caught error from
+			// pWaitFor, not a custom "Service initialization timeout" string)
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				expect.stringContaining("[getCheckpointService] Error during initialization wait"),
+				expect.any(Error),
+			)
 		})
 	})
 })

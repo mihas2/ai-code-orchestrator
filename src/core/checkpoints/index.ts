@@ -181,9 +181,6 @@ async function checkGitInstallation(
 
 		service.on("checkpoint", ({ fromHash: from, toHash: to, suppressMessage }) => {
 			try {
-				console.log(
-					`[checkpoint event] Checkpoint created: from=${from?.slice(0, 7)}, to=${to.slice(0, 7)}, abort=${task.abort}, taskStatus=${task.taskStatus}, isStreaming=${task.isStreaming}`,
-				)
 				sendCheckpointInitWarn(task)
 				// Always update the current checkpoint hash in the webview, including the suppress flag
 				provider?.postMessageToWebview({
@@ -195,10 +192,17 @@ async function checkGitInstallation(
 				// Always create the chat message but include the suppress flag in the payload
 				// so the chatview can choose not to render it while keeping it in history.
 				// Wrap in async IIFE to properly handle errors without blocking
+				//
+				// NOTE: This handler is UI-only. It MUST NOT write to
+				// `task.userMessageContentReady` (single-writer invariant owned by
+				// `presentAssistantMessage()` — see comment on the field declaration
+				// in Task.ts). `checkpointSave()` is already awaited synchronously
+				// from within `presentAssistantMessage`'s `checkpointSaveAndMark`,
+				// so the task loop does not depend on this event to progress.
 				;(async () => {
 					try {
 						// Check if task is aborted before attempting to save
-						if (task.abort) {
+						if (task.abort || task.abandoned) {
 							log("[Task#getCheckpointService] skipping checkpoint message - task aborted")
 							return
 						}
@@ -212,6 +216,13 @@ async function checkGitInstallation(
 							undefined,
 							{ isNonInteractive: true },
 						)
+
+						// Re-check after the await: the task may have been aborted
+						// or abandoned while `say()` was in flight. Avoid touching
+						// a disposed/abandoned instance any further.
+						if (task.abort || task.abandoned) {
+							return
+						}
 					} catch (err) {
 						log("[Task#getCheckpointService] caught unexpected error in say('checkpoint_saved')")
 						console.error(err)
@@ -242,39 +253,21 @@ async function checkGitInstallation(
 }
 
 export async function checkpointSave(task: Task, force = false, suppressMessage = false) {
-	try {
-		console.log(
-			`[checkpointSave] Starting checkpoint save for task ${task.taskId}, abort=${task.abort}, taskStatus=${task.taskStatus}`,
-		)
+	const service = await getCheckpointService(task)
 
-		const service = await getCheckpointService(task)
-
-		if (!service) {
-			console.log(`[checkpointSave] No checkpoint service available for task ${task.taskId}`)
-			return
-		}
-
-		console.log(
-			`[checkpointSave] Before saveCheckpoint call: abort=${task.abort}, taskStatus=${task.taskStatus}, isStreaming=${task.isStreaming}`,
-		)
-
-		// Start the checkpoint process in the background.
-		const result = await service
-			.saveCheckpoint(`Task: ${task.taskId}, Time: ${Date.now()}`, { allowEmpty: force, suppressMessage })
-			.catch((err) => {
-				console.error("[checkpointSave] caught unexpected error, disabling checkpoints", err)
-				task.enableCheckpoints = false
-				throw err // Re-throw to allow caller to handle
-			})
-
-		console.log(
-			`[checkpointSave] Checkpoint save completed for task ${task.taskId}, result=${!!result}, abort=${task.abort}, taskStatus=${task.taskStatus}, isStreaming=${task.isStreaming}`,
-		)
-		return result
-	} catch (err) {
-		console.error(`[checkpointSave] Failed to save checkpoint for task ${task.taskId}:`, err)
-		// Don't re-throw - this is called with void, errors should be logged only
+	if (!service) {
+		return
 	}
+
+	// Start the checkpoint process in the background.
+	const result = await service
+		.saveCheckpoint(`Task: ${task.taskId}, Time: ${Date.now()}`, { allowEmpty: force, suppressMessage })
+		.catch((err) => {
+			console.error("[checkpointSave] caught unexpected error, disabling checkpoints", err)
+			task.enableCheckpoints = false
+		})
+
+	return result
 }
 
 export type CheckpointRestoreOptions = {

@@ -350,6 +350,24 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	presentAssistantMessageLocked = false
 	presentAssistantMessageHasPendingUpdates = false
 	userMessageContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam | Anthropic.ToolResultBlockParam)[] = []
+
+	/**
+	 * Single-writer invariant: this flag MUST be set to `true` ONLY from
+	 * `presentAssistantMessage()` (see `src/core/assistant-message/presentAssistantMessage.ts`),
+	 * which is the sole owner/state-machine driving this flag's `true` transitions
+	 * (out-of-bounds/last-block completion checks). It is reset to `false` from
+	 * several places in the streaming loop in this file (e.g. at the start of a new
+	 * api-request, and while handling partial content blocks).
+	 *
+	 * Other subsystems (notably the checkpoint event handler in
+	 * `src/core/checkpoints/index.ts`) MUST NOT write to this flag. Doing so
+	 * creates a race: the write can be reordered/lost relative to the resets
+	 * performed by the streaming loop, causing `pWaitFor(() => this.userMessageContentReady)`
+	 * (see `recursivelyMakeClineRequests`) to hang forever. `checkpointSave()` is
+	 * already awaited synchronously inside `presentAssistantMessage`'s
+	 * `checkpointSaveAndMark`, so the task loop's progress never depends on the
+	 * checkpoint event firing.
+	 */
 	userMessageContentReady = false
 
 	/**
@@ -1495,10 +1513,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	handleWebviewAskResponse(askResponse: ClineAskResponse, text?: string, images?: string[]) {
-		console.log(
-			`[CHECKPOINT_DEBUG] handleWebviewAskResponse called: askResponse=${askResponse}, taskId=${this.taskId}, isStreaming=${this.isStreaming}, abort=${this.abort}`,
-		)
-
 		// Clear any pending auto-approval timeout when user responds
 		this.cancelAutoApprovalTimeout()
 		// Invalidate scoped pending-command snapshot so a late scoped response
@@ -1514,13 +1528,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// Use allowEmpty=true to ensure a checkpoint is recorded even if there are no file changes.
 		// Suppress the checkpoint_saved chat row for this particular checkpoint to keep the timeline clean.
 		if (askResponse === "messageResponse") {
-			console.log(
-				`[CHECKPOINT_DEBUG] About to call checkpointSave: taskId=${this.taskId}, isStreaming=${this.isStreaming}`,
-			)
 			void this.checkpointSave(false, true)
-			console.log(
-				`[CHECKPOINT_DEBUG] checkpointSave called (fire-and-forget): taskId=${this.taskId}, isStreaming=${this.isStreaming}`,
-			)
 		}
 
 		// Mark the last follow-up question as answered
@@ -2593,10 +2601,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * - Immediately continues task loop without user interaction
 	 */
 	public async resumeAfterDelegation(): Promise<void> {
-		console.log(
-			`[CHECKPOINT_DEBUG] resumeAfterDelegation STARTED: taskId=${this.taskId}, isStreaming=${this.isStreaming}, abort=${this.abort}`,
-		)
-
 		// Clear any ask states that might have been set during history load
 		this.idleAsk = undefined
 		this.resumableAsk = undefined
@@ -2607,7 +2611,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.abandoned = false
 		this.abortReason = undefined
 		this.didFinishAbortingStream = false
-		console.log(`[CHECKPOINT_DEBUG] resumeAfterDelegation: resetting isStreaming from ${this.isStreaming} to false`)
 		this.isStreaming = false
 		this.isWaitingForFirstChunk = false
 
@@ -2656,26 +2659,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// Save the updated history
 		await this.saveApiConversationHistory()
 
-		console.log(
-			`[CHECKPOINT_DEBUG] resumeAfterDelegation: about to call initiateTaskLoop, isStreaming=${this.isStreaming}, abort=${this.abort}`,
-		)
-
 		// Continue task loop - pass empty array to signal no new user content needed
 		// The initiateTaskLoop will handle this by skipping user message addition
 		await this.initiateTaskLoop([])
-
-		console.log(
-			`[CHECKPOINT_DEBUG] resumeAfterDelegation COMPLETED: taskId=${this.taskId}, isStreaming=${this.isStreaming}`,
-		)
 	}
 
 	// Task Loop
 
 	private async initiateTaskLoop(userContent: Anthropic.Messages.ContentBlockParam[]): Promise<void> {
-		console.log(
-			`[CHECKPOINT_DEBUG] initiateTaskLoop STARTED: taskId=${this.taskId}, isStreaming=${this.isStreaming}, abort=${this.abort}, userContent.length=${userContent.length}`,
-		)
-
 		// Kicks off the checkpoints initialization process in the background.
 		getCheckpointService(this)
 
@@ -2684,18 +2675,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		this.emit(AiCodeOrchestratorEventName.TaskStarted)
 
-		console.log(
-			`[CHECKPOINT_DEBUG] initiateTaskLoop entering while loop: taskId=${this.taskId}, abort=${this.abort}`,
-		)
-
-		while (!this.abort) {
-			console.log(
-				`[CHECKPOINT_DEBUG] initiateTaskLoop calling recursivelyMakeClineRequests: taskId=${this.taskId}, isStreaming=${this.isStreaming}`,
-			)
+		while (!this.abort && !this.isPaused) {
 			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent, includeFileDetails)
-			console.log(
-				`[CHECKPOINT_DEBUG] initiateTaskLoop recursivelyMakeClineRequests returned: taskId=${this.taskId}, didEndLoop=${didEndLoop}, isStreaming=${this.isStreaming}`,
-			)
 			includeFileDetails = false // We only need file details the first time.
 
 			// The way this agentic loop works is that cline will be given a
@@ -2723,10 +2704,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		userContent: Anthropic.Messages.ContentBlockParam[],
 		includeFileDetails: boolean = false,
 	): Promise<boolean> {
-		console.log(
-			`[CHECKPOINT_DEBUG] recursivelyMakeClineRequests ENTERED: taskId=${this.taskId}, isStreaming=${this.isStreaming}, abort=${this.abort}, userContent.length=${userContent.length}`,
-		)
-
 		interface StackItem {
 			userContent: Anthropic.Messages.ContentBlockParam[]
 			includeFileDetails: boolean
@@ -2741,14 +2718,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const currentUserContent = currentItem.userContent
 			const currentIncludeFileDetails = currentItem.includeFileDetails
 
-			console.log(
-				`[CHECKPOINT_DEBUG] recursivelyMakeClineRequests processing stack item: taskId=${this.taskId}, isStreaming=${this.isStreaming}, abort=${this.abort}, stackLength=${stack.length}`,
-			)
-
 			if (this.abort) {
-				console.log(
-					`[CHECKPOINT_DEBUG] recursivelyMakeClineRequests ABORTED: taskId=${this.taskId}, throwing error`,
-				)
 				throw new Error(
 					`[AiCodeOrchestrator#recursivelyMakeAicoRequests] task ${this.taskId}.${this.instanceId} aborted`,
 				)
@@ -3006,9 +2976,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				let assistantMessage = ""
 				let reasoningMessage = ""
 				let pendingGroundingSources: GroundingSource[] = []
-				console.log(
-					`[CHECKPOINT_DEBUG] Setting isStreaming=true: taskId=${this.taskId}, before=${this.isStreaming}`,
-				)
 				this.isStreaming = true
 
 				try {
@@ -3477,9 +3444,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						}
 					}
 				} finally {
-					console.log(
-						`[CHECKPOINT_DEBUG] Setting isStreaming=false in finally block: taskId=${this.taskId}, before=${this.isStreaming}`,
-					)
 					this.isStreaming = false
 					// Clean up the abort controller when streaming completes
 					this.currentRequestAbortController = undefined
@@ -3788,6 +3752,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// Push to stack if there's content OR if we're paused waiting for a subtask.
 					// When paused, we push an empty item so the loop continues to the pause check.
 					if (this.userMessageContent.length > 0 || this.isPaused) {
+						// If task is paused due to delegation, exit loop to wait for child completion
+						if (this.isPaused) {
+							return true // didEndLoop = true
+						}
+
 						stack.push({
 							userContent: [...this.userMessageContent], // Create a copy to avoid mutation issues
 							includeFileDetails: false, // Subsequent iterations don't need file details
