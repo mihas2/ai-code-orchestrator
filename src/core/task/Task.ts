@@ -1495,6 +1495,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	handleWebviewAskResponse(askResponse: ClineAskResponse, text?: string, images?: string[]) {
+		console.log(
+			`[CHECKPOINT_DEBUG] handleWebviewAskResponse called: askResponse=${askResponse}, taskId=${this.taskId}, isStreaming=${this.isStreaming}, abort=${this.abort}`,
+		)
+
 		// Clear any pending auto-approval timeout when user responds
 		this.cancelAutoApprovalTimeout()
 		// Invalidate scoped pending-command snapshot so a late scoped response
@@ -1511,11 +1515,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// Suppress the checkpoint_saved chat row for this particular checkpoint to keep the timeline clean.
 		if (askResponse === "messageResponse") {
 			console.log(
-				`[handleWebviewAskResponse] Before checkpoint: abort=${this.abort}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}`,
+				`[CHECKPOINT_DEBUG] About to call checkpointSave: taskId=${this.taskId}, isStreaming=${this.isStreaming}`,
 			)
 			void this.checkpointSave(false, true)
 			console.log(
-				`[handleWebviewAskResponse] After checkpoint call (async): abort=${this.abort}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}`,
+				`[CHECKPOINT_DEBUG] checkpointSave called (fire-and-forget): taskId=${this.taskId}, isStreaming=${this.isStreaming}`,
 			)
 		}
 
@@ -2152,9 +2156,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				},
 				...imageBlocks,
 			]).catch((error) => {
-				// Swallow loop rejection when the task was intentionally abandoned/aborted
-				// during delegation or user cancellation to prevent unhandled rejections.
+				// Log when task is abandoned/cancelled before swallowing to aid debugging
 				if (this.abandoned === true || this.abortReason === "user_cancelled") {
+					console.log(
+						`[startTask] Task ${this.taskId}.${this.instanceId} was abandoned/cancelled, exiting gracefully. Reason: ${this.abortReason ?? "abandoned"}`,
+					)
 					return
 				}
 				throw error
@@ -2433,9 +2439,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this.abandoned = true
 		}
 
-		console.log(
-			`[abortTask] Setting abort=true, isAbandoned=${isAbandoned}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}`,
-		)
 		this.abort = true
 
 		// Reset consecutive error counters on abort (manual intervention)
@@ -2590,6 +2593,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	 * - Immediately continues task loop without user interaction
 	 */
 	public async resumeAfterDelegation(): Promise<void> {
+		console.log(
+			`[CHECKPOINT_DEBUG] resumeAfterDelegation STARTED: taskId=${this.taskId}, isStreaming=${this.isStreaming}, abort=${this.abort}`,
+		)
+
 		// Clear any ask states that might have been set during history load
 		this.idleAsk = undefined
 		this.resumableAsk = undefined
@@ -2600,6 +2607,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.abandoned = false
 		this.abortReason = undefined
 		this.didFinishAbortingStream = false
+		console.log(`[CHECKPOINT_DEBUG] resumeAfterDelegation: resetting isStreaming from ${this.isStreaming} to false`)
 		this.isStreaming = false
 		this.isWaitingForFirstChunk = false
 
@@ -2648,14 +2656,26 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// Save the updated history
 		await this.saveApiConversationHistory()
 
+		console.log(
+			`[CHECKPOINT_DEBUG] resumeAfterDelegation: about to call initiateTaskLoop, isStreaming=${this.isStreaming}, abort=${this.abort}`,
+		)
+
 		// Continue task loop - pass empty array to signal no new user content needed
 		// The initiateTaskLoop will handle this by skipping user message addition
 		await this.initiateTaskLoop([])
+
+		console.log(
+			`[CHECKPOINT_DEBUG] resumeAfterDelegation COMPLETED: taskId=${this.taskId}, isStreaming=${this.isStreaming}`,
+		)
 	}
 
 	// Task Loop
 
 	private async initiateTaskLoop(userContent: Anthropic.Messages.ContentBlockParam[]): Promise<void> {
+		console.log(
+			`[CHECKPOINT_DEBUG] initiateTaskLoop STARTED: taskId=${this.taskId}, isStreaming=${this.isStreaming}, abort=${this.abort}, userContent.length=${userContent.length}`,
+		)
+
 		// Kicks off the checkpoints initialization process in the background.
 		getCheckpointService(this)
 
@@ -2664,13 +2684,17 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		this.emit(AiCodeOrchestratorEventName.TaskStarted)
 
+		console.log(
+			`[CHECKPOINT_DEBUG] initiateTaskLoop entering while loop: taskId=${this.taskId}, abort=${this.abort}`,
+		)
+
 		while (!this.abort) {
 			console.log(
-				`[startTask] Loop iteration start: abort=${this.abort}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}`,
+				`[CHECKPOINT_DEBUG] initiateTaskLoop calling recursivelyMakeClineRequests: taskId=${this.taskId}, isStreaming=${this.isStreaming}`,
 			)
 			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent, includeFileDetails)
 			console.log(
-				`[startTask] After recursivelyMakeClineRequests: abort=${this.abort}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}, didEndLoop=${didEndLoop}`,
+				`[CHECKPOINT_DEBUG] initiateTaskLoop recursivelyMakeClineRequests returned: taskId=${this.taskId}, didEndLoop=${didEndLoop}, isStreaming=${this.isStreaming}`,
 			)
 			includeFileDetails = false // We only need file details the first time.
 
@@ -2688,20 +2712,21 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			if (didEndLoop) {
 				// For now a task never 'completes'. This will only happen if
 				// the user hits max requests and denies resetting the count.
-				console.log(`[startTask] Loop ending: didEndLoop=true`)
 				break
 			} else {
-				console.log(`[startTask] Continuing loop with noToolsUsed response`)
 				nextUserContent = [{ type: "text", text: formatResponse.noToolsUsed() }]
 			}
 		}
-		console.log(`[startTask] Loop exited: abort=${this.abort}, taskStatus=${this.taskStatus}`)
 	}
 
 	public async recursivelyMakeClineRequests(
 		userContent: Anthropic.Messages.ContentBlockParam[],
 		includeFileDetails: boolean = false,
 	): Promise<boolean> {
+		console.log(
+			`[CHECKPOINT_DEBUG] recursivelyMakeClineRequests ENTERED: taskId=${this.taskId}, isStreaming=${this.isStreaming}, abort=${this.abort}, userContent.length=${userContent.length}`,
+		)
+
 		interface StackItem {
 			userContent: Anthropic.Messages.ContentBlockParam[]
 			includeFileDetails: boolean
@@ -2717,11 +2742,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const currentIncludeFileDetails = currentItem.includeFileDetails
 
 			console.log(
-				`[recursivelyMakeClineRequests] Stack iteration: abort=${this.abort}, taskStatus=${this.taskStatus}, isStreaming=${this.isStreaming}, stackLength=${stack.length}`,
+				`[CHECKPOINT_DEBUG] recursivelyMakeClineRequests processing stack item: taskId=${this.taskId}, isStreaming=${this.isStreaming}, abort=${this.abort}, stackLength=${stack.length}`,
 			)
 
 			if (this.abort) {
-				console.log(`[recursivelyMakeClineRequests] Task aborted, throwing error`)
+				console.log(
+					`[CHECKPOINT_DEBUG] recursivelyMakeClineRequests ABORTED: taskId=${this.taskId}, throwing error`,
+				)
 				throw new Error(
 					`[AiCodeOrchestrator#recursivelyMakeAicoRequests] task ${this.taskId}.${this.instanceId} aborted`,
 				)
@@ -2979,6 +3006,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				let assistantMessage = ""
 				let reasoningMessage = ""
 				let pendingGroundingSources: GroundingSource[] = []
+				console.log(
+					`[CHECKPOINT_DEBUG] Setting isStreaming=true: taskId=${this.taskId}, before=${this.isStreaming}`,
+				)
 				this.isStreaming = true
 
 				try {
@@ -3447,6 +3477,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						}
 					}
 				} finally {
+					console.log(
+						`[CHECKPOINT_DEBUG] Setting isStreaming=false in finally block: taskId=${this.taskId}, before=${this.isStreaming}`,
+					)
 					this.isStreaming = false
 					// Clean up the abort controller when streaming completes
 					this.currentRequestAbortController = undefined

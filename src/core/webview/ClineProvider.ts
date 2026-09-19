@@ -3356,11 +3356,10 @@ export class ClineProvider
 		// This ensures the stream fails quickly rather than waiting for network timeout
 		task.cancelCurrentRequest()
 
-		// Begin abort (non-blocking)
-		task.abortTask()
-
-		// Immediately mark the original instance as abandoned to prevent any residual activity
-		task.abandoned = true
+		// Begin abort with abandoned flag (non-blocking)
+		// IMPORTANT: Use abortTask(true) instead of setting abandoned directly
+		// to ensure proper flag management and avoid silent errors in catch blocks
+		task.abortTask(true)
 
 		await pWaitFor(
 			() =>
