@@ -2,6 +2,25 @@
 
 ## [1.3.2] - 2026-09-11
 
+## [1.3.3] - 2026-09-19
+
+### Fixed
+
+- Fixed task hanging after checkpoint by resolving pause/resume coordination issues.
+- Resolved critical delegation loop and improved task state persistence.
+- Fixed file watcher memory leaks in TaskHistoryStore and task management.
+- Improved async/await handling in TaskHistoryStore path resolution methods.
+- Resolved race conditions in subtask creation and UI state synchronization.
+- Fixed unhandled promise rejections in task lifecycle management.
+- Corrected stop button identity validation and state management (STOP-001 to STOP-004).
+- Fixed fileExistsAtPath() to correctly return false for directories.
+
+### Changed
+
+- Added comprehensive diagnostic logging for task lifecycle and delegation events.
+- Simplified error handling and resolved ESLint warnings across codebase.
+- Improved checkpoint pause/resume mechanism with better coordination.
+
 ### Added
 
 - Added Translate role to all README files across all locales.
