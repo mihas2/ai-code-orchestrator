@@ -3490,7 +3490,7 @@ export class ClineProvider
 			configuration ?? {},
 		)
 
-		// Проверить, что parent не находится в процессе делегирования
+		// Check that parent is not already in the delegation process
 		if (this.delegationInProgress.has(parentTaskId)) {
 			throw new Error(`[delegateParentAndOpenChild] Parent ${parentTaskId} is already delegating`)
 		}
@@ -3777,8 +3777,8 @@ export class ClineProvider
 			try {
 				await child.start()
 
-				// Критично: явно синхронизировать frontend с новой активной подзадачей
-				// чтобы messageUpdated работал корректно
+				// Critical: explicitly synchronize frontend with new active subtask
+				// so that messageUpdated works correctly
 				await this.postStateToWebview()
 			} catch (startErr) {
 				const errorMsg = `Failed to start child task: ${(startErr as Error)?.message ?? String(startErr)}`
@@ -3819,7 +3819,7 @@ export class ClineProvider
 						parentSnapshot: undefined,
 					})
 
-					// Явно уведомляем UI о возврате к родительской задаче после ошибки
+					// Explicitly notify UI about returning to parent task after error
 					await parent.resumeAfterDelegation()
 					await this.postStateToWebview()
 				} catch (rollbackError) {

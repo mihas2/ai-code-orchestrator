@@ -57,8 +57,10 @@ import { sanitizeToolUseId } from "../../utils/tool-id"
  */
 
 export async function presentAssistantMessage(cline: Task) {
+	const execId = `${cline.taskId}.${cline.instanceId}`
+
 	if (cline.abort) {
-		throw new Error(`[Task#presentAssistantMessage] task ${cline.taskId}.${cline.instanceId} aborted`)
+		throw new Error(`[Task#presentAssistantMessage] task ${execId} aborted`)
 	}
 
 	if (cline.presentAssistantMessageLocked) {
@@ -74,8 +76,19 @@ export async function presentAssistantMessage(cline: Task) {
 		// streaming could finish. If streaming is finished, and we're out of
 		// bounds then this means we already  presented/executed the last
 		// content block and are ready to continue to next request.
+		console.log(
+			`[READY_FLAG][${execId}] Out of bounds check: currentIndex=${cline.currentStreamingContentIndex}, contentLength=${cline.assistantMessageContent.length}, didCompleteReadingStream=${cline.didCompleteReadingStream}`,
+		)
 		if (cline.didCompleteReadingStream) {
+			console.log(
+				`[READY_FLAG][${execId}] Setting userMessageContentReady=true (out of bounds + stream complete)`,
+			)
 			cline.userMessageContentReady = true
+			console.log(`[READY_FLAG][${execId}] userMessageContentReady set to true`)
+		} else {
+			console.log(
+				`[READY_FLAG][${execId}] userMessageContentReady NOT set, reason: didCompleteReadingStream=false`,
+			)
 		}
 
 		cline.presentAssistantMessageLocked = false
@@ -798,6 +811,14 @@ export async function presentAssistantMessage(cline: Task) {
 						block as ToolUse<"attempt_completion">,
 						completionCallbacks,
 					)
+					// CRITICAL FIX: attempt_completion is a terminal tool that ends the task.
+					// Set userMessageContentReady immediately to prevent infinite loop via EMERGENCY_RESCUE.
+					// Without this, pWaitFor times out after 60s, EMERGENCY_RESCUE sets the flag,
+					// and the task "resurrects" with a new API request, creating an infinite loop.
+					console.log(
+						`[ATTEMPT_COMPLETION_FIX] Setting userMessageContentReady=true after attempt_completion`,
+					)
+					cline.userMessageContentReady = true
 					break
 				}
 				case "run_slash_command":
@@ -912,6 +933,13 @@ export async function presentAssistantMessage(cline: Task) {
 	// (instead of preemptively doing it in iterator).
 	if (!block.partial || cline.didRejectTool || cline.didAlreadyUseTool) {
 		// Block is finished streaming and executing.
+		console.log(
+			`[READY_FLAG][${execId}] Block finished: partial=${block.partial}, didRejectTool=${cline.didRejectTool}, didAlreadyUseTool=${cline.didAlreadyUseTool}`,
+		)
+		console.log(
+			`[READY_FLAG][${execId}] Current state: currentIndex=${cline.currentStreamingContentIndex}, contentLength=${cline.assistantMessageContent.length}`,
+		)
+
 		if (cline.currentStreamingContentIndex === cline.assistantMessageContent.length - 1) {
 			// It's okay that we increment if !didCompleteReadingStream, it'll
 			// just return because out of bounds and as streaming continues it
@@ -920,27 +948,50 @@ export async function presentAssistantMessage(cline: Task) {
 			// true when out of bounds. This gracefully allows the stream to
 			// continue on and all potential content blocks be presented.
 			// Last block is complete and it is finished executing
+			console.log(`[READY_FLAG][${execId}] Last block completed, setting userMessageContentReady=true`)
 			cline.userMessageContentReady = true // Will allow `pWaitFor` to continue.
+			console.log(`[READY_FLAG][${execId}] userMessageContentReady set to true (last block)`)
+		} else {
+			console.log(
+				`[READY_FLAG][${execId}] Not last block, userMessageContentReady NOT set (currentIndex=${cline.currentStreamingContentIndex}, length=${cline.assistantMessageContent.length})`,
+			)
 		}
 
 		// Call next block if it exists (if not then read stream will call it
 		// when it's ready).
 		// Need to increment regardless, so when read stream calls this function
 		// again it will be streaming the next block.
+		console.log(
+			`[READY_FLAG][${execId}] Incrementing currentStreamingContentIndex from ${cline.currentStreamingContentIndex} to ${cline.currentStreamingContentIndex + 1}`,
+		)
 		cline.currentStreamingContentIndex++
 
 		if (cline.currentStreamingContentIndex < cline.assistantMessageContent.length) {
 			// There are already more content blocks to stream, so we'll call
 			// this function ourselves.
+			console.log(`[READY_FLAG][${execId}] More blocks available, calling presentAssistantMessage recursively`)
 			presentAssistantMessage(cline)
 			return
 		} else {
 			// CRITICAL FIX: If we're out of bounds and the stream is complete, set userMessageContentReady
 			// This handles the case where assistantMessageContent is empty or becomes empty after processing
+			console.log(
+				`[READY_FLAG][${execId}] Out of bounds after increment: currentIndex=${cline.currentStreamingContentIndex}, contentLength=${cline.assistantMessageContent.length}, didCompleteReadingStream=${cline.didCompleteReadingStream}`,
+			)
 			if (cline.didCompleteReadingStream) {
+				console.log(
+					`[READY_FLAG][${execId}] Setting userMessageContentReady=true (out of bounds after increment + stream complete)`,
+				)
 				cline.userMessageContentReady = true
+				console.log(`[READY_FLAG][${execId}] userMessageContentReady set to true`)
+			} else {
+				console.log(
+					`[READY_FLAG][${execId}] userMessageContentReady NOT set, reason: didCompleteReadingStream=false (still streaming)`,
+				)
 			}
 		}
+	} else {
+		console.log(`[READY_FLAG][${execId}] Block still partial or not rejected/already used, NOT incrementing index`)
 	}
 
 	// Block is partial, but the read stream may have finished.

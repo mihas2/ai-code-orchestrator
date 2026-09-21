@@ -118,6 +118,9 @@ export default defineConfig(({ mode }) => {
 			minify: mode === "production" ? "esbuild" : false,
 			// Use a single combined CSS bundle so all webviews share styles
 			cssCodeSplit: false,
+			// Disable modulepreload to avoid "preloaded but not used" warnings
+			// for statically imported chunks like mermaid-bundle
+			modulePreload: false,
 			rollupOptions: {
 				// Only the VS Code API is supplied by the webview host. Node core modules
 				// must never be externalized: bare Node imports are not resolvable in a webview.

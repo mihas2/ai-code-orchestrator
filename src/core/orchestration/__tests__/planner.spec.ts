@@ -51,7 +51,7 @@ describe("planner adapter", () => {
 		expect(parseAndValidatePlan(raw, limits)[0].nodeId).toBe("a")
 	})
 	it("rejects a Russian review request when the planner returns an orchestrator child", () => {
-		const goal = "сделай ревью проекта"
+		const goal = "сделай ревью проекта" // Russian: "do a project review" - intentional multilingual test fixture
 		const nodes = parseAndValidatePlan(
 			plan([{ ...JSON.parse(plan()).nodes[0], role: "orchestrator", mode: "orchestrator" }]),
 			{

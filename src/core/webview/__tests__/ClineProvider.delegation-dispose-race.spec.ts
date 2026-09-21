@@ -6,16 +6,16 @@ import { AiCodeOrchestratorEventName } from "@ai-code-orchestrator/types"
 /**
  * Test suite to reproduce the delegation dispose race condition bug.
  *
- * СИМПТОМЫ:
- * 1. Orchestrator создает reviewer подзадачу
+ * SYMPTOMS:
+ * 1. Orchestrator creates reviewer subtask
  * 2. Вызывается child.start()
- * 3. Сразу после этого оба таска (parent и child) вызывают dispose()
- * 4. Дочерняя задача никогда не выполняется
+ * 3. Immediately after that, both tasks (parent and child) call dispose()
+ * 4. Child task never executes
  *
- * ГИПОТЕЗЫ:
- * H1: handleModeSwitch вызывается когда стек пуст (после removeClineFromStack, до push child)
- * H2: child.start() await'ится но внутри запускает startTask() как fire-and-forget
- * H3: child добавляется в стек перед start(), и если start() fails синхронно, это вызывает dispose
+ * HYPOTHESES:
+ * H1: handleModeSwitch is called when stack is empty (after removeClineFromStack, before push child)
+ * H2: child.start() is awaited but internally starts startTask() as fire-and-forget
+ * H3: child is added to stack before start(), and if start() fails synchronously, this triggers dispose
  */
 describe("ClineProvider delegation dispose race condition", () => {
 	let mockProvider: any

@@ -1187,10 +1187,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	private async addToClineMessages(message: ClineMessage) {
 		this.clineMessages.push(message)
 		const provider = this.providerRef.deref()
+
 		// Avoid resending large, mostly-static fields (notably taskHistory) on every chat message update.
 		// taskHistory is maintained in-memory in the webview and updated via taskHistoryItemUpdated.
 		await provider?.postStateToWebviewWithoutTaskHistory()
+
 		this.emit(AiCodeOrchestratorEventName.Message, { action: "created", message })
+
 		await this.saveClineMessages()
 	}
 
@@ -1208,8 +1211,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	private async saveClineMessages(): Promise<boolean> {
 		try {
+			const clonedMessages = structuredClone(this.clineMessages)
+
 			await saveTaskMessages({
-				messages: structuredClone(this.clineMessages),
+				messages: clonedMessages,
 				taskId: this.taskId,
 				globalStoragePath: this.globalStoragePath,
 			})
@@ -1240,9 +1245,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this.debouncedEmitTokenUsage(tokenUsage, this.toolUsage)
 
 			await this.providerRef.deref()?.updateTaskHistory(historyItem)
+
 			return true
 		} catch (error) {
-			console.error("Failed to save AI Code Orchestrator messages:", error)
+			console.error("Failed to save Cline messages:", error)
 			return false
 		}
 	}
@@ -1467,7 +1473,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// If a queued message arrives while we're blocked on an ask (e.g. a follow-up
 				// suggestion click that was incorrectly queued due to UI state), consume it
 				// immediately so the task doesn't hang.
-				if (shouldDrainQueuedMessageForAsk && !this.messageQueueService.isEmpty()) {
+				const queueEmpty = this.messageQueueService.isEmpty()
+
+				if (shouldDrainQueuedMessageForAsk && !queueEmpty) {
 					const message = this.messageQueueService.dequeueMessage()
 					if (message) {
 						// If this is a tool approval ask, we need to approve first (yesButtonClicked)
@@ -2474,7 +2482,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	public dispose(): void {
-		// Диагностическое логирование для отладки проблемы с disposal дочерних задач
+		// Diagnostic logging for debugging child task disposal issues
 		const stack = new Error().stack
 		console.log(`[Task#dispose] disposing task ${this.taskId}.${this.instanceId}`, {
 			status: this.taskStatus,
@@ -3703,6 +3711,28 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					presentAssistantMessage(this)
 				}
 
+				// CRITICAL FIX: Ensure presentAssistantMessage is called after stream completion
+				// even if all blocks were already finalized during streaming (e.g., during approval wait).
+				// This handles the race condition where:
+				// 1. Tool starts executing (e.g., checkpoint save)
+				// 2. Stream continues and finalizes blocks while tool is waiting
+				// 3. didCompleteReadingStream becomes true
+				// 4. Tool completes, but partialBlocks is now empty
+				// 5. Without this check, presentAssistantMessage() never gets called
+				// 6. userMessageContentReady never becomes true → infinite hang in pWaitFor()
+				if (!this.userMessageContentReady && this.didCompleteReadingStream) {
+					console.log(
+						`[HANG_FIX] Post-stream: Calling presentAssistantMessage to set userMessageContentReady (partialBlocks was empty, idx=${this.currentStreamingContentIndex}, len=${this.assistantMessageContent.length})`,
+					)
+					// CRITICAL FIX: Must await to ensure userMessageContentReady is set before pWaitFor
+					// Without await, the async function runs in background and pWaitFor starts immediately,
+					// leading to timeout if presentAssistantMessage takes any time (e.g., waiting for lock)
+					await presentAssistantMessage(this)
+					console.log(
+						`[HANG_FIX] presentAssistantMessage completed, userMessageContentReady=${this.userMessageContentReady}`,
+					)
+				}
+
 				if (hasTextContent || hasToolUses) {
 					// NOTE: This comment is here for future reference - this was a
 					// workaround for `userMessageContent` not getting set to true.
@@ -3720,7 +3750,47 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// 	this.userMessageContentReady = true
 					// }
 
-					await pWaitFor(() => this.userMessageContentReady)
+					console.log(
+						`[FIX_VERIFY] Task entering pWaitFor: userMessageContentReady=${this.userMessageContentReady}`,
+					)
+
+					try {
+						// CRITICAL FIX: Add timeout to prevent infinite hang
+						// If userMessageContentReady is not set within 60 seconds, something is wrong
+						await pWaitFor(() => this.userMessageContentReady, {
+							interval: 100,
+							timeout: 60000, // 60 seconds timeout
+						})
+						console.log(
+							`[FIX_VERIFY] Task exited pWaitFor successfully: userMessageContentReady=${this.userMessageContentReady}`,
+						)
+					} catch (error) {
+						// Timeout occurred - this is a critical bug that needs investigation
+						console.error(
+							`[CRITICAL] pWaitFor timeout after 60s! userMessageContentReady=${this.userMessageContentReady}, didCompleteReadingStream=${this.didCompleteReadingStream}, idx=${this.currentStreamingContentIndex}, len=${this.assistantMessageContent.length}`,
+						)
+
+						// Emergency rescue: Force userMessageContentReady if stream is complete
+						if (this.didCompleteReadingStream && !this.userMessageContentReady) {
+							console.warn(
+								`[EMERGENCY_RESCUE] Forcing userMessageContentReady=true after timeout (stream complete but flag not set)`,
+							)
+							this.userMessageContentReady = true
+						} else {
+							// Re-throw if we can't rescue
+							throw new Error(`Task hung waiting for userMessageContentReady: ${error.message}`)
+						}
+					}
+
+					// Check if task completed with attempt_completion - if so, stop the loop
+					const hasAttemptCompletion = this.assistantMessageContent.some(
+						(block) => block.type === "tool_use" && block.name === "attempt_completion",
+					)
+
+					if (hasAttemptCompletion) {
+						console.log(`[HANG_FIX] Task completed with attempt_completion, exiting recursion loop`)
+						return false // didEndLoop = false (task completed normally)
+					}
 
 					// If the model did not tool use, then we need to tell it to
 					// either use a tool or attempt_completion.

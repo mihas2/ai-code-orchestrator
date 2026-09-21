@@ -55,7 +55,7 @@ describe("mode-integration", () => {
 
 			// whenToUse must be in English as it goes into system prompt for model
 			expect(operational.whenToUse).toContain("complex multi-step")
-			expect(operational.whenToUse).not.toContain("сложн") // Not Russian
+			expect(operational.whenToUse).not.toContain("сложн") // Not Russian - intentional multilingual test fixture
 			expect(operational.whenToUse).not.toContain("複雑") // Not Japanese
 		})
 	})

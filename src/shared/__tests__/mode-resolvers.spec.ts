@@ -15,7 +15,7 @@ describe("mode-resolvers", () => {
 
 		beforeEach(() => {
 			mockT = vi.fn((key: string, opts?: any) => {
-				// Simulate Russian translations
+				// Simulate Russian translations - intentional test fixtures for i18n
 				if (key === "reviewer.name") return "Рецензент"
 				if (key === "reviewer.description") return "Проверка завершённой работы только для чтения"
 				if (key === "reviewer.readOnlyNotice") return "Рецензент может читать файлы..."
@@ -26,7 +26,7 @@ describe("mode-resolvers", () => {
 			}) as unknown as TFunction
 
 			mockTEn = vi.fn((key: string, opts?: any) => {
-				// Simulate English translations
+				// Simulate English translations - intentional test fixtures for i18n
 				if (key === "reviewer.name") return "Reviewer"
 				if (key === "reviewer.description") return "Read-only quality review of completed work"
 				if (key === "reviewer.readOnlyNotice")
@@ -52,7 +52,7 @@ describe("mode-resolvers", () => {
 		it("should fall back to English when locale translation is missing", () => {
 			const reviewerMode = DEFAULT_MODES.find((m) => m.slug === "reviewer")!
 
-			// Mock missing Russian translations
+			// Mock missing Russian translations - intentional test fixture
 			const mockTMissing = vi.fn((key: string, opts?: any) => {
 				return opts?.defaultValue !== "__MISSING__" ? key : "__MISSING__"
 			}) as unknown as TFunction
