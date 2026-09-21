@@ -11,6 +11,7 @@ import type { ToolParamName, ToolResponse, ToolUse, McpToolUse } from "../../sha
 
 import { AskIgnoredError } from "../task/AskIgnoredError"
 import { Task } from "../task/Task"
+import { TaskCompletionStatus } from "../task/TaskCompletionStatus"
 
 import { listFilesTool } from "../tools/ListFilesTool"
 import { readFileTool } from "../tools/ReadFileTool"
@@ -819,6 +820,11 @@ export async function presentAssistantMessage(cline: Task) {
 						`[ATTEMPT_COMPLETION_FIX] Setting userMessageContentReady=true after attempt_completion`,
 					)
 					cline.userMessageContentReady = true
+					// Phase 1: Set explicit completion status to prevent resurrection
+					if (cline.taskCompletionStatus === TaskCompletionStatus.RUNNING) {
+						cline.setCompletionStatus(TaskCompletionStatus.COMPLETING)
+						console.log(`[COMPLETION_STATUS] Set to COMPLETING after attempt_completion`)
+					}
 					break
 				}
 				case "run_slash_command":

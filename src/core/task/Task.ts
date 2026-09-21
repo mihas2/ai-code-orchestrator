@@ -6,6 +6,7 @@ import { v7 as uuidv7 } from "uuid"
 import EventEmitter from "events"
 
 import { AskIgnoredError } from "./AskIgnoredError"
+import { TaskCompletionStatus, isTerminalStatus } from "./TaskCompletionStatus"
 
 import { Anthropic } from "@anthropic-ai/sdk"
 import OpenAI from "openai"
@@ -410,6 +411,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	didToolFailInCurrentTurn = false
 	didCompleteReadingStream = false
 	private _started = false
+	private completionStatus: TaskCompletionStatus = TaskCompletionStatus.RUNNING
 	// No streaming parser is required.
 	assistantMessageParser?: undefined
 	private providerProfileChangeListener?: (config: { name: string; provider?: string }) => void
@@ -3771,11 +3773,19 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						)
 
 						// Emergency rescue: Force userMessageContentReady if stream is complete
-						if (this.didCompleteReadingStream && !this.userMessageContentReady) {
+						if (
+							this.didCompleteReadingStream &&
+							!this.userMessageContentReady &&
+							!isTerminalStatus(this.completionStatus)
+						) {
 							console.warn(
-								`[EMERGENCY_RESCUE] Forcing userMessageContentReady=true after timeout (stream complete but flag not set)`,
+								`[EMERGENCY_RESCUE] Triggering after 60s timeout, status=${this.completionStatus}`,
 							)
 							this.userMessageContentReady = true
+						} else if (isTerminalStatus(this.completionStatus)) {
+							console.log(
+								`[EMERGENCY_RESCUE] Skipping - task in terminal status: ${this.completionStatus}`,
+							)
 						} else {
 							// Re-throw if we can't rescue
 							throw new Error(`Task hung waiting for userMessageContentReady: ${error.message}`)
@@ -3789,6 +3799,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 					if (hasAttemptCompletion) {
 						console.log(`[HANG_FIX] Task completed with attempt_completion, exiting recursion loop`)
+						// Phase 1: Check completion status to prevent new API request
+						if (this.completionStatus === TaskCompletionStatus.COMPLETING) {
+							console.log(`[COMPLETION_GUARD] Task in COMPLETING status, preventing new API request`)
+							return false // Exit loop, do not make new API request
+						}
 						return false // didEndLoop = false (task completed normally)
 					}
 
@@ -4920,6 +4935,22 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this._messageManager = new MessageManager(this)
 		}
 		return this._messageManager
+	}
+
+	/**
+	 * Get the current task completion status.
+	 */
+	get taskCompletionStatus(): TaskCompletionStatus {
+		return this.completionStatus
+	}
+
+	/**
+	 * Set the task completion status with logging.
+	 */
+	public setCompletionStatus(status: TaskCompletionStatus): void {
+		const oldStatus = this.completionStatus
+		this.completionStatus = status
+		console.log(`[COMPLETION_STATUS] Changed: ${oldStatus} -> ${status}`)
 	}
 
 	/**
