@@ -8,7 +8,7 @@ import { AiCodeOrchestratorEventName } from "@ai-code-orchestrator/types"
  *
  * SYMPTOMS:
  * 1. Orchestrator creates reviewer subtask
- * 2. Вызывается child.start()
+ * 2. child.start() is called
  * 3. Immediately after that, both tasks (parent and child) call dispose()
  * 4. Child task never executes
  *

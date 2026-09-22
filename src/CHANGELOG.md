@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Improved task completion reliability: subtasks now consistently return results to parent and resume parent execution
 - Resolved task hanging issues after checkpoint operations
 - Fixed critical delegation loops and improved task state persistence
 - Eliminated file watcher memory leaks in task management

@@ -61,6 +61,7 @@ export async function presentAssistantMessage(cline: Task) {
 	const execId = `${cline.taskId}.${cline.instanceId}`
 
 	if (cline.abort) {
+		console.log(`[ABORT_CHECK] Task aborted at start of presentAssistantMessage`)
 		throw new Error(`[Task#presentAssistantMessage] task ${execId} aborted`)
 	}
 
@@ -812,19 +813,18 @@ export async function presentAssistantMessage(cline: Task) {
 						block as ToolUse<"attempt_completion">,
 						completionCallbacks,
 					)
-					// CRITICAL FIX: attempt_completion is a terminal tool that ends the task.
-					// Set userMessageContentReady immediately to prevent infinite loop via EMERGENCY_RESCUE.
-					// Without this, pWaitFor times out after 60s, EMERGENCY_RESCUE sets the flag,
-					// and the task "resurrects" with a new API request, creating an infinite loop.
-					console.log(
-						`[ATTEMPT_COMPLETION_FIX] Setting userMessageContentReady=true after attempt_completion`,
-					)
-					cline.userMessageContentReady = true
-					// Phase 1: Set explicit completion status to prevent resurrection
-					if (cline.taskCompletionStatus === TaskCompletionStatus.RUNNING) {
-						cline.setCompletionStatus(TaskCompletionStatus.COMPLETING)
-						console.log(`[COMPLETION_STATUS] Set to COMPLETING after attempt_completion`)
-					}
+
+					// CRITICAL: Do NOT force-finalize partial blocks or set completion status here.
+					// Partial blocks are streaming previews only. The final non-partial block will:
+					// 1. Call execute() which handles approval, delegation, and tool_result
+					// 2. Set COMPLETING status from within execute() after all logic completes
+					// 3. Set userMessageContentReady via normal block processing flow
+					//
+					// Setting status or userMessageContentReady here would stop the task loop
+					// before execute() runs, preventing child-to-parent delegation.
+					//
+					// The resurrection protection is handled by the loop guard in Task.ts
+					// which checks COMPLETING status BETWEEN iterations, not during tool execution.
 					break
 				}
 				case "run_slash_command":
@@ -973,6 +973,19 @@ export async function presentAssistantMessage(cline: Task) {
 		cline.currentStreamingContentIndex++
 
 		if (cline.currentStreamingContentIndex < cline.assistantMessageContent.length) {
+			// IMPORTANT: Guard here prevents recursive processing of blocks after attempt_completion.
+			// DO NOT add a similar guard at the start of the function - it blocks subtask processing!
+			// See specification: plans/presentAssistantMessage-infinite-loop-fix-spec.md
+			// COMPLETION_GUARD: Stop processing if task is completing/completed
+			// Note: Status may have changed during execution (e.g., after attempt_completion)
+			// TypeScript's flow analysis doesn't account for runtime changes, so we cast to full enum
+			const currentStatus = cline.taskCompletionStatus as TaskCompletionStatus
+			if (currentStatus === TaskCompletionStatus.COMPLETING || currentStatus === TaskCompletionStatus.COMPLETED) {
+				console.log(`[COMPLETION_GUARD] Task ${currentStatus}, breaking block processing loop`)
+				cline.userMessageContentReady = true
+				return
+			}
+
 			// There are already more content blocks to stream, so we'll call
 			// this function ourselves.
 			console.log(`[READY_FLAG][${execId}] More blocks available, calling presentAssistantMessage recursively`)

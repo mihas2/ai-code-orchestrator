@@ -2705,6 +2705,18 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// the user hits max requests and denies resetting the count.
 				break
 			} else {
+				// CRITICAL FIX: Check terminal status after async operation to prevent resurrection
+				// After attempt_completion, task should NOT make new API requests
+				if (
+					!didEndLoop ||
+					this.taskCompletionStatus === TaskCompletionStatus.COMPLETING ||
+					this.taskCompletionStatus === TaskCompletionStatus.COMPLETED
+				) {
+					console.log(
+						`[TASK_LOOP] Exiting loop: didContinue=${!didEndLoop}, completionStatus=${this.taskCompletionStatus}`,
+					)
+					break
+				}
 				nextUserContent = [{ type: "text", text: formatResponse.noToolsUsed() }]
 			}
 		}
@@ -3710,7 +3722,21 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// If there is content to update then it will complete and
 					// update `this.userMessageContentReady` to true, which we
 					// `pWaitFor` before making the next request.
-					presentAssistantMessage(this)
+					presentAssistantMessage(this).catch((error) => {
+						if (this.abort) {
+							console.log(
+								`[ABORT_CHECK] Task aborted during presentAssistantMessage: ${error instanceof Error ? error.message : String(error)}`,
+							)
+						} else {
+							console.error(`[ERROR] presentAssistantMessage failed:`, error)
+						}
+					})
+				}
+
+				// ABORT_CHECK: Exit early if task was aborted during presentAssistantMessage
+				if (this.abort) {
+					console.log(`[ABORT_CHECK] Task aborted after presentAssistantMessage, exiting recursion`)
+					return false
 				}
 
 				// CRITICAL FIX: Ensure presentAssistantMessage is called after stream completion
@@ -3729,10 +3755,26 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// CRITICAL FIX: Must await to ensure userMessageContentReady is set before pWaitFor
 					// Without await, the async function runs in background and pWaitFor starts immediately,
 					// leading to timeout if presentAssistantMessage takes any time (e.g., waiting for lock)
-					await presentAssistantMessage(this)
-					console.log(
-						`[HANG_FIX] presentAssistantMessage completed, userMessageContentReady=${this.userMessageContentReady}`,
-					)
+					try {
+						await presentAssistantMessage(this)
+						console.log(
+							`[HANG_FIX] presentAssistantMessage completed, userMessageContentReady=${this.userMessageContentReady}`,
+						)
+					} catch (error) {
+						if (this.abort) {
+							console.log(
+								`[ABORT_CHECK] Task aborted during presentAssistantMessage in HANG_FIX: ${error instanceof Error ? error.message : String(error)}`,
+							)
+							return false
+						}
+						throw error
+					}
+				}
+
+				// ABORT_CHECK: Exit early if task was aborted after presenting tool result
+				if (this.abort) {
+					console.log(`[ABORT_CHECK] Task aborted after presenting tool result, exiting recursion`)
+					return false
 				}
 
 				if (hasTextContent || hasToolUses) {
@@ -3792,6 +3834,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						}
 					}
 
+					// ABORT_CHECK: Exit early if task was aborted after pWaitFor
+					if (this.abort) {
+						console.log(`[ABORT_CHECK] Task aborted after pWaitFor, exiting recursion`)
+						return false
+					}
+
 					// Check if task completed with attempt_completion - if so, stop the loop
 					const hasAttemptCompletion = this.assistantMessageContent.some(
 						(block) => block.type === "tool_use" && block.name === "attempt_completion",
@@ -3799,12 +3847,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 					if (hasAttemptCompletion) {
 						console.log(`[HANG_FIX] Task completed with attempt_completion, exiting recursion loop`)
-						// Phase 1: Check completion status to prevent new API request
-						if (this.completionStatus === TaskCompletionStatus.COMPLETING) {
-							console.log(`[COMPLETION_GUARD] Task in COMPLETING status, preventing new API request`)
-							return false // Exit loop, do not make new API request
-						}
-						return false // didEndLoop = false (task completed normally)
+						return false
 					}
 
 					// If the model did not tool use, then we need to tell it to

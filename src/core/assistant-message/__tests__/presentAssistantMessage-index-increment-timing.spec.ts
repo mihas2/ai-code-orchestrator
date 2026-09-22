@@ -125,7 +125,7 @@ describe("presentAssistantMessage - index increment timing (checkpoint hang bug 
 
 		// 3. CRITICAL CHECK: Flag userMessageContentReady is set to true
 		// This means that checkAndSetUserMessageContentReady() was called AFTER index increment,
-		// когда currentStreamingContentIndex (1) >= assistantMessageContent.length (1)
+		// when currentStreamingContentIndex (1) >= assistantMessageContent.length (1)
 		expect(mockTask.userMessageContentReady).toBe(true)
 	})
 
@@ -199,9 +199,9 @@ describe("presentAssistantMessage - index increment timing (checkpoint hang bug 
 		await presentAssistantMessage(mockTask)
 
 		// After executing tool on the last block:
-		// - read_file tool выполняется и инкрементирует индекс до 1
-		// - Теперь idx=1, len=1, поэтому isOutOfBounds=true
-		// - Флаг устанавливается в true
+		// - read_file tool executes and increments index to 1
+		// - Now idx=1, len=1, so isOutOfBounds=true
+		// - Flag is set to true
 		expect(mockTask.currentStreamingContentIndex).toBe(1)
 		expect(mockTask.userMessageContentReady).toBe(true)
 		expect(readFileHandleMock).toHaveBeenCalledTimes(1)
@@ -278,20 +278,20 @@ describe("presentAssistantMessage - index increment timing (checkpoint hang bug 
 
 	it("CRITICAL: increment must happen BEFORE flag check to prevent race condition", async () => {
 		// ============================================================================
-		// КРИТИЧЕСКИЙ РЕГРЕССИОННЫЙ ТЕСТ
+		// CRITICAL REGRESSION TEST
 		// ============================================================================
 		//
 		// GOAL: This test MUST FAIL if someone reverts the fix and returns
 		// the wrong order of operations in presentAssistantMessage.ts:913-930
 		//
 		// WRONG ORDER (caused the bug):
-		//   1. Проверка: if (index === length - 1) → set flag
-		//   2. Инкремент: index++
+		//   1. Check: if (index === length - 1) → set flag
+		//   2. Increment: index++
 		//   Result: flag true at index=0, but should be at index=1
 		//
-		// ПРАВИЛЬНЫЙ ПОРЯДОК (текущий код):
-		//   1. Инкремент: index++ (0 → 1)
-		//   2. Проверка: if (index >= length) → set flag
+		// CORRECT ORDER (current code):
+		//   1. Increment: index++ (0 → 1)
+		//   2. Check: if (index >= length) → set flag
 		//   Result: flag true only when index=1 >= length=1
 		//
 		// INVARIANT: userMessageContentReady=true ONLY when index out-of-bounds
@@ -340,8 +340,8 @@ describe("presentAssistantMessage - index increment timing (checkpoint hang bug 
 		//      - Result: flag=true at index=1, but this is COINCIDENCE (not guaranteed)
 		//
 		//    Current code:
-		//      - Инкремент: index++ (0 → 1)
-		//      - Проверка: (1 >= 1) → true, флаг=true
+		//      - Increment: index++ (0 → 1)
+		//      - Check: (1 >= 1) → true, flag=true
 		//      - Result: flag=true STRICTLY when index out-of-bounds
 		const isOutOfBounds = mockTask.currentStreamingContentIndex >= mockTask.assistantMessageContent.length
 		expect(isOutOfBounds).toBe(true)
@@ -359,20 +359,20 @@ describe("presentAssistantMessage - index increment timing (checkpoint hang bug 
 		//
 		// If code is reverted to old logic (lines 913-930):
 		//
-		// СТАРЫЙ КОД (НЕПРАВИЛЬНЫЙ):
+		// OLD CODE (WRONG):
 		// ```
 		// const isLast = cline.currentStreamingContentIndex === cline.assistantMessageContent.length - 1
 		// if (isLast && cline.didCompleteReadingStream) {
-		//     cline.userMessageContentReady = true  // <-- флаг ПЕРЕД инкрементом
+		//     cline.userMessageContentReady = true  // <-- flag BEFORE increment
 		// }
-		// cline.currentStreamingContentIndex++    // <-- инкремент ПОСЛЕ флага
+		// cline.currentStreamingContentIndex++    // <-- increment AFTER flag
 		// ```
 		//
 		// When executed with revert:
 		// - index=0, length=1
 		// - isLast = (0 === 0) = true
-		// - Устанавливается флаг: userMessageContentReady=true
-		// - Затем инкремент: index=1
+		// - Flag is set: userMessageContentReady=true
+		// - Then increment: index=1
 		// - isOutOfBounds = (1 >= 1) = true
 		//
 		// PROBLEM: Flag set AT index=0, not at index=1
@@ -383,18 +383,18 @@ describe("presentAssistantMessage - index increment timing (checkpoint hang bug 
 		// BUT old code BREAKS other scenarios (multiple blocks, asynchronicity)
 		//
 		// For complete protection, a test with multiple blocks is needed, where:
-		// - index=0, length=2, блок 0 не partial
+		// - index=0, length=2, block 0 not partial
 		// - Old code: will NOT set flag (0 !== 1), increment → index=1
 		// - New code: increment → index=1, check (1 < 2) → does NOT set flag
 		// - Both work the same
 		//
 		// BUT at the last block:
-		// - index=1, length=2, блок 1 не partial
+		// - index=1, length=2, block 1 not partial
 		// - Old code: (1 === 1) → flag=true, then index=2
 		// - New code: index=2, then (2 >= 2) → flag=true
 		// - DIFFERENCE in flag setting timing!
 		//
-		// Этот тест гарантирует что в момент установки флага index УЖЕ out-of-bounds
+		// This test ensures that at the moment of flag setting, index is ALREADY out-of-bounds
 		// ============================================================================
 	})
 })

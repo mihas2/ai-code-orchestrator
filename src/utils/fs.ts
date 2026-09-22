@@ -11,7 +11,7 @@ import * as path from "path"
 export async function createDirectoriesForFile(filePath: string): Promise<string[]> {
 	const execId = Math.random().toString(36).substr(2, 6)
 
-	// Timeout для обнаружения зависаний
+	// Timeout to detect hangs
 	const timeoutId = setTimeout(() => {
 		console.error(`[DIR_CREATE][${execId}] ⚠️ TIMEOUT WARNING: Function running for more than 5 seconds!`)
 		console.error(`[DIR_CREATE][${execId}] This suggests a hang in fs operations`)
@@ -71,7 +71,7 @@ export async function createDirectoriesForFile(filePath: string): Promise<string
 				`[DIR_CREATE][${execId}] Step 7a.5.${loopIteration}.next: Moving up from "${previousPath}" to "${currentPath}"`,
 			)
 
-			// Защита от бесконечного цикла
+			// Protection against infinite loop
 			if (previousPath === currentPath) {
 				console.error(
 					`[DIR_CREATE][${execId}] Step 7a.5.${loopIteration}.CRITICAL: Infinite loop detected! path.dirname returned same path`,

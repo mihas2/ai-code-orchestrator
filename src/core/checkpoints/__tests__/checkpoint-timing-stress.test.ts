@@ -79,49 +79,49 @@ describe("Checkpoint timing stress test", () => {
 		vi.restoreAllMocks()
 	})
 
-	it("checkpoint handler НЕ должен писать в userMessageContentReady (single-writer stress test)", async () => {
+	it("checkpoint handler MUST NOT write to userMessageContentReady (single-writer stress test)", async () => {
 		await initCheckpointService()
 		expect(checkpointHandler).toBeDefined()
 
-		// Test case 1: Checkpoint event fires во время streaming
+		// Test case 1: Checkpoint event fires during streaming
 		mockTask.userMessageContentReady = false
 		const eventPayload1 = { fromHash: "abc123", toHash: "def456", suppressMessage: false }
 		checkpointHandler!(eventPayload1)
 
 		await new Promise((resolve) => setTimeout(resolve, 20))
 
-		// Флаг ДОЛЖЕН остаться false (checkpoint handler не пишет его)
+		// Flag MUST remain false (checkpoint handler does not write it)
 		expect(mockTask.userMessageContentReady).toBe(false)
 
-		// Test case 2: Симуляция race condition - task loop resetsфлаг для нового turn
-		// presentAssistantMessage установил флаг для предыдущего turn
+		// Test case 2: Simulating race condition - task loop resets flag for new turn
+		// presentAssistantMessage set the flag for the previous turn
 		mockTask.userMessageContentReady = true
 
-		// Task loop начинает новый turn и сбрасывает флаг
+		// Task loop starts new turn and resets flag
 		mockTask.userMessageContentReady = false
 
-		// Delayed checkpoint event fires (из предыдущего turn)
+		// Delayed checkpoint event fires (from previous turn)
 		const eventPayload2 = { fromHash: "old1", toHash: "old2", suppressMessage: false }
 		checkpointHandler!(eventPayload2)
 
-		// Даем время на handler
+		// Give time for handler to execute
 		await new Promise((resolve) => setTimeout(resolve, 30))
 
-		// Флаг ДОЛЖЕН остаться false (handler не воскрешает флаг)
-		// Это ключевой тест: до fix handler писал true и ломал следующий turn
+		// Flag MUST remain false (handler does not resurrect the flag)
+		// This is the key test: before fix, handler wrote true and broke the next turn
 		expect(mockTask.userMessageContentReady).toBe(false)
 
-		// Test case 3: Множественные rapid checkpoint events
+		// Test case 3: Multiple rapid checkpoint events
 		checkpointHandler!({ fromHash: "c1", toHash: "c2", suppressMessage: false })
 		checkpointHandler!({ fromHash: "c2", toHash: "c3", suppressMessage: false })
 		checkpointHandler!({ fromHash: "c3", toHash: "c4", suppressMessage: false })
 
 		await new Promise((resolve) => setTimeout(resolve, 50))
 
-		// Флаг все еще false - checkpoint handlers НЕ пишут его
+		// Flag still false - checkpoint handlers do NOT write it
 		expect(mockTask.userMessageContentReady).toBe(false)
 
-		// Только presentAssistantMessage устанавливает флаг
+		// Only presentAssistantMessage sets the flag
 		mockTask.userMessageContentReady = true
 		expect(mockTask.userMessageContentReady).toBe(true)
 	})

@@ -3573,57 +3573,24 @@ export class ClineProvider
 				)
 			}
 
-			// 3) Enforce single-open invariant by closing/disposing the parent first.
-			//    A failed disposal is fatal: continuing would create a child without a
-			//    reliable single-open-task transition.
-			try {
-				await this.removeClineFromStack({ skipDelegationRepair: true })
-			} catch (error) {
-				const errorMsg = `Failed to dispose parent task '${parentTaskId}': ${
-					error instanceof Error ? error.message : String(error)
-				}`
-				this.log(`[delegateParentAndOpenChild] ${errorMsg}`)
+			// 3) CRITICAL FIX: Pause parent instead of disposing to preserve instance identity
+			//    During delegation, the parent should remain in clineStack with isPaused=true.
+			//    This prevents creating a new instance when resuming, which would lose all flags
+			//    (userMessageContentReady, completionStatus, etc.) and cause task resurrection.
+			console.log(
+				`[DELEGATION_PAUSE] Pausing parent task ${parentTaskId}.${parent.instanceId} instead of disposing`,
+			)
+			parent.isPaused = true
 
-				// Never append into an arbitrary stack position. Restore the exact topology only
-				// when the instance is still usable; a disposed task is deliberately left out and
-				// remains retryable through persisted history.
-				const parentIsUsable = !parent.abort && !parent.abandoned
-				if (parentIsUsable) {
-					;(parent as any).abort = parentRuntimeState.abort
-					;(parent as any).abandoned = parentRuntimeState.abandoned
-					;(parent as any).abortReason = parentRuntimeState.abortReason
-					;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
-					if (parentStackIndex >= 0) {
-						this.clineStack.splice(0, this.clineStack.length, ...parentStack)
-					} else if (this.clineStack.length === 0) {
-						// Test doubles and legacy callers may expose the current task without
-						// registering it in the stack; keep that compatibility isolated here.
-						this.clineStack.push(parent)
-					}
-				} else {
-					this.clineStack.splice(0, this.clineStack.length, ...parentStack.filter((task) => task !== parent))
-				}
-				try {
-					await this.updateGlobalState("mode", parentSnapshot.mode)
-					if (parentSnapshot.apiConfigName) {
-						await this.activateProviderProfile(
-							{ name: parentSnapshot.apiConfigName },
-							{ persistModeConfig: false, persistTaskHistory: false, syncGlobalProviderState: true },
-						)
-					}
-					if (parentIsUsable && parentConfiguration) {
-						;(parent as any).apiConfiguration = structuredClone(parentConfiguration)
-						this.updateTaskApiHandlerIfNeeded(parentConfiguration, { forceRebuild: true })
-					}
-				} catch (restoreError) {
-					this.log(
-						`[delegateParentAndOpenChild] Failed to restore parent runtime state: ${String(restoreError)}`,
-					)
-				}
-				throw new Error(`[delegateParentAndOpenChild] ${errorMsg}`)
-			}
+			// NOTE: We do NOT call removeClineFromStack here because:
+			// 1. It would dispose the parent and set abort=true, abandoned=true
+			// 2. recursivelyMakeClineRequests would still be running in background
+			// 3. When child completes, provider would create NEW instance (different instanceId)
+			// 4. New instance doesn't have userMessageContentReady=true → resurrection
 
-			// 3) Create child as sole active (parent reference preserved for lineage)
+			// Parent remains in clineStack with isPaused=true, preserving all state
+
+			// 4) Create child as sole active (parent reference preserved for lineage)
 			// Pass initialStatus: "active" to ensure the child task's historyItem is created
 			// with status from the start, avoiding race conditions where the task might
 			// call attempt_completion before status is persisted separately.
@@ -3883,6 +3850,10 @@ export class ClineProvider
 		const { parentTaskId, childTaskId, completionResultSummary } = params
 		const globalStoragePath = this.contextProxy.globalStorageUri.fsPath
 
+		console.log(
+			`[DELEGATION_RESUME] reopenParentFromDelegationImpl called: parentTaskId=${parentTaskId}, childTaskId=${childTaskId}`,
+		)
+
 		// Re-check persisted markers before any message, task, or event mutation.
 		const { historyItem } = await this.getTaskWithId(parentTaskId)
 		if (historyItem.awaitingChildId !== undefined && historyItem.awaitingChildId !== childTaskId) {
@@ -4135,6 +4106,45 @@ export class ClineProvider
 				)
 				runtimeResume = { childTaskId, task: parentInstance, runtimeResumed: false }
 				resumeTasks.set(parentTaskId, runtimeResume)
+			}
+
+			// CRITICAL FIX: Replace paused parent in clineStack with the new resumed instance
+			// The old parent was paused during delegation (isPaused=true) and remains in the stack.
+			// We must replace it with the new instance to ensure the active task loop operates
+			// on the correct instance with proper state restoration.
+			const parentStackIndex = this.clineStack.findIndex((t) => t.taskId === parentTaskId)
+			if (parentStackIndex !== -1) {
+				const oldParent = this.clineStack[parentStackIndex]
+				console.log(
+					`[DELEGATION_RESUME] Replacing paused parent ${parentTaskId}.${oldParent.instanceId} ` +
+						`in stack with resumed instance ${parentInstance.instanceId}`,
+				)
+
+				// Clean up old instance
+				try {
+					const cleanupFunctions = this.taskEventListeners.get(oldParent)
+					if (cleanupFunctions) {
+						cleanupFunctions.forEach((cleanup) => cleanup())
+						this.taskEventListeners.delete(oldParent)
+					}
+				} catch (err) {
+					this.log(
+						`[DELEGATION_RESUME] Non-fatal: Failed to cleanup old parent listeners: ${
+							(err as Error)?.message ?? String(err)
+						}`,
+					)
+				}
+
+				// Replace in stack
+				this.clineStack[parentStackIndex] = parentInstance
+				parentInstance.emit(AiCodeOrchestratorEventName.TaskFocused)
+
+				// Set up event listeners for new instance
+				await this.performPreparationTasks(parentInstance)
+			} else {
+				// Parent not in stack - add it (fallback, should not happen normally)
+				console.log(`[DELEGATION_RESUME] Parent ${parentTaskId} not found in stack, adding resumed instance`)
+				await this.addClineToStack(parentInstance)
 			}
 		} catch (err) {
 			const errorMsg = `Failed to reopen parent task ${parentTaskId}: ${(err as Error)?.message ?? String(err)}`

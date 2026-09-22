@@ -3,6 +3,7 @@ import * as vscode from "vscode"
 import { AiCodeOrchestratorEventName, type HistoryItem } from "@ai-code-orchestrator/types"
 
 import { Task } from "../task/Task"
+import { TaskCompletionStatus } from "../task/TaskCompletionStatus"
 import { formatResponse } from "../prompts/responses"
 import { Package } from "../../shared/package"
 import type { ToolUse } from "../../shared/tools"
@@ -38,6 +39,10 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 	async execute(params: AttemptCompletionParams, task: Task, callbacks: AttemptCompletionCallbacks): Promise<void> {
 		const { result } = params
 		const { handleError, pushToolResult, askFinishSubTaskApproval } = callbacks
+
+		console.log(
+			`[ATTEMPT_COMPLETION] execute() called: taskId=${task.taskId}, parentTaskId=${task.parentTaskId ?? "none"}, status=${task.taskCompletionStatus}`,
+		)
 
 		// Prevent attempt_completion if any tool failed in the current turn
 		if (task.didToolFailInCurrentTurn) {
@@ -95,6 +100,9 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 							// This shows the user the completion result without injecting another tool_result to the parent.
 						} else if (status === "active") {
 							// Normal subtask completion - do delegation
+							console.log(
+								`[ATTEMPT_COMPLETION] Child task ${task.taskId} is active, starting delegation to parent ${task.parentTaskId}`,
+							)
 							const delegation = await this.delegateToParent(
 								task,
 								result,
@@ -102,6 +110,7 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 								askFinishSubTaskApproval,
 								pushToolResult,
 							)
+							console.log(`[ATTEMPT_COMPLETION] Delegation result: ${delegation}`)
 							if (delegation === "delegated") {
 								this.emitTaskCompleted(task)
 							}
@@ -156,6 +165,12 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 
 			if (response === "yesButtonClicked") {
 				this.emitTaskCompleted(task)
+				// CRITICAL: Set COMPLETING status here after task is truly completed.
+				// This prevents new API requests and marks the task as terminal.
+				if (task.taskCompletionStatus === TaskCompletionStatus.RUNNING) {
+					task.setCompletionStatus(TaskCompletionStatus.COMPLETING)
+					console.log(`[COMPLETION_STATUS] Set to COMPLETING after user approved completion`)
+				}
 				return
 			}
 
@@ -164,6 +179,16 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 
 			const feedbackText = `<user_message>\n${text}\n</user_message>`
 			pushToolResult(formatResponse.toolResult(feedbackText, images))
+
+			// CRITICAL: User rejected completion - transition back to RUNNING.
+			// This allows the task to continue with the feedback.
+			if (task.taskCompletionStatus === TaskCompletionStatus.COMPLETING) {
+				task.setCompletionStatus(TaskCompletionStatus.REJECTED)
+				console.log(`[COMPLETION_STATUS] Set to REJECTED after user feedback`)
+				// Immediately transition to RUNNING to allow next iteration
+				task.setCompletionStatus(TaskCompletionStatus.RUNNING)
+				console.log(`[COMPLETION_STATUS] Set to RUNNING to continue after feedback`)
+			}
 		} catch (error) {
 			await handleError("inspecting site", error as Error)
 			throw error
@@ -184,13 +209,19 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 		askFinishSubTaskApproval: () => Promise<boolean>,
 		pushToolResult: (result: string) => void,
 	): Promise<"delegated" | "denied" | "continue"> {
+		console.log(
+			`[DELEGATE_TO_PARENT] Starting delegation: childTaskId=${task.taskId}, parentTaskId=${task.parentTaskId}`,
+		)
+
 		const didApprove = await askFinishSubTaskApproval()
 
 		if (!didApprove) {
+			console.log(`[DELEGATE_TO_PARENT] User denied child completion`)
 			pushToolResult(formatResponse.toolDenied())
 			return "denied"
 		}
 
+		console.log(`[DELEGATE_TO_PARENT] User approved, pushing empty tool result`)
 		pushToolResult("")
 
 		// TODO: Replace this timing-based workaround with event-based synchronization
@@ -201,14 +232,18 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 		await new Promise((resolve) => setTimeout(resolve, 100))
 
 		try {
+			console.log(
+				`[DELEGATE_TO_PARENT] Calling reopenParentFromDelegation: parent=${task.parentTaskId}, child=${task.taskId}`,
+			)
 			await provider.reopenParentFromDelegation({
 				parentTaskId: task.parentTaskId!,
 				childTaskId: task.taskId,
 				completionResultSummary: result,
 			})
+			console.log(`[DELEGATE_TO_PARENT] reopenParentFromDelegation completed successfully`)
 		} catch (err) {
 			console.error(
-				`[AttemptCompletionTool] Failed to reopen parent task ${task.parentTaskId} from child ${task.taskId}: ${(err as Error)?.message ?? String(err)}`,
+				`[DELEGATE_TO_PARENT] Failed to reopen parent task ${task.parentTaskId} from child ${task.taskId}: ${(err as Error)?.message ?? String(err)}`,
 			)
 			throw err
 		}
@@ -232,6 +267,12 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 		} else {
 			await task.say("completion_result", result ?? "", undefined, block.partial)
 		}
+
+		// CRITICAL: handlePartial is ONLY for streaming preview/UI updates.
+		// Do NOT set COMPLETING status here - that would stop the task loop before
+		// the final (non-partial) block is processed, preventing execute() and
+		// child-to-parent delegation from completing.
+		// Status will be set in execute() after all completion logic finishes.
 	}
 
 	private emitTaskCompleted(task: Task): void {
