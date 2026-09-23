@@ -150,9 +150,6 @@ const App = () => {
 		if (process.env.NODE_ENV === "production") {
 			exposeSourceMapsForDebugging()
 		}
-
-		// Log initialization for debugging
-		console.debug("App initialized with source map support")
 	}, [])
 
 	// Focus the WebView when non-interactive content is clicked (only in editor/tab mode)

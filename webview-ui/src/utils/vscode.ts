@@ -34,7 +34,8 @@ class VSCodeAPIWrapper {
 		if (this.vsCodeApi) {
 			this.vsCodeApi.postMessage(message)
 		} else {
-			console.log(message)
+			// Development mode: log messages when VSCode API is unavailable
+			console.debug("[VSCode API] Message:", message)
 		}
 	}
 

@@ -229,7 +229,6 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 	)
 
 	const switchMode = useCallback((slug: string) => {
-		console.log("[UI] Switching mode to:", slug)
 		vscode.postMessage({
 			type: "mode",
 			text: slug,

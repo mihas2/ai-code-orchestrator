@@ -19,8 +19,6 @@ export function initializeSourceMaps(): void {
 		return
 	}
 
-	console.debug("Initializing CSP-compatible source map support for production build")
-
 	// Set up global error handler
 	window.addEventListener("error", async (event) => {
 		if (event.error && event.error instanceof Error) {
@@ -158,13 +156,8 @@ export function exposeSourceMapsForDebugging(): void {
 			try {
 				const response = await fetch(`${scriptUrl}.map`)
 				if (response.ok) {
-					const sourceMap = await response.json()
-					const originalFileName =
-						sourceMap.sources && sourceMap.sources.length > 0 ? sourceMap.sources[0] : "unknown"
-					console.log(`Source map found for ${scriptUrl}. Original file: ${originalFileName}`)
 					return true
 				} else {
-					console.log(`No source map found for ${scriptUrl}`)
 					return false
 				}
 			} catch (e) {
@@ -172,8 +165,6 @@ export function exposeSourceMapsForDebugging(): void {
 				return false
 			}
 		}
-
-		console.debug("Source map debugging utilities exposed on window object")
 	} catch (e) {
 		console.error("Error exposing source maps for debugging:", e)
 	}

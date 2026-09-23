@@ -61,12 +61,10 @@ export const WorktreesView = () => {
 					break
 				}
 				case "worktreeIncludeStatus": {
-					console.log("[WorktreesView] Received worktreeIncludeStatus:", message)
 					setIncludeStatus(message.worktreeIncludeStatus)
 					break
 				}
 				case "worktreeResult": {
-					console.log("[WorktreesView] Received worktreeResult:", message)
 					// Refresh list and include status after any worktree operation
 					fetchWorktrees()
 					fetchIncludeStatus()
@@ -92,16 +90,10 @@ export const WorktreesView = () => {
 
 	// Handle create worktree include file
 	const handleCreateWorktreeInclude = useCallback(() => {
-		console.log("[WorktreesView] handleCreateWorktreeInclude called, includeStatus:", includeStatus)
 		if (!includeStatus?.gitignoreContent) {
-			console.log("[WorktreesView] No gitignoreContent, returning early")
 			return
 		}
 		setIsCreatingInclude(true)
-		console.log(
-			"[WorktreesView] Sending createWorktreeInclude with content length:",
-			includeStatus.gitignoreContent.length,
-		)
 		vscode.postMessage({
 			type: "createWorktreeInclude",
 			worktreeIncludeContent: includeStatus.gitignoreContent,

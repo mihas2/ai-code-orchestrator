@@ -106,15 +106,11 @@ export class MessageManager {
 			// Collect condenseIds from condense_context events
 			if (msg.say === "condense_context" && msg.contextCondense?.condenseId) {
 				condenseIds.add(msg.contextCondense.condenseId)
-				console.log(`[MessageManager] Found condense_context to remove: ${msg.contextCondense.condenseId}`)
 			}
 
 			// Collect truncationIds from sliding_window_truncation events
 			if (msg.say === "sliding_window_truncation" && msg.contextTruncation?.truncationId) {
 				truncationIds.add(msg.contextTruncation.truncationId)
-				console.log(
-					`[MessageManager] Found sliding_window_truncation to remove: ${msg.contextTruncation.truncationId}`,
-				)
 			}
 		}
 
@@ -185,7 +181,6 @@ export class MessageManager {
 		if (removedIds.condenseIds.size > 0) {
 			apiHistory = apiHistory.filter((msg) => {
 				if (msg.isSummary && msg.condenseId && removedIds.condenseIds.has(msg.condenseId)) {
-					console.log(`[MessageManager] Removing orphaned Summary with condenseId: ${msg.condenseId}`)
 					return false
 				}
 				return true
@@ -196,9 +191,6 @@ export class MessageManager {
 		if (removedIds.truncationIds.size > 0) {
 			apiHistory = apiHistory.filter((msg) => {
 				if (msg.isTruncationMarker && msg.truncationId && removedIds.truncationIds.has(msg.truncationId)) {
-					console.log(
-						`[MessageManager] Removing orphaned truncation marker with truncationId: ${msg.truncationId}`,
-					)
 					return false
 				}
 				return true

@@ -68,7 +68,6 @@ export class CustomToolRegistry {
 				const filePath = path.join(toolDir, file)
 
 				try {
-					console.log(`[CustomToolRegistry] importing tool from ${filePath}`)
 					const mod = await this.import(filePath)
 
 					for (const [exportName, value] of Object.entries(mod)) {
@@ -79,7 +78,6 @@ export class CustomToolRegistry {
 						}
 
 						this.tools.set(def.name, { ...def, source: filePath })
-						console.log(`[CustomToolRegistry] loaded tool ${def.name} from ${filePath}`)
 						result.loaded.push(def.name)
 					}
 				} catch (error) {
@@ -364,7 +362,6 @@ export class CustomToolRegistry {
 				const stat = fs.statSync(srcPath)
 				if (stat.isFile()) {
 					fs.copyFileSync(srcPath, destPath)
-					console.log(`[CustomToolRegistry] copied ${envFile} to tool cache directory`)
 				}
 			}
 		} catch (error) {

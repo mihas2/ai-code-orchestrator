@@ -85,7 +85,7 @@ export async function getTheme() {
 
 		return converted
 	} catch (e) {
-		console.log("Error loading color theme: ", e)
+		console.error("Error loading color theme:", e)
 	}
 	return undefined
 }

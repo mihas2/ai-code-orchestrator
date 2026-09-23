@@ -700,7 +700,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	// STOP-002 & STOP-003: Reset cancel lock when streaming stops
 	useEffect(() => {
 		if (!isStreaming && cancelPending) {
-			console.log("[ChatView] Streaming stopped, resetting cancel lock")
 			setCancelPending(false)
 		}
 	}, [isStreaming, cancelPending])
@@ -769,7 +768,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					clineAskRef.current === "command_output"
 				) {
 					try {
-						console.log("queueMessage", text, images)
 						vscode.postMessage({ type: "queueMessage", text, images })
 						setInputValue("")
 						setSelectedImages([])
@@ -866,7 +864,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	const handleStopTask = useCallback(() => {
 		// STOP-003: Prevent repeated clicks with optimistic lock
 		if (cancelPending) {
-			console.log("[ChatView] Ignoring repeated cancel click - already pending")
 			return
 		}
 
@@ -877,14 +874,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			)
 			return
 		}
-
-		console.log("[ChatView] sending cancelTask from ChatTextArea stop click, stack:", new Error().stack)
-		console.log("[ChatView] sending cancelTask with:", {
-			type: "cancelTask",
-			taskId: currentTaskId,
-			instanceId: currentTaskInstanceId,
-			executionId: pendingCommandExecutionId,
-		})
 
 		// STOP-003: Set optimistic lock before sending message
 		setCancelPending(true)
@@ -1726,7 +1715,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	const switchToMode = useCallback(
 		(modeSlug: string): void => {
-			console.log("[UI] Switching mode to:", modeSlug)
 			// Update local state and notify extension to sync mode change.
 			setMode(modeSlug)
 
