@@ -279,6 +279,33 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	isInitialized = false
 	isPaused: boolean = false
 
+	/**
+	 * Explicit, minimal outcome marker set by `AttemptCompletionTool` the moment a child task's
+	 * `attempt_completion` has been successfully delegated back to its parent (i.e.
+	 * `delegateToParent()` returned `"delegated"` and `reopenParentFromDelegation()` resolved).
+	 *
+	 * WHY THIS EXISTS (see docs/plans/attempt-completion-partial-final-fix-spec.md and the
+	 * child-delegation completion-outcome review item): `TaskCompletionStatus.COMPLETING` is an
+	 * in-flight/pending marker - it is set before the user confirms completion and can be
+	 * reverted back to `RUNNING` (see `AttemptCompletionTool.execute()`'s feedback path). It is
+	 * NOT sufficient proof that a child has been handed off to its parent, and `RUNNING` is
+	 * obviously not proof of anything. Without a dedicated marker, this *same* child `Task`
+	 * instance could still satisfy the `userMessageContent.length > 0` guard in
+	 * `recursivelyMakeClineRequests` (because `delegateToParent()` pushes an empty tool_result)
+	 * and issue ANOTHOR API request as the already-delegated child - even though control has
+	 * already been handed to the resumed parent.
+	 *
+	 * This flag is:
+	 * - Set to `true` exactly once, only in `AttemptCompletionTool`, only after delegation has
+	 *   fully succeeded.
+	 * - Read only by this same child instance's own loop (`recursivelyMakeClineRequests` /
+	 *   `initiateTaskLoop`) to stop making further API requests. It does NOT touch the resumed
+	 *   parent's state (a different `Task` instance) and does NOT change existing
+	 *   COMPLETING/COMPLETED/REJECTED partial/final semantics for the normal (non-delegated)
+	 *   completion path.
+	 */
+	hasDelegatedToParent: boolean = false
+
 	// API
 	apiConfiguration: ProviderSettings
 	api: ApiHandler
@@ -351,6 +378,33 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	presentAssistantMessageLocked = false
 	presentAssistantMessageHasPendingUpdates = false
 	userMessageContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam | Anthropic.ToolResultBlockParam)[] = []
+
+	/**
+	 * Fire-and-forget wrapper around `presentAssistantMessage(this)` for streaming call sites
+	 * that cannot `await` the call inline (e.g. inside a synchronous event-handling switch
+	 * during chunk streaming). Without a terminal `.catch()`, a rejection from
+	 * `presentAssistantMessage` (for example the `aborted` error it throws when `this.abort`
+	 * is set, or any error re-thrown from a tool handler) becomes an unhandled promise
+	 * rejection - detached from any call site that could observe or act on it.
+	 *
+	 * This helper gives every detached call site the same safe terminal handling already used
+	 * by the awaited call sites in `recursivelyMakeClineRequests`: expected abort/dispose
+	 * cancellation is logged at `info` level and swallowed (it is not a bug, just a race
+	 * between streaming and cancellation), while any other error is logged at `error` level
+	 * so it remains visible for diagnosis without crashing the process via an unhandled
+	 * rejection.
+	 */
+	private presentAssistantMessageDetached(): void {
+		presentAssistantMessage(this).catch((error) => {
+			if (this.abort) {
+				console.log(
+					`[ABORT_CHECK] Task aborted during presentAssistantMessage: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			} else {
+				console.error(`[ERROR] presentAssistantMessage failed:`, error)
+			}
+		})
+	}
 
 	/**
 	 * Single-writer invariant: this flag MUST be set to `true` ONLY from
@@ -2707,13 +2761,19 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			} else {
 				// CRITICAL FIX: Check terminal status after async operation to prevent resurrection
 				// After attempt_completion, task should NOT make new API requests
+				//
+				// hasDelegatedToParent is checked explicitly (defense in depth alongside the
+				// return-true guards inside recursivelyMakeClineRequests): this child instance
+				// already handed off its result to the parent and must never re-enter the loop,
+				// regardless of taskCompletionStatus (which may still read RUNNING/COMPLETING).
 				if (
 					!didEndLoop ||
+					this.hasDelegatedToParent ||
 					this.taskCompletionStatus === TaskCompletionStatus.COMPLETING ||
 					this.taskCompletionStatus === TaskCompletionStatus.COMPLETED
 				) {
 					console.log(
-						`[TASK_LOOP] Exiting loop: didContinue=${!didEndLoop}, completionStatus=${this.taskCompletionStatus}`,
+						`[TASK_LOOP] Exiting loop: didContinue=${!didEndLoop}, hasDelegatedToParent=${this.hasDelegatedToParent}, completionStatus=${this.taskCompletionStatus}`,
 					)
 					break
 				}
@@ -2740,6 +2800,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const currentUserContent = currentItem.userContent
 			const currentIncludeFileDetails = currentItem.includeFileDetails
 
+			// Existing abort check (unchanged). The new canStartNextRequest() guard
+			// is applied later, immediately before attemptApiRequest, where it can
+			// also check hasDelegatedToParent and terminal completion status without
+			// blocking the FIRST iteration of a loop that was started before those
+			// conditions became true.
 			if (this.abort) {
 				throw new Error(
 					`[AiCodeOrchestrator#recursivelyMakeAicoRequests] task ${this.taskId}.${this.instanceId} aborted`,
@@ -2991,6 +3056,16 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				const streamModelInfo = this.cachedStreamingModel.info
 				const cachedModelId = this.cachedStreamingModel.id
 
+				// NO_RESURRECTION GUARD: Final check immediately before the outbound HTTP request.
+				// This is the last line of defense against a stale/aborted/delegated instance
+				// issuing a request after its lifecycle has ended.
+				if (!this.canStartNextRequest()) {
+					console.log(
+						`[NO_RESURRECTION] Aborting before attemptApiRequest: instance cannot start new request`,
+					)
+					return false
+				}
+
 				// Yields only if the first chunk is successful, otherwise will
 				// allow the user to retry the request (most likely due to rate
 				// limit error, which gets thrown on the first chunk).
@@ -3120,7 +3195,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 										// Add to content and present
 										this.assistantMessageContent.push(partialToolUse)
 										this.userMessageContentReady = false
-										presentAssistantMessage(this)
+										this.presentAssistantMessageDetached()
 									} else if (event.type === "tool_call_delta") {
 										// Process chunk using streaming JSON parser
 										const partialToolUse = NativeToolCallParser.processStreamingChunk(
@@ -3139,7 +3214,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 												this.assistantMessageContent[toolUseIndex] = partialToolUse
 
 												// Present updated tool use
-												presentAssistantMessage(this)
+												this.presentAssistantMessageDetached()
 											}
 										}
 									} else if (event.type === "tool_call_end") {
@@ -3165,7 +3240,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 											this.userMessageContentReady = false
 
 											// Present the finalized tool call
-											presentAssistantMessage(this)
+											this.presentAssistantMessageDetached()
 										} else if (toolUseIndex !== undefined) {
 											// finalizeStreamingToolCall returned null (malformed JSON or missing args)
 											// Mark the tool as non-partial so it's presented as complete, but execution
@@ -3184,7 +3259,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 											this.userMessageContentReady = false
 
 											// Present the tool call - validation will handle missing params
-											presentAssistantMessage(this)
+											this.presentAssistantMessageDetached()
 										}
 									}
 								}
@@ -3217,7 +3292,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 								// Present the tool call to user - presentAssistantMessage will execute
 								// tools sequentially and accumulate all results in userMessageContent
-								presentAssistantMessage(this)
+								this.presentAssistantMessageDetached()
 								break
 							}
 							case "text": {
@@ -3236,7 +3311,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 									})
 									this.userMessageContentReady = false
 								}
-								presentAssistantMessage(this)
+								this.presentAssistantMessageDetached()
 								break
 							}
 						}
@@ -3516,7 +3591,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 							this.userMessageContentReady = false
 
 							// Present the finalized tool call
-							presentAssistantMessage(this)
+							this.presentAssistantMessageDetached()
 						} else if (toolUseIndex !== undefined) {
 							// finalizeStreamingToolCall returned null (malformed JSON or missing args)
 							// We still need to mark the tool as non-partial so it gets executed
@@ -3535,7 +3610,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 							this.userMessageContentReady = false
 
 							// Present the tool call - validation will handle missing params
-							presentAssistantMessage(this)
+							this.presentAssistantMessageDetached()
 						}
 					}
 				}
@@ -3720,17 +3795,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// If the assistant message isn't saved yet, tool_results would appear before tool_use blocks.
 				if (partialBlocks.length > 0) {
 					// If there is content to update then it will complete and
-					// update `this.userMessageContentReady` to true, which we
-					// `pWaitFor` before making the next request.
-					presentAssistantMessage(this).catch((error) => {
-						if (this.abort) {
-							console.log(
-								`[ABORT_CHECK] Task aborted during presentAssistantMessage: ${error instanceof Error ? error.message : String(error)}`,
-							)
-						} else {
-							console.error(`[ERROR] presentAssistantMessage failed:`, error)
-						}
-					})
+					// update `this.userMessageContentReady` to true, which the
+					// boundary below awaits (with a watchdog) before making the
+					// next request.
+					this.presentAssistantMessageDetached()
 				}
 
 				// ABORT_CHECK: Exit early if task was aborted during presentAssistantMessage
@@ -3739,115 +3807,71 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					return false
 				}
 
-				// CRITICAL FIX: Ensure presentAssistantMessage is called after stream completion
-				// even if all blocks were already finalized during streaming (e.g., during approval wait).
-				// This handles the race condition where:
-				// 1. Tool starts executing (e.g., checkpoint save)
-				// 2. Stream continues and finalizes blocks while tool is waiting
-				// 3. didCompleteReadingStream becomes true
-				// 4. Tool completes, but partialBlocks is now empty
-				// 5. Without this check, presentAssistantMessage() never gets called
-				// 6. userMessageContentReady never becomes true → infinite hang in pWaitFor()
-				if (!this.userMessageContentReady && this.didCompleteReadingStream) {
-					console.log(
-						`[HANG_FIX] Post-stream: Calling presentAssistantMessage to set userMessageContentReady (partialBlocks was empty, idx=${this.currentStreamingContentIndex}, len=${this.assistantMessageContent.length})`,
-					)
-					// CRITICAL FIX: Must await to ensure userMessageContentReady is set before pWaitFor
-					// Without await, the async function runs in background and pWaitFor starts immediately,
-					// leading to timeout if presentAssistantMessage takes any time (e.g., waiting for lock)
-					try {
-						await presentAssistantMessage(this)
-						console.log(
-							`[HANG_FIX] presentAssistantMessage completed, userMessageContentReady=${this.userMessageContentReady}`,
-						)
-					} catch (error) {
-						if (this.abort) {
-							console.log(
-								`[ABORT_CHECK] Task aborted during presentAssistantMessage in HANG_FIX: ${error instanceof Error ? error.message : String(error)}`,
-							)
-							return false
-						}
-						throw error
-					}
-				}
-
-				// ABORT_CHECK: Exit early if task was aborted after presenting tool result
-				if (this.abort) {
-					console.log(`[ABORT_CHECK] Task aborted after presenting tool result, exiting recursion`)
-					return false
-				}
-
 				if (hasTextContent || hasToolUses) {
-					// NOTE: This comment is here for future reference - this was a
-					// workaround for `userMessageContent` not getting set to true.
-					// It was due to it not recursively calling for partial blocks
-					// when `didRejectTool`, so it would get stuck waiting for a
-					// partial block to complete before it could continue.
-					// In case the content blocks finished it may be the api stream
-					// finished after the last parsed content block was executed, so
-					// we are able to detect out of bounds and set
-					// `userMessageContentReady` to true (note you should not call
-					// `presentAssistantMessage` since if the last block i
-					//  completed it will be presented again).
-					// const completeBlocks = this.assistantMessageContent.filter((block) => !block.partial) // If there are any partial blocks after the stream ended we can consider them invalid.
-					// if (this.currentStreamingContentIndex >= completeBlocks.length) {
-					// 	this.userMessageContentReady = true
-					// }
-
-					console.log(
-						`[FIX_VERIFY] Task entering pWaitFor: userMessageContentReady=${this.userMessageContentReady}`,
-					)
-
-					try {
-						// CRITICAL FIX: Add timeout to prevent infinite hang
-						// If userMessageContentReady is not set within 60 seconds, something is wrong
-						await pWaitFor(() => this.userMessageContentReady, {
-							interval: 100,
-							timeout: 60000, // 60 seconds timeout
-						})
-						console.log(
-							`[FIX_VERIFY] Task exited pWaitFor successfully: userMessageContentReady=${this.userMessageContentReady}`,
-						)
-					} catch (error) {
-						// Timeout occurred - this is a critical bug that needs investigation
-						console.error(
-							`[CRITICAL] pWaitFor timeout after 60s! userMessageContentReady=${this.userMessageContentReady}, didCompleteReadingStream=${this.didCompleteReadingStream}, idx=${this.currentStreamingContentIndex}, len=${this.assistantMessageContent.length}`,
-						)
-
-						// Emergency rescue: Force userMessageContentReady if stream is complete
-						if (
-							this.didCompleteReadingStream &&
-							!this.userMessageContentReady &&
-							!isTerminalStatus(this.completionStatus)
-						) {
-							console.warn(
-								`[EMERGENCY_RESCUE] Triggering after 60s timeout, status=${this.completionStatus}`,
-							)
-							this.userMessageContentReady = true
-						} else if (isTerminalStatus(this.completionStatus)) {
-							console.log(
-								`[EMERGENCY_RESCUE] Skipping - task in terminal status: ${this.completionStatus}`,
-							)
-						} else {
-							// Re-throw if we can't rescue
-							throw new Error(`Task hung waiting for userMessageContentReady: ${error.message}`)
-						}
+					// SINGLE BOUNDARY: covers (a) the "stream completed but nothing
+					// triggered presentAssistantMessage" case that HANG_FIX used to
+					// paper over with an unconditional, un-timed `await
+					// presentAssistantMessage(this)` directly here, AND (b) the
+					// `userMessageContentReady` watchdog wait, under ONE 60s window
+					// with cancellation observed throughout. Splitting these into two
+					// sequential awaits (as before) meant a presenter that never
+					// resolves would hang this call forever - the watchdog in (b)
+					// would simply never be reached. See
+					// `presentAssistantMessageAndAwaitReadyOrAbort` for the exact
+					// semantics and the instance-local cleanup performed on timeout.
+					const waitResult = await this.presentAssistantMessageAndAwaitReadyOrAbort()
+					if (waitResult === "exit-loop") {
+						return false
 					}
 
-					// ABORT_CHECK: Exit early if task was aborted after pWaitFor
+					// ABORT_CHECK: Exit early if task was aborted while waiting
 					if (this.abort) {
-						console.log(`[ABORT_CHECK] Task aborted after pWaitFor, exiting recursion`)
+						console.log(`[ABORT_CHECK] Task aborted after presenter/readiness wait, exiting recursion`)
+						return false
+					}
+
+					// TERMINAL_STATUS_GUARD: this instance already reached the one
+					// currently-terminal completion state (COMPLETED - see
+					// isTerminalStatus()/TaskCompletionStatus.ts; COMPLETING/REJECTED are
+					// intentionally NOT terminal and are unaffected by this check). If the
+					// model's latest turn did not happen to contain another
+					// attempt_completion block (e.g. it replied with plain text after
+					// completion was already confirmed), the "no tool used" branch below
+					// would otherwise unconditionally push a noToolsUsed() nudge and send
+					// ANOTHER outbound API request - resurrecting an already-completed
+					// instance. Stop here instead, before that push happens. This does not
+					// touch hasDelegatedToParent/COMPLETING/REJECTED handling below, which
+					// remain exactly as before.
+					if (isTerminalStatus(this.completionStatus)) {
+						console.log(
+							`[TERMINAL_STATUS_GUARD] Task already ${this.completionStatus}, exiting recursion without another request`,
+						)
 						return false
 					}
 
 					// Check if task completed with attempt_completion - if so, stop the loop
+					// This prevents continuing to next API request after completion has been initiated
 					const hasAttemptCompletion = this.assistantMessageContent.some(
 						(block) => block.type === "tool_use" && block.name === "attempt_completion",
 					)
 
 					if (hasAttemptCompletion) {
-						console.log(`[HANG_FIX] Task completed with attempt_completion, exiting recursion loop`)
-						return false
+						// Also check taskCompletionStatus to ensure we respect the completion state
+						// This aligns with the partial/final semantics: final block sets COMPLETING status
+						if (
+							this.taskCompletionStatus === TaskCompletionStatus.COMPLETING ||
+							this.taskCompletionStatus === TaskCompletionStatus.COMPLETED
+						) {
+							console.log(
+								`[HANG_FIX] Task completed with attempt_completion (status=${this.taskCompletionStatus}), exiting loop`,
+							)
+							return false
+						}
+						// If status is still RUNNING, attempt_completion might be partial or not yet executed
+						// Let presentAssistantMessage handle it and set the status properly
+						console.log(
+							`[HANG_FIX] Found attempt_completion but status=${this.taskCompletionStatus}, continuing to process`,
+						)
 					}
 
 					// If the model did not tool use, then we need to tell it to
@@ -3877,14 +3901,17 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						this.consecutiveNoToolUseCount = 0
 					}
 
-					// Push to stack if there's content OR if we're paused waiting for a subtask.
-					// When paused, we push an empty item so the loop continues to the pause check.
-					if (this.userMessageContent.length > 0 || this.isPaused) {
-						// If task is paused due to delegation, exit loop to wait for child completion
-						if (this.isPaused) {
-							return true // didEndLoop = true
-						}
+					// Decide whether to end the loop, push a follow-up request onto the
+					// stack, or just continue. Extracted into a pure, testable method -
+					// see shouldEndLoopAfterAssistantTurn() for the exact (unchanged)
+					// decision logic, including the CHILD DELEGATION GUARD.
+					const loopDecision = this.shouldEndLoopAfterAssistantTurn()
 
+					if (loopDecision === "end-loop") {
+						return true // didEndLoop = true
+					}
+
+					if (loopDecision === "push-stack") {
 						stack.push({
 							userContent: [...this.userMessageContent], // Create a copy to avoid mutation issues
 							includeFileDetails: false, // Subsequent iterations don't need file details
@@ -4218,6 +4245,266 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				.deref()
 				?.postMessageToWebview({ type: "condenseTaskContextResponse", text: this.taskId })
 		}
+	}
+
+	/**
+	 * Instance-local cancellation performed when this Task instance's own presenter/
+	 * readiness wait hangs past the watchdog window (see
+	 * `presentAssistantMessageAndAwaitReadyOrAbort`).
+	 *
+	 * IMPORTANT SCOPE: this only tears down resources owned by THIS Task instance
+	 * (its own in-flight HTTP request, if any, and its own `abort` flag). It must
+	 * NEVER be reached for - or mutate - a different Task instance, in particular a
+	 * parent that has already been resumed from a child delegation. Each Task
+	 * instance's `recursivelyMakeClineRequests` call stack only ever waits on
+	 * `this`, so this cleanup is inherently scoped to the instance that hung.
+	 *
+	 * This intentionally does more than a bare `this.abort = true`: it also cancels
+	 * the current outbound HTTP request (if one is in flight) via the existing
+	 * `currentRequestAbortController`, mirroring what `cancelCurrentRequest()` does
+	 * for user-initiated cancellation, and records a distinguishable abort reason
+	 * for diagnostics. It does not call `dispose()` or touch provider/webview state -
+	 * those remain the responsibility of the caller's existing abort-handling paths
+	 * (see `abortTask()`), which still run normally once `this.abort` is observed.
+	 */
+	private cancelHungInstance(reason: string): void {
+		this.abort = true
+		this.abortReason = "user_cancelled"
+		if (this.currentRequestAbortController) {
+			console.log(
+				`[Task#${this.taskId}.${this.instanceId}] Cancelling in-flight request due to hung instance: ${reason}`,
+			)
+			this.currentRequestAbortController.abort()
+			this.currentRequestAbortController = undefined
+		}
+	}
+
+	/**
+	 * SINGLE PRODUCTION BOUNDARY for "make sure the assistant message has been fully
+	 * presented, then wait until it's safe to send the next API request (or bail
+	 * out)". This replaces two previously-separate steps that used to run back to
+	 * back directly inside `recursivelyMakeClineRequests`:
+	 *
+	 *   1. An unconditional, un-timed `await presentAssistantMessage(this)` (the old
+	 *      "HANG_FIX" block), run only when `!userMessageContentReady &&
+	 *      didCompleteReadingStream` (i.e. streaming finished but nothing else
+	 *      triggered a final presenter pass).
+	 *   2. A separate `await pWaitFor(() => userMessageContentReady, {timeout:
+	 *      60000})` watchdog (previously `waitForUserMessageContentReadyOrAbort`).
+	 *
+	 * Running these sequentially meant the 60s watchdog in step 2 could only ever
+	 * fire AFTER step 1 had already resolved - so a `presentAssistantMessage` call in
+	 * step 1 that never resolves (e.g. a joined/active execution that never settles)
+	 * would hang this call forever, and the watchdog would never be reached. This
+	 * method fixes that by running both steps' outcomes through the SAME watchdog
+	 * window and the SAME cancellation checks, so a hung presenter is caught exactly
+	 * like a hung readiness-wait was already caught.
+	 *
+	 * Cancellation semantics (unchanged from before, made explicit):
+	 * - If `this.abort` becomes true while waiting (user-initiated cancellation,
+	 *   dispose, or any other instance-local abort), the wait resolves immediately
+	 *   with `"continue"` - the caller's own `if (this.abort) return false` checks
+	 *   right after this call are what actually stop the loop. This method does not
+	 *   itself decide to stop on user abort; it just must not keep blocking past it.
+	 * - A genuinely long-running but still-active presenter (e.g. blocked on a real
+	 *   user approval/tool ask, or a slow but eventually-resolving tool) is NOT
+	 *   distinguished from a truly hung one before the timeout - there is no way to
+	 *   tell "still working" from "deadlocked" from outside an opaque async
+	 *   operation. The watchdog is a last-resort backstop, not a smart hang
+	 *   detector: any legitimate wait under 60s completes normally; anything at or
+	 *   past 60s is treated as hung.
+	 *
+	 * @returns `"continue"` if the presenter/readiness wait resolved normally (or
+	 *   `this.abort` was observed - the caller checks that separately), or
+	 *   `"exit-loop"` if the wait timed out while the task was already in a
+	 *   terminal completion status (caller should stop the loop without throwing).
+	 * @throws If the wait times out while the task is NOT in a terminal completion
+	 *   status and NOT already aborted. Performs instance-local cancellation
+	 *   (`cancelHungInstance`) before throwing, so this Task instance's lifecycle is
+	 *   terminated correctly without touching any other Task instance (e.g. a
+	 *   resumed parent).
+	 */
+	private async presentAssistantMessageAndAwaitReadyOrAbort(): Promise<"continue" | "exit-loop"> {
+		// CRITICAL FIX (preserved from the old HANG_FIX comment): stream completion
+		// can race with tool execution such that nothing else triggers a final
+		// presenter pass, leaving `userMessageContentReady` stuck at false forever.
+		// We still need to kick off that pass here - but now its completion (or
+		// hang, or rejection) is observed under the SAME watchdog as the readiness
+		// wait below, instead of being awaited unconditionally beforehand.
+		let presenterRejection: Error | undefined
+		let presenterSettled = !(!this.userMessageContentReady && this.didCompleteReadingStream)
+
+		if (!presenterSettled) {
+			console.log(
+				`[HANG_FIX] Post-stream: Calling presentAssistantMessage to set userMessageContentReady (partialBlocks was empty, idx=${this.currentStreamingContentIndex}, len=${this.assistantMessageContent.length})`,
+			)
+			presentAssistantMessage(this)
+				.catch((error) => {
+					presenterRejection = error instanceof Error ? error : new Error(String(error))
+				})
+				.finally(() => {
+					presenterSettled = true
+				})
+		}
+
+		console.log(`[FIX_VERIFY] Task entering wait boundary: userMessageContentReady=${this.userMessageContentReady}`)
+
+		try {
+			// One 60s window covers BOTH: the presenter call above actually
+			// settling, AND userMessageContentReady flipping to true. Also polls
+			// `this.abort` so a user-initiated cancellation (or any other
+			// instance-local abort) unblocks the wait immediately instead of
+			// waiting out the full 60s. A presenter REJECTION must also unblock
+			// this immediately (not wait out the full 60s) - it is a real,
+			// observed failure, not a "still working" symptom, and re-throwing it
+			// below must not be delayed behind the timeout window.
+			await pWaitFor(
+				() =>
+					(presenterSettled && this.userMessageContentReady) ||
+					this.abort ||
+					presenterRejection !== undefined,
+				{
+					interval: 100,
+					timeout: 60000,
+				},
+			)
+
+			if (this.abort) {
+				// Caller's own `if (this.abort) return false` check right after this
+				// call is what stops the loop; nothing further to decide here.
+				return "continue"
+			}
+
+			// A rejection from the presenter call is real, observed failure - not a
+			// bare "userMessageContentReady never got set" symptom - so it must be
+			// surfaced as-is rather than reinterpreted as a timeout.
+			if (presenterRejection) {
+				throw presenterRejection
+			}
+
+			console.log(
+				`[FIX_VERIFY] Task exited wait boundary successfully: userMessageContentReady=${this.userMessageContentReady}`,
+			)
+			return "continue"
+		} catch (error) {
+			if (error === presenterRejection) {
+				console.error(`[ERROR] presentAssistantMessage failed inside wait boundary:`, presenterRejection)
+				throw presenterRejection
+			}
+
+			console.error(
+				`[CRITICAL] Presenter/readiness wait timed out after 60s! userMessageContentReady=${this.userMessageContentReady}, presenterSettled=${presenterSettled}, didCompleteReadingStream=${this.didCompleteReadingStream}, idx=${this.currentStreamingContentIndex}, len=${this.assistantMessageContent.length}, completionStatus=${this.completionStatus}`,
+			)
+			if (isTerminalStatus(this.completionStatus)) {
+				console.log(`[TIMEOUT_ABORT] Task in terminal status ${this.completionStatus}, exiting loop`)
+				return "exit-loop"
+			}
+			console.error(
+				`[TIMEOUT_ABORT] Task timed out waiting for message processing. ` +
+					`Cancelling current task instance without continuing to next request.`,
+			)
+			this.cancelHungInstance("presentAssistantMessageAndAwaitReadyOrAbort watchdog timeout")
+			throw new Error(`Task hung waiting for userMessageContentReady: ${(error as Error).message}`)
+		}
+	}
+
+	/**
+	 * Decides what recursivelyMakeClineRequests should do right after an
+	 * assistant turn has been fully presented (i.e. after the no-tool-use /
+	 * attempt_completion bookkeeping above has already run and
+	 * `this.userMessageContent` reflects the result of that turn).
+	 *
+	 * Extracted verbatim from the inline logic that used to live directly in
+	 * the stack loop, so it can be exercised with a real Task instance without
+	 * needing to drive a full streaming API round-trip. Behavior is unchanged:
+	 *
+	 * - "end-loop": the child has already delegated its result to a parent
+	 *   (CHILD DELEGATION GUARD) - it must not make another API request, even
+	 *   though `pushToolResult("")` (called during delegation) may have left a
+	 *   non-empty `userMessageContent` that would otherwise look like more work
+	 *   to do. This check runs before the pause/push check below so a delegated
+	 *   child never re-enters the request loop.
+	 * - "end-loop": the task is paused waiting on a subtask (isPaused) - exit so
+	 *   the caller can wait for the subtask instead of pushing another request.
+	 * - "push-stack": there's real follow-up content to send back to the model.
+	 * - "continue-only": nothing to push (empty userMessageContent, not paused).
+	 */
+	private shouldEndLoopAfterAssistantTurn(): "end-loop" | "push-stack" | "continue-only" {
+		// CHILD DELEGATION GUARD: this child instance has already handed off its
+		// completion result to the parent (see AttemptCompletionTool.execute()). It
+		// must NOT make another API request from here on, even though
+		// `pushToolResult("")` (called during delegation) left a non-empty
+		// `userMessageContent` that would otherwise satisfy the push-to-stack
+		// condition below. This check must run BEFORE that condition so the old
+		// child instance never re-enters the request loop after delegating.
+		if (this.hasDelegatedToParent) {
+			return "end-loop"
+		}
+
+		// Push to stack if there's content OR if we're paused waiting for a subtask.
+		// When paused, we push an empty item so the loop continues to the pause check.
+		if (this.userMessageContent.length > 0 || this.isPaused) {
+			// If task is paused due to delegation, exit loop to wait for child completion
+			if (this.isPaused) {
+				return "end-loop"
+			}
+
+			return "push-stack"
+		}
+
+		return "continue-only"
+	}
+
+	/**
+	 * Instance-local predicate: can this Task instance start a new outbound API request?
+	 *
+	 * Returns false (and logs the reason) if this instance:
+	 * - has been aborted (`this.abort`), or
+	 * - has already delegated to a parent (`hasDelegatedToParent`).
+	 *
+	 * NOTE: This does NOT check `isTerminalStatus(completionStatus)`. Terminal status
+	 * is checked separately:
+	 * - In `presentAssistantMessageAndAwaitReadyOrAbort` (Task.ts:~4378): if the
+	 *   watchdog timeout fires AND the task is COMPLETED, it returns "exit-loop"
+	 *   instead of throwing.
+	 * - In the no-tool-use branch after presentAssistantMessage
+	 *   (Task.ts:~3830): before pushing the "noToolsUsed" nudge onto the stack, we
+	 *   check if completionStatus is terminal and exit instead.
+	 *
+	 * Why not include terminal status here? Because this guard runs BEFORE the
+	 * request starts, and a task that becomes COMPLETED mid-turn (e.g. during
+	 * presentAssistantMessage) should still be allowed to finish that turn's
+	 * request/stream - it just must not start a SECOND request afterward. The
+	 * existing terminal-status guards handle that correctly. Including it here would
+	 * block even the FIRST request if completionStatus was set to COMPLETED before
+	 * the loop started (which is what the failing test exercises - and per that
+	 * test's comment, the first request IS supposed to issue).
+	 *
+	 * This guard is applied immediately before calling `attemptApiRequest` (the
+	 * actual HTTP request boundary, Task.ts:~3070).
+	 *
+	 * Separation of concerns:
+	 * - `canStartNextRequest()` asks "is this instance aborted or delegated?"
+	 * - Terminal status checks ask "did we just complete, so no NEXT turn is needed?"
+	 * - `shouldEndLoopAfterAssistantTurn()` asks "after the current turn, should we
+	 *   push another iteration or exit?"
+	 */
+	private canStartNextRequest(): boolean {
+		if (this.abort) {
+			console.log(
+				`[NO_RESURRECTION] Task ${this.taskId}.${this.instanceId} cannot start request: abort=${this.abort}`,
+			)
+			return false
+		}
+
+		if (this.hasDelegatedToParent) {
+			console.log(
+				`[NO_RESURRECTION] Task ${this.taskId}.${this.instanceId} cannot start request: hasDelegatedToParent=true`,
+			)
+			return false
+		}
+
+		return true
 	}
 
 	/**

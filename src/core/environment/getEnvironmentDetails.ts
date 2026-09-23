@@ -155,8 +155,6 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 		}
 	}
 
-	// console.log(`[Task#getEnvironmentDetails] terminalDetails: ${terminalDetails}`)
-
 	// Add recently modified files section.
 	const recentlyModifiedFiles = cline.fileContextTracker.getAndClearRecentlyModifiedFiles()
 

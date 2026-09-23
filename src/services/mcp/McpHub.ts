@@ -187,7 +187,6 @@ export class McpHub {
 	 */
 	public registerClient(): void {
 		this.refCount++
-		// console.log(`McpHub: Client registered. Ref count: ${this.refCount}`)
 	}
 
 	/**

@@ -112,6 +112,16 @@ export class AttemptCompletionTool extends BaseTool<"attempt_completion"> {
 							)
 							console.log(`[ATTEMPT_COMPLETION] Delegation result: ${delegation}`)
 							if (delegation === "delegated") {
+								// EXPLICIT OUTCOME MARKER: mark this child instance as delegated so its
+								// own task loop (recursivelyMakeClineRequests/initiateTaskLoop) stops
+								// making further API requests. This is intentionally a dedicated boolean
+								// on the child Task instance, NOT a TaskCompletionStatus transition -
+								// COMPLETING is a revertible, pending-confirmation status for the normal
+								// completion-ask flow below, and RUNNING/COMPLETING are not proof of
+								// delegation. Setting this does not touch the resumed parent (a
+								// different Task instance) and leaves partial/final semantics for the
+								// non-delegated completion path untouched.
+								task.hasDelegatedToParent = true
 								this.emitTaskCompleted(task)
 							}
 							if (delegation !== "continue") return

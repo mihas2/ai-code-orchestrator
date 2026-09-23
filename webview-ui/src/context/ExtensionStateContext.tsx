@@ -303,7 +303,6 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 			const message: ExtensionMessage = event.data
 			switch (message.type) {
 				case "state": {
-					console.log("[ExtensionStateContext] Received state update:", message)
 					const newState = message.state ?? {}
 					setState((prevState) => mergeExtensionState(prevState, newState))
 					setShowWelcome(!checkExistKey(newState.apiConfiguration))
@@ -403,7 +402,6 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 						if (previous.some((item) => item.eventId === event.eventId)) return previous
 						return [...previous, event].sort((a, b) => a.sequence - b.sequence).slice(-500)
 					})
-					console.debug("[ExtensionStateContext] Orchestration event:", event)
 					break
 				}
 				case "orchestrationSnapshot": {

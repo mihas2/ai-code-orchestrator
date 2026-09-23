@@ -14,11 +14,8 @@ export interface EnhancedError extends Error {
  */
 export async function applySourceMapsToStack(stack: string): Promise<string> {
 	if (!stack) {
-		console.debug("applySourceMapsToStack: Empty stack trace provided")
 		return stack
 	}
-
-	console.debug("Original stack trace:", stack)
 
 	try {
 		// Create a temporary Error object with the provided stack
@@ -27,11 +24,9 @@ export async function applySourceMapsToStack(stack: string): Promise<string> {
 
 		// Extract the error message (first line)
 		const errorMessage = stack.split("\n")[0]
-		console.debug("Error message:", errorMessage)
 
 		// Use StackTrace.js to get source mapped stack frames
 		const stackFrames = await StackTrace.fromError(tempError)
-		console.debug("StackTrace.js parsed frames:", stackFrames)
 
 		// Convert stack frames back to string format
 		const mappedFrames = stackFrames.map((frame: StackTrace.StackFrame) => {
@@ -45,7 +40,6 @@ export async function applySourceMapsToStack(stack: string): Promise<string> {
 
 		// Reconstruct the stack trace with the error message
 		const result = [errorMessage, ...mappedFrames].join("\n")
-		console.debug("Final mapped stack trace:", result)
 		return result
 	} catch (error) {
 		console.error("Error applying source maps with StackTrace.js:", error)
@@ -58,11 +52,8 @@ export async function applySourceMapsToStack(stack: string): Promise<string> {
  */
 export async function applySourceMapsToComponentStack(componentStack: string): Promise<string> {
 	if (!componentStack) {
-		console.debug("applySourceMapsToComponentStack: Empty component stack provided")
 		return componentStack
 	}
-
-	console.debug("Original component stack:", componentStack)
 
 	try {
 		// Component stack has a different format than error stack
@@ -78,7 +69,6 @@ export async function applySourceMapsToComponentStack(componentStack: string): P
 				if (!match) return line
 
 				const [_, componentName, fileName, lineNumber, columnNumber] = match
-				console.debug(`Processing component stack line:`, { componentName, fileName, lineNumber, columnNumber })
 
 				try {
 					// Create a synthetic stack frame for StackTrace.js
@@ -96,8 +86,8 @@ export async function applySourceMapsToComponentStack(componentStack: string): P
 
 						return `at ${componentName} (${mappedFileName}:${mappedLineNumber}:${mappedColumnNumber})`
 					}
-				} catch (e) {
-					console.debug(`Error processing component stack line with StackTrace.js:`, e)
+				} catch (_e) {
+					// Silent failure for individual line processing
 				}
 
 				return line
@@ -105,7 +95,6 @@ export async function applySourceMapsToComponentStack(componentStack: string): P
 		)
 
 		const result = mappedLines.join("\n")
-		console.debug("Final mapped component stack:", result)
 		return result
 	} catch (error) {
 		console.error("Error applying source maps to component stack with StackTrace.js:", error)
@@ -117,11 +106,8 @@ export async function applySourceMapsToComponentStack(componentStack: string): P
  * Enhance an Error object with source mapped stack trace and component stack
  */
 export function enhanceErrorWithSourceMaps(error: Error, componentStack?: string): Promise<EnhancedError> {
-	console.debug("Enhancing error with source maps using StackTrace.js:", error)
-
 	return new Promise<EnhancedError>((resolve) => {
 		if (!error.stack) {
-			console.debug("Error has no stack trace")
 			resolve(error as EnhancedError)
 			return
 		}
@@ -134,8 +120,6 @@ export function enhanceErrorWithSourceMaps(error: Error, componentStack?: string
 
 		Promise.all([stackPromise, componentStackPromise])
 			.then(([sourceMappedStack, sourceMappedComponentStack]) => {
-				console.debug("Source mapped stacks applied successfully with StackTrace.js")
-
 				// Extend the error object with the source mapped stack
 				Object.defineProperty(error, "sourceMappedStack", {
 					value: sourceMappedStack,
