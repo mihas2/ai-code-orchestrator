@@ -313,7 +313,7 @@ describe("presentAssistantMessage - completion guard regression tests", () => {
 		mockTask.taskCompletionStatus = TaskCompletionStatus.RUNNING
 
 		// Simulate pWaitFor timeout check
-		const timeoutDuration = 5000 // 5 seconds (much less than 60s in production)
+		const timeoutDuration = 5000 // 5 seconds (this test's own simulated timeout; production pWaitFor has no timeout)
 		let emergencyRescueTriggered = false
 
 		const timeoutPromise = new Promise((resolve) => {
