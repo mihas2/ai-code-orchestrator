@@ -242,10 +242,11 @@ export class ClineProvider
 				try {
 					// Only rehydrate on genuine streaming failures.
 					// User-initiated cancels are handled by cancelTask().
-					// TODO: во время полного дренажа стека (clearTaskImpl) этот rehydrate
-					// может вернуть задачу в стек. Защита по `current.instanceId` не
-					// срабатывает при удалении последней задачи, так как `getCurrentTask()`
-					// уже возвращает undefined. Нужен явный guard на время дренажа.
+					// TODO: During a full stack drain (clearTaskImpl) this rehydrate can
+					// push a task back onto the stack. The `current.instanceId` guard does
+					// not help when the last task is removed, because getCurrentTask()
+					// already returns undefined by then. An explicit drain-scoped guard is
+					// needed.
 					if (instance.abortReason === "streaming_failed") {
 						// Defensive safeguard: if another path already replaced this instance, skip
 						const current = this.getCurrentTask()
@@ -3429,12 +3430,13 @@ export class ClineProvider
 	}
 
 	private async clearTaskImpl(): Promise<void> {
-		// TODO: лимит `length + 1` предотвращает бесконечный цикл, но не гарантирует
-		// пустой стек. Если задача будет добавлена повторно (re-entrant rehydrate из
-		// onTaskAborted, concurrent delegation), стек может остаться непустым.
-		// Рассмотреть: проверку инварианта `clineStack.length === 0` после цикла с
-		// логированием нарушения, и флаг `isClearingTaskStack` для подавления
-		// rehydrate во время дренажа.
+		// TODO: The `length + 1` cap prevents an infinite loop but does not guarantee
+		// an empty stack. If a task is pushed back during the drain (re-entrant
+		// rehydrate from onTaskAborted, or a concurrent delegation), the stack can
+		// still be non-empty when the loop exits. Consider asserting
+		// `clineStack.length === 0` after the loop and logging the invariant
+		// violation, plus an `isClearingTaskStack` flag to suppress rehydrate while
+		// draining.
 		// Snapshot the length as an iteration limit so a concurrent push (e.g. a
 		// racing delegation) cannot turn this into an infinite loop.
 		const limit = this.clineStack.length + 1

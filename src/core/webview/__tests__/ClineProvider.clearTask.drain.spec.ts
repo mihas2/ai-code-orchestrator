@@ -1,13 +1,13 @@
 // pnpm --filter ai-code-orchestrator test core/webview/__tests__/ClineProvider.clearTask.drain.spec.ts
 
-// TODO: непокрытые сценарии (зафиксированы аудитом, не блокируют текущий фикс):
-// - rehydrate из onTaskAborted во время дренажа (abortReason === "streaming_failed")
-// - несколько re-entrant push и остаток стека после лимита `length + 1`
-// - rejection из abortTask / cleanup / getTaskWithId / updateTaskHistory
-// - сброс clearTaskInFlight после rejection и повторный вызов после ошибки
-// - failure path в plusButtonClicked и гарантии последующих UI actions
-// - порядок updateTaskHistory при 3-уровневом delegation-стеке
-// - фактический state snapshot и отсутствие промежуточного рендера родителя
+// TODO: Scenarios not covered yet (recorded by audit, not blocking the current fix):
+// - rehydrate from onTaskAborted during a drain (abortReason === "streaming_failed")
+// - multiple re-entrant pushes and a non-empty stack after the `length + 1` cap
+// - rejection from abortTask / listener cleanup / getTaskWithId / updateTaskHistory
+// - clearTaskInFlight reset after a rejection, and a follow-up call after the error
+// - plusButtonClicked failure path and the guarantees for subsequent UI actions
+// - updateTaskHistory ordering across a 3-level delegation stack
+// - the actual state snapshot and the absence of an intermediate parent render
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
 

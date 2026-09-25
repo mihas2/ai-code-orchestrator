@@ -77,10 +77,10 @@ const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOpt
 			return
 		}
 
-		// TODO: `clearTask()` может отклониться (rejected promise), тогда
-		// `refreshWorkspace()` и последующие postMessageToWebview не выполнятся,
-		// и UI останется без перехода на главный экран. Рассмотреть try/catch с
-		// fallback-публикацией состояния.
+		// TODO: `clearTask()` can reject, in which case `refreshWorkspace()` and the
+		// subsequent postMessageToWebview calls never run, leaving the UI without a
+		// transition to the home screen. Consider a try/catch with a fallback state
+		// publish.
 		await visibleProvider.clearTask()
 		await visibleProvider.refreshWorkspace()
 		await visibleProvider.postMessageToWebview({ type: "action", action: "chatButtonClicked" })
