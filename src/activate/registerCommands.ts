@@ -77,7 +77,11 @@ const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOpt
 			return
 		}
 
-		await visibleProvider.removeClineFromStack()
+		// TODO: `clearTask()` может отклониться (rejected promise), тогда
+		// `refreshWorkspace()` и последующие postMessageToWebview не выполнятся,
+		// и UI останется без перехода на главный экран. Рассмотреть try/catch с
+		// fallback-публикацией состояния.
+		await visibleProvider.clearTask()
 		await visibleProvider.refreshWorkspace()
 		await visibleProvider.postMessageToWebview({ type: "action", action: "chatButtonClicked" })
 		// Send focusInput action immediately after chatButtonClicked

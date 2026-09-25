@@ -147,6 +147,7 @@ export class ClineProvider
 	private taskEventListeners: WeakMap<Task, Array<() => void>> = new WeakMap()
 	private currentWorkspacePath: string | undefined
 	private _disposed = false
+	private clearTaskInFlight?: Promise<void>
 
 	private recentTasksCache?: string[]
 	public readonly taskHistoryStore: TaskHistoryStore
@@ -241,6 +242,10 @@ export class ClineProvider
 				try {
 					// Only rehydrate on genuine streaming failures.
 					// User-initiated cancels are handled by cancelTask().
+					// TODO: во время полного дренажа стека (clearTaskImpl) этот rehydrate
+					// может вернуть задачу в стек. Защита по `current.instanceId` не
+					// срабатывает при удалении последней задачи, так как `getCurrentTask()`
+					// уже возвращает undefined. Нужен явный guard на время дренажа.
 					if (instance.abortReason === "streaming_failed") {
 						// Defensive safeguard: if another path already replaced this instance, skip
 						const current = this.getCurrentTask()
@@ -3407,10 +3412,36 @@ export class ClineProvider
 
 	// Clear the current task without treating it as a subtask.
 	// This is used when the user cancels a task that is not a subtask.
-	public async clearTask(): Promise<void> {
-		if (this.clineStack.length > 0) {
+	// Drains the entire clineStack (LIFO), not just the top entry, so a single
+	// "New Task"/"+" click always lands on the home screen instead of peeling
+	// off one stack level per click. In-flight deduplication mirrors the
+	// pattern used by reopenParentFromDelegation().
+	public clearTask(): Promise<void> {
+		if (this.clearTaskInFlight) {
+			return this.clearTaskInFlight
+		}
+
+		const promise = this.clearTaskImpl().finally(() => {
+			this.clearTaskInFlight = undefined
+		})
+		this.clearTaskInFlight = promise
+		return promise
+	}
+
+	private async clearTaskImpl(): Promise<void> {
+		// TODO: лимит `length + 1` предотвращает бесконечный цикл, но не гарантирует
+		// пустой стек. Если задача будет добавлена повторно (re-entrant rehydrate из
+		// onTaskAborted, concurrent delegation), стек может остаться непустым.
+		// Рассмотреть: проверку инварианта `clineStack.length === 0` после цикла с
+		// логированием нарушения, и флаг `isClearingTaskStack` для подавления
+		// rehydrate во время дренажа.
+		// Snapshot the length as an iteration limit so a concurrent push (e.g. a
+		// racing delegation) cannot turn this into an infinite loop.
+		const limit = this.clineStack.length + 1
+
+		for (let i = 0; i < limit && this.clineStack.length > 0; i++) {
 			const task = this.clineStack[this.clineStack.length - 1]
-			console.log(`[clearTask] clearing task ${task.taskId}.${task.instanceId}`)
+			this.log(`[clearTask] clearing task ${task.taskId}.${task.instanceId}`)
 			await this.removeClineFromStack()
 		}
 	}
