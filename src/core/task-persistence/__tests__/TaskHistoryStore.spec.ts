@@ -1,6 +1,7 @@
 // pnpm --filter ai-code-orchestrator test core/task-persistence/__tests__/TaskHistoryStore.spec.ts
 
 import * as fs from "fs/promises"
+import * as fsSync from "fs"
 import * as path from "path"
 import * as os from "os"
 
@@ -8,6 +9,28 @@ import type { HistoryItem } from "@ai-code-orchestrator/types"
 
 import { TaskHistoryStore } from "../TaskHistoryStore"
 import { GlobalFileNames } from "../../../shared/globalFileNames"
+
+// ESM namespace exports are not configurable, so vi.spyOn(fs, ...) cannot wrap them.
+// A partial mock keeps the real implementation and exposes a vi.fn we can assert on.
+// If TaskHistoryStore calls fs.watch / fs.promises.readFile, these wrappers record it.
+vi.mock("fs", async () => {
+	const actual = await vi.importActual<typeof import("fs")>("fs")
+	return {
+		...actual,
+		watch: vi.fn((...args: Parameters<typeof actual.watch>) => actual.watch(...args)),
+	}
+})
+
+vi.mock("fs/promises", async () => {
+	const actual = await vi.importActual<typeof import("fs/promises")>("fs/promises")
+	return {
+		...actual,
+		readFile: vi.fn((...args: Parameters<typeof actual.readFile>) => actual.readFile(...args)),
+		readdir: vi.fn((...args: Parameters<typeof actual.readdir>) => actual.readdir(...args)),
+		stat: vi.fn((...args: Parameters<typeof actual.stat>) => actual.stat(...args)),
+		writeFile: vi.fn((...args: Parameters<typeof actual.writeFile>) => actual.writeFile(...args)),
+	}
+})
 
 vi.mock("../../../utils/storage", () => ({
 	getStorageBasePath: vi.fn().mockImplementation((defaultPath: string) => defaultPath),
@@ -50,6 +73,26 @@ describe("TaskHistoryStore", () => {
 	})
 
 	describe("initialize()", () => {
+		it("does not call fs.watch (recursive watcher regression)", async () => {
+			const watchMock = fsSync.watch as unknown as ReturnType<typeof vi.fn>
+			watchMock.mockClear()
+
+			await store.initialize()
+
+			expect(watchMock).not.toHaveBeenCalled()
+		})
+
+		it("skips a second initialize without side effects", async () => {
+			const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+			await store.initialize()
+			await store.initialize()
+
+			expect(warnSpy).toHaveBeenCalledWith("TaskHistoryStore already initialized, skipping")
+			expect(store.getAll()).toEqual([])
+			warnSpy.mockRestore()
+		})
+
 		it("initializes from empty state (no index, no task dirs)", async () => {
 			await store.initialize()
 			expect(store.getAll()).toEqual([])
@@ -232,6 +275,41 @@ describe("TaskHistoryStore", () => {
 	})
 
 	describe("reconcile()", () => {
+		it("re-reads an existing history_item.json when its mtime changes and skips unchanged files", async () => {
+			await store.initialize()
+
+			const item = makeHistoryItem({ id: "mtime-task", tokensIn: 10, task: "original" })
+			await store.upsert(item)
+
+			const filePath = path.join(tmpDir, "tasks", "mtime-task", GlobalFileNames.historyItem)
+			const unchangedPath = path.join(tmpDir, "tasks", "stable-task", GlobalFileNames.historyItem)
+			await store.upsert(makeHistoryItem({ id: "stable-task", tokensIn: 1, task: "stable" }))
+
+			const readFileMock = fs.readFile as unknown as ReturnType<typeof vi.fn>
+			readFileMock.mockClear()
+
+			// Same mtime: content change must not be picked up, and the file must not be read.
+			await store.reconcile()
+			expect(store.get("mtime-task")!.tokensIn).toBe(10)
+			expect(readFileMock.mock.calls.some((call) => call[0] === filePath)).toBe(false)
+			expect(readFileMock.mock.calls.some((call) => call[0] === unchangedPath)).toBe(false)
+
+			readFileMock.mockClear()
+
+			const updated = { ...store.get("mtime-task")!, tokensIn: 777, task: "externally updated" }
+			await fs.writeFile(filePath, JSON.stringify(updated))
+			const bumped = new Date(Date.now() + 5_000)
+			await fs.utimes(filePath, bumped, bumped)
+
+			await store.reconcile()
+
+			expect(store.get("mtime-task")!.tokensIn).toBe(777)
+			expect(store.get("mtime-task")!.task).toBe("externally updated")
+			expect(store.get("stable-task")!.task).toBe("stable")
+			expect(readFileMock.mock.calls.filter((call) => call[0] === filePath)).toHaveLength(1)
+			expect(readFileMock.mock.calls.some((call) => call[0] === unchangedPath)).toBe(false)
+		})
+
 		it("detects tasks on disk missing from index", async () => {
 			await store.initialize()
 
@@ -265,6 +343,154 @@ describe("TaskHistoryStore", () => {
 			await store.reconcile()
 
 			expect(store.get("removed-task")).toBeUndefined()
+		})
+
+		it("detects a content change when mtimeMs collides but size or inode differs", async () => {
+			await store.initialize()
+
+			const item = makeHistoryItem({ id: "collision-task", tokensIn: 10, task: "short" })
+			await store.upsert(item)
+
+			const filePath = path.join(tmpDir, "tasks", "collision-task", GlobalFileNames.historyItem)
+			const before = await fs.stat(filePath)
+			const requested = new Date(Math.floor(before.mtimeMs / 1000) * 1000)
+
+			// Force the baseline onto a coarse timestamp, then replace the file with different
+			// contents while pinning mtime back to that same quantum. utimes resolution is
+			// filesystem-dependent, so the collision is the timestamp stat actually stored.
+			await fs.utimes(filePath, requested, requested)
+			const frozenMs = (await fs.stat(filePath)).mtimeMs
+			await store.reconcile()
+			expect(store.get("collision-task")!.tokensIn).toBe(10)
+
+			const updated = {
+				...store.get("collision-task")!,
+				tokensIn: 4242,
+				task: "replaced with a longer payload so size cannot match",
+			}
+			const tempPath = `${filePath}.collision.tmp`
+			await fs.writeFile(tempPath, JSON.stringify(updated))
+			await fs.rename(tempPath, filePath)
+			await fs.utimes(filePath, requested, requested)
+
+			const after = await fs.stat(filePath)
+			expect(after.mtimeMs).toBe(frozenMs)
+			expect(after.size === before.size && after.ino === before.ino).toBe(false)
+
+			await store.reconcile()
+
+			expect(store.get("collision-task")!.tokensIn).toBe(4242)
+			expect(store.get("collision-task")!.task).toBe("replaced with a longer payload so size cannot match")
+		})
+
+		it("detects a content change when only ctimeMs differs (ino unreliable)", async () => {
+			await store.initialize()
+
+			const item = makeHistoryItem({ id: "ctime-task", tokensIn: 10, task: "same-size" })
+			await store.upsert(item)
+
+			const filePath = path.join(tmpDir, "tasks", "ctime-task", GlobalFileNames.historyItem)
+			const before = await fs.stat(filePath)
+			// Re-baseline against the real stat so the next reconcile has a known signature.
+			await store.reconcile()
+			expect(store.get("ctime-task")!.tokensIn).toBe(10)
+
+			// Pad the task text so the replacement has the same byte length. size and ino must
+			// stay equal to the baseline; only ctimeMs is allowed to distinguish the replace.
+			// A real filesystem cannot change ctimeMs while keeping mtimeMs, size, and ino fixed
+			// (atomic rename also changes ino on Unix), so fs.stat is mocked for this file only.
+			const base = { ...store.get("ctime-task")!, tokensIn: 9090, task: "ctime-only" }
+			const encoded = (task: string) => Buffer.byteLength(JSON.stringify({ ...base, task }))
+			let taskText = base.task
+			while (encoded(taskText) < before.size) {
+				taskText += "x"
+			}
+			expect(encoded(taskText)).toBe(before.size)
+			const payload = JSON.stringify({ ...base, task: taskText })
+
+			const statMock = fs.stat as unknown as ReturnType<typeof vi.fn>
+			statMock.mockImplementation(async (target: fsSync.PathLike, options?: fsSync.StatOptions) => {
+				const stats = await fsSync.promises.stat(target, options)
+				if (String(target) !== filePath) {
+					return stats
+				}
+				return Object.assign(stats, {
+					mtimeMs: before.mtimeMs,
+					size: before.size,
+					ino: before.ino,
+					ctimeMs: before.ctimeMs + 1,
+				})
+			})
+
+			try {
+				await fs.writeFile(filePath, payload)
+				await store.reconcile()
+			} finally {
+				statMock.mockImplementation((...args: Parameters<typeof fsSync.promises.stat>) =>
+					fsSync.promises.stat(...args),
+				)
+			}
+
+			expect(store.getAll().find((entry) => entry.id === "ctime-task")).toEqual({ ...base, task: taskText })
+		})
+
+		it("notifies onExternalChange only for real changes, outside the write lock, and survives a throwing callback", async () => {
+			const events: Array<{ updated: string[]; removed: string[]; lockHeld: boolean }> = []
+			let lockHeld = false
+			const onExternalChange = vi.fn((changed: { updated: string[]; removed: string[] }) => {
+				events.push({ ...changed, lockHeld })
+				if (changed.updated.includes("throw-task")) {
+					throw new Error("consumer failed")
+				}
+			})
+
+			const notifyingStore = new TaskHistoryStore(tmpDir, { onExternalChange })
+			const originalWithLock = (
+				notifyingStore as unknown as { withLock: (fn: () => Promise<unknown>) => Promise<unknown> }
+			).withLock.bind(notifyingStore)
+			;(notifyingStore as unknown as { withLock: (fn: () => Promise<unknown>) => Promise<unknown> }).withLock =
+				async (fn) => {
+					lockHeld = true
+					try {
+						return await originalWithLock(fn)
+					} finally {
+						lockHeld = false
+					}
+				}
+
+			await notifyingStore.initialize()
+			// Startup reconcile of an empty tree is not a change.
+			expect(onExternalChange).not.toHaveBeenCalled()
+
+			const tasksDir = path.join(tmpDir, "tasks")
+			const taskDir = path.join(tasksDir, "external-task")
+			await fs.mkdir(taskDir, { recursive: true })
+			await fs.writeFile(
+				path.join(taskDir, GlobalFileNames.historyItem),
+				JSON.stringify(makeHistoryItem({ id: "external-task", tokensIn: 1 })),
+			)
+
+			await notifyingStore.reconcile()
+			expect(events).toEqual([{ updated: ["external-task"], removed: [], lockHeld: false }])
+			expect(notifyingStore.get("external-task")!.tokensIn).toBe(1)
+
+			onExternalChange.mockClear()
+			events.length = 0
+			await notifyingStore.reconcile()
+			expect(onExternalChange).not.toHaveBeenCalled()
+
+			const throwDir = path.join(tasksDir, "throw-task")
+			await fs.mkdir(throwDir, { recursive: true })
+			await fs.writeFile(
+				path.join(throwDir, GlobalFileNames.historyItem),
+				JSON.stringify(makeHistoryItem({ id: "throw-task", tokensIn: 7 })),
+			)
+
+			await expect(notifyingStore.reconcile()).resolves.toBeUndefined()
+			expect(notifyingStore.get("throw-task")!.tokensIn).toBe(7)
+			expect(events.some((event) => event.updated.includes("throw-task") && event.lockHeld === false)).toBe(true)
+
+			notifyingStore.dispose()
 		})
 	})
 
@@ -392,7 +618,148 @@ describe("TaskHistoryStore", () => {
 		})
 	})
 
+	describe("periodic reconcile", () => {
+		afterEach(() => {
+			vi.useRealTimers()
+		})
+
+		it("calls reconcile on the injected interval and stops after dispose", async () => {
+			vi.useFakeTimers()
+
+			const periodicStore = new TaskHistoryStore(tmpDir, { reconcileIntervalMs: 50 })
+			await periodicStore.initialize()
+			const reconcileSpy = vi.spyOn(periodicStore, "reconcile").mockResolvedValue(undefined)
+			// initialize() itself reconciles once before the timer starts; the spy
+			// is installed afterwards and resolves immediately so ticks are not skipped.
+			expect(reconcileSpy).toHaveBeenCalledTimes(0)
+
+			await vi.advanceTimersByTimeAsync(50)
+			expect(reconcileSpy).toHaveBeenCalledTimes(1)
+
+			await vi.advanceTimersByTimeAsync(100)
+			expect(reconcileSpy).toHaveBeenCalledTimes(3)
+
+			periodicStore.dispose()
+			const callsAtDispose = reconcileSpy.mock.calls.length
+
+			await vi.advanceTimersByTimeAsync(500)
+			expect(reconcileSpy).toHaveBeenCalledTimes(callsAtDispose)
+
+			reconcileSpy.mockRestore()
+		})
+
+		it("does not touch the disk after dispose once the in-flight flush settles", async () => {
+			vi.useFakeTimers()
+
+			const periodicStore = new TaskHistoryStore(tmpDir, { reconcileIntervalMs: 20 })
+			await periodicStore.initialize()
+			await periodicStore.upsert(makeHistoryItem({ id: "timer-task" }))
+
+			const readdirMock = fs.readdir as unknown as ReturnType<typeof vi.fn>
+			const readFileMock = fs.readFile as unknown as ReturnType<typeof vi.fn>
+			const statMock = fs.stat as unknown as ReturnType<typeof vi.fn>
+			const writeFileMock = fs.writeFile as unknown as ReturnType<typeof vi.fn>
+
+			periodicStore.dispose()
+			// Dispose starts one index flush. The upsert debounce (2s) must not
+			// schedule a second write, and the reconcile interval must not scan again.
+			await vi.advanceTimersByTimeAsync(5_000)
+
+			readdirMock.mockClear()
+			readFileMock.mockClear()
+			statMock.mockClear()
+			writeFileMock.mockClear()
+
+			await vi.advanceTimersByTimeAsync(10_000)
+
+			expect(readdirMock).not.toHaveBeenCalled()
+			expect(readFileMock).not.toHaveBeenCalled()
+			expect(statMock).not.toHaveBeenCalled()
+			expect(writeFileMock).not.toHaveBeenCalled()
+		})
+
+		it("skips overlapping periodic ticks but still runs an explicit reconcile", async () => {
+			vi.useFakeTimers()
+
+			const periodicStore = new TaskHistoryStore(tmpDir, { reconcileIntervalMs: 50 })
+			await periodicStore.initialize()
+
+			let releaseTick!: () => void
+			const tickGate = new Promise<void>((resolve) => {
+				releaseTick = resolve
+			})
+			let entered = 0
+			const reconcileSpy = vi.spyOn(periodicStore, "reconcile").mockImplementation(async () => {
+				entered += 1
+				await tickGate
+			})
+
+			await vi.advanceTimersByTimeAsync(50)
+			expect(entered).toBe(1)
+
+			await vi.advanceTimersByTimeAsync(150)
+			expect(entered).toBe(1)
+
+			const explicit = periodicStore.reconcile()
+			expect(entered).toBe(2)
+
+			releaseTick()
+			await explicit
+
+			periodicStore.dispose()
+			reconcileSpy.mockRestore()
+		})
+	})
+
 	describe("dispose()", () => {
+		it("does not reject or write the index when disposed during an in-flight reconcile", async () => {
+			await store.initialize()
+			await store.upsert(makeHistoryItem({ id: "inflight-task", tokensIn: 1 }))
+
+			const indexPath = path.join(tmpDir, "tasks", GlobalFileNames.historyIndex)
+			await fs.writeFile(indexPath, JSON.stringify({ version: 1, updatedAt: 1, entries: [] }))
+
+			const writeFileMock = fs.writeFile as unknown as ReturnType<typeof vi.fn>
+			writeFileMock.mockClear()
+
+			let releaseStat!: () => void
+			const statGate = new Promise<void>((resolve) => {
+				releaseStat = resolve
+			})
+			const statMock = fs.stat as unknown as ReturnType<typeof vi.fn>
+			statMock.mockImplementation(async (...args: Parameters<typeof fs.stat>) => {
+				const target = String(args[0])
+				if (target.endsWith(GlobalFileNames.historyItem)) {
+					await statGate
+				}
+				return fsSync.promises.stat(...args)
+			})
+
+			const unhandled: unknown[] = []
+			const onUnhandled = (reason: unknown) => {
+				unhandled.push(reason)
+			}
+			process.on("unhandledRejection", onUnhandled)
+
+			try {
+				const inFlight = store.reconcile()
+				store.dispose()
+				releaseStat()
+				await expect(inFlight).resolves.toBeUndefined()
+				await new Promise((resolve) => setTimeout(resolve, 50))
+			} finally {
+				process.off("unhandledRejection", onUnhandled)
+				statMock.mockImplementation((...args: Parameters<typeof fs.stat>) => fsSync.promises.stat(...args))
+			}
+
+			expect(unhandled).toEqual([])
+			const writesAfterDispose = writeFileMock.mock.calls.filter((call) => call[0] === indexPath)
+			expect(writesAfterDispose).toHaveLength(0)
+
+			const raw = await fsSync.promises.readFile(indexPath, "utf8")
+			expect(JSON.parse(raw).entries).toEqual([])
+		})
+
 		it("flushes index on dispose", async () => {
 			await store.initialize()
 

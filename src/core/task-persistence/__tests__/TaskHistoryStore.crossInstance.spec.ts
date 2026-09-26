@@ -13,11 +13,14 @@ vi.mock("../../../utils/storage", () => ({
 	getStorageBasePath: vi.fn().mockImplementation((defaultPath: string) => defaultPath),
 }))
 
-// Mock safeWriteJson to use plain fs writes in tests (avoids proper-lockfile issues)
+// Mock safeWriteJson with rename semantics (temp file + rename), matching production atomic replace.
+// A plain writeFile would keep the same inode and can fail to bump mtimeMs within the same millisecond.
 vi.mock("../../../utils/safeWriteJson", () => ({
 	safeWriteJson: vi.fn().mockImplementation(async (filePath: string, data: any) => {
 		await fs.mkdir(path.dirname(filePath), { recursive: true })
-		await fs.writeFile(filePath, JSON.stringify(data, null, "\t"), "utf8")
+		const tempPath = `${filePath}.new_${Date.now()}_${Math.random().toString(36).substring(2)}.tmp`
+		await fs.writeFile(tempPath, JSON.stringify(data, null, "\t"), "utf8")
+		await fs.rename(tempPath, filePath)
 	}),
 }))
 
@@ -120,6 +123,60 @@ describe("TaskHistoryStore cross-instance safety", () => {
 		// After reconciliation, instance B sees it's gone
 		await storeB.reconcile()
 		expect(storeB.get("shared-task")).toBeUndefined()
+	})
+
+	it("per-task file updates by one instance are visible to another after reconcile without invalidate", async () => {
+		await storeA.initialize()
+		await storeB.initialize()
+
+		const item = makeHistoryItem({ id: "reconcile-update", tokensIn: 100, task: "before" })
+		await storeA.upsert(item)
+		await storeB.reconcile()
+		expect(storeB.get("reconcile-update")!.tokensIn).toBe(100)
+
+		// Atomic replace (rename) must change mtime so B's reconcile re-reads the file.
+		await storeA.upsert({ ...item, tokensIn: 900, task: "after atomic replace" })
+
+		const invalidateSpy = vi.spyOn(storeB, "invalidate")
+		await storeB.reconcile()
+
+		expect(invalidateSpy).not.toHaveBeenCalled()
+		expect(storeB.get("reconcile-update")!.tokensIn).toBe(900)
+		expect(storeB.get("reconcile-update")!.task).toBe("after atomic replace")
+		invalidateSpy.mockRestore()
+	})
+
+	it("detects an atomic replace when mtimeMs is forced to collide but size or inode differs", async () => {
+		await storeA.initialize()
+		await storeB.initialize()
+
+		const item = makeHistoryItem({ id: "mtime-collision", tokensIn: 11, task: "v1" })
+		await storeA.upsert(item)
+		await storeB.reconcile()
+		expect(storeB.get("mtime-collision")!.tokensIn).toBe(11)
+
+		const filePath = path.join(tmpDir, "tasks", "mtime-collision", GlobalFileNames.historyItem)
+		const before = await fs.stat(filePath)
+		const requested = new Date(Math.floor(before.mtimeMs / 1000) * 1000)
+		await fs.utimes(filePath, requested, requested)
+		const frozenMs = (await fs.stat(filePath)).mtimeMs
+		// Re-baseline B against the pinned timestamp before the colliding replace.
+		await storeB.reconcile()
+
+		await storeA.upsert({
+			...item,
+			tokensIn: 88,
+			task: "v2 longer body so the replaced file cannot share size",
+		})
+		await fs.utimes(filePath, requested, requested)
+
+		const after = await fs.stat(filePath)
+		expect(after.mtimeMs).toBe(frozenMs)
+		expect(after.size === before.size && after.ino === before.ino).toBe(false)
+
+		await storeB.reconcile()
+		expect(storeB.get("mtime-collision")!.tokensIn).toBe(88)
+		expect(storeB.get("mtime-collision")!.task).toBe("v2 longer body so the replaced file cannot share size")
 	})
 
 	it("per-task file updates by one instance are visible to another after invalidation", async () => {

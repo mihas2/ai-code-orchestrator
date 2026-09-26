@@ -198,6 +198,15 @@ export class ClineProvider
 			onWrite: async () => {
 				this.scheduleGlobalStateWriteThrough()
 			},
+			onExternalChange: () => {
+				// External reconcile updates are not local upserts, so reuse the
+				// existing full-history broadcast rather than a new message type.
+				void this.broadcastTaskHistoryUpdate().catch((error) => {
+					this.log(
+						`[taskHistoryStore] Failed to broadcast external history change: ${error instanceof Error ? error.message : String(error)}`,
+					)
+				})
+			},
 		})
 		this.initializeTaskHistoryStore().catch((error) => {
 			this.log(`Failed to initialize TaskHistoryStore: ${error}`)
@@ -609,6 +618,7 @@ export class ClineProvider
 		await this.skillsManager?.dispose()
 		this.skillsManager = undefined
 		this.customModesManager?.dispose()
+		this.taskHistoryStore.clearExternalChangeListener()
 		this.taskHistoryStore.dispose()
 		this.flushGlobalStateWriteThrough()
 		this.log("Disposed all disposables")
