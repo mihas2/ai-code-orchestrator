@@ -113,6 +113,7 @@ describe("Nested delegation resume (A → B → C)", () => {
 				// Return minimal parent instance with resumeAfterDelegation
 				return {
 					taskId: historyItem.id,
+					emit: vi.fn(),
 					resumeAfterDelegation: vi.fn().mockResolvedValue(undefined),
 					overwriteClineMessages: vi.fn().mockResolvedValue(undefined),
 					overwriteApiConversationHistory: vi.fn().mockResolvedValue(undefined),
@@ -138,12 +139,21 @@ describe("Nested delegation resume (A → B → C)", () => {
 
 		const provider = {
 			contextProxy: { globalStorageUri: { fsPath: "/tmp" } },
+			log: vi.fn(),
 			getTaskWithId,
 			emit: emitSpy,
 			getCurrentTask: vi.fn(() => (currentActiveId ? ({ taskId: currentActiveId } as any) : undefined)),
 			removeClineFromStack,
 			createTaskWithHistoryItem,
 			updateTaskHistory,
+			// reopenParentFromDelegationImpl replaces the paused parent in-place in clineStack
+			// (the parent is paused, not removed, by delegateParentAndOpenChild). Seed a
+			// placeholder paused-parent entry per hop so that code path is exercised the same
+			// way it runs in production.
+			clineStack: [{ taskId: "B", instanceId: "paused-B" }],
+			taskEventListeners: new Map(),
+			performPreparationTasks: vi.fn().mockResolvedValue(undefined),
+			addClineToStack: vi.fn().mockResolvedValue(undefined),
 			// Wire through provider method so attemptCompletionTool can call it
 			reopenParentFromDelegation: vi.fn(async (params: any) => {
 				return await (ClineProvider.prototype as any).reopenParentFromDelegation.call(provider, params)

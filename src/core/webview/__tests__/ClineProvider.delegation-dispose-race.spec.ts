@@ -132,7 +132,9 @@ describe("ClineProvider delegation dispose race condition", () => {
 		})
 
 		// ASSERT: handleModeSwitch was called AFTER child was added to stack
-		expect(mockProvider.removeClineFromStack).toHaveBeenCalled()
+		// CRITICAL FIX: parent is paused in place (isPaused=true), removeClineFromStack
+		// is no longer called during delegation to preserve instance identity.
+		expect(mockProvider.removeClineFromStack).not.toHaveBeenCalled()
 		expect(mockProvider.handleModeSwitch).toHaveBeenCalledWith("ask")
 
 		// FIXED: getCurrentTask() now returns child during handleModeSwitch
@@ -182,9 +184,11 @@ describe("ClineProvider delegation dispose race condition", () => {
 			mode: "ask",
 		})
 
-		// ASSERT: child was already in stack when start() was called
-		expect(stackLengthAtStart!).toBe(1)
-		expect(mockProvider.clineStack[0]).toBe(mockChild)
+		// ASSERT: child was already in stack when start() was called.
+		// CRITICAL FIX: the parent stays in the stack (paused, not removed), so the stack
+		// has 2 entries [parent(paused), child] instead of 1 when start() is invoked.
+		expect(stackLengthAtStart!).toBe(2)
+		expect(mockProvider.clineStack[1]).toBe(mockChild)
 	})
 
 	it("H3: synchronous error in child.start() triggers immediate disposal flow", async () => {

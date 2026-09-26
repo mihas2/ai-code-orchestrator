@@ -3502,7 +3502,8 @@ export class ClineProvider
 	 * - Enforce single-open invariant
 	 * - Persist parent delegation metadata
 	 * - Emit TaskDelegated (task-level; API forwards to provider/bridge)
-	 * - Create child as sole active and switch mode to child's mode
+	 * - Pause parent in place (isPaused = true, stays in clineStack) and push child
+	 *   so the resulting stack is [parent(paused), child]; switch mode to child's mode
 	 */
 	public async delegateParentAndOpenChild(params: {
 		parentTaskId: string
@@ -3621,9 +3622,10 @@ export class ClineProvider
 			// 3. When child completes, provider would create NEW instance (different instanceId)
 			// 4. New instance doesn't have userMessageContentReady=true → resurrection
 
-			// Parent remains in clineStack with isPaused=true, preserving all state
+			// Parent remains in clineStack with isPaused=true, preserving all state.
+			// The stack is now [parent(paused)]; the child pushed below yields [parent(paused), child].
 
-			// 4) Create child as sole active (parent reference preserved for lineage)
+			// 4) Create child (parent reference preserved for lineage)
 			// Pass initialStatus: "active" to ensure the child task's historyItem is created
 			// with status from the start, avoiding race conditions where the task might
 			// call attempt_completion before status is persisted separately.
@@ -3806,8 +3808,15 @@ export class ClineProvider
 				;(parent as any).abandoned = parentRuntimeState.abandoned
 				;(parent as any).abortReason = parentRuntimeState.abortReason
 				;(parent as any).didFinishAbortingStream = parentRuntimeState.didFinishAbortingStream
-				// Always restore parent to stack since it was removed earlier
-				this.clineStack.push(parent)
+				// Parent was never removed from clineStack (pause-based delegation keeps it
+				// there with isPaused=true). Only push it back if it is somehow absent, so
+				// restoration is idempotent and never duplicates the parent entry.
+				if (!this.clineStack.includes(parent)) {
+					this.clineStack.push(parent)
+				}
+				// Symmetric with the pause set at delegation start (see isPaused = true above):
+				// unpause the parent so it becomes active again after the failed delegation.
+				parent.isPaused = false
 				try {
 					await this.updateGlobalState("mode", parentSnapshot.mode)
 					const originalHistory = await this.getTaskWithId(parentTaskId)

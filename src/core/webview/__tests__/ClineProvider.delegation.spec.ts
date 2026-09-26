@@ -151,7 +151,10 @@ describe("ClineProvider delegation flow", () => {
 			initialTodos: [],
 			mode: "code",
 		})
-		expect(parent.abortTask).toHaveBeenCalled()
+		// CRITICAL FIX: parent is paused in place (isPaused=true), not aborted/removed,
+		// to preserve instance identity and avoid task resurrection on resume.
+		expect(parent.abortTask).not.toHaveBeenCalled()
+		expect(parent.isPaused).toBe(true)
 		expect(provider.getCurrentTaskStack()).toContain("child")
 		expect(result).toBe(child)
 		// postStateToWebview is now called to sync the frontend with the child task
@@ -395,5 +398,36 @@ describe("ClineProvider delegation flow", () => {
 		).rejects.toThrow("missing mode")
 		expect(provider.getCurrentTaskStack()).toEqual(["parent"])
 		expect(vscode.window.showErrorMessage).not.toHaveBeenCalled()
+	})
+
+	it("restores the stack to exactly one parent instance and unpauses it when child.start() fails", async () => {
+		// Regression test: the rollback branch used to unconditionally push(parent) even
+		// though parent was never removed from clineStack, producing [parent, parent].
+		// Restoration must be idempotent (parent added back only if actually absent) and
+		// must clear isPaused so the parent becomes active again, mirroring the successful
+		// delegation path which sets isPaused = true.
+		const provider = makeProvider()
+		const parent = task(provider, "parent")
+		const child = task(provider, "child", { parentTask: parent })
+		provider.clineStack = [parent]
+		provider.createTask = vi.fn().mockImplementation(async () => child)
+		vi.spyOn(child, "start").mockRejectedValue(new Error("start failed"))
+
+		await expect(
+			provider.delegateParentAndOpenChild({
+				parentTaskId: "parent",
+				message: "work",
+				initialTodos: [],
+				mode: "code",
+			}),
+		).rejects.toThrow("Failed to start child task: start failed")
+
+		// Exactly one parent instance remains in the stack; child is not present.
+		expect(provider.clineStack).toHaveLength(1)
+		expect(provider.clineStack[0]).toBe(parent)
+		expect(provider.clineStack).not.toContain(child)
+
+		// Parent is active again after the failed delegation (isPaused cleared).
+		expect(parent.isPaused).toBe(false)
 	})
 })

@@ -138,15 +138,21 @@ describe("ClineProvider parent snapshot restoration", () => {
 	})
 
 	describe("Snapshot capture at delegation", () => {
+		// NOTE: delegateParentAndOpenChild no longer calls removeClineFromStack when a stack is
+		// missing/empty either — it normalizes clineStack to [parent] (see ClineProvider.ts,
+		// "normalize clineStack" fallback) and then pauses the parent in place (isPaused = true)
+		// before pushing the child on top. The parent is never removed from the stack.
 		it("initializes a missing stack before opening a valid delegated child", async () => {
 			const provider = makeProvider()
-			const parent = { taskId: "parent", apiConfiguration: { apiModelId: "parent-model" } } as Task
-			const child = { taskId: "child", start: vi.fn() } as unknown as Task
-			provider.clineStack = undefined
+			const parent = {
+				taskId: "parent",
+				apiConfiguration: { apiModelId: "parent-model" },
+				emit: vi.fn(),
+			} as unknown as Task
+			const child = { taskId: "child", start: vi.fn(), emit: vi.fn() } as unknown as Task
+			provider.clineStack = undefined as unknown as Task[]
 			provider.getCurrentTask = vi.fn(() => parent)
-			provider.removeClineFromStack = vi.fn().mockImplementation(async () => {
-				provider.clineStack.pop()
-			})
+			provider.removeClineFromStack = vi.fn()
 			provider.handleModeSwitch = vi.fn()
 			// Don't push child to stack in createTask - delegateParentAndOpenChild does it
 			provider.createTask = vi.fn().mockResolvedValue(child)
@@ -160,8 +166,10 @@ describe("ClineProvider parent snapshot restoration", () => {
 				}),
 			).resolves.toBe(child)
 
-			expect(provider.removeClineFromStack).toHaveBeenCalledWith({ skipDelegationRepair: true })
-			expect(provider.clineStack).toEqual([child])
+			// The parent is paused in place (not removed), and the child is pushed on top of it.
+			expect(provider.removeClineFromStack).not.toHaveBeenCalled()
+			expect(provider.clineStack).toEqual([parent, child])
+			expect(parent.isPaused).toBe(true)
 			expect(child.start).toHaveBeenCalledOnce()
 		})
 
@@ -195,13 +203,20 @@ describe("ClineProvider parent snapshot restoration", () => {
 			)
 		})
 
-		it("fails closed when parent disposal fails", async () => {
+		// NOTE: delegateParentAndOpenChild no longer calls removeClineFromStack — the parent is
+		// paused in place (parent.isPaused = true) instead of being disposed, to preserve instance
+		// identity and avoid task resurrection (see ClineProvider.ts delegateParentAndOpenChild,
+		// "CRITICAL FIX: Pause parent instead of disposing"). These tests were written against the
+		// old dispose-based contract; the closest surviving failure mode is a rejection from
+		// createTask (child creation), which is the first opportunity for the delegation to fail
+		// closed before any parent/stack mutation takes effect.
+		it("fails closed when child creation fails, leaving the parent current and untouched", async () => {
 			const provider = makeProvider()
 			const parent = { taskId: "parent", apiConfiguration: { apiModelId: "parent-model" } } as Task
 			const emitSpy = vi.spyOn(provider, "emit")
+			provider.clineStack = [parent]
 			provider.getCurrentTask = vi.fn(() => parent)
-			provider.removeClineFromStack = vi.fn().mockRejectedValue(new Error("remove failed"))
-			provider.createTask = vi.fn()
+			provider.createTask = vi.fn().mockRejectedValue(new Error("create failed"))
 
 			await expect(
 				provider.delegateParentAndOpenChild({
@@ -210,10 +225,11 @@ describe("ClineProvider parent snapshot restoration", () => {
 					initialTodos: [],
 					mode: "code",
 				}),
-			).rejects.toThrow("Failed to dispose parent task 'parent': remove failed")
+			).rejects.toThrow("create failed")
 
-			expect(provider.createTask).not.toHaveBeenCalled()
+			expect(provider.createTask).toHaveBeenCalled()
 			expect(provider.getCurrentTask()).toBe(parent)
+			expect(provider.clineStack).toEqual([parent])
 			expect(provider.updateGlobalState).toHaveBeenCalledWith("mode", "orchestrator")
 			expect(emitSpy).not.toHaveBeenCalledWith(
 				AiCodeOrchestratorEventName.TaskDelegated,
@@ -222,7 +238,7 @@ describe("ClineProvider parent snapshot restoration", () => {
 			)
 		})
 
-		it("restores stack identity without dropping existing entries when remove partially mutates state", async () => {
+		it("restores stack identity without dropping existing entries when child creation fails", async () => {
 			const provider = makeProvider()
 			const parent = {
 				taskId: "parent",
@@ -246,14 +262,8 @@ describe("ClineProvider parent snapshot restoration", () => {
 					currentApiConfigName: "child-profile",
 					apiConfiguration: { apiProvider: "anthropic", apiModelId: "child-model" },
 				})
-			provider.removeClineFromStack = vi.fn().mockImplementation(async () => {
-				provider.clineStack.pop()
-				parent.abort = true
-				parent.abandoned = true
-				throw new Error("remove partially mutated")
-			})
 			provider.activateProviderProfile = vi.fn().mockResolvedValue(undefined)
-			provider.createTask = vi.fn()
+			provider.createTask = vi.fn().mockRejectedValue(new Error("create failed"))
 
 			await expect(
 				provider.delegateParentAndOpenChild({
@@ -262,12 +272,12 @@ describe("ClineProvider parent snapshot restoration", () => {
 					initialTodos: [],
 					mode: "code",
 				}),
-			).rejects.toThrow("Failed to dispose parent task 'parent': remove partially mutated")
+			).rejects.toThrow("create failed")
 
-			// The disposed/partially-mutated parent is not revived, while the prior
-			// stack entry remains current and no child/event/history mutation occurs.
-			expect(provider.clineStack).toEqual([otherTask])
-			expect(provider.createTask).not.toHaveBeenCalled()
+			// The parent is preserved in place (paused, not disposed); the prior stack
+			// topology remains intact and no child/event/history mutation occurs.
+			expect(provider.clineStack).toEqual([otherTask, parent])
+			expect(provider.createTask).toHaveBeenCalled()
 			expect(provider.updateTaskHistory).not.toHaveBeenCalled()
 			const emitSpy = vi.spyOn(provider, "emit")
 			expect(emitSpy).not.toHaveBeenCalledWith(
@@ -276,19 +286,14 @@ describe("ClineProvider parent snapshot restoration", () => {
 				expect.anything(),
 			)
 			expect(provider.updateGlobalState).toHaveBeenCalledWith("mode", "orchestrator")
-			expect(provider.activateProviderProfile).toHaveBeenCalledWith(
-				{ name: "parent-profile" },
-				expect.objectContaining({ syncGlobalProviderState: true }),
-			)
 		})
 
-		it("keeps metadata unchanged when removal fails before mutation", async () => {
+		it("keeps metadata unchanged when child creation fails before any mutation", async () => {
 			const provider = makeProvider()
 			const parent = { taskId: "parent", apiConfiguration: { apiModelId: "parent-model" } } as Task
 			provider.clineStack = [parent]
 			provider.getCurrentTask = vi.fn(() => parent)
-			provider.removeClineFromStack = vi.fn().mockRejectedValue(new Error("remove failed before mutation"))
-			provider.createTask = vi.fn()
+			provider.createTask = vi.fn().mockRejectedValue(new Error("create failed before mutation"))
 
 			await expect(
 				provider.delegateParentAndOpenChild({
@@ -297,10 +302,10 @@ describe("ClineProvider parent snapshot restoration", () => {
 					initialTodos: [],
 					mode: "code",
 				}),
-			).rejects.toThrow("remove failed before mutation")
+			).rejects.toThrow("create failed before mutation")
 
 			expect(provider.clineStack).toEqual([parent])
-			expect(provider.createTask).not.toHaveBeenCalled()
+			expect(provider.createTask).toHaveBeenCalled()
 			expect(provider.updateTaskHistory).not.toHaveBeenCalled()
 		})
 
@@ -341,6 +346,8 @@ describe("ClineProvider parent snapshot restoration", () => {
 			} as any
 			provider.activateProviderProfile = vi.fn()
 			provider.createTaskWithHistoryItem = vi.fn().mockResolvedValue({
+				taskId: "parent",
+				emit: vi.fn(),
 				overwriteClineMessages: vi.fn(),
 				overwriteApiConversationHistory: vi.fn(),
 				resumeAfterDelegation: vi.fn(),
@@ -389,6 +396,8 @@ describe("ClineProvider parent snapshot restoration", () => {
 				getProfile: vi.fn(),
 			} as any
 			provider.createTaskWithHistoryItem = vi.fn().mockResolvedValue({
+				taskId: "parent",
+				emit: vi.fn(),
 				overwriteClineMessages: vi.fn(),
 				overwriteApiConversationHistory: vi.fn(),
 				resumeAfterDelegation: vi.fn(),
@@ -484,6 +493,8 @@ describe("ClineProvider parent snapshot restoration", () => {
 				historyItem: { id: "parent", status: "delegated", awaitingChildId: "child", childIds: ["child"] },
 			})
 			provider.createTaskWithHistoryItem = vi.fn().mockResolvedValue({
+				taskId: "parent",
+				emit: vi.fn(),
 				overwriteClineMessages: vi.fn(),
 				overwriteApiConversationHistory: vi.fn(),
 				resumeAfterDelegation,
@@ -525,6 +536,8 @@ describe("ClineProvider parent snapshot restoration", () => {
 				const resume = vi.fn()
 				if (failurePhase === "resume") resume.mockRejectedValueOnce(failure).mockResolvedValueOnce(undefined)
 				const parentInstance = {
+					taskId: "parent",
+					emit: vi.fn(),
 					overwriteClineMessages: vi.fn(),
 					overwriteApiConversationHistory: vi.fn(),
 					resumeAfterDelegation: resume,
@@ -577,6 +590,8 @@ describe("ClineProvider parent snapshot restoration", () => {
 			})
 			const resume = vi.fn()
 			provider.createTaskWithHistoryItem = vi.fn().mockResolvedValue({
+				taskId: "parent",
+				emit: vi.fn(),
 				overwriteClineMessages: vi.fn(),
 				overwriteApiConversationHistory: vi.fn(),
 				resumeAfterDelegation: resume,
@@ -622,6 +637,8 @@ describe("ClineProvider parent snapshot restoration", () => {
 				if (item.id === "parent" && item.completedByChildId === "child-a") phase = 1
 			})
 			provider.createTaskWithHistoryItem = vi.fn().mockResolvedValue({
+				taskId: "parent",
+				emit: vi.fn(),
 				overwriteClineMessages: vi.fn(),
 				overwriteApiConversationHistory: vi.fn(),
 				resumeAfterDelegation: vi.fn(() => pending),
@@ -718,6 +735,8 @@ describe("ClineProvider parent snapshot restoration", () => {
 			} as any
 			provider.activateProviderProfile = vi.fn()
 			provider.createTaskWithHistoryItem = vi.fn().mockResolvedValue({
+				taskId: "parent",
+				emit: vi.fn(),
 				overwriteClineMessages: vi.fn(),
 				overwriteApiConversationHistory: vi.fn(),
 				resumeAfterDelegation: vi.fn(),
