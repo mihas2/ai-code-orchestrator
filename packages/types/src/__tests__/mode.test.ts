@@ -9,28 +9,102 @@ const orchestrator = DEFAULT_MODES.find((mode) => mode.slug === "orchestrator")
 
 describe("role prompts unification", () => {
 	describe("canonical operational prompts", () => {
-		it("all built-in modes have English operational prompts in DEFAULT_MODES", () => {
+		it("all built-in modes have non-empty operational prompts", () => {
 			for (const mode of DEFAULT_MODES) {
-				expect(mode.roleDefinition).toBeTruthy()
-				expect(mode.roleDefinition).toMatch(/^[a-zA-Z]/)
-				expect(mode.roleDefinition).not.toMatch(/[а-яА-ЯёЁ\u4e00-\u9fff]/)
+				expect(mode.roleDefinition.trim()).not.toHaveLength(0)
+				expect(mode.whenToUse?.trim()).not.toHaveLength(0)
+				expect(mode.customInstructions?.trim()).not.toHaveLength(0)
 			}
 		})
 
-		it("orchestrator and reviewer have non-empty operational fields", () => {
-			expect(orchestrator?.roleDefinition).toBeTruthy()
-			expect(orchestrator?.whenToUse).toBeTruthy()
-			expect(orchestrator?.customInstructions).toBeTruthy()
+		it("operational fields contain no Cyrillic", () => {
+			for (const mode of DEFAULT_MODES) {
+				expect(mode.roleDefinition).not.toMatch(/[а-яА-ЯёЁ]/)
+				expect(mode.whenToUse).not.toMatch(/[а-яА-ЯёЁ]/)
+				expect(mode.description).not.toMatch(/[а-яА-ЯёЁ]/)
+				expect(mode.customInstructions).not.toMatch(/[а-яА-ЯёЁ]/)
+			}
+		})
+	})
 
-			expect(reviewer?.roleDefinition).toBeTruthy()
-			expect(reviewer?.whenToUse).toBeTruthy()
-			expect(reviewer?.customInstructions).toBeTruthy()
+	describe("role invariants", () => {
+		it("Code stays a prepared, bounded implementation with tests and scope", () => {
+			const instructions = code?.customInstructions ?? ""
+			expect(code?.whenToUse).toContain("prepared")
+			expect(instructions).toContain("requested behavior")
+			expect(instructions).toContain("not automatically only the initially named files")
+			expect(instructions).toContain("Necessary related callers, types, and tests")
+			expect(instructions).toContain("explicit file allowlist or exclusions")
+			expect(instructions).toContain("Never bypass an explicit scope")
+			expect(instructions).toContain("Before editing, inspect the relevant implementation, callers, and tests")
+			expect(instructions).toContain("avoid unrelated exploration")
+			expect(instructions).toContain("routine reversible local decisions")
+			expect(instructions).toContain("repository conventions")
+			expect(instructions).toContain("without escalation")
+			expect(instructions).toContain("Escalate only material uncertainty")
+			expect(instructions).toContain("compact scope")
+			expect(instructions).toContain("regression tests")
 		})
 
-		it("operational prompts contain English technical vocabulary", () => {
-			expect(orchestrator?.roleDefinition).toContain("team lead")
-			expect(orchestrator?.customInstructions).toContain("classify")
-			expect(reviewer?.customInstructions?.toLowerCase()).toContain("acceptance criteria")
+		it("Architect stays planning only", () => {
+			expect(architect?.customInstructions).toContain("planning, not implementation")
+			expect(architect?.customInstructions).toContain("do not edit production code")
+		})
+
+		it("Ask stays read only", () => {
+			expect(ask?.whenToUse).toContain("read-only")
+			expect(ask?.customInstructions).toContain("without making changes")
+		})
+
+		it("Debug stays focused and confirms the diagnosis", () => {
+			expect(debug?.whenToUse).toContain("focused diagnosis")
+			expect(debug?.whenToUse).toContain("intermittent or unexplained failures")
+			expect(debug?.whenToUse).toContain("obtaining a reproduction")
+			expect(debug?.whenToUse).toContain("Absence of a reproduction is not a blocker")
+			expect(debug?.customInstructions).toContain("confirm the diagnosis before fixing")
+		})
+
+		it("Reviewer keeps the checklist, read-only review, and contracts", () => {
+			const instructions = reviewer?.customInstructions ?? ""
+			expect(instructions).toContain("Use this checklist internally")
+			expect(instructions).toContain("do not print it for a clean review")
+			expect(instructions).toContain("do not print the checklist")
+			expect(instructions).toContain("actionable, evidence-backed findings")
+			expect(instructions).toContain("Do not invent findings")
+			expect(instructions).toContain("Distinguish confirmed defects from unverified concerns")
+			expect(instructions).toContain("map each supplied acceptance criterion to evidence")
+			expect(instructions).toContain("edge cases and error handling")
+			expect(instructions).toContain("actual test results and exit status")
+			expect(instructions).toContain("secrets, privilege escalation, file scope, and unsafe commands")
+			expect(instructions).toContain("Do not modify code")
+			expect(instructions).toContain("ordinary review may proceed without a contract")
+			expect(instructions).toContain("When the workflow requires it")
+			expect(instructions).toContain("ResultContract")
+		})
+
+		it("Orchestrator keeps a minimal workflow, cohesive outcomes, and gates", () => {
+			const instructions = orchestrator?.customInstructions ?? ""
+			expect(instructions).toContain("smallest sufficient workflow")
+			expect(instructions).toContain("effective instructions")
+			expect(instructions).toContain("Keep tightly coupled implementation and tests together")
+			expect(instructions).toContain("cohesive, independently verifiable outcomes")
+			expect(instructions).toContain("separate outcome, uncertainty, or context burden")
+			expect(instructions).toContain("not merely to involve roles")
+			expect(instructions).toContain("Re-use accepted decisions")
+			expect(instructions).toContain("file or line counts")
+			expect(instructions).toContain("not into one whole-project Code task")
+			expect(instructions).toContain("translation of text and documentation")
+			expect(instructions).toContain("translation-only work to Translate")
+			expect(instructions).toContain("Code handles technical i18n integration")
+			expect(instructions).toContain("effective instructions")
+			expect(instructions).toContain("acceptance criteria with corresponding checks proportionate to the task")
+			expect(instructions).not.toContain("acceptance criteria or checks")
+			expect(instructions).toContain("only necessary context")
+			expect(instructions).toContain("prerequisites are verified")
+			expect(instructions).toContain("verify every root acceptance criterion")
+			expect(instructions).toContain("incomplete, not success")
+			expect(instructions).not.toMatch(/simple[\s\S]*moderate[\s\S]*complex/)
+			expect(instructions).not.toContain("STEP 1")
 		})
 	})
 
@@ -110,99 +184,48 @@ describe("built-in mode list", () => {
 		])
 	})
 
-	it("translate edits localization files and carries its own instructions", () => {
+	it("translate preserves meaning and format without becoming Code", () => {
 		const translate = DEFAULT_MODES.find((mode) => mode.slug === "translate")
+		const instructions = translate?.customInstructions ?? ""
 		expect(translate?.name).toBe("🌐 Translate")
-		expect(translate?.whenToUse).toBe("Translate and manage localization files.")
-		expect(translate?.description).toBe("Translate and manage localization files.")
+		expect(translate?.roleDefinition).toContain("accurate translation")
+		expect(translate?.roleDefinition).toContain("Do not implement features")
+		expect(translate?.whenToUse).toContain("preserving meaning and format")
+		expect(translate?.whenToUse).toContain("Not for feature implementation")
+		expect(translate?.description).toBe("Translate text, documentation, and localization")
 		expect(translate?.groups).toEqual(["read", "edit", "command", "mcp"])
 		expect(translate?.groups.some((group) => Array.isArray(group) && group[1]?.fileRegex)).toBe(false)
-		expect(translate?.customInstructions).toContain("src/i18n/locales/")
-		expect(translate?.customInstructions).not.toContain(".aico/rules-translate")
+		expect(instructions).toContain("src/i18n/locales/")
+		expect(instructions).toContain("{{variable}}")
+		expect(instructions).toContain("hidden keys")
+		expect(instructions).toContain("State genuine ambiguities explicitly")
+		expect(instructions).toContain("Be concise when the request asks for brevity")
+		expect(instructions).toContain("never omit translated content")
+		expect(instructions).toContain("translation, not Code")
+		expect(instructions).toContain("not to standalone text or document translation")
+		expect(instructions).toContain("Change only the requested locales and entries")
+		expect(instructions).toContain("preserve the English source")
+		expect(instructions).toContain("outside the authorized scope")
+		expect(instructions).not.toContain(".aico/rules-translate")
 	})
 })
 
-describe("default orchestrator mode", () => {
-	it("has read tools available", () => {
-		expect(orchestrator).toBeDefined()
+describe("default mode permissions", () => {
+	it("keeps read access and edit restrictions", () => {
 		expect(orchestrator?.groups).toContain("read")
-	})
+		expect(orchestrator?.groups).not.toContain("edit")
+		expect(reviewer?.groups).toContain("read")
+		expect(reviewer?.groups).not.toContain("edit")
+		expect(ask?.groups).toContain("read")
+		expect(ask?.groups).not.toContain("edit")
 
-	it("references improver and integrator as delegated roles", () => {
-		expect(orchestrator).toBeDefined()
-		// The protocol allows mentioning them as "when needed" roles
-		expect(orchestrator?.roleDefinition).toMatch(/\b(improver|integrator)\b/)
-		expect(orchestrator?.customInstructions).not.toContain("you are an improver")
-		expect(orchestrator?.customInstructions).not.toContain("you are an integrator")
-	})
-
-	it("contains enhanced protocol content", () => {
-		const instructions = orchestrator?.customInstructions?.toLowerCase() ?? ""
-		expect(instructions).toMatch(/simple[\s\S]*moderate[\s\S]*complex/)
-		expect(instructions).toContain("stage gate")
-		expect(instructions).toContain("mini-spec")
-		expect(instructions).toContain("evidence")
-	})
-})
-
-describe("default reviewer mode", () => {
-	it("has no Cyrillic text in its role definition", () => {
-		expect(reviewer).toBeDefined()
-		expect(reviewer?.roleDefinition).not.toMatch(/[а-яА-ЯёЁ]/)
-	})
-
-	it("has no Cyrillic text in its custom instructions", () => {
-		expect(reviewer).toBeDefined()
-		expect(reviewer?.customInstructions).not.toMatch(/[а-яА-ЯёЁ]/)
-	})
-
-	it("does not duplicate reviewer restrictions across prompt fields", () => {
-		expect(reviewer).toBeDefined()
-		const roleDefinition = reviewer?.roleDefinition ?? ""
-		const customInstructions = reviewer?.customInstructions ?? ""
-		const restrictions = [
-			"do not modify code",
-			"do not request or use data outside the declared contract",
-			"express every proposed change as a finding recommendation",
-		]
-
-		for (const restriction of restrictions) {
-			expect(roleDefinition.toLowerCase()).not.toContain(restriction)
-			expect(customInstructions.toLowerCase()).toContain(restriction)
-		}
-	})
-})
-
-describe("default implementation and planning mode contracts", () => {
-	it("code has boundary and result-format instructions", () => {
-		expect(code).toBeDefined()
-		expect(code?.customInstructions).toBeTruthy()
-		expect(code?.customInstructions).toMatch(/boundary/i)
-		expect(code?.customInstructions).toMatch(/format/i)
-	})
-
-	it("debug has result-format and unavailable-user instructions", () => {
-		expect(debug).toBeDefined()
-		expect(debug?.customInstructions).toMatch(/format/i)
-		expect(debug?.customInstructions).toMatch(/unavailable/i)
-	})
-
-	it("ask keeps its constraints out of the role definition", () => {
-		expect(ask).toBeDefined()
-		const roleDefinition = ask?.roleDefinition.toLowerCase() ?? ""
-		const customInstructions = ask?.customInstructions?.toLowerCase() ?? ""
-		const constraints = ["do not switch", "without making changes"]
-
-		for (const constraint of constraints) {
-			expect(customInstructions).toContain(constraint)
-			expect(roleDefinition).not.toContain(constraint)
-		}
-	})
-
-	it("architect instructions remain planning-only", () => {
-		expect(architect).toBeDefined()
-		const instructions = architect?.customInstructions ?? ""
-		expect(instructions).toMatch(/plan|planning/i)
-		expect(instructions).not.toMatch(/implement the solution|write code|modify code/i)
+		expect(code?.groups).toEqual(["read", "edit", "command", "mcp"])
+		expect(debug?.groups).toEqual(["read", "edit", "command", "mcp"])
+		expect(architect?.groups).toEqual([
+			"read",
+			["edit", { fileRegex: "\\.md$", description: "Markdown files only" }],
+			"command",
+			"mcp",
+		])
 	})
 })

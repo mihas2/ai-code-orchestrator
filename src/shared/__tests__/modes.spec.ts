@@ -611,13 +611,10 @@ describe("FileRestrictionError", () => {
 			expect(debugMode).toMatchObject({
 				slug: "debug",
 				name: "🪲 Debug",
-				roleDefinition:
-					"You are AI Code Orchestrator, an expert software debugger specializing in systematic problem diagnosis and resolution.",
 				groups: ["read", "edit", "command", "mcp"],
 			})
-			expect(debugMode?.customInstructions).toContain(
-				"Reflect on 5-7 different possible sources of the problem, distill those down to 1-2 most likely sources, and then add logs to validate your assumptions. Explicitly ask the user to confirm the diagnosis before fixing the problem.",
-			)
+			expect(debugMode?.roleDefinition).toContain("evidence-driven")
+			expect(debugMode?.customInstructions).toContain("plausible hypotheses")
 		})
 	})
 
@@ -628,13 +625,16 @@ describe("FileRestrictionError", () => {
 		})
 
 		it("returns base mode when no overrides exist", async () => {
+			const debugMode = modes.find((mode) => mode.slug === "debug")
 			const result = await getFullModeDetails("debug")
 			expect(result).toMatchObject({
 				slug: "debug",
 				name: "🪲 Debug",
-				roleDefinition:
-					"You are AI Code Orchestrator, an expert software debugger specializing in systematic problem diagnosis and resolution.",
 			})
+			expect(result.roleDefinition).toBe(debugMode?.roleDefinition)
+			expect(result.customInstructions).toBe(debugMode?.customInstructions)
+			expect(result.roleDefinition).toContain("evidence-driven")
+			expect(result.customInstructions).toContain("plausible hypotheses")
 		})
 
 		it("applies custom mode overrides", async () => {

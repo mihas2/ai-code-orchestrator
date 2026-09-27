@@ -68,6 +68,17 @@ describe("getRulesSection", () => {
 		expect(result).toContain(cwd)
 	})
 
+	it("does not treat missing command output as success", () => {
+		const result = getRulesSection(cwd)
+
+		expect(result).toContain("distinguish missing output from execution status")
+		expect(result).toContain("Use the exit status and other relevant evidence")
+		expect(result).toContain("still running or whose result is unconfirmed is not success")
+		expect(result).toContain("report it as unverified")
+		expect(result).toContain("Do not repeat a side-effecting command just to recover missing output")
+		expect(result).not.toContain("assume the terminal executed the command successfully")
+	})
+
 	it("includes vendor confidentiality section when isStealthModel is true", () => {
 		const settings = {
 			todoListEnabled: true,

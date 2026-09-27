@@ -44,4 +44,16 @@ describe("getObjectiveSection", () => {
 		expect(objective).toContain("OBJECTIVE")
 		expect(objective).toContain("You accomplish a given task iteratively")
 	})
+
+	it("should require concise precise answers without dropping essential detail", () => {
+		const objective = getObjectiveSection()
+
+		expect(objective).toContain("concise and precise by default")
+		expect(objective).toContain("requested detail respected")
+		expect(objective).toContain("Do not repeat task narration or add unnecessary summaries")
+		expect(objective).toContain("Preserve essential evidence, risks, blockers, and actual verification results")
+		expect(objective).toContain(
+			"Brevity must not override requested format or output contracts, or needed technical detail",
+		)
+	})
 })
