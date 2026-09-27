@@ -9,7 +9,7 @@ vi.mock("../../core/prompts/sections/custom-instructions", () => ({
 	addCustomInstructions: vi.fn().mockResolvedValue("Combined instructions"),
 }))
 
-import { FileRestrictionError, getFullModeDetails, modes, getModeSelection } from "../modes"
+import { FileRestrictionError, getFullModeDetails, modes, getModeSelection, getModeConfig } from "../modes"
 import { isToolAllowedForMode } from "../../core/tools/validateToolUse"
 import { addCustomInstructions } from "../../core/prompts/sections/custom-instructions"
 
@@ -923,5 +923,26 @@ describe("getModeSelection", () => {
 		const selection = getModeSelection("ask", promptComponentAsk, undefined)
 		expect(selection.roleDefinition).toBe(promptComponentAsk.roleDefinition)
 		expect(selection.baseInstructions).toBe(promptComponentAsk.customInstructions)
+	})
+})
+
+describe("getModeConfig", () => {
+	test("returns the requested built-in mode", () => {
+		expect(getModeConfig("translate").slug).toBe("translate")
+	})
+
+	test("throws for an unknown slug instead of falling back", () => {
+		expect(() => getModeConfig("issue-fixer")).toThrow("No mode found for slug: issue-fixer")
+		expect(() => getModeConfig("merge-resolver")).toThrow("No mode found for slug: merge-resolver")
+	})
+
+	test("returns a custom mode with the requested slug", () => {
+		const custom: ModeConfig = {
+			slug: "issue-fixer",
+			name: "Issue Fixer",
+			roleDefinition: "Fix issues",
+			groups: ["read"],
+		}
+		expect(getModeConfig("issue-fixer", [custom]).slug).toBe("issue-fixer")
 	})
 })

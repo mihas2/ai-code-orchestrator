@@ -1,26 +1,25 @@
 # AI Code Orchestrator
 
+## [1.3.2] - 2026-09-11
+
 ## [1.3.3] - 2026-09-19
 
 ### Fixed
 
-- Improved task completion reliability: subtasks now consistently return results to parent and resume parent execution
-- Resolved task hanging issues after checkpoint operations
-- Fixed critical delegation loops and improved task state persistence
-- Eliminated file watcher memory leaks in task management
-- Corrected subtask abandonment during orchestrator delegation
-- Fixed race conditions in subtask creation and UI state synchronization
-- Resolved unhandled promise rejections in task lifecycle
-- Improved stop button state management and validation
-- Fixed directory handling in file existence checks
+- Fixed task hanging after checkpoint by resolving pause/resume coordination issues.
+- Resolved critical delegation loop and improved task state persistence.
+- Fixed file watcher memory leaks in TaskHistoryStore and task management.
+- Improved async/await handling in TaskHistoryStore path resolution methods.
+- Resolved race conditions in subtask creation and UI state synchronization.
+- Fixed unhandled promise rejections in task lifecycle management.
+- Corrected stop button identity validation and state management (STOP-001 to STOP-004).
+- Fixed fileExistsAtPath() to correctly return false for directories.
 
 ### Changed
 
-- Enhanced diagnostic logging for task lifecycle and delegation
-- Improved checkpoint pause/resume coordination
-- Simplified error handling across codebase
-
-## [1.3.2] - 2026-09-11
+- Added comprehensive diagnostic logging for task lifecycle and delegation events.
+- Simplified error handling and resolved ESLint warnings across codebase.
+- Improved checkpoint pause/resume mechanism with better coordination.
 
 ### Added
 
@@ -43,12 +42,12 @@
 ### Added
 
 - Added "Run and Allow" button for commands in webview for faster approval workflow.
-- Added translations for \`runCommandAndAllow\` across 16 locales.
+- Added translations for `runCommandAndAllow` across 16 locales.
 
 ### Changed
 
 - Updated AI Code Orchestrator icons based on the official AIco reference logo.
-- Refactored i18n text keys: shortened \`text.aicoSaid\` to "AIco <verb>" format across all 17 languages.
+- Refactored i18n text keys: shortened `text.aicoSaid` to "AIco <verb>" format across all 17 languages.
 
 ### Fixed
 
@@ -56,7 +55,7 @@
 - Fixed auto-approval settings inheritance in orchestrator workers.
 - Fixed file operation race conditions with proper protection mechanisms.
 - Fixed role assignment issues in orchestrator mode.
-- Fixed delegation race condition in \`reopenParentFromDelegation\`.
+- Fixed delegation race condition in `reopenParentFromDelegation`.
 - Fixed path normalization in read-file provider argument.
 - Fixed workspace isolation preservation for child tasks.
 - Replaced incorrect "Ru said" with "AIco said" in Russian localization.
@@ -78,7 +77,7 @@
 ### Changed
 
 - Completed the AI Code Orchestrator branding and identifier migration across extension manifests, localizations, documentation, and webview surfaces.
-- Rebuilt the webview before VSIX packaging and added a reproducible \`install:vsix\` workflow.
+- Rebuilt the webview before VSIX packaging and added a reproducible `install:vsix` workflow.
 - Simplified orchestration UI state and task presentation by removing the obsolete panel and noisy task details while retaining useful delegation context.
 - Improved delegated task context so child tasks receive the relevant orchestration and parent-task details.
 
@@ -163,12 +162,12 @@
 - Fixed infinite loop when orchestrator creates child tasks.
 - Eliminated race condition between UI action confirmation and task delegation.
 - Added tests and infrastructure for improved reliability:
-- Added 6 delegation flow integration tests in \`src/core/webview/**tests**/ClineProvider.delegation.spec.ts\`.
-- Added 4 orchestration flow E2E tests in \`apps/vscode-e2e/src/suite/orchestration-flow.test.ts\`.
-- Added 5 role model assignment E2E tests in \`apps/vscode-e2e/src/suite/role-model-assignment.test.ts\`.
-- Created full-featured mock AI provider with streaming support in \`apps/vscode-e2e/src/suite/mock-provider.ts\`.
+- Added 6 delegation flow integration tests in `src/core/webview/__tests__/ClineProvider.delegation.spec.ts`.
+- Added 4 orchestration flow E2E tests in `apps/vscode-e2e/src/suite/orchestration-flow.test.ts`.
+- Added 5 role model assignment E2E tests in `apps/vscode-e2e/src/suite/role-model-assignment.test.ts`.
+- Created full-featured mock AI provider with streaming support in `apps/vscode-e2e/src/suite/mock-provider.ts`.
 - Mock provider integrated into E2E harness with automatic setup.
-- Updated E2E test documentation in \`apps/vscode-e2e/README.md\`.
+- Updated E2E test documentation in `apps/vscode-e2e/README.md`.
 - Update all documentation for the first release:
 - Rename terminology from "Modes" to "Roles"
 - Add Reviewer role documentation

@@ -75,6 +75,7 @@ describe("role prompts unification", () => {
 			expect(architect?.ui).toBeUndefined()
 			expect(ask?.ui).toBeUndefined()
 			expect(debug?.ui).toBeUndefined()
+			expect(DEFAULT_MODES.find((mode) => mode.slug === "translate")?.ui).toBeUndefined()
 		})
 	})
 
@@ -93,6 +94,31 @@ describe("role prompts unification", () => {
 				expect(key).toMatch(/^[a-z]+\.[a-zA-Z]+$/)
 			})
 		})
+	})
+})
+
+describe("built-in mode list", () => {
+	it("pins the exact DEFAULT_MODES slug order", () => {
+		expect(DEFAULT_MODES.map((mode) => mode.slug)).toEqual([
+			"architect",
+			"code",
+			"ask",
+			"debug",
+			"reviewer",
+			"orchestrator",
+			"translate",
+		])
+	})
+
+	it("translate edits localization files and carries its own instructions", () => {
+		const translate = DEFAULT_MODES.find((mode) => mode.slug === "translate")
+		expect(translate?.name).toBe("🌐 Translate")
+		expect(translate?.whenToUse).toBe("Translate and manage localization files.")
+		expect(translate?.description).toBe("Translate and manage localization files.")
+		expect(translate?.groups).toEqual(["read", "edit", "command", "mcp"])
+		expect(translate?.groups.some((group) => Array.isArray(group) && group[1]?.fileRegex)).toBe(false)
+		expect(translate?.customInstructions).toContain("src/i18n/locales/")
+		expect(translate?.customInstructions).not.toContain(".aico/rules-translate")
 	})
 })
 

@@ -2657,6 +2657,12 @@ export class ClineProvider
 		const stateValues = this.contextProxy.getValues()
 		const customModes = await this.customModesManager.getCustomModes()
 
+		// A persisted mode may name a project mode that no longer exists.
+		// History restore already falls back in createTaskWithHistoryItem; do the
+		// same for the saved global mode so the UI does not keep a deleted slug.
+		const savedMode = stateValues.mode
+		const mode = savedMode && getModeBySlug(savedMode, customModes) ? savedMode : defaultModeSlug
+
 		// Determine apiProvider with the same logic as before, while filtering retired providers.
 		const apiProvider: ProviderName =
 			stateValues.apiProvider && !isRetiredProvider(stateValues.apiProvider)
@@ -2717,7 +2723,7 @@ export class ClineProvider
 			terminalZshOhMy: stateValues.terminalZshOhMy ?? false,
 			terminalZshP10k: stateValues.terminalZshP10k ?? false,
 			terminalZdotdir: stateValues.terminalZdotdir ?? false,
-			mode: stateValues.mode ?? defaultModeSlug,
+			mode,
 			language: stateValues.language ?? formatLanguage(vscode.env.language),
 			mcpEnabled: stateValues.mcpEnabled ?? true,
 			mcpServers: this.mcpHub?.getAllServers() ?? [],
