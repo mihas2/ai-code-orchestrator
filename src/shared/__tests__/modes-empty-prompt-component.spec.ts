@@ -12,7 +12,7 @@ describe("getModeSelection with empty promptComponent", () => {
 		// Should use built-in mode values
 		expect(result.roleDefinition).toBe(architectMode.roleDefinition)
 		expect(result.baseInstructions).toBe(architectMode.customInstructions)
-		expect(result.baseInstructions).toContain("Do some information gathering")
+		expect(result.baseInstructions).toContain("bounded, implementation-ready outcomes")
 	})
 
 	it("should use built-in mode instructions when promptComponent is null", () => {
@@ -24,7 +24,8 @@ describe("getModeSelection with empty promptComponent", () => {
 		// Should use built-in mode values
 		expect(result.roleDefinition).toBe(debugMode.roleDefinition)
 		expect(result.baseInstructions).toBe(debugMode.customInstructions)
-		expect(result.baseInstructions).toContain("Reflect on 5-7 different possible sources")
+		expect(result.roleDefinition).toContain("evidence-driven")
+		expect(result.baseInstructions).toContain("plausible hypotheses")
 	})
 
 	it("should use promptComponent when it has actual content", () => {
@@ -82,16 +83,19 @@ describe("getModeSelection with empty promptComponent", () => {
 	})
 
 	it("should fall back to default mode when built-in mode is not found", () => {
-		const defaultMode = modes[0] // First mode is the default
+		const defaultMode = modes[0] // First canonical mode
 
-		// Test with non-existent mode
+		// Stale override stored under an unknown slug must not be applied.
 		const partialPromptComponent: PromptComponent = {
+			roleDefinition: "Stale role for unknown mode",
 			customInstructions: "Custom instructions for unknown mode",
 		}
 		const result = getModeSelection("non-existent-mode", partialPromptComponent, [])
 
-		// Should merge with default mode
-		expect(result.roleDefinition).toBe(defaultMode.roleDefinition) // Falls back to default mode
-		expect(result.baseInstructions).toBe("Custom instructions for unknown mode") // Uses promptComponent
+		// Unknown slug uses the first mode's effective fields and ignores the prompt component.
+		expect(result.roleDefinition).toBe(defaultMode.roleDefinition)
+		expect(result.roleDefinition).not.toBe(partialPromptComponent.roleDefinition)
+		expect(result.baseInstructions).toBe(defaultMode.customInstructions)
+		expect(result.baseInstructions).not.toBe(partialPromptComponent.customInstructions)
 	})
 })

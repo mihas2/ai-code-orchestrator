@@ -77,7 +77,11 @@ const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOpt
 			return
 		}
 
-		await visibleProvider.removeClineFromStack()
+		// TODO: `clearTask()` can reject, in which case `refreshWorkspace()` and the
+		// subsequent postMessageToWebview calls never run, leaving the UI without a
+		// transition to the home screen. Consider a try/catch with a fallback state
+		// publish.
+		await visibleProvider.clearTask()
 		await visibleProvider.refreshWorkspace()
 		await visibleProvider.postMessageToWebview({ type: "action", action: "chatButtonClicked" })
 		// Send focusInput action immediately after chatButtonClicked

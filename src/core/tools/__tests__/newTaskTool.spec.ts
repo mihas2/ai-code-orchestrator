@@ -131,12 +131,17 @@ describe("newTaskTool", () => {
 		// Reset mocks before each test
 		vi.clearAllMocks()
 		mockAskApproval.mockResolvedValue(true) // Default to approved
-		vi.mocked(getModeBySlug).mockReturnValue({
-			slug: "code",
-			name: "Code Mode",
-			roleDefinition: "Test role definition",
-			groups: ["command", "read", "edit"],
-		}) // Default valid mode
+		vi.mocked(getModeBySlug).mockImplementation((slug: string) => {
+			if (slug !== "code" && slug !== "reviewer") {
+				return undefined
+			}
+			return {
+				slug,
+				name: slug === "reviewer" ? "Reviewer Mode" : "Code Mode",
+				roleDefinition: "Test role definition",
+				groups: slug === "reviewer" ? ["read", "command", "mcp"] : ["command", "read", "edit"],
+			}
+		})
 		mockCline.consecutiveMistakeCount = 0
 		mockCline.isPaused = false
 		// Default: VSCode setting is disabled
@@ -680,6 +685,81 @@ describe("newTaskTool delegation flow", () => {
 
 		// Assert: tool result reflects delegation
 		expect(mockPushToolResult).toHaveBeenCalledWith(expect.stringContaining("Delegated to child task child-1"))
+	})
+
+	it("accepts reviewer and forwards reviewer without falling back to another mode", async () => {
+		vi.mocked(getModeBySlug).mockImplementation((slug: string) =>
+			slug === "reviewer"
+				? {
+						slug: "reviewer",
+						name: "Reviewer Mode",
+						roleDefinition: "Independent review",
+						groups: ["read", "command", "mcp"],
+					}
+				: undefined,
+		)
+
+		const providerSpy = {
+			getState: vi.fn().mockResolvedValue({
+				mode: "orchestrator",
+				customModes: [],
+				experiments: {},
+			}),
+			postStateToWebview: vi.fn().mockResolvedValue(undefined),
+			delegateParentAndOpenChild: vi.fn().mockResolvedValue({ taskId: "child-reviewer" }),
+			handleModeSwitch: vi.fn(),
+		} as any
+
+		const localStartSubtask = vi.fn()
+		const localCline = {
+			ask: vi.fn().mockResolvedValue(undefined),
+			say: vi.fn().mockResolvedValue(undefined),
+			postStateToWebview: vi.fn().mockResolvedValue(undefined),
+			sayAndCreateMissingParamError: mockSayAndCreateMissingParamError,
+			emit: vi.fn(),
+			recordToolError: mockRecordToolError,
+			consecutiveMistakeCount: 0,
+			isPaused: false,
+			pausedModeSlug: "orchestrator",
+			taskId: "mock-parent-task-id",
+			enableCheckpoints: false,
+			checkpointSave: mockCheckpointSave,
+			startSubtask: localStartSubtask,
+			providerRef: {
+				deref: vi.fn(() => providerSpy),
+			},
+		}
+
+		const block: ToolUse<"new_task"> = {
+			type: "tool_use",
+			name: "new_task",
+			params: {
+				mode: "reviewer",
+				message: "Review the completed change",
+			},
+			partial: false,
+		}
+
+		await newTaskTool.handle(localCline as any, withNativeArgs(block), {
+			askApproval: mockAskApproval,
+			handleError: mockHandleError,
+			pushToolResult: mockPushToolResult,
+		})
+
+		expect(getModeBySlug).toHaveBeenCalledWith("reviewer", [])
+		expect(providerSpy.delegateParentAndOpenChild).toHaveBeenCalledWith({
+			parentTaskId: "mock-parent-task-id",
+			message: "Review the completed change",
+			initialTodos: [],
+			mode: "reviewer",
+			explicitRole: "reviewer",
+		})
+		expect(providerSpy.handleModeSwitch).not.toHaveBeenCalled()
+		expect(localStartSubtask).not.toHaveBeenCalled()
+		expect(mockPushToolResult).toHaveBeenCalledWith(
+			expect.stringContaining("Delegated to child task child-reviewer"),
+		)
+		expect(mockPushToolResult).not.toHaveBeenCalledWith(expect.stringContaining("Invalid mode"))
 	})
 	describe("handlePartial streaming feedback", () => {
 		it("emits growing content and progress status", async () => {

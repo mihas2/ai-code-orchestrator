@@ -331,16 +331,16 @@
 		"support": "请在 <githubLink>GitHub</githubLink> 上为我们点星支持 AI Code Orchestrator。",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} 添加了新的「运行并允许」按钮以实现更快的审批工作流，基于官方徽标更新了 AIco 图标，并重构了 i18n 文本键以提高一致性。",
-			"continuity": "此版本还修复了自动审批和编排器模式中的竞态条件，以及角色分配和工作区隔离问题。",
-			"alternatives": "角色模型选择现在从配置到执行都保持一致。",
-			"signoff": "祝你编码愉快！"
+			"intro": "AI Code Orchestrator {{version}} 带来了整体改进、实用修复和更顺畅的体验。",
+			"continuity": "任务完成得更可靠，也更容易从上次停下的地方继续。",
+			"alternatives": "日常工作感觉更清晰、更一致。",
+			"signoff": "祝编码愉快！"
 		},
 		"release": {
 			"heading": "新增功能：",
-			"gpt55": "通过 OpenAI Codex 支持 GPT-5.5：已在 OpenAI Codex 提供商中新增 GPT-5.5 支持，让你可以直接在 AI Code Orchestrator 中使用最新模型。",
-			"claudeOpus47": "Vertex AI 上的 Claude Opus 4.7：已将 Anthropic 最新旗舰推理模型 Claude Opus 4.7 添加到 Vertex AI 提供商。",
-			"checkpointNav": "上一存档点导航：在聊天中新增控件，可回退到此前的存档点，并提供完整的 i18n 支持。"
+			"gpt55": "更清晰的工作方式：每个角色都更容易理解，方便为任务选择合适的帮助。",
+			"claudeOpus47": "更可靠的任务：已完成的工作会保持完成，结果也会更顺畅地返回。",
+			"checkpointNav": "更顺畅的体验：重新开始以及在任务之间切换都变得更简单。"
 		},
 		"cloudAgents": {
 			"heading": "云端新功能：",

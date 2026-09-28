@@ -72,8 +72,9 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 
 		expect(child.taskId).toBe("child-1")
 
-		// Invariant: parent closed before child creation
-		expect(removeClineFromStack).toHaveBeenCalledTimes(1)
+		// CRITICAL FIX: parent is paused in place (isPaused=true) instead of being removed
+		// from the stack, to preserve instance identity and avoid task resurrection on resume.
+		expect(removeClineFromStack).not.toHaveBeenCalled()
 		// Child task is created with startTask: false and initialStatus: "active"
 		expect(createTask).toHaveBeenCalledWith(
 			"Do something",

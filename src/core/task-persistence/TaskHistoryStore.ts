@@ -1,5 +1,4 @@
 import * as fs from "fs/promises"
-import * as fsSync from "fs"
 import * as path from "path"
 
 import type { HistoryItem } from "@ai-code-orchestrator/types"
@@ -39,17 +38,52 @@ export interface TaskHistoryStoreOptions {
 	 * globalState during the transition period.
 	 */
 	onWrite?: (items: HistoryItem[]) => Promise<void>
+	/**
+	 * Optional callback invoked after reconcile when an external change was
+	 * actually applied (updated or removed task ids). Called outside the write
+	 * lock. Exceptions are swallowed so a consumer cannot break reconcile.
+	 */
+	onExternalChange?: (changed: { updated: string[]; removed: string[] }) => void
+	/**
+	 * Periodic reconcile interval in milliseconds. Defaults to 10 seconds.
+	 * Injected so tests can use a shorter interval with fake timers.
+	 */
+	reconcileIntervalMs?: number
+}
+
+/**
+ * Cheap identity of a history_item.json taken from a single stat, without reading contents.
+ * mtimeMs alone is not enough: filesystems with coarse mtime resolution can assign the same
+ * timestamp to two atomic replaces in one quantum. size and ino distinguish those replaces
+ * (atomic rename changes the inode). ctimeMs covers filesystems where ino is 0 or unstable
+ * (Windows): atomic replace via temp + rename updates creation/inode-change time even when
+ * mtimeMs, size, and ino do not.
+ */
+interface TaskFileSignature {
+	mtimeMs: number
+	size: number
+	ino: number
+	ctimeMs: number
 }
 
 export class TaskHistoryStore {
 	private readonly globalStoragePath: string
 	private readonly onWrite?: (items: HistoryItem[]) => Promise<void>
+	private onExternalChange?: (changed: { updated: string[]; removed: string[] }) => void
+	private readonly reconcileIntervalMs: number
 	private cache: Map<string, HistoryItem> = new Map()
+	/** Last observed stat signature of each task's history_item.json. Used to detect content changes without re-reading unchanged files. */
+	private taskFileSignatures: Map<string, TaskFileSignature> = new Map()
 	private writeLock: Promise<void> = Promise.resolve()
 	private indexWriteTimer: ReturnType<typeof setTimeout> | null = null
-	private fsWatcher: fsSync.FSWatcher | null = null
-	private reconcileTimer: ReturnType<typeof setTimeout> | null = null
+	private reconcileTimer: ReturnType<typeof setInterval> | null = null
+	/** Set at the start of initialize() so a second call is a no-op even without an fs watcher. */
+	private initializeStarted = false
 	private disposed = false
+	/** True while a timer-driven reconcile is in flight. Ticks are skipped; explicit reconcile() is not. */
+	private periodicReconcileRunning = false
+	/** Reconcile passes started but not yet finished. Dispose must not flush over them. */
+	private reconcileInFlight = 0
 
 	/**
 	 * Promise that resolves when initialization is complete.
@@ -62,31 +96,44 @@ export class TaskHistoryStore {
 	private static readonly INDEX_WRITE_DEBOUNCE_MS = 2000
 
 	/** Periodic reconciliation interval in milliseconds. */
-	private static readonly RECONCILE_INTERVAL_MS = 5 * 60 * 1000
+	private static readonly RECONCILE_INTERVAL_MS = 10 * 1000
 
 	constructor(globalStoragePath: string, options?: TaskHistoryStoreOptions) {
 		this.globalStoragePath = globalStoragePath
 		this.onWrite = options?.onWrite
+		this.onExternalChange = options?.onExternalChange
+		this.reconcileIntervalMs = options?.reconcileIntervalMs ?? TaskHistoryStore.RECONCILE_INTERVAL_MS
 		this.initialized = new Promise<void>((resolve) => {
 			this.resolveInitialized = resolve
 		})
 	}
 
+	/**
+	 * Drop the external-change subscription. Safe to call more than once.
+	 * Does not dispose the store.
+	 */
+	clearExternalChangeListener(): void {
+		this.onExternalChange = undefined
+	}
+
 	// ────────────────────────────── Lifecycle ──────────────────────────────
 
 	/**
-	 * Load index, reconcile if needed, start watchers.
+	 * Load index, reconcile if needed, start periodic reconciliation.
+	 * Cross-instance changes are discovered by periodic reconcile, not fs.watch.
 	 */
 	async initialize(): Promise<void> {
 		if (this.disposed) {
 			throw new Error("Cannot initialize disposed TaskHistoryStore")
 		}
 
-		// Prevent double initialization
-		if (this.fsWatcher) {
+		// Prevent double initialization. The flag is set before any side effects
+		// so a concurrent second call cannot start a second reconcile timer.
+		if (this.initializeStarted) {
 			console.warn("TaskHistoryStore already initialized, skipping")
 			return
 		}
+		this.initializeStarted = true
 
 		try {
 			const tasksDir = await this.getTasksDir()
@@ -98,10 +145,7 @@ export class TaskHistoryStore {
 			// 2. Reconcile cache against actual task directories on disk
 			await this.reconcile()
 
-			// 3. Start fs.watch for cross-instance reactivity
-			await this.startWatcher()
-
-			// 4. Start periodic reconciliation as a defensive fallback
+			// 3. Start periodic reconciliation (sole cross-instance discovery path)
 			this.startPeriodicReconciliation()
 		} finally {
 			// Mark initialization as complete so callers awaiting `initialized` can proceed
@@ -110,16 +154,14 @@ export class TaskHistoryStore {
 	}
 
 	/**
-	 * Stop watchers and clear timers. Flushes the index file before disposing.
+	 * Stop timers. Flushes the index file before disposing.
+	 * The reconcile interval is cleared synchronously so no new disk scan is scheduled.
+	 * A reconcile already inside the write lock may finish its current pass, but it
+	 * re-checks `disposed` before touching the cache or scheduling further writes.
 	 */
 	dispose(): void {
 		this.disposed = true
-
-		if (this.fsWatcher) {
-			this.fsWatcher.close()
-			console.log("TaskHistoryStore: File watcher closed successfully")
-			this.fsWatcher = null
-		}
+		this.onExternalChange = undefined
 
 		if (this.indexWriteTimer) {
 			clearTimeout(this.indexWriteTimer)
@@ -131,10 +173,16 @@ export class TaskHistoryStore {
 			this.reconcileTimer = null
 		}
 
-		// Flush index file on dispose (fire-and-forget)
-		this.writeIndex().catch(() => {
-			// Non-fatal: best-effort flush
-		})
+		// Flush index file on dispose (fire-and-forget). This is the only disk
+		// access dispose itself starts; periodic reconcile cannot schedule another.
+		// If initialization never completed, there is nothing to flush.
+		// Skip the flush while a reconcile pass is in flight: that pass re-checks
+		// `disposed` and must not be raced by an index write of a partial cache.
+		if (this.initializeStarted && this.reconcileInFlight === 0) {
+			this.writeIndex().catch(() => {
+				// Non-fatal: best-effort flush
+			})
+		}
 	}
 
 	// ────────────────────────────── Reads ──────────────────────────────
@@ -170,6 +218,7 @@ export class TaskHistoryStore {
 
 			// Write per-task file (source of truth)
 			await this.writeTaskFile(merged)
+			await this.rememberTaskFileSignature(merged.id)
 
 			// Update in-memory cache
 			this.cache.set(merged.id, merged)
@@ -223,6 +272,8 @@ export class TaskHistoryStore {
 				throw new Error(`Failed to write parent-child link updates: ${(err as Error)?.message ?? String(err)}`)
 			}
 
+			await Promise.all([this.rememberTaskFileSignature(parentId), this.rememberTaskFileSignature(childId)])
+
 			// 4. Update in-memory cache only after successful writes
 			this.cache.set(parentId, mergedParent)
 			this.cache.set(childId, mergedChild)
@@ -243,6 +294,7 @@ export class TaskHistoryStore {
 	async delete(taskId: string): Promise<void> {
 		return this.withLock(async () => {
 			this.cache.delete(taskId)
+			this.taskFileSignatures.delete(taskId)
 
 			// Remove per-task file (best-effort)
 			try {
@@ -268,6 +320,7 @@ export class TaskHistoryStore {
 		return this.withLock(async () => {
 			for (const taskId of taskIds) {
 				this.cache.delete(taskId)
+				this.taskFileSignatures.delete(taskId)
 
 				try {
 					const filePath = await this.getTaskFilePath(taskId)
@@ -293,53 +346,117 @@ export class TaskHistoryStore {
 	 *
 	 * - Tasks on disk but missing from cache: read and add
 	 * - Tasks in cache but missing from disk: remove
+	 * - Tasks present in both: re-read only when history_item.json signature changed
+	 *   (mtimeMs + size + ino + ctimeMs). mtimeMs alone can collide on coarse filesystems;
+	 *   ctimeMs covers filesystems where ino is unreliable.
+	 *
+	 * Unchanged files are identified by `stat` and are not read.
+	 * `onExternalChange` is invoked only when something actually changed, and only
+	 * after the write lock is released.
 	 */
 	async reconcile(): Promise<void> {
-		// Run through the write lock to prevent interleaving with upsert/delete
-		return this.withLock(async () => {
-			const tasksDir = await this.getTasksDir()
+		if (this.disposed) {
+			return
+		}
 
-			let dirEntries: string[]
+		// Count the pass before awaiting the lock so dispose() during an in-flight
+		// reconcile does not flush the index over a pass that will abort.
+		this.reconcileInFlight += 1
+		let externalChange: { updated: string[]; removed: string[] } | undefined
+		try {
+			externalChange = await this.withLock(() => this.reconcileLocked())
+		} finally {
+			this.reconcileInFlight -= 1
+		}
+
+		this.notifyExternalChange(externalChange)
+	}
+
+	private async reconcileLocked(): Promise<{ updated: string[]; removed: string[] } | undefined> {
+		if (this.disposed) {
+			return undefined
+		}
+
+		const tasksDir = await this.getTasksDir()
+
+		let dirEntries: string[]
+		try {
+			dirEntries = await fs.readdir(tasksDir)
+		} catch {
+			return undefined // tasks dir doesn't exist yet
+		}
+
+		if (this.disposed) {
+			return undefined
+		}
+
+		// Filter out the index file and hidden files
+		const taskDirNames = dirEntries.filter((name) => !name.startsWith("_") && !name.startsWith("."))
+
+		const onDiskIds = new Set(taskDirNames)
+		const cacheIds = new Set(this.cache.keys())
+		const updated: string[] = []
+		const removed: string[] = []
+
+		for (const taskId of onDiskIds) {
+			if (this.disposed) {
+				return undefined
+			}
+
+			const filePath = path.join(tasksDir, taskId, GlobalFileNames.historyItem)
+			let signature: TaskFileSignature
 			try {
-				dirEntries = await fs.readdir(tasksDir)
+				signature = this.signatureFromStats(await fs.stat(filePath))
 			} catch {
-				return // tasks dir doesn't exist yet
+				// Directory without a readable history_item.json (or a race with delete).
+				// A cached entry whose file disappeared is dropped below if the dir is gone;
+				// a dir that still exists but has no file is left alone until the dir goes away.
+				continue
 			}
 
-			// Filter out the index file and hidden files
-			const taskDirNames = dirEntries.filter((name) => !name.startsWith("_") && !name.startsWith("."))
+			const knownSignature = this.taskFileSignatures.get(taskId)
+			const isNew = !cacheIds.has(taskId)
+			// Missing baseline (loaded from index, never stat'd) is treated as changed
+			// so the first reconcile after startup establishes both content and signature.
+			const signatureChanged = knownSignature === undefined || !this.signaturesEqual(knownSignature, signature)
+			if (!isNew && !signatureChanged) {
+				continue
+			}
 
-			const onDiskIds = new Set(taskDirNames)
-			const cacheIds = new Set(this.cache.keys())
-			let changed = false
-
-			// Tasks on disk but not in cache: read their history_item.json
-			for (const taskId of onDiskIds) {
-				if (!cacheIds.has(taskId)) {
-					try {
-						const item = await this.readTaskFile(taskId)
-						if (item) {
-							this.cache.set(taskId, item)
-							changed = true
-						}
-					} catch {
-						// Corrupted or missing file, skip
-					}
+			try {
+				const item = await this.readTaskFile(taskId)
+				if (this.disposed) {
+					return undefined
 				}
-			}
-
-			// Tasks in cache but not on disk: remove from cache
-			for (const taskId of cacheIds) {
-				if (!onDiskIds.has(taskId)) {
-					this.cache.delete(taskId)
-					changed = true
+				if (item) {
+					this.cache.set(taskId, item)
+					this.taskFileSignatures.set(taskId, signature)
+					updated.push(taskId)
 				}
+			} catch {
+				// Corrupted or missing file, skip
 			}
+		}
 
-			if (changed) {
-				this.scheduleIndexWrite()
+		// Tasks in cache but not on disk: remove from cache
+		for (const taskId of cacheIds) {
+			if (!onDiskIds.has(taskId)) {
+				this.cache.delete(taskId)
+				this.taskFileSignatures.delete(taskId)
+				removed.push(taskId)
 			}
-		})
+		}
+
+		if (this.disposed) {
+			return undefined
+		}
+
+		const changed = updated.length > 0 || removed.length > 0
+		if (changed) {
+			this.scheduleIndexWrite()
+		}
+
+		return changed ? { updated, removed } : undefined
 	}
 
 	// ────────────────────────────── Cache invalidation ──────────────────────────────
@@ -352,11 +469,14 @@ export class TaskHistoryStore {
 			const item = await this.readTaskFile(taskId)
 			if (item) {
 				this.cache.set(taskId, item)
+				await this.rememberTaskFileSignature(taskId)
 			} else {
 				this.cache.delete(taskId)
+				this.taskFileSignatures.delete(taskId)
 			}
 		} catch {
 			this.cache.delete(taskId)
+			this.taskFileSignatures.delete(taskId)
 		}
 	}
 
@@ -365,6 +485,7 @@ export class TaskHistoryStore {
 	 */
 	invalidateAll(): void {
 		this.cache.clear()
+		this.taskFileSignatures.clear()
 	}
 
 	// ────────────────────────────── Migration ──────────────────────────────
@@ -437,6 +558,55 @@ export class TaskHistoryStore {
 	}
 
 	/**
+	 * Record the current stat signature of a task file after a local write or read,
+	 * so the next reconcile does not treat our own write as an external change.
+	 * Best-effort: a missing file simply drops the baseline.
+	 */
+	private async rememberTaskFileSignature(taskId: string): Promise<void> {
+		try {
+			const filePath = await this.getTaskFilePath(taskId)
+			const stats = await fs.stat(filePath)
+			this.taskFileSignatures.set(taskId, this.signatureFromStats(stats))
+		} catch {
+			this.taskFileSignatures.delete(taskId)
+		}
+	}
+
+	private signatureFromStats(stats: {
+		mtimeMs: number
+		size: number
+		ino: number
+		ctimeMs: number
+	}): TaskFileSignature {
+		return { mtimeMs: stats.mtimeMs, size: stats.size, ino: stats.ino, ctimeMs: stats.ctimeMs }
+	}
+
+	private signaturesEqual(a: TaskFileSignature, b: TaskFileSignature): boolean {
+		return a.mtimeMs === b.mtimeMs && a.size === b.size && a.ino === b.ino && a.ctimeMs === b.ctimeMs
+	}
+
+	/**
+	 * Notify consumers of an external change. Must not run under the write lock.
+	 * A throwing callback is swallowed so reconcile itself still succeeds.
+	 */
+	private notifyExternalChange(changed: { updated: string[]; removed: string[] } | undefined): void {
+		if (!changed || this.disposed) {
+			return
+		}
+
+		const listener = this.onExternalChange
+		if (!listener) {
+			return
+		}
+
+		try {
+			listener(changed)
+		} catch {
+			// Consumer errors must not fail reconcile.
+		}
+	}
+
+	/**
 	 * Write a single task's history_item.json to disk using safeWriteJson.
 	 */
 	private async writeTaskFile(item: HistoryItem): Promise<void> {
@@ -481,12 +651,19 @@ export class TaskHistoryStore {
 	 * Schedule a debounced index write.
 	 */
 	private scheduleIndexWrite(): void {
+		if (this.disposed) {
+			return
+		}
+
 		if (this.indexWriteTimer) {
 			clearTimeout(this.indexWriteTimer)
 		}
 
 		this.indexWriteTimer = setTimeout(() => {
 			this.indexWriteTimer = null
+			if (this.disposed) {
+				return
+			}
 			this.writeIndex().catch(() => {
 				// Non-fatal: index is just a cache
 			})
@@ -494,64 +671,26 @@ export class TaskHistoryStore {
 	}
 
 	/**
-	 * Start watching the tasks directory for external changes.
-	 */
-	private async startWatcher(): Promise<void> {
-		if (this.disposed) {
-			console.warn("TaskHistoryStore: Cannot start watcher on disposed instance")
-			return
-		}
-
-		// Check for existing watcher leak
-		if (this.fsWatcher) {
-			console.error("TaskHistoryStore: Watcher already exists! Closing old watcher to prevent leak.")
-			this.fsWatcher.close()
-			this.fsWatcher = null
-		}
-
-		const tasksDir = await this.getTasksDir()
-
-		try {
-			this.fsWatcher = fsSync.watch(
-				tasksDir,
-				{ recursive: true },
-				(eventType: string, filename: string | null) => {
-					if (this.disposed) return
-					if (!filename) return
-
-					// Only react to changes in history_item.json files
-					if (filename.endsWith(GlobalFileNames.historyItem)) {
-						const taskId = path.dirname(filename)
-						// Debounce invalidation to avoid thrashing
-						setTimeout(() => {
-							if (!this.disposed) {
-								this.invalidate(taskId).catch(() => {
-									// Non-fatal
-								})
-							}
-						}, 100)
-					}
-				},
-			)
-			console.log(`TaskHistoryStore: Started watching ${tasksDir}`)
-		} catch {
-			// fs.watch may not be available on all platforms
-		}
-	}
-
-	/**
-	 * Start periodic reconciliation as a defensive fallback.
+	 * Start periodic reconciliation. This is the only cross-instance discovery path:
+	 * recursive fs.watch is intentionally not used (it exhausts inotify watches).
 	 */
 	private startPeriodicReconciliation(): void {
 		if (this.disposed) return
+		if (this.reconcileTimer) return
 
 		this.reconcileTimer = setInterval(() => {
-			if (!this.disposed) {
-				this.reconcile().catch(() => {
+			if (this.disposed) return
+			// Skip overlapping timer ticks. An explicit reconcile() is not gated by this flag.
+			if (this.periodicReconcileRunning) return
+			this.periodicReconcileRunning = true
+			this.reconcile()
+				.catch(() => {
 					// Non-fatal
 				})
-			}
-		}, TaskHistoryStore.RECONCILE_INTERVAL_MS)
+				.finally(() => {
+					this.periodicReconcileRunning = false
+				})
+		}, this.reconcileIntervalMs)
 	}
 
 	/**

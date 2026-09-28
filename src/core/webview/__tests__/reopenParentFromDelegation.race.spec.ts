@@ -42,6 +42,14 @@ describe("reopenParentFromDelegation race condition handling", () => {
 		provider.updateGlobalState = vi.fn().mockResolvedValue(undefined)
 		provider.activateProviderProfile = vi.fn().mockResolvedValue(undefined)
 		provider.emit = vi.fn()
+		// reopenParentFromDelegationImpl replaces the paused parent in clineStack (it was
+		// pushed there by an earlier delegateParentAndOpenChild call and left paused rather
+		// than removed). Seed a placeholder paused-parent entry so the "replace in stack"
+		// branch (ClineProvider.ts reopenParentFromDelegationImpl) is exercised realistically.
+		provider.clineStack = [{ taskId: "parent", instanceId: "paused-parent" }]
+		provider.taskEventListeners = new Map()
+		provider.performPreparationTasks = vi.fn().mockResolvedValue(undefined)
+		provider.addClineToStack = vi.fn().mockResolvedValue(undefined)
 		return provider
 	}
 
@@ -66,6 +74,8 @@ describe("reopenParentFromDelegation race condition handling", () => {
 		})
 		provider.updateTaskHistory = vi.fn().mockResolvedValue([])
 		provider.createTaskWithHistoryItem = vi.fn().mockResolvedValue({
+			taskId: "parent",
+			emit: vi.fn(),
 			overwriteClineMessages: vi.fn().mockResolvedValue(undefined),
 			overwriteApiConversationHistory: vi.fn().mockResolvedValue(undefined),
 			resumeAfterDelegation,
@@ -128,11 +138,15 @@ describe("reopenParentFromDelegation race condition handling", () => {
 		provider.createTaskWithHistoryItem = vi
 			.fn()
 			.mockResolvedValueOnce({
+				taskId: "parent",
+				emit: vi.fn(),
 				overwriteClineMessages: vi.fn().mockResolvedValue(undefined),
 				overwriteApiConversationHistory: vi.fn().mockResolvedValue(undefined),
 				resumeAfterDelegation: vi.fn(() => pendingFirstResume),
 			})
 			.mockResolvedValueOnce({
+				taskId: "parent",
+				emit: vi.fn(),
 				overwriteClineMessages: vi.fn().mockResolvedValue(undefined),
 				overwriteApiConversationHistory: vi.fn().mockResolvedValue(undefined),
 				resumeAfterDelegation: vi.fn().mockResolvedValue(undefined),
@@ -188,6 +202,8 @@ describe("reopenParentFromDelegation race condition handling", () => {
 		})
 
 		provider.createTaskWithHistoryItem = vi.fn().mockResolvedValue({
+			taskId: "parent",
+			emit: vi.fn(),
 			overwriteClineMessages: vi.fn().mockResolvedValue(undefined),
 			overwriteApiConversationHistory: vi.fn().mockResolvedValue(undefined),
 			resumeAfterDelegation: vi.fn().mockResolvedValue(undefined),
@@ -247,6 +263,8 @@ describe("reopenParentFromDelegation race condition handling", () => {
 		})
 		provider.updateTaskHistory = vi.fn().mockResolvedValue([])
 		provider.createTaskWithHistoryItem = vi.fn().mockResolvedValue({
+			taskId: "parent",
+			emit: vi.fn(),
 			overwriteClineMessages: vi.fn().mockResolvedValue(undefined),
 			overwriteApiConversationHistory: vi.fn().mockResolvedValue(undefined),
 			resumeAfterDelegation: vi.fn().mockResolvedValue(undefined),

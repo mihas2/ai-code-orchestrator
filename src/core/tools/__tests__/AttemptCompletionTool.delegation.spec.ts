@@ -55,7 +55,7 @@ describe("AttemptCompletionTool delegation error handling", () => {
 
 		expect(consoleErrorSpy).toHaveBeenCalledWith(
 			expect.stringContaining(
-				"[AttemptCompletionTool] Failed to reopen parent task parent-task from child child-task: Resume failed",
+				"[DELEGATE_TO_PARENT] Failed to reopen parent task parent-task from child child-task: Resume failed",
 			),
 		)
 

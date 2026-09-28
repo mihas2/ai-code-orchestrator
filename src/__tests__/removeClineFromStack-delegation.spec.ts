@@ -212,7 +212,9 @@ describe("ClineProvider.removeClineFromStack() delegation awareness", () => {
 			},
 		})
 
-		// Call with skipDelegationRepair: true (as delegateParentAndOpenChild would)
+		// Call with skipDelegationRepair: true (as delegateParentAndOpenChild would when
+		// popping a delegating task from the stack; the parent it delegates to next stays
+		// paused in place rather than being disposed)
 		await (ClineProvider.prototype as any).removeClineFromStack.call(provider, { skipDelegationRepair: true })
 
 		// Stack should be empty after pop
@@ -225,8 +227,11 @@ describe("ClineProvider.removeClineFromStack() delegation awareness", () => {
 
 	it("does NOT reset grandparent during A→B→C nested delegation transition", async () => {
 		// Scenario: A delegated to B, B is now delegating to C.
-		// delegateParentAndOpenChild() pops B via removeClineFromStack({ skipDelegationRepair: true }).
-		// Grandparent A should remain "delegated" — its metadata must not be repaired.
+		// Under the pause-based model, B calling delegateParentAndOpenChild would pause B in
+		// place (isPaused = true) and push C, rather than popping B from the stack. This test
+		// simulates a caller that still exercises removeClineFromStack({ skipDelegationRepair: true })
+		// directly, e.g. cleanup after B is disposed. Grandparent A should remain "delegated" —
+		// its metadata must not be repaired.
 		const grandparentHistory = {
 			id: "task-A",
 			task: "Grandparent task",
@@ -265,7 +270,8 @@ describe("ClineProvider.removeClineFromStack() delegation awareness", () => {
 			updateTaskHistory,
 		}
 
-		// Simulate what delegateParentAndOpenChild does: pop B with skipDelegationRepair
+		// Simulate a direct removeClineFromStack call with skipDelegationRepair, as used when
+		// disposing a task outside the normal pause-based delegation flow
 		await (ClineProvider.prototype as any).removeClineFromStack.call(provider, { skipDelegationRepair: true })
 
 		// B was popped

@@ -331,16 +331,16 @@
 		"support": "Bitte unterstütze AI Code Orchestrator, indem du uns auf <githubLink>GitHub</githubLink> einen Stern gibst.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} fügt einen schnelleren Genehmigungsworkflow mit der neuen Schaltfläche \"Ausführen und Erlauben\" hinzu, aktualisierte AIco-Icons basierend auf dem offiziellen Logo und überarbeitete i18n-Textschlüssel für bessere Konsistenz.",
-			"continuity": "Diese Version behebt auch Race Conditions bei der automatischen Genehmigung und im Orchestrator-Modus sowie Probleme bei der Rollenzuweisung und Workspace-Isolation.",
-			"alternatives": "Die Modellauswahl für Rollen ist jetzt von der Konfiguration bis zur Ausführung konsistent.",
-			"signoff": "Viel Spaß beim Programmieren!"
+			"intro": "AI Code Orchestrator {{version}} bringt allgemeine Verbesserungen, hilfreiche Korrekturen und ein flüssigeres Erlebnis.",
+			"continuity": "Aufgaben werden zuverlässiger abgeschlossen, und du kannst leichter dort weitermachen, wo du aufgehört hast.",
+			"alternatives": "Die tägliche Arbeit fühlt sich klarer und einheitlicher an.",
+			"signoff": "Viel Spaß beim Coden!"
 		},
 		"release": {
 			"heading": "Was ist neu:",
-			"gpt55": "GPT-5.5 via OpenAI Codex: GPT-5.5-Unterstützung im OpenAI Codex-Provider hinzugefügt, damit du das neueste Modell direkt aus AI Code Orchestrator heraus nutzen kannst.",
-			"claudeOpus47": "Claude Opus 4.7 auf Vertex AI: Claude Opus 4.7 zum Vertex AI-Provider hinzugefügt – Anthropics neuestes Flaggschiff-Reasoning-Modell.",
-			"checkpointNav": "Navigation zu vorherigen Checkpoints: Neue Steuerelemente im Chat, um durch frühere Checkpoints zurückzuspringen, mit vollständiger i18n-Unterstützung."
+			"gpt55": "Klarere Arbeitsweisen: Jede Rolle ist leichter zu verstehen, damit du die passende Hilfe für die Aufgabe wählen kannst.",
+			"claudeOpus47": "Zuverlässigere Aufgaben: Erledigte Arbeit bleibt erledigt, und Ergebnisse kommen reibungsloser zurück.",
+			"checkpointNav": "Ein flüssigeres Erlebnis: Neu anfangen und zwischen Aufgaben wechseln fühlt sich einfacher an."
 		},
 		"cloudAgents": {
 			"heading": "Neu in der Cloud:",
