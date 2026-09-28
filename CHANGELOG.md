@@ -1,6 +1,24 @@
 # AI Code Orchestrator
 
-## [1.3.2] - 2026-09-11
+## [1.3.4] - 2026-09-28
+
+### Added
+
+- Added Translate as a built-in mode, alongside Code, Architect, Ask, Debug, Reviewer, and Orchestrator.
+
+### Changed
+
+- Standardized the built-in modes so each role has a clear purpose and the tools it needs, including commands and connections to external tools.
+- Clarified how delegated roles finish and report their work, so results are easier to check and hand back.
+
+### Fixed
+
+- Completed subtasks stay finished and return control to the parent task instead of starting again.
+- Long approvals and long-running commands no longer stop a task on their own. A task now ends when the work is completed, you stop it, or the request fails.
+- New Task clears the full task stack in one click and returns to the home screen.
+- A failed delegated task no longer leaves a duplicate parent task.
+- Reviewer work is routed to the Reviewer role again, and mode lists include every built-in mode.
+- Task history updates no longer use an excessive number of file watches, which could disrupt the editor.
 
 ## [1.3.3] - 2026-09-19
 
@@ -20,6 +38,8 @@
 - Added comprehensive diagnostic logging for task lifecycle and delegation events.
 - Simplified error handling and resolved ESLint warnings across codebase.
 - Improved checkpoint pause/resume mechanism with better coordination.
+
+## [1.3.2] - 2026-09-11
 
 ### Added
 

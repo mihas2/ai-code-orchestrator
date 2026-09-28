@@ -304,16 +304,16 @@
 		"support": "Steun AI Code Orchestrator door ons een ster te geven op <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} voegt een snellere goedkeuringsworkflow toe met de nieuwe knop \"Uitvoeren en Toestaan\", bijgewerkte AIco-iconen gebaseerd op het officiële logo en geherstructureerde i18n-tekstsleutels voor betere consistentie.",
-			"continuity": "Deze release lost ook race conditions op in automatische goedkeuring en orchestrator-modus, samen met problemen met roltoewijzing en workspace-isolatie.",
-			"alternatives": "Modelselectie per rol werkt nu consistent van configuratie tot uitvoering.",
-			"signoff": "Veel programmeerplezier!"
+			"intro": "AI Code Orchestrator {{version}} brengt algemene verbeteringen, nuttige correcties en een soepelere ervaring.",
+			"continuity": "Taken worden betrouwbaarder afgerond, en het is makkelijker om verder te gaan waar je was gebleven.",
+			"alternatives": "Dagelijks werk voelt duidelijker en consistenter aan.",
+			"signoff": "Veel plezier met coderen!"
 		},
 		"release": {
 			"heading": "Wat is er nieuw:",
-			"gpt55": "GPT-5.5 via OpenAI Codex: GPT-5.5-ondersteuning toegevoegd in de OpenAI Codex-provider, zodat je het nieuwste model direct vanuit AI Code Orchestrator kunt gebruiken.",
-			"claudeOpus47": "Claude Opus 4.7 op Vertex AI: Claude Opus 4.7 toegevoegd aan de Vertex AI-provider voor Anthropic's nieuwste vlaggenschip-reasoningmodel.",
-			"checkpointNav": "Navigatie naar vorige checkpoints: Bediening toegevoegd in de chat om terug te springen door eerdere checkpoints, met volledige i18n-ondersteuning."
+			"gpt55": "Duidelijkere manieren van werken: elke rol is makkelijker te begrijpen, zodat je de juiste hulp voor de taak kiest.",
+			"claudeOpus47": "Betrouwbaardere taken: afgerond werk blijft afgerond, en resultaten komen soepeler terug.",
+			"checkpointNav": "Een soepelere ervaring: opnieuw beginnen en tussen taken wisselen voelt eenvoudiger."
 		},
 		"cloudAgents": {
 			"heading": "Nieuw in de Cloud:",

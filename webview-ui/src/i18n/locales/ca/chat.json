@@ -331,16 +331,16 @@
 		"support": "Si us plau, dona suport a AI Code Orchestrator fent una estrella al nostre <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} afegeix un flux d'aprovació més ràpid amb el nou botó \"Executar i Permetre\", icones AIco actualitzades basades en el logotip oficial i claus de text i18n refactoritzades per a una millor coherència.",
-			"continuity": "Aquesta versió també corregeix les condicions de carrera en l'aprovació automàtica i el mode orquestrador, juntament amb problemes d'assignació de rols i aïllament de l'espai de treball.",
-			"alternatives": "La selecció de models per rol ara és coherent des de la configuració fins a l’execució.",
+			"intro": "AI Code Orchestrator {{version}} aporta millores generals, correccions útils i una experiència més fluida.",
+			"continuity": "Les tasques acaben de manera més fiable i és més fàcil continuar on ho havies deixat.",
+			"alternatives": "El treball del dia a dia se sent més clar i coherent.",
 			"signoff": "Bona programació!"
 		},
 		"release": {
 			"heading": "Què hi ha de nou:",
-			"gpt55": "GPT-5.5 via OpenAI Codex: S'ha afegit suport per a GPT-5.5 al proveïdor OpenAI Codex perquè puguis utilitzar el model més recent directament des de AI Code Orchestrator.",
-			"claudeOpus47": "Claude Opus 4.7 a Vertex AI: S'ha afegit Claude Opus 4.7 al proveïdor Vertex AI, el nou model de raonament emblemàtic d'Anthropic.",
-			"checkpointNav": "Navegació per Checkpoints Anteriors: S'han afegit controls al xat per tornar enrere pels checkpoints previs, amb suport complet d'i18n."
+			"gpt55": "Maneres de treballar més clares: cada rol és més fàcil d'entendre, perquè puguis triar l'ajuda adequada per a cada tasca.",
+			"claudeOpus47": "Tasques més fiables: la feina acabada es manté acabada i els resultats tornen amb més fluïdesa.",
+			"checkpointNav": "Una experiència més fluida: començar de nou i moure't entre tasques és més senzill."
 		},
 		"cloudAgents": {
 			"heading": "Novetats al núvol:",

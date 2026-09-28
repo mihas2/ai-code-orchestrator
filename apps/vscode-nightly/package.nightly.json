@@ -1,6 +1,6 @@
 {
 	"name": "ai-code-orchestrator-nightly",
-	"version": "1.3.3",
+	"version": "1.3.4",
 	"icon": "assets/icons/icon-nightly.png",
 	"scripts": {}
 }

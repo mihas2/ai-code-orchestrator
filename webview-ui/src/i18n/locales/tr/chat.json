@@ -331,16 +331,16 @@
 		"support": "<githubLink>GitHub</githubLink>'da yıldız vererek AI Code Orchestrator'u destekle.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}}, yeni \"Çalıştır ve İzin Ver\" düğmesiyle daha hızlı onay iş akışı, resmi logoya dayalı güncellenmiş AIco simgeleri ve daha iyi tutarlılık için yeniden düzenlenmiş i18n metin anahtarları ekliyor.",
-			"continuity": "Bu sürüm ayrıca otomatik onay ve orkestratör modunda yarış koşullarını ve rol atama ve çalışma alanı izolasyonu sorunlarını düzeltiyor.",
-			"alternatives": "Rol modeli seçimi artık yapılandırmadan yürütmeye kadar tutarlı çalışıyor.",
+			"intro": "AI Code Orchestrator {{version}} genel iyileştirmeler, yararlı düzeltmeler ve daha akıcı bir deneyim sunar.",
+			"continuity": "Görevler daha güvenilir şekilde tamamlanır ve kaldığınız yerden devam etmek daha kolaydır.",
+			"alternatives": "Günlük çalışma daha net ve tutarlı hissettirir.",
 			"signoff": "İyi kodlamalar!"
 		},
 		"release": {
 			"heading": "Yenilikler:",
-			"gpt55": "OpenAI Codex üzerinden GPT-5.5: En son modeli doğrudan AI Code Orchestrator'dan kullanabilmen için OpenAI Codex sağlayıcısına GPT-5.5 desteği eklendi.",
-			"claudeOpus47": "Vertex AI'da Claude Opus 4.7: Anthropic'in en yeni amiral gemisi akıl yürütme modeli olan Claude Opus 4.7 Vertex AI sağlayıcısına eklendi.",
-			"checkpointNav": "Önceki Checkpoint Navigasyonu: Sohbetten önceki checkpoint'lere geri atlayabilmen için kontroller eklendi ve tam i18n desteği sunuluyor."
+			"gpt55": "Daha net çalışma biçimleri: her rolü anlamak daha kolay, böylece görev için doğru yardımı seçebilirsin.",
+			"claudeOpus47": "Daha güvenilir görevler: biten iş bitmiş kalır ve sonuçlar daha akıcı şekilde geri gelir.",
+			"checkpointNav": "Daha akıcı bir deneyim: yeniden başlamak ve görevler arasında geçiş yapmak daha basit."
 		},
 		"cloudAgents": {
 			"heading": "Cloud'daki yenilikler:",

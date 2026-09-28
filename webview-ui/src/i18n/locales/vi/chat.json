@@ -331,16 +331,16 @@
 		"support": "Hãy ủng hộ AI Code Orchestrator bằng cách gắn sao cho chúng tôi trên <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} bổ sung quy trình phê duyệt nhanh hơn với nút \"Chạy và Cho phép\" mới, biểu tượng AIco được cập nhật dựa trên logo chính thức và các khóa văn bản i18n được tái cấu trúc để nhất quán hơn.",
-			"continuity": "Bản phát hành này cũng sửa các điều kiện race trong phê duyệt tự động và chế độ orchestrator, cùng với các vấn đề gán vai trò và cô lập không gian làm việc.",
-			"alternatives": "Việc chọn model theo vai trò giờ đây nhất quán từ cấu hình đến thực thi.",
+			"intro": "AI Code Orchestrator {{version}} mang đến những cải thiện chung, bản sửa hữu ích và trải nghiệm mượt mà hơn.",
+			"continuity": "Tác vụ hoàn thành đáng tin cậy hơn, và dễ dàng tiếp tục từ chỗ bạn đã dừng.",
+			"alternatives": "Công việc hằng ngày trở nên rõ ràng và nhất quán hơn.",
 			"signoff": "Chúc bạn lập trình vui vẻ!"
 		},
 		"release": {
 			"heading": "Tính năng mới:",
-			"gpt55": "GPT-5.5 qua OpenAI Codex: Đã thêm hỗ trợ GPT-5.5 trong nhà cung cấp OpenAI Codex để bạn có thể sử dụng model mới nhất trực tiếp từ AI Code Orchestrator.",
-			"claudeOpus47": "Claude Opus 4.7 trên Vertex AI: Đã thêm Claude Opus 4.7 vào nhà cung cấp Vertex AI - model reasoning flagship mới nhất của Anthropic.",
-			"checkpointNav": "Điều hướng Checkpoint trước đó: Đã thêm các điều khiển trong chat để quay lại các checkpoint trước, với hỗ trợ i18n đầy đủ."
+			"gpt55": "Cách làm việc rõ ràng hơn: mỗi vai trò dễ hiểu hơn, để bạn chọn đúng sự trợ giúp cho tác vụ.",
+			"claudeOpus47": "Tác vụ đáng tin cậy hơn: việc đã xong vẫn giữ nguyên trạng thái hoàn thành, và kết quả quay lại mượt mà hơn.",
+			"checkpointNav": "Trải nghiệm mượt mà hơn: bắt đầu lại và chuyển giữa các tác vụ trở nên đơn giản hơn."
 		},
 		"cloudAgents": {
 			"heading": "Mới trên Cloud:",

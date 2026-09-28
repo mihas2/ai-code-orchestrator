@@ -331,16 +331,16 @@
 		"support": "Wesprzyj AI Code Orchestrator, dając nam gwiazdkę na <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} dodaje szybszy przepływ zatwierdzania z nowym przyciskiem \"Uruchom i Zezwól\", zaktualizowane ikony AIco oparte na oficjalnym logo oraz zrefaktoryzowane klucze tekstowe i18n dla większej spójności.",
-			"continuity": "To wydanie naprawia również warunki wyścigu w automatycznym zatwierdzaniu i trybie orkiestratora, a także problemy z przypisywaniem ról i izolacją obszaru roboczego.",
-			"alternatives": "Wybór modeli dla ról jest teraz spójny od konfiguracji do wykonania.",
-			"signoff": "Udanej pracy!"
+			"intro": "AI Code Orchestrator {{version}} wprowadza ogólne ulepszenia, pomocne poprawki i płynniejsze doświadczenie.",
+			"continuity": "Zadania kończą się pewniej, a łatwiej jest wrócić do miejsca, w którym przerwałeś.",
+			"alternatives": "Codzienna praca wydaje się jaśniejsza i bardziej spójna.",
+			"signoff": "Powodzenia w kodowaniu!"
 		},
 		"release": {
 			"heading": "Co nowego:",
-			"gpt55": "GPT-5.5 przez OpenAI Codex: Dodano obsługę GPT-5.5 w dostawcy OpenAI Codex, żebyś mógł korzystać z najnowszego modelu bezpośrednio z AI Code Orchestrator.",
-			"claudeOpus47": "Claude Opus 4.7 w Vertex AI: Dodano Claude Opus 4.7 do dostawcy Vertex AI - najnowszy flagowy model rozumowania od Anthropic.",
-			"checkpointNav": "Nawigacja po poprzednich checkpointach: Dodano kontrolki w czacie, żebyś mógł cofać się do wcześniejszych checkpointów, z pełną obsługą i18n."
+			"gpt55": "Jaśniejsze sposoby pracy: każda rola jest łatwiejsza do zrozumienia, więc łatwiej wybrać właściwą pomoc do zadania.",
+			"claudeOpus47": "Bardziej niezawodne zadania: ukończona praca pozostaje ukończona, a wyniki wracają płynniej.",
+			"checkpointNav": "Płynniejsze doświadczenie: zaczynanie od nowa i przechodzenie między zadaniami jest prostsze."
 		},
 		"cloudAgents": {
 			"heading": "Nowości w chmurze:",

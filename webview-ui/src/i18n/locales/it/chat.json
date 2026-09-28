@@ -331,16 +331,16 @@
 		"support": "Sostieni AI Code Orchestrator lasciandoci una stella su <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} aggiunge un flusso di approvazione più veloce con il nuovo pulsante \"Esegui e Permetti\", icone AIco aggiornate basate sul logo ufficiale e chiavi di testo i18n refactorizzate per una maggiore coerenza.",
-			"continuity": "Questa versione corregge anche le race condition nell'approvazione automatica e nella modalità orchestrator, insieme a problemi di assegnazione dei ruoli e isolamento dello spazio di lavoro.",
-			"alternatives": "La selezione dei modelli per ruolo è ora coerente dalla configurazione all’esecuzione.",
-			"signoff": "Buon lavoro!"
+			"intro": "AI Code Orchestrator {{version}} porta miglioramenti generali, correzioni utili e un'esperienza più fluida.",
+			"continuity": "Le attività si concludono in modo più affidabile ed è più facile riprendere da dove avevi lasciato.",
+			"alternatives": "Il lavoro di tutti i giorni risulta più chiaro e coerente.",
+			"signoff": "Buon coding!"
 		},
 		"release": {
 			"heading": "Novità:",
-			"gpt55": "GPT-5.5 via OpenAI Codex: Aggiunto il supporto a GPT-5.5 nel provider OpenAI Codex così puoi usare il modello più recente direttamente da AI Code Orchestrator.",
-			"claudeOpus47": "Claude Opus 4.7 su Vertex AI: Aggiunto Claude Opus 4.7 al provider Vertex AI, il nuovo modello di ragionamento di punta di Anthropic.",
-			"checkpointNav": "Navigazione Checkpoint Precedenti: Aggiunti controlli nella chat per tornare indietro ai checkpoint precedenti, con pieno supporto i18n."
+			"gpt55": "Modi di lavorare più chiari: ogni ruolo è più facile da capire, così puoi scegliere l'aiuto giusto per l'attività.",
+			"claudeOpus47": "Attività più affidabili: il lavoro completato resta completato e i risultati tornano in modo più fluido.",
+			"checkpointNav": "Un'esperienza più fluida: ricominciare e passare da un'attività all'altra è più semplice."
 		},
 		"cloudAgents": {
 			"heading": "Novità nel Cloud:",

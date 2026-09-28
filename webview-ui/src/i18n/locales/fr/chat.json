@@ -331,16 +331,16 @@
 		"support": "Soutiens AI Code Orchestrator en nous donnant une étoile sur <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} ajoute un flux d'approbation plus rapide avec le nouveau bouton \"Exécuter et Autoriser\", des icônes AIco mises à jour basées sur le logo officiel et des clés de texte i18n refactorisées pour plus de cohérence.",
-			"continuity": "Cette version corrige également les conditions de concurrence dans l'approbation automatique et le mode orchestrateur, ainsi que les problèmes d'attribution de rôle et d'isolation de l'espace de travail.",
-			"alternatives": "La sélection des modèles par rôle est désormais cohérente, de la configuration à l’exécution.",
-			"signoff": "Bon code !"
+			"intro": "AI Code Orchestrator {{version}} apporte des améliorations générales, des corrections utiles et une expérience plus fluide.",
+			"continuity": "Les tâches se terminent de façon plus fiable, et il est plus facile de reprendre là où tu t'étais arrêté.",
+			"alternatives": "Le travail au quotidien paraît plus clair et plus cohérent.",
+			"signoff": "Bon développement !"
 		},
 		"release": {
 			"heading": "Quoi de neuf :",
-			"gpt55": "GPT-5.5 via OpenAI Codex : Le support de GPT-5.5 a été ajouté au fournisseur OpenAI Codex pour que tu puisses utiliser le tout dernier modèle directement depuis AI Code Orchestrator.",
-			"claudeOpus47": "Claude Opus 4.7 sur Vertex AI : Claude Opus 4.7 a été ajouté au fournisseur Vertex AI, le tout nouveau modèle de raisonnement phare d'Anthropic.",
-			"checkpointNav": "Navigation vers les checkpoints précédents : Des contrôles ont été ajoutés dans le chat pour revenir en arrière à travers les checkpoints précédents, avec un support i18n complet."
+			"gpt55": "Des façons de travailler plus claires : chaque rôle est plus facile à comprendre, pour choisir l'aide adaptée à la tâche.",
+			"claudeOpus47": "Des tâches plus fiables : le travail terminé le reste, et les résultats reviennent plus naturellement.",
+			"checkpointNav": "Une expérience plus fluide : repartir de zéro et passer d'une tâche à l'autre est plus simple."
 		},
 		"cloudAgents": {
 			"heading": "Nouveautés dans le Cloud :",

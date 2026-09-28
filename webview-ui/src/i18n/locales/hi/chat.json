@@ -331,16 +331,16 @@
 		"support": "कृपया <githubLink>GitHub</githubLink> पर हमें स्टार देकर AI Code Orchestrator का समर्थन करें।",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} नए \"रन और अनुमति दें\" बटन के साथ तेज़ अनुमोदन वर्कफ़्लो, आधिकारिक लोगो पर आधारित अपडेट किए गए AIco आइकन, और बेहतर स्थिरता के लिए पुनर्गठित i18n टेक्स्ट keys जोड़ता है।",
-			"continuity": "यह रिलीज़ ऑटो-अप्रूवल और ऑर्केस्ट्रेटर मोड में रेस कंडीशन, साथ ही भूमिका असाइनमेंट और वर्कस्पेस अलगाव की समस्याओं को भी ठीक करता है।",
-			"alternatives": "भूमिका मॉडल चयन अब कॉन्फ़िगरेशन से निष्पादन तक एक जैसा काम करता है।",
+			"intro": "AI Code Orchestrator {{version}} सामान्य सुधार, उपयोगी सुधार और एक सहज अनुभव लाता है।",
+			"continuity": "कार्य अधिक भरोसेमंद तरीके से पूरे होते हैं, और जहाँ आपने छोड़ा था वहाँ से आगे बढ़ना आसान है।",
+			"alternatives": "रोज़मर्रा का काम अधिक स्पष्ट और सुसंगत लगता है।",
 			"signoff": "कोडिंग का आनंद लें!"
 		},
 		"release": {
 			"heading": "नया क्या है:",
-			"gpt55": "OpenAI Codex के माध्यम से GPT-5.5: OpenAI Codex provider में GPT-5.5 सपोर्ट जोड़ा गया, ताकि आप नवीनतम मॉडल का उपयोग सीधे AI Code Orchestrator से कर सकें।",
-			"claudeOpus47": "Vertex AI पर Claude Opus 4.7: Anthropic के नवीनतम flagship reasoning मॉडल के लिए Vertex AI provider में Claude Opus 4.7 जोड़ा गया।",
-			"checkpointNav": "पिछले Checkpoint की Navigation: चैट में controls जोड़े गए ताकि आप पिछले checkpoints पर वापस जा सकें, पूर्ण i18n सपोर्ट के साथ।"
+			"gpt55": "काम करने के स्पष्ट तरीके: हर भूमिका समझना आसान है, ताकि आप कार्य के लिए सही मदद चुन सकें।",
+			"claudeOpus47": "अधिक भरोसेमंद कार्य: पूरा हुआ काम पूरा ही रहता है, और परिणाम अधिक सहजता से लौटते हैं।",
+			"checkpointNav": "एक सहज अनुभव: नया काम शुरू करना और कार्यों के बीच जाना सरल लगता है।"
 		},
 		"cloudAgents": {
 			"heading": "क्लाउड में नया:",

@@ -331,16 +331,16 @@
 		"support": "Apoie o AI Code Orchestrator nos dando uma estrela no <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "O AI Code Orchestrator {{version}} adiciona um fluxo de aprovação mais rápido com o novo botão \"Executar e Permitir\", ícones AIco atualizados baseados no logo oficial e chaves de texto i18n refatoradas para maior consistência.",
-			"continuity": "Esta versão também corrige condições de corrida na aprovação automática e no modo orquestrador, além de problemas de atribuição de função e isolamento do espaço de trabalho.",
-			"alternatives": "A seleção de modelos por função agora é consistente da configuração à execução.",
-			"signoff": "Bom trabalho!"
+			"intro": "AI Code Orchestrator {{version}} traz melhorias gerais, correções úteis e uma experiência mais fluida.",
+			"continuity": "As tarefas terminam de forma mais confiável, e é mais fácil continuar de onde você parou.",
+			"alternatives": "O trabalho do dia a dia parece mais claro e consistente.",
+			"signoff": "Bom desenvolvimento!"
 		},
 		"release": {
 			"heading": "Novidades:",
-			"gpt55": "GPT-5.5 via OpenAI Codex: Adicionado suporte ao GPT-5.5 no provedor OpenAI Codex para você usar o modelo mais recente diretamente do AI Code Orchestrator.",
-			"claudeOpus47": "Claude Opus 4.7 no Vertex AI: Adicionado o Claude Opus 4.7 ao provedor Vertex AI, o mais novo modelo de raciocínio flagship da Anthropic.",
-			"checkpointNav": "Navegação por checkpoints anteriores: Adicionados controles no chat para voltar por checkpoints anteriores, com suporte completo a i18n."
+			"gpt55": "Formas mais claras de trabalhar: cada papel é mais fácil de entender, para você escolher a ajuda certa para a tarefa.",
+			"claudeOpus47": "Tarefas mais confiáveis: o trabalho concluído permanece concluído, e os resultados voltam com mais fluidez.",
+			"checkpointNav": "Uma experiência mais fluida: começar de novo e alternar entre tarefas ficou mais simples."
 		},
 		"cloudAgents": {
 			"heading": "Novidades na Nuvem:",
