@@ -106,6 +106,22 @@ describe("role prompts unification", () => {
 			expect(instructions).not.toMatch(/simple[\s\S]*moderate[\s\S]*complex/)
 			expect(instructions).not.toContain("STEP 1")
 		})
+
+		it("routes independent review to reviewer without substituting Architect or Debug", () => {
+			const instructions = orchestrator?.customInstructions ?? ""
+			const roleMapEnd = instructions.indexOf("Role map:")
+			const reviewRule = instructions.indexOf(
+				"Route independent review of completed work and review-only requests",
+			)
+			expect(roleMapEnd).toBeGreaterThanOrEqual(0)
+			expect(reviewRule).toBeGreaterThan(roleMapEnd)
+			expect(instructions).toContain(
+				"Route independent review of completed work and review-only requests to `reviewer`, not Architect or Debug as substitutes. Architect handles design decisions; Debug handles diagnosis. Use the current MODES catalog and exact slugs when delegating; tool parameter examples are not an exhaustive list. Do not claim a listed mode is unavailable without evidence from an actual tool failure. If a mode is genuinely unavailable or its effective instructions conflict with the requested review, report the blocker rather than silently substituting another role.",
+			)
+			expect(instructions).toContain("proportionate to risk")
+			expect(instructions).not.toContain("review every")
+			expect(instructions).not.toContain("always review")
+		})
 	})
 
 	describe("UI metadata schema", () => {
