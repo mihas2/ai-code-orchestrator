@@ -107,6 +107,39 @@ describe("role prompts unification", () => {
 			expect(instructions).not.toContain("STEP 1")
 		})
 
+		it("inspects with commands and MCP without treating tool access as execution", () => {
+			const instructions = orchestrator?.customInstructions ?? ""
+			expect(orchestrator?.roleDefinition).toContain(
+				"You investigate, delegate, and verify outcomes; specialists perform implementation and operational work.",
+			)
+			expect(instructions).toContain(
+				"Use read access, commands, and MCP only for bounded inspection of existing code, configuration, diffs, logs, and results",
+			)
+			expect(instructions).toContain("Tool access is not permission to execute the work yourself.")
+			expect(instructions).not.toContain("Do not write code yourself.")
+		})
+
+		it("delegates tests, builds, commits, and other execution instead of switching into it", () => {
+			const instructions = orchestrator?.customInstructions ?? ""
+			expect(instructions).toContain(
+				"builds and test execution, commits, deployments, and other state-changing operations",
+			)
+			expect(instructions).toContain("even when they seem trivial or can be done through a command or MCP")
+			expect(instructions).toContain("Do not bypass delegation by switching yourself into an executor role.")
+			expect(instructions).toContain("Delegate execution to the appropriate specialist.")
+		})
+
+		it("keeps accountability and read, command, and mcp access without edit", () => {
+			const instructions = orchestrator?.customInstructions ?? ""
+			expect(instructions).toContain(
+				"Remain accountable for quality and completion; a worker report alone is not proof.",
+			)
+			expect(instructions).toContain("Check artifacts and evidence; worker completion is not proof.")
+			expect(instructions).toContain("verify every root acceptance criterion")
+			expect(orchestrator?.groups).toEqual(["read", "command", "mcp"])
+			expect(orchestrator?.groups).not.toContain("edit")
+		})
+
 		it("routes independent review to reviewer without substituting Architect or Debug", () => {
 			const instructions = orchestrator?.customInstructions ?? ""
 			const roleMapEnd = instructions.indexOf("Role map:")
