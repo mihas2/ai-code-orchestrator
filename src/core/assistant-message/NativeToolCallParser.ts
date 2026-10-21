@@ -119,6 +119,14 @@ export class NativeToolCallParser {
 		}
 
 		if (!tracked) {
+			// Args (or a name) for an index we never opened are dropped. Callers
+			// that omit id on the first chunk, or reuse an unknown index, lose
+			// those bytes. Keep the drop; only make it visible.
+			if (args || name) {
+				console.warn(
+					`[NativeToolCallParser] dropping tool call chunk with no tracked index: index=${index} argumentsLength=${args?.length ?? 0}`,
+				)
+			}
 			return events
 		}
 
@@ -232,6 +240,14 @@ export class NativeToolCallParser {
 	 */
 	public static clearAllStreamingToolCalls(): void {
 		this.streamingToolCalls.clear()
+	}
+
+	/**
+	 * Message for a tool call whose arguments were not received (empty or whitespace)
+	 * and whose schema still requires parameters.
+	 */
+	public static missingToolArgumentsMessage(toolName: string): string {
+		return `Tool '${toolName}' was called with empty arguments (the API returned an empty string). Retry the call, one tool per turn.`
 	}
 
 	/**
@@ -699,8 +715,11 @@ export class NativeToolCallParser {
 		}
 
 		try {
-			// Parse the arguments JSON string
-			const args = toolCall.arguments === "" ? {} : JSON.parse(toolCall.arguments)
+			const argumentsWereEmpty = toolCall.arguments.trim() === ""
+			// Empty or whitespace-only arguments are a legal "{}" payload.
+			// Custom tools with an empty schema and dynamic MCP tools accept that;
+			// core tools that still lack nativeArgs after the switch get parseError.
+			const args = argumentsWereEmpty ? {} : JSON.parse(toolCall.arguments)
 
 			// Build stringified params for display/logging.
 			// Tool execution MUST use nativeArgs (typed) and does not support legacy fallbacks.
@@ -999,13 +1018,18 @@ export class NativeToolCallParser {
 			}
 
 			// Native-only: core tools must always have typed nativeArgs.
-			// If we couldn't construct it, the model produced an invalid tool call payload.
+			// Empty arguments that never produced nativeArgs are a missing payload, not a schema mismatch.
+			let parseError: string | undefined
 			if (!nativeArgs && !customToolRegistry.has(resolvedName)) {
-				throw new Error(
-					`[NativeToolCallParser] Invalid arguments for tool '${resolvedName}'. ` +
-						`Native tool calls require a valid JSON payload matching the tool schema. ` +
-						`Received: ${JSON.stringify(args)}`,
-				)
+				if (argumentsWereEmpty) {
+					parseError = this.missingToolArgumentsMessage(resolvedName)
+				} else {
+					throw new Error(
+						`[NativeToolCallParser] Invalid arguments for tool '${resolvedName}'. ` +
+							`Native tool calls require a valid JSON payload matching the tool schema. ` +
+							`Received: ${JSON.stringify(args)}`,
+					)
+				}
 			}
 
 			const result: ToolUse<TName> = {
@@ -1014,6 +1038,7 @@ export class NativeToolCallParser {
 				params,
 				partial: false, // Native tool calls are always complete when yielded
 				nativeArgs,
+				...(parseError ? { parseError } : {}),
 			}
 
 			// Preserve original name for API history when an alias was used

@@ -24,5 +24,9 @@
 		"invalidImageData": "Dati immagine non validi nella risposta",
 		"invalidImageFormat": "Formato immagine non valido ricevuto",
 		"unknownError": "Si è verificato un errore sconosciuto"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "Strumento {{toolName}}: l'API ha restituito una chiamata senza argomenti (il provider ha inviato argomenti vuoti). Il modello ha ricevuto l'errore e riproverà.",
+		"invalidArguments": "Strumento {{toolName}}: argomenti non validi dall'API; il modello riproverà."
 	}
 }

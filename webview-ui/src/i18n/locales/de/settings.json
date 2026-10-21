@@ -835,6 +835,8 @@
 		"cacheReadsPrice": "Cache-Lesepreis",
 		"cacheWritesPrice": "Cache-Schreibpreis",
 		"enableStreaming": "Streaming aktivieren",
+		"enableParallelToolCalls": "Parallele Tool-Aufrufe aktivieren",
+		"enableParallelToolCallsDescription": "Manche Proxys verlieren Argumente, wenn Tool-Aufrufe parallel erfolgen",
 		"enableR1Format": "R1-Modellparameter aktivieren",
 		"enableR1FormatTips": "Muss bei Verwendung von R1-Modellen wie QWQ aktiviert werden, um 400er-Fehler zu vermeiden",
 		"useAzure": "Azure verwenden",

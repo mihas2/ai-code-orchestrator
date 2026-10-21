@@ -24,5 +24,9 @@
 		"invalidImageData": "响应中的图像数据无效",
 		"invalidImageFormat": "收到的图像格式无效",
 		"unknownError": "发生未知错误"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "工具 {{toolName}}：API 返回了不带参数的调用（提供方发送了空参数）。模型已收到错误，将重试。",
+		"invalidArguments": "工具 {{toolName}}：API 返回的参数无效；模型将重试。"
 	}
 }

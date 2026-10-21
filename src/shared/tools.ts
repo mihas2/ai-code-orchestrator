@@ -150,6 +150,12 @@ export interface ToolUse<TName extends ToolName = ToolName> {
 	 * Used to monitor migration from old formats.
 	 */
 	usedLegacyFormat?: boolean
+	/**
+	 * Parser-owned reason the tool must not be executed (for example, the API
+	 * omitted required arguments). Presenters emit this as the tool_result
+	 * instead of a generic missing-nativeArgs message.
+	 */
+	parseError?: string
 }
 
 /**

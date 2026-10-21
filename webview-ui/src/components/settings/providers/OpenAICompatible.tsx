@@ -164,6 +164,16 @@ export const OpenAICompatible = ({
 			</Checkbox>
 			<div>
 				<Checkbox
+					checked={apiConfiguration?.openAiParallelToolCalls ?? false}
+					onChange={handleInputChange("openAiParallelToolCalls", noTransform)}>
+					{t("settings:modelInfo.enableParallelToolCalls")}
+				</Checkbox>
+				<div className="text-sm text-vscode-descriptionForeground ml-6">
+					{t("settings:modelInfo.enableParallelToolCallsDescription")}
+				</div>
+			</div>
+			<div>
+				<Checkbox
 					checked={apiConfiguration?.includeMaxTokens ?? true}
 					onChange={handleInputChange("includeMaxTokens", noTransform)}>
 					{t("settings:includeMaxOutputTokens")}

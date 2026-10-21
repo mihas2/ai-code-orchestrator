@@ -835,6 +835,8 @@
 		"cacheReadsPrice": "Prix des lectures de cache",
 		"cacheWritesPrice": "Prix des écritures de cache",
 		"enableStreaming": "Activer le streaming",
+		"enableParallelToolCalls": "Activer les appels d'outils en parallèle",
+		"enableParallelToolCallsDescription": "Certains proxys perdent des arguments lorsque les appels d'outils sont parallèles",
 		"enableR1Format": "Activer les paramètres du modèle R1",
 		"enableR1FormatTips": "Doit être activé lors de l'utilisation de modèles R1 tels que QWQ, pour éviter l'erreur 400",
 		"useAzure": "Utiliser Azure",

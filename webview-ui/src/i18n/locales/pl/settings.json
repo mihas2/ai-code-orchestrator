@@ -835,6 +835,8 @@
 		"cacheReadsPrice": "Cena odczytów bufora",
 		"cacheWritesPrice": "Cena zapisów bufora",
 		"enableStreaming": "Włącz strumieniowanie",
+		"enableParallelToolCalls": "Włącz równoległe wywołania narzędzi",
+		"enableParallelToolCallsDescription": "Niektóre proxy gubią argumenty, gdy wywołania narzędzi są równoległe",
 		"enableR1Format": "Włącz parametry modelu R1",
 		"enableR1FormatTips": "Należy włączyć podczas korzystania z modeli R1, takich jak QWQ, aby uniknąć błędu 400",
 		"useAzure": "Użyj Azure",

@@ -835,6 +835,8 @@
 		"cacheReadsPrice": "缓存读取价格",
 		"cacheWritesPrice": "缓存写入价格",
 		"enableStreaming": "启用流式传输",
+		"enableParallelToolCalls": "启用并行工具调用",
+		"enableParallelToolCallsDescription": "某些代理在工具调用并行时会丢失参数",
 		"enableR1Format": "启用 R1 模型参数",
 		"enableR1FormatTips": "使用 QWQ 等 R1 系列模型时必须启用，避免出现 400 错误",
 		"useAzure": "使用 Azure 服务",

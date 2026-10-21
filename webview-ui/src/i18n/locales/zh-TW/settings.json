@@ -845,6 +845,8 @@
 		"cacheReadsPrice": "快取讀取價格",
 		"cacheWritesPrice": "快取寫入價格",
 		"enableStreaming": "啟用串流輸出",
+		"enableParallelToolCalls": "啟用平行工具呼叫",
+		"enableParallelToolCallsDescription": "某些代理在工具呼叫平行時會遺失引數",
 		"enableR1Format": "啟用 R1 模型參數",
 		"enableR1FormatTips": "使用 QWQ 等 R1 模型時必須啟用，以避免發生 400 錯誤",
 		"useAzure": "使用 Azure",

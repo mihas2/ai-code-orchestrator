@@ -24,5 +24,9 @@
 		"invalidImageData": "Nieprawidłowe dane obrazu w odpowiedzi",
 		"invalidImageFormat": "Otrzymano nieprawidłowy format obrazu",
 		"unknownError": "Wystąpił nieznany błąd"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "Narzędzie {{toolName}}: API zwróciło wywołanie bez argumentów (dostawca wysłał puste argumenty). Model otrzymał błąd i spróbuje ponownie.",
+		"invalidArguments": "Narzędzie {{toolName}}: nieprawidłowe argumenty z API; model spróbuje ponownie."
 	}
 }

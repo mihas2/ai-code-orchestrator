@@ -24,5 +24,9 @@
 		"invalidImageData": "Yanıtta geçersiz görüntü verisi",
 		"invalidImageFormat": "Geçersiz görüntü formatı alındı",
 		"unknownError": "Bilinmeyen bir hata oluştu"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "Araç {{toolName}}: API argümansız bir çağrı döndürdü (sağlayıcı boş argümanlar gönderdi). Model hatayı aldı ve yeniden deneyecek.",
+		"invalidArguments": "Araç {{toolName}}: API'den geçersiz argümanlar; model yeniden deneyecek."
 	}
 }

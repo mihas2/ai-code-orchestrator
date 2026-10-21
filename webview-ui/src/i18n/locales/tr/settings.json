@@ -835,6 +835,8 @@
 		"cacheReadsPrice": "Önbellek okuma fiyatı",
 		"cacheWritesPrice": "Önbellek yazma fiyatı",
 		"enableStreaming": "Akışı etkinleştir",
+		"enableParallelToolCalls": "Paralel araç çağrılarını etkinleştir",
+		"enableParallelToolCallsDescription": "Bazı proxy'ler araç çağrıları paralel olduğunda argümanları kaybeder",
 		"enableR1Format": "R1 model parametrelerini etkinleştir",
 		"enableR1FormatTips": "QWQ gibi R1 modelleri kullanıldığında etkinleştirilmelidir, 400 hatası alınmaması için",
 		"useAzure": "Azure kullan",

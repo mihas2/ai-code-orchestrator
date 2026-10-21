@@ -24,5 +24,9 @@
 		"invalidImageData": "Données d'image non valides dans la réponse",
 		"invalidImageFormat": "Format d'image non valide reçu",
 		"unknownError": "Une erreur inconnue s'est produite"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "Outil {{toolName}} : l'API a renvoyé un appel sans arguments (le fournisseur a envoyé des arguments vides). Le modèle a reçu l'erreur et réessaiera.",
+		"invalidArguments": "Outil {{toolName}} : arguments non valides de l'API ; le modèle réessaiera."
 	}
 }

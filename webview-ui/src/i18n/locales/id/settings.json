@@ -835,6 +835,8 @@
 		"cacheReadsPrice": "Harga cache reads",
 		"cacheWritesPrice": "Harga cache writes",
 		"enableStreaming": "Aktifkan streaming",
+		"enableParallelToolCalls": "Aktifkan panggilan tool paralel",
+		"enableParallelToolCallsDescription": "Beberapa proxy menghilangkan argumen saat panggilan tool berjalan paralel",
 		"enableR1Format": "Aktifkan parameter model R1",
 		"enableR1FormatTips": "Harus diaktifkan saat menggunakan model R1 seperti QWQ untuk mencegah error 400",
 		"useAzure": "Gunakan Azure",
