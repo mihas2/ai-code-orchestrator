@@ -926,7 +926,7 @@
 		"cacheWritesPrice": "Cache writes price",
 		"enableStreaming": "Enable streaming",
 		"enableParallelToolCalls": "Enable parallel tool calls",
-		"enableParallelToolCallsDescription": "Some proxies drop arguments when tool calls are parallel",
+		"enableParallelToolCallsDescription": "Applies to providers whose APIs support the parallel tool calls parameter. When enabled, the model may call several tools at once. When disabled or unset, parallel tool calls are forbidden.",
 		"enableR1Format": "Enable R1 model parameters",
 		"enableR1FormatTips": "Must be enabled when using R1 models such as QWQ to prevent 400 errors",
 		"useAzure": "Use Azure",

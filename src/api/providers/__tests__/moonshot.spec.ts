@@ -342,6 +342,62 @@ describe("MoonshotHandler", () => {
 		})
 	})
 
+	describe("parallel tool calls", () => {
+		const systemPrompt = "You are a helpful assistant."
+		const messages: Anthropic.Messages.MessageParam[] = [
+			{
+				role: "user",
+				content: [{ type: "text" as const, text: "Hello!" }],
+			},
+		]
+		const mockTools = [
+			{
+				type: "function" as const,
+				function: { name: "get_weather", description: "Get weather", parameters: { type: "object" } },
+			},
+		]
+
+		async function* mockFullStream() {
+			yield { type: "text-delta", text: "ok" }
+		}
+
+		beforeEach(() => {
+			mockStreamText.mockReturnValue({
+				fullStream: mockFullStream(),
+				usage: Promise.resolve({ inputTokens: 1, outputTokens: 1, details: {}, raw: {} }),
+			})
+		})
+
+		it.each([
+			[false, false],
+			[true, true],
+		] as const)(
+			"forwards parallelToolCalls %s as providerOptions.moonshot.parallel_tool_calls %s",
+			async (parallelToolCalls, expected) => {
+				const stream = handler.createMessage(systemPrompt, messages, {
+					taskId: "test-task",
+					tools: mockTools,
+					parallelToolCalls,
+				})
+				await stream.next()
+
+				expect(mockStreamText.mock.calls[0][0].providerOptions).toEqual({
+					moonshot: { parallel_tool_calls: expected },
+				})
+			},
+		)
+
+		it("omits providerOptions when no tools are sent", async () => {
+			const stream = handler.createMessage(systemPrompt, messages, {
+				taskId: "test-task",
+				parallelToolCalls: false,
+			})
+			await stream.next()
+
+			expect(mockStreamText.mock.calls[0][0].providerOptions).toBeUndefined()
+		})
+	})
+
 	describe("tool handling", () => {
 		const systemPrompt = "You are a helpful assistant."
 		const messages: Anthropic.Messages.MessageParam[] = [

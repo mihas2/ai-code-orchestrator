@@ -264,6 +264,35 @@ describe("RequestyHandler", () => {
 				)
 			})
 
+			it.each([
+				[false, false],
+				[true, true],
+			] as const)(
+				"forwards parallelToolCalls %s as parallel_tool_calls %s",
+				async (parallelToolCalls, expected) => {
+					const handler = new RequestyHandler(mockOptions)
+					const iterator = handler.createMessage(systemPrompt, messages, {
+						taskId: "test-task",
+						tools: mockTools,
+						parallelToolCalls,
+					})
+					await iterator.next()
+
+					expect(mockCreate.mock.calls[0][0].parallel_tool_calls).toBe(expected)
+				},
+			)
+
+			it("omits parallel_tool_calls when no tools are sent", async () => {
+				const handler = new RequestyHandler(mockOptions)
+				const iterator = handler.createMessage(systemPrompt, messages, {
+					taskId: "test-task",
+					parallelToolCalls: false,
+				})
+				await iterator.next()
+
+				expect(mockCreate.mock.calls[0][0]).not.toHaveProperty("parallel_tool_calls")
+			})
+
 			it("should handle tool_call_partial chunks in streaming response", async () => {
 				const mockStreamWithToolCalls = {
 					async *[Symbol.asyncIterator]() {

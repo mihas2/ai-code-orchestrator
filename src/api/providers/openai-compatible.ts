@@ -165,7 +165,11 @@ export abstract class OpenAICompatibleHandler extends BaseProvider implements Si
 		const openAiTools = this.convertToolsForOpenAI(metadata?.tools)
 		const aiSdkTools = convertToolsForAiSdk(openAiTools) as ToolSet | undefined
 
-		// Build the request options
+		// Build the request options.
+		// @ai-sdk/openai-compatible copies providerOptions[providerName] keys that
+		// are outside its schema onto the chat-completions body. parallel_tool_calls
+		// is not in that schema, so this is how Moonshot receives the OpenAI field.
+		// Omit it unless tools are actually sent; strict backends reject the field otherwise.
 		const requestOptions: Parameters<typeof streamText>[0] = {
 			model: languageModel,
 			system: systemPrompt,
@@ -174,6 +178,15 @@ export abstract class OpenAICompatibleHandler extends BaseProvider implements Si
 			maxOutputTokens: this.getMaxOutputTokens(),
 			tools: aiSdkTools,
 			toolChoice: this.mapToolChoice(metadata?.tool_choice),
+			...(aiSdkTools
+				? {
+						providerOptions: {
+							[this.config.providerName]: {
+								parallel_tool_calls: metadata?.parallelToolCalls ?? true,
+							},
+						},
+					}
+				: {}),
 		}
 
 		// Use streamText for streaming responses

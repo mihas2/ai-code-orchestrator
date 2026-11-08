@@ -1929,6 +1929,18 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.api = buildApiHandler(this.apiConfiguration)
 	}
 
+	/**
+	 * The profile flag `openAiParallelToolCalls` controls parallel tool-call
+	 * metadata for every provider. Only an explicit true enables them;
+	 * false and undefined both disable them.
+	 *
+	 * Uses the configuration that built `this.api`. Global provider state can
+	 * differ for role-specific tasks and must not override that handler.
+	 */
+	private resolveParallelToolCalls(): boolean {
+		return this.apiConfiguration?.openAiParallelToolCalls === true
+	}
+
 	public async submitUserMessage(
 		text: string,
 		images?: string[],
@@ -2044,7 +2056,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				? {
 						tools: allTools,
 						tool_choice: "auto",
-						parallelToolCalls: true,
+						parallelToolCalls: this.resolveParallelToolCalls(),
 					}
 				: {}),
 		}
@@ -4313,7 +4325,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				? {
 						tools: allTools,
 						tool_choice: "auto",
-						parallelToolCalls: true,
+						parallelToolCalls: this.resolveParallelToolCalls(),
 					}
 				: {}),
 		}
@@ -4628,7 +4640,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					? {
 							tools: contextMgmtTools,
 							tool_choice: "auto",
-							parallelToolCalls: true,
+							parallelToolCalls: this.resolveParallelToolCalls(),
 						}
 					: {}),
 			}
@@ -4798,7 +4810,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						// A normal task turn must advance through a tool call. Providers that
 						// do not support `required` can still ignore this hint and use the retry guard.
 						tool_choice: "required",
-						parallelToolCalls: true,
+						parallelToolCalls: this.resolveParallelToolCalls(),
 						// When mode restricts tools, provide allowedFunctionNames so providers
 						// like Gemini can see all tools in history but only call allowed ones
 						...(allowedFunctionNames ? { allowedFunctionNames } : {}),

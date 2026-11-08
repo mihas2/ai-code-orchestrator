@@ -156,6 +156,8 @@ export class RequestyHandler extends BaseProvider implements SingleCompletionHan
 			requesty: { trace_id: metadata?.taskId, extra: { mode: metadata?.mode } },
 			tools: this.convertToolsForOpenAI(metadata?.tools),
 			tool_choice: metadata?.tool_choice,
+			// Strict OpenAI-compatible backends reject parallel_tool_calls without tools.
+			...(metadata?.tools?.length ? { parallel_tool_calls: metadata?.parallelToolCalls ?? true } : {}),
 		}
 
 		let stream

@@ -73,9 +73,9 @@ export interface ApiHandlerCreateMessageMetadata {
 	tool_choice?: OpenAI.Chat.ChatCompletionCreateParams["tool_choice"]
 	/**
 	 * Controls whether the model can return multiple tool calls in a single response.
-	 * Providers that support parallel calls treat a missing value as allowed.
-	 * OpenAI-compatible requests still send parallel_tool_calls=false until the
-	 * profile checkbox openAiParallelToolCalls is enabled.
+	 * Task metadata sets this from the profile flag openAiParallelToolCalls for every
+	 * provider: only an explicit true enables parallel calls.
+	 * Providers that support the parameter treat a missing value as allowed.
 	 * When false, the request asks for only one tool call per response.
 	 */
 	parallelToolCalls?: boolean

@@ -297,6 +297,72 @@ describe("ApiOptions", () => {
 		expect(screen.getByTestId("rate-limit-seconds-control")).toBeInTheDocument()
 	})
 
+	it("binds the parallel tool calls checkbox to openAiParallelToolCalls", () => {
+		const mockSetApiConfigurationField = vi.fn()
+		const checkboxTestId = "checkbox-input-settings:modelinfo.enableparalleltoolcalls"
+
+		const { unmount } = render(
+			<ExtensionStateContextProvider>
+				<QueryClientProvider client={new QueryClient()}>
+					<ApiOptions
+						errorMessage={undefined}
+						setErrorMessage={() => {}}
+						uriScheme={undefined}
+						apiConfiguration={{ apiProvider: "anthropic" }}
+						setApiConfigurationField={mockSetApiConfigurationField}
+					/>
+				</QueryClientProvider>
+			</ExtensionStateContextProvider>,
+		)
+
+		const unchecked = screen.getByTestId(checkboxTestId)
+		expect(unchecked).not.toBeChecked()
+		fireEvent.click(unchecked)
+		expect(mockSetApiConfigurationField).toHaveBeenCalledWith("openAiParallelToolCalls", true)
+		unmount()
+
+		mockSetApiConfigurationField.mockClear()
+		render(
+			<ExtensionStateContextProvider>
+				<QueryClientProvider client={new QueryClient()}>
+					<ApiOptions
+						errorMessage={undefined}
+						setErrorMessage={() => {}}
+						uriScheme={undefined}
+						apiConfiguration={{ apiProvider: "anthropic", openAiParallelToolCalls: true }}
+						setApiConfigurationField={mockSetApiConfigurationField}
+					/>
+				</QueryClientProvider>
+			</ExtensionStateContextProvider>,
+		)
+
+		const checked = screen.getByTestId(checkboxTestId)
+		expect(checked).toBeChecked()
+		fireEvent.click(checked)
+		expect(mockSetApiConfigurationField).toHaveBeenCalledWith("openAiParallelToolCalls", false)
+	})
+
+	it("shows the shared parallel tool calls checkbox for any provider and hides it on the welcome view", () => {
+		const { unmount } = render(
+			<ExtensionStateContextProvider>
+				<QueryClientProvider client={new QueryClient()}>
+					<ApiOptions
+						errorMessage={undefined}
+						setErrorMessage={() => {}}
+						uriScheme={undefined}
+						apiConfiguration={{ apiProvider: "anthropic" }}
+						setApiConfigurationField={() => {}}
+					/>
+				</QueryClientProvider>
+			</ExtensionStateContextProvider>,
+		)
+		expect(screen.getByTestId("checkbox-settings:modelinfo.enableparalleltoolcalls")).toBeInTheDocument()
+		unmount()
+
+		renderApiOptions({ fromWelcomeView: true, apiConfiguration: { apiProvider: "anthropic" } })
+		expect(screen.queryByTestId("checkbox-settings:modelinfo.enableparalleltoolcalls")).not.toBeInTheDocument()
+	})
+
 	it("hides all controls when fromWelcomeView is true", () => {
 		renderApiOptions({ fromWelcomeView: true })
 		expect(screen.queryByTestId("temperature-control")).not.toBeInTheDocument()
