@@ -14,18 +14,33 @@
  * 7. Task hangs in pWaitFor(() => this.userMessageContentReady)
  *
  * Fix: Check and set userMessageContentReady even when locked, if conditions are met.
+ *
+ * Current lock contract (JOINABLE): a call made while locked does not return early; it
+ * flags pending updates and awaits the active execution, which drains them before
+ * releasing the lock. These tests therefore fire the "locked" calls the way Task.ts does
+ * (from outside the running tool, without awaiting them inside it) and check the state
+ * once the owner and every joiner have settled. Awaiting a joiner from inside the
+ * running tool would deadlock, because the joiner waits for that very execution.
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest"
+import * as fs from "fs"
+import * as os from "os"
+import * as path from "path"
+
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import { presentAssistantMessage } from "../presentAssistantMessage"
 import type { Task } from "../../task/Task"
 
 describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 	let mockTask: Partial<Task>
 	let askApprovalDelay: number
+	// write_to_file creates parent directories on the real file system before approval,
+	// so the task must point at a writable workspace (an absolute "/test" fails with EACCES).
+	let workspaceDir: string
 
 	beforeEach(() => {
 		askApprovalDelay = 0
+		workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "write-tool-hang-"))
 
 		mockTask = {
 			taskId: "test-task",
@@ -42,7 +57,7 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 			currentStreamingDidCheckpoint: false,
 			consecutiveMistakeCount: 0,
 			userMessageContent: [],
-			cwd: "/test",
+			cwd: workspaceDir,
 
 			// Mock methods
 			ask: vi.fn().mockResolvedValue({ response: "yesButtonClicked" }),
@@ -102,6 +117,10 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 		}
 	})
 
+	afterEach(() => {
+		fs.rmSync(workspaceDir, { recursive: true, force: true })
+	})
+
 	it("should set userMessageContentReady=true when locked if stream completes", async () => {
 		// Setup: One write_to_file tool block
 		mockTask.assistantMessageContent = [
@@ -123,6 +142,7 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 
 		// Simulate slow askApproval that allows stream to complete during lock
 		let approvalCallCount = 0
+		const joiners: Promise<void>[] = []
 		mockTask.ask = vi.fn().mockImplementation(async () => {
 			approvalCallCount++
 
@@ -137,12 +157,9 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 				// In real scenario, this happens from Task.ts line 3722
 				mockTask.didCompleteReadingStream = true
 
-				// Simulate the call from Task.ts after stream completes
-				// This should set userMessageContentReady=true even though locked
-				await presentAssistantMessage(mockTask as Task)
-
-				// After the locked call, userMessageContentReady should be true!
-				expect(mockTask.userMessageContentReady).toBe(true)
+				// Simulate the call from Task.ts after stream completes (not awaited here)
+				expect(mockTask.presentAssistantMessageLocked).toBe(true)
+				joiners.push(presentAssistantMessage(mockTask as Task))
 			}
 
 			return { response: "yesButtonClicked" }
@@ -150,8 +167,10 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 
 		// Start the first presentAssistantMessage call
 		await presentAssistantMessage(mockTask as Task)
+		await Promise.all(joiners)
 
-		// Verify final state
+		// The locked call must not be lost: the flag ends up set and the lock released
+		expect(joiners).toHaveLength(1)
 		expect(mockTask.userMessageContentReady).toBe(true)
 		expect(mockTask.currentStreamingContentIndex).toBe(1)
 		expect(mockTask.presentAssistantMessageLocked).toBe(false)
@@ -178,6 +197,7 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 
 		// Simulate askApproval that allows another call during lock
 		let approvalCallCount = 0
+		const joiners: Promise<void>[] = []
 		mockTask.ask = vi.fn().mockImplementation(async () => {
 			approvalCallCount++
 
@@ -187,10 +207,10 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 				// Stream NOT complete yet
 				mockTask.didCompleteReadingStream = false
 
-				// Call presentAssistantMessage while locked
-				await presentAssistantMessage(mockTask as Task)
+				// Call presentAssistantMessage while locked (not awaited here)
+				joiners.push(presentAssistantMessage(mockTask as Task))
 
-				// Should NOT set flag because stream is not complete
+				// The locked call itself must not set the flag
 				expect(mockTask.userMessageContentReady).toBe(false)
 			}
 
@@ -199,13 +219,14 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 
 		// Start the first presentAssistantMessage call
 		await presentAssistantMessage(mockTask as Task)
+		await Promise.all(joiners)
 
 		// After tool completes and index increments, flag should be set
 		expect(mockTask.userMessageContentReady).toBe(true)
 		expect(mockTask.currentStreamingContentIndex).toBe(1)
 	})
 
-	it("should NOT set flag when locked if not out of bounds", async () => {
+	it("should NOT set flag from a locked call while blocks remain, and drain them before setting it", async () => {
 		// Setup: TWO blocks - write_to_file and text
 		mockTask.assistantMessageContent = [
 			{
@@ -231,6 +252,7 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 
 		// Simulate askApproval that allows another call during lock
 		let approvalCallCount = 0
+		const joiners: Promise<void>[] = []
 		mockTask.ask = vi.fn().mockImplementation(async () => {
 			approvalCallCount++
 
@@ -240,9 +262,9 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 				// Stream completes
 				mockTask.didCompleteReadingStream = true
 
-				// Call presentAssistantMessage while locked
+				// Call presentAssistantMessage while locked (not awaited here)
 				// idx=0, len=2 → NOT out of bounds
-				await presentAssistantMessage(mockTask as Task)
+				joiners.push(presentAssistantMessage(mockTask as Task))
 
 				// Should NOT set flag because not out of bounds
 				expect(mockTask.userMessageContentReady).toBe(false)
@@ -253,10 +275,13 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 
 		// Start the first presentAssistantMessage call
 		await presentAssistantMessage(mockTask as Task)
+		await Promise.all(joiners)
 
-		// Flag should still be false because there's another block to process
-		expect(mockTask.userMessageContentReady).toBe(false)
-		expect(mockTask.currentStreamingContentIndex).toBe(1)
+		// The locked call flagged a pending update, so the owner drained the remaining
+		// (complete) text block before releasing the lock; only then is the flag set.
+		expect(mockTask.currentStreamingContentIndex).toBe(2)
+		expect(mockTask.userMessageContentReady).toBe(true)
+		expect(mockTask.presentAssistantMessageLocked).toBe(false)
 	})
 
 	it("should handle multiple locked calls correctly", async () => {
@@ -282,6 +307,7 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 
 		// Simulate askApproval that allows MULTIPLE calls during lock
 		let approvalCallCount = 0
+		const joiners: Promise<void>[] = []
 		mockTask.ask = vi.fn().mockImplementation(async () => {
 			approvalCallCount++
 
@@ -292,13 +318,12 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 
 				// Simulate multiple calls while locked (like streaming hundreds of updates)
 				for (let i = 0; i < 5; i++) {
-					await presentAssistantMessage(mockTask as Task)
+					joiners.push(presentAssistantMessage(mockTask as Task))
 					lockedCallCount++
 				}
 
-				// After all locked calls, flag should be set once
-				expect(mockTask.userMessageContentReady).toBe(true)
 				expect(lockedCallCount).toBe(5)
+				expect(mockTask.presentAssistantMessageHasPendingUpdates).toBe(true)
 			}
 
 			return { response: "yesButtonClicked" }
@@ -306,6 +331,7 @@ describe("presentAssistantMessage - Write Tool Hang Fix", () => {
 
 		// Start the first presentAssistantMessage call
 		await presentAssistantMessage(mockTask as Task)
+		await Promise.all(joiners)
 
 		// Verify final state
 		expect(mockTask.userMessageContentReady).toBe(true)
