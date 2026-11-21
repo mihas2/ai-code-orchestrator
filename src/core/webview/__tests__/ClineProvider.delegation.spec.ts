@@ -261,33 +261,34 @@ describe("ClineProvider delegation flow", () => {
 		expect(provider.getCurrentTask()).toBe(child)
 	})
 
-	it("ignores a matching cancel while a delegated child has not started its API request", async () => {
+	it("cancels a delegated child that has not started its API request yet", async () => {
 		const provider = makeProvider()
 		const child = task(provider, "child")
 		provider.clineStack = [child]
+		provider.getTaskWithId.mockRejectedValueOnce(new Error("Task not found"))
 
 		await provider.cancelTask("child", "child-instance")
 
-		expect(child.abortTask).not.toHaveBeenCalled()
-		expect(child.cancelCurrentRequest).not.toHaveBeenCalled()
-		expect(provider.getCurrentTask()).toBe(child)
+		expect(child.abortTask).toHaveBeenCalledOnce()
+		expect(child.cancelCurrentRequest).toHaveBeenCalledOnce()
 	})
 
-	it("blocks cancellation during streaming setup before the first API request", async () => {
+	it("cancels during streaming setup before the first API request", async () => {
 		const provider = makeProvider()
 		const child = task(provider, "child")
 		child.isStreaming = true
 		child.isWaitingForFirstChunk = false
 		child.currentRequestAbortController = undefined
 		provider.clineStack = [child]
+		provider.getTaskWithId.mockRejectedValueOnce(new Error("Task not found"))
 		const logSpy = vi.spyOn(console, "log")
 
 		await provider.cancelTask("child", "child-instance")
 
-		expect(child.abortTask).not.toHaveBeenCalled()
-		expect(child.cancelCurrentRequest).not.toHaveBeenCalled()
+		expect(child.abortTask).toHaveBeenCalledOnce()
+		expect(child.cancelCurrentRequest).toHaveBeenCalledOnce()
 		expect(logSpy).toHaveBeenCalledWith(
-			"[cancelTask] guard check: isStreaming=true, isWaitingForFirstChunk=false, hasAbortController=false, state=initializing-before-first-request",
+			"[cancelTask] state: isStreaming=true, isWaitingForFirstChunk=false, hasAbortController=false",
 		)
 	})
 
@@ -306,7 +307,7 @@ describe("ClineProvider delegation flow", () => {
 		expect(child.abortTask).toHaveBeenCalledOnce()
 		expect(child.cancelCurrentRequest).toHaveBeenCalledOnce()
 		expect(logSpy).toHaveBeenCalledWith(
-			"[cancelTask] guard check: isStreaming=true, isWaitingForFirstChunk=true, hasAbortController=false, state=active-request",
+			"[cancelTask] state: isStreaming=true, isWaitingForFirstChunk=true, hasAbortController=false",
 		)
 	})
 
@@ -325,7 +326,7 @@ describe("ClineProvider delegation flow", () => {
 		expect(child.abortTask).toHaveBeenCalledOnce()
 		expect(child.cancelCurrentRequest).toHaveBeenCalledOnce()
 		expect(logSpy).toHaveBeenCalledWith(
-			"[cancelTask] guard check: isStreaming=true, isWaitingForFirstChunk=false, hasAbortController=true, state=active-request",
+			"[cancelTask] state: isStreaming=true, isWaitingForFirstChunk=false, hasAbortController=true",
 		)
 	})
 
@@ -344,7 +345,7 @@ describe("ClineProvider delegation flow", () => {
 		expect(child.abortTask).toHaveBeenCalledOnce()
 		expect(child.cancelCurrentRequest).toHaveBeenCalledOnce()
 		expect(logSpy).toHaveBeenCalledWith(
-			"[cancelTask] guard check: isStreaming=true, isWaitingForFirstChunk=false, hasAbortController=false, state=initializing-before-first-request",
+			"[cancelTask] state: isStreaming=true, isWaitingForFirstChunk=false, hasAbortController=false",
 		)
 	})
 

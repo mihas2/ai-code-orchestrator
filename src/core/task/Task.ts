@@ -2692,11 +2692,24 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.claimedCommandApproval = undefined
 		this.clearPartialAskBindings()
 
+		// A pending auto-approval countdown would otherwise answer the ask after
+		// the task was stopped and resurrect the loop.
+		this.cancelAutoApprovalTimeout()
+
 		// Cancel any in-progress HTTP request
 		try {
 			this.cancelCurrentRequest()
 		} catch (error) {
 			console.error("Error cancelling current request:", error)
+		}
+
+		// Kill the command the task is currently waiting on (if any). Commands
+		// that were moved to the background are no longer tracked here.
+		try {
+			this.terminalProcess?.abort()
+			this.terminalProcess = undefined
+		} catch (error) {
+			console.error("Error aborting terminal process:", error)
 		}
 
 		// Remove provider profile change listener

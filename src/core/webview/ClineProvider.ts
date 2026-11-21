@@ -3302,23 +3302,15 @@ export class ClineProvider
 				return
 			}
 
-			// STOP-004A: Strict executionId validation
-			// For non-command streaming scenarios, executionId may be undefined.
-			// We validate executionId ONLY if both sides have it.
+			// The executionId is informational only. taskId + instanceId already
+			// uniquely identify the running task instance (a rehydrated or
+			// delegated task always gets a new instanceId), whereas
+			// task.lastMessageTs changes with every say/ask. Comparing the two
+			// silently dropped legitimate Stop clicks as soon as the model emitted
+			// anything after the request started.
 			const currentExecutionId = task.lastMessageTs?.toString()
-			if (executionId !== undefined && currentExecutionId !== undefined) {
-				if (executionId !== currentExecutionId) {
-					console.log("[cancelTask] Rejecting cancel - executionId mismatch (stale request)", {
-						provided: { taskId, instanceId, executionId },
-						current: { currentTaskId: task.taskId, currentInstanceId: task.instanceId, currentExecutionId },
-					})
-					return
-				}
-			} else if (executionId === undefined && currentExecutionId !== undefined) {
-				// Frontend sent cancel without executionId, but backend has one.
-				// This is a kill-path scenario where frontend doesn't track executionId.
-				// Safe fallback: allow cancel if taskId/instanceId match.
-				console.log("[cancelTask] Allowing cancel without executionId (kill-path fallback)", {
+			if (executionId !== undefined && currentExecutionId !== undefined && executionId !== currentExecutionId) {
+				console.log("[cancelTask] executionId differs from lastMessageTs; cancelling anyway", {
 					provided: { taskId, instanceId, executionId },
 					current: { currentTaskId: task.taskId, currentInstanceId: task.instanceId, currentExecutionId },
 				})
@@ -3329,23 +3321,15 @@ export class ClineProvider
 			return
 		}
 
-		// isStreaming is set before the lazy API iterator is advanced, so it can be
-		// true during checkpoint/setup work even though no HTTP request exists yet.
-		const hasActiveRequest = task.isWaitingForFirstChunk || task.currentRequestAbortController !== undefined
-		const guardState = hasActiveRequest ? "active-request" : "initializing-before-first-request"
+		// Stop must work at any point of the task loop: while waiting for the
+		// first chunk, while streaming, while executing tools/commands, or between
+		// API requests. Previously cancels were ignored when no HTTP request was
+		// in flight, which made the Stop button unreliable during tool execution.
 		console.log(
-			`[cancelTask] guard check: isStreaming=${task.isStreaming}, ` +
+			`[cancelTask] state: isStreaming=${task.isStreaming}, ` +
 				`isWaitingForFirstChunk=${task.isWaitingForFirstChunk}, ` +
-				`hasAbortController=${task.currentRequestAbortController !== undefined}, state=${guardState}`,
+				`hasAbortController=${task.currentRequestAbortController !== undefined}`,
 		)
-
-		// Ignore stale UI cancellation during task initialization. Once a request
-		// is waiting for its first chunk or has an abort controller, it is genuinely
-		// active and must remain cancellable.
-		if (!bypassValidation && !hasActiveRequest) {
-			console.log(`[cancelTask] ignoring cancel before first API request for ${task.taskId}.${task.instanceId}`)
-			return
-		}
 
 		console.log(`[cancelTask] cancelling task ${task.taskId}.${task.instanceId}`)
 

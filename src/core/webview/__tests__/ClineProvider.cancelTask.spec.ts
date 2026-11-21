@@ -217,21 +217,15 @@ describe("ClineProvider.cancelTask identity validation (STOP-004A)", () => {
 		)
 	})
 
-	it("rejects cancel when executionId does not match (stale request)", async () => {
+	it("cancels even when executionId differs from lastMessageTs", async () => {
 		const provider = makeProvider()
 		const mockTask = task(provider, "task-1", "instance-1", 123)
 		provider.clineStack = [mockTask]
 
 		await provider.cancelTask("task-1", "instance-1", false, "999")
 
-		expect(mockTask.abortTask).not.toHaveBeenCalled()
-		expect(consoleLogSpy).toHaveBeenCalledWith(
-			expect.stringContaining("[cancelTask] Rejecting cancel - executionId mismatch (stale request)"),
-			expect.objectContaining({
-				provided: { taskId: "task-1", instanceId: "instance-1", executionId: "999" },
-				current: { currentTaskId: "task-1", currentInstanceId: "instance-1", currentExecutionId: "123" },
-			}),
-		)
+		expect(mockTask.cancelCurrentRequest).toHaveBeenCalled()
+		expect(mockTask.abortTask).toHaveBeenCalledWith(true)
 	})
 
 	it("allows cancel with matching taskId, instanceId, and executionId", async () => {
@@ -252,13 +246,6 @@ describe("ClineProvider.cancelTask identity validation (STOP-004A)", () => {
 		await provider.cancelTask("task-1", "instance-1", false, undefined)
 
 		expect(mockTask.abortTask).toHaveBeenCalled()
-		expect(consoleLogSpy).toHaveBeenCalledWith(
-			expect.stringContaining("[cancelTask] Allowing cancel without executionId (kill-path fallback)"),
-			expect.objectContaining({
-				provided: { taskId: "task-1", instanceId: "instance-1", executionId: undefined },
-				current: { currentTaskId: "task-1", currentInstanceId: "instance-1", currentExecutionId: "123" },
-			}),
-		)
 	})
 
 	it("allows cancel when both executionId are undefined", async () => {
@@ -285,7 +272,7 @@ describe("ClineProvider.cancelTask identity validation (STOP-004A)", () => {
 		)
 	})
 
-	it("rejects cancel before first API request (no active request)", async () => {
+	it("cancels while no API request is in flight (e.g. during tool execution)", async () => {
 		const provider = makeProvider()
 		const mockTask = task(provider, "task-1", "instance-1", 123)
 		mockTask.isWaitingForFirstChunk = false
@@ -294,14 +281,8 @@ describe("ClineProvider.cancelTask identity validation (STOP-004A)", () => {
 
 		await provider.cancelTask("task-1", "instance-1", false, "123")
 
-		expect(mockTask.abortTask).not.toHaveBeenCalled()
-		const logCalls = consoleLogSpy.mock.calls.map((call: any) => call[0])
-		expect(
-			logCalls.some(
-				(log: any) =>
-					typeof log === "string" && log.includes("[cancelTask] ignoring cancel before first API request"),
-			),
-		).toBe(true)
+		expect(mockTask.abortTask).toHaveBeenCalledWith(true)
+		expect(mockTask.abortReason).toBe("user_cancelled")
 	})
 
 	it("allows cancel when isWaitingForFirstChunk is true (active request)", async () => {

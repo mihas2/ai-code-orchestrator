@@ -68,6 +68,31 @@ describe("Task dispose method", () => {
 		}
 	})
 
+	test("should kill the command the task is waiting on", () => {
+		const abort = vi.fn()
+		;(task as any).terminalProcess = { abort }
+
+		task.dispose()
+
+		expect(abort).toHaveBeenCalledTimes(1)
+		expect(task.terminalProcess).toBeUndefined()
+	})
+
+	test("should cancel a pending auto-approval countdown", () => {
+		vi.useFakeTimers()
+		try {
+			const fired = vi.fn()
+			;(task as any).autoApprovalTimeoutRef = setTimeout(fired, 1000)
+
+			task.dispose()
+			vi.advanceTimersByTime(2000)
+
+			expect(fired).not.toHaveBeenCalled()
+		} finally {
+			vi.useRealTimers()
+		}
+	})
+
 	test("should remove all event listeners when dispose is called", () => {
 		// Add some event listeners using type assertion to bypass strict typing for testing
 		const listener1 = vi.fn(() => {})

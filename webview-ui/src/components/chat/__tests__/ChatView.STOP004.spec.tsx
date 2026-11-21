@@ -367,6 +367,81 @@ describe("ChatView - STOP-004 Task Cancellation Identity Validation", () => {
 		expect(totalCallCount).toBeGreaterThanOrEqual(1)
 	})
 
+	it("releases the cancel lock so Stop works again if the task kept streaming", async () => {
+		const { container } = renderChatView()
+
+		mockPostMessage({
+			currentTaskId: "task-stop-relock",
+			currentTaskInstanceId: "inst-stop-relock",
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "Running task" },
+				{
+					type: "say",
+					say: "api_req_started",
+					ts: 2,
+					text: JSON.stringify({ apiProtocol: "anthropic" }),
+					partial: false,
+				},
+			],
+		})
+
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 20))
+		})
+
+		// A follow-up message update for the same task instance so message-derived
+		// streaming state is computed for the now-stable task identity.
+		mockPostMessage({
+			currentTaskId: "task-stop-relock",
+			currentTaskInstanceId: "inst-stop-relock",
+			clineMessages: [
+				{ type: "say", say: "task", ts: 1, text: "Running task" },
+				{
+					type: "say",
+					say: "api_req_started",
+					ts: 2,
+					text: JSON.stringify({ apiProtocol: "anthropic" }),
+					partial: false,
+				},
+				{ type: "say", say: "text", ts: 3, text: "Working", partial: true },
+			],
+		})
+
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 20))
+		})
+
+		const findStop = () =>
+			Array.from(container.querySelectorAll("button")).find(
+				(b) => b.textContent?.includes("Stop") || b.getAttribute("aria-label")?.includes("Stop"),
+			)
+		const cancelCount = () =>
+			vi.mocked(vscode.postMessage).mock.calls.filter((c) => (c[0] as any)?.type === "cancelTask").length
+
+		expect(findStop()).toBeTruthy()
+		vi.mocked(vscode.postMessage).mockClear()
+
+		await act(async () => {
+			fireEvent.click(findStop()!)
+		})
+		expect(cancelCount()).toBe(1)
+
+		// Locked right after the click: a second click is debounced.
+		await act(async () => {
+			fireEvent.click(findStop()!)
+		})
+		expect(cancelCount()).toBe(1)
+
+		// The task is still streaming (cancel did not take effect); the lock must expire.
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 2100))
+		})
+		await act(async () => {
+			fireEvent.click(findStop()!)
+		})
+		expect(cancelCount()).toBe(2)
+	})
+
 	it("handleStopTask sends cancelTask message with taskId, instanceId, and executionId", async () => {
 		// STOP-004B test: verify that handleStopTask sends complete identity (taskId, instanceId, executionId)
 		const { container } = renderChatView()

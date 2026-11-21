@@ -704,6 +704,22 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		}
 	}, [isStreaming, cancelPending])
 
+	// The lock only exists to debounce double clicks. If the extension did not
+	// stop the task (e.g. the cancel raced with a task switch), the lock must not
+	// leave the Stop button dead until streaming happens to toggle.
+	useEffect(() => {
+		if (!cancelPending) {
+			return
+		}
+		const timer = setTimeout(() => setCancelPending(false), 2000)
+		return () => clearTimeout(timer)
+	}, [cancelPending])
+
+	// A new task instance (rehydrate after stop, delegation) never inherits the lock.
+	useEffect(() => {
+		setCancelPending(false)
+	}, [taskIdentity])
+
 	const markFollowUpAsAnswered = useCallback(() => {
 		const lastFollowUpMessage = messagesRef.current.findLast((msg: ClineMessage) => msg.ask === "followup")
 		if (lastFollowUpMessage) {
