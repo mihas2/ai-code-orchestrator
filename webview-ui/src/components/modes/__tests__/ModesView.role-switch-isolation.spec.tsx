@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ExtensionStateContext } from "@src/context/ExtensionStateContext"
 import { vscode } from "@src/utils/vscode"
-import ModesView from "../ModesView"
+import { defaultModeSlug, getAllModes } from "@aico/modes"
+import ModesView, { resetLastEditedRoleForTests } from "../ModesView"
 
 vi.mock("@src/utils/vscode", () => ({ vscode: { postMessage: vi.fn() } }))
 
@@ -22,7 +23,42 @@ const extensionState = {
 }
 
 describe("ModesView role navigation isolation", () => {
-	beforeEach(() => vi.clearAllMocks())
+	beforeEach(() => {
+		vi.clearAllMocks()
+		resetLastEditedRoleForTests()
+	})
+
+	const renderView = (state: Record<string, unknown> = {}) =>
+		render(
+			<ExtensionStateContext.Provider value={{ ...extensionState, ...state } as any}>
+				<ModesView />
+			</ExtensionStateContext.Provider>,
+		)
+
+	it("does not preselect the chat's active mode", () => {
+		const defaultMode = getAllModes([]).find((m) => m.slug === defaultModeSlug)!
+		renderView({ mode: "debug" })
+		expect(screen.getByTestId("mode-select-trigger")).toHaveTextContent(defaultMode.name)
+	})
+
+	it("keeps the edited role across remounts and ignores chat mode changes", () => {
+		const first = renderView({ mode: "code" })
+		fireEvent.click(screen.getByTestId("mode-select-trigger"))
+		fireEvent.click(screen.getByTestId("mode-option-architect"))
+		first.unmount()
+
+		// The chat switched to another mode while the Roles tab was closed.
+		const second = renderView({ mode: "debug" })
+		expect(screen.getByTestId("mode-select-trigger")).toHaveTextContent("Architect")
+
+		// A live chat mode change must not move the settings selection either.
+		second.rerender(
+			<ExtensionStateContext.Provider value={{ ...extensionState, mode: "ask" } as any}>
+				<ModesView />
+			</ExtensionStateContext.Provider>,
+		)
+		expect(screen.getByTestId("mode-select-trigger")).toHaveTextContent("Architect")
+	})
 
 	it("selects a role for editing without switching the active task mode", () => {
 		render(

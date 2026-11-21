@@ -18,7 +18,7 @@ const getOllamaModels = async () =>
 		const handler = (event: MessageEvent) => {
 			const message: ExtensionMessage = event.data
 
-			if (message.type === "ollamaModels") {
+			if (message.type === "ollamaModels" && !message.values?.profileName) {
 				clearTimeout(timeout)
 				cleanup()
 

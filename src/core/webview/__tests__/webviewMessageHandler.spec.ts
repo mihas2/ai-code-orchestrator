@@ -41,7 +41,7 @@ import type { ModelRecord } from "@ai-code-orchestrator/types"
 
 import { webviewMessageHandler } from "../webviewMessageHandler"
 import type { ClineProvider } from "../ClineProvider"
-import { getModels } from "../../../api/providers/fetchers/modelCache"
+import { getModels, fetchModelsFromProvider, flushModels } from "../../../api/providers/fetchers/modelCache"
 import { getCommands } from "../../../services/command/commands"
 const { openAiCodexOAuthManager } = await import("../../../integrations/openai-codex/oauth")
 const { fetchOpenAiCodexRateLimitInfo } = await import("../../../integrations/openai-codex/rate-limits")
@@ -287,6 +287,84 @@ describe("webviewMessageHandler - requestOllamaModels", () => {
 			type: "ollamaModels",
 			ollamaModels: mockModels,
 		})
+	})
+})
+
+describe("webviewMessageHandler - model lists for a role's profile", () => {
+	const getProfile = vi.fn()
+	const mockFetchUncached = vi.mocked(fetchModelsFromProvider)
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+		mockClineProvider.getState = vi.fn().mockResolvedValue({
+			currentApiConfigName: "default",
+			apiConfiguration: { apiProvider: "openrouter", ollamaBaseUrl: "http://active:11434" },
+		})
+		;(mockClineProvider as any).providerSettingsManager = { getProfile }
+		getProfile.mockResolvedValue({
+			name: "local",
+			apiProvider: "ollama",
+			ollamaBaseUrl: "http://local:11434",
+			openAiBaseUrl: "https://local.example/v1",
+			openAiApiKey: "local-key",
+		})
+	})
+
+	it("lists Ollama models with the requested profile's endpoint and bypasses the shared cache", async () => {
+		mockFetchUncached.mockResolvedValue({ llama3: { contextWindow: 8192, supportsPromptCache: false } } as any)
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "requestOllamaModels",
+			values: { profileName: "local" },
+		})
+
+		expect(getProfile).toHaveBeenCalledWith({ name: "local" })
+		expect(mockFetchUncached).toHaveBeenCalledWith(
+			expect.objectContaining({ provider: "ollama", baseUrl: "http://local:11434" }),
+		)
+		expect(mockGetModels).not.toHaveBeenCalled()
+		expect(vi.mocked(flushModels)).not.toHaveBeenCalled()
+		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith(
+			expect.objectContaining({ type: "ollamaModels", values: { profileName: "local" } }),
+		)
+	})
+
+	it("uses the active configuration and cache when the requested profile is the active one", async () => {
+		mockGetModels.mockResolvedValue({ m: { contextWindow: 1, supportsPromptCache: false } } as any)
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "requestOllamaModels",
+			values: { profileName: "default" },
+		})
+
+		expect(getProfile).not.toHaveBeenCalled()
+		expect(mockGetModels).toHaveBeenCalledWith(expect.objectContaining({ baseUrl: "http://active:11434" }))
+	})
+
+	it("resolves OpenAI-compatible credentials from the requested profile", async () => {
+		await webviewMessageHandler(mockClineProvider, {
+			type: "requestOpenAiModels",
+			values: { profileName: "local" },
+		})
+
+		expect(getProfile).toHaveBeenCalledWith({ name: "local" })
+	})
+
+	it("tags router catalogs with the requested profile", async () => {
+		mockFetchUncached.mockResolvedValue({})
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "requestRouterModels",
+			values: { provider: "openrouter", profileName: "local" },
+		})
+
+		expect(mockFetchUncached).toHaveBeenCalledWith({ provider: "openrouter" })
+		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: "routerModels",
+				values: { provider: "openrouter", profileName: "local" },
+			}),
+		)
 	})
 })
 

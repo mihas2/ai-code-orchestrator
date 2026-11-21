@@ -1,7 +1,7 @@
 // npx vitest src/components/modes/__tests__/ModesView.spec.tsx
 
 import { render, screen, fireEvent, waitFor } from "@/utils/test-utils"
-import ModesView from "../ModesView"
+import ModesView, { resetLastEditedRoleForTests } from "../ModesView"
 import { ExtensionStateContext } from "@src/context/ExtensionStateContext"
 import { vscode } from "@src/utils/vscode"
 
@@ -28,6 +28,12 @@ const mockExtensionState = {
 	setCustomInstructions: vitest.fn(),
 }
 
+// The Roles page selects the edited role itself; it never follows the chat's active mode.
+const selectRole = (slug: string) => {
+	fireEvent.click(screen.getByTestId("mode-select-trigger"))
+	fireEvent.click(screen.getByTestId(`mode-option-${slug}`))
+}
+
 const renderPromptsView = (props = {}) => {
 	return render(
 		<ExtensionStateContext.Provider value={{ ...mockExtensionState, ...props } as any}>
@@ -41,11 +47,14 @@ Element.prototype.scrollIntoView = vitest.fn()
 describe("PromptsView", () => {
 	beforeEach(() => {
 		vitest.clearAllMocks()
+		resetLastEditedRoleForTests()
 	})
 
-	it("displays the current mode name in the select trigger", () => {
+	it("does not take the edited role from the chat's active mode", () => {
 		renderPromptsView({ mode: "code" })
 		const selectTrigger = screen.getByTestId("mode-select-trigger")
+		expect(selectTrigger).not.toHaveTextContent("Code")
+		selectRole("code")
 		expect(selectTrigger).toHaveTextContent("Code")
 	})
 
@@ -91,6 +100,7 @@ describe("PromptsView", () => {
 
 	it("handles prompt changes correctly", async () => {
 		renderPromptsView()
+		selectRole("code")
 
 		// Get the textarea
 		const textarea = await waitFor(() => screen.getByTestId("code-prompt-textarea"))
@@ -128,6 +138,7 @@ describe("PromptsView", () => {
 				<ModesView />
 			</ExtensionStateContext.Provider>,
 		)
+		selectRole("code")
 
 		// Find and click the role definition reset button
 		const resetButton = screen.getByTestId("role-definition-reset")
@@ -154,6 +165,7 @@ describe("PromptsView", () => {
 				<ModesView />
 			</ExtensionStateContext.Provider>,
 		)
+		selectRole("custom-mode")
 
 		// Verify reset button is not present for custom mode
 		expect(screen.queryByTestId("role-definition-reset")).not.toBeInTheDocument()
@@ -175,6 +187,7 @@ describe("PromptsView", () => {
 				<ModesView />
 			</ExtensionStateContext.Provider>,
 		)
+		selectRole("code")
 
 		// Verify description reset button IS present for built-in modes
 		// because built-in modes can have their descriptions customized and reset
@@ -190,6 +203,7 @@ describe("PromptsView", () => {
 				<ModesView />
 			</ExtensionStateContext.Provider>,
 		)
+		selectRole("custom-mode")
 
 		// Verify description section is present for custom modes
 		// but reset button is NOT present (since custom modes manage their own descriptions)

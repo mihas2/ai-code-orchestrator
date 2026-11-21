@@ -92,6 +92,16 @@ export function getRoleModelOptions(
 	).sort()
 }
 
+// The role being edited on the Roles settings page. It is deliberately independent from the
+// task's active mode (chosen under the chat): the settings page only edits a role's configuration.
+// Kept at module scope so it survives the remount that happens whenever the settings tab changes.
+let lastEditedRole: string | undefined
+
+/** Test hook: forget the remembered settings role. */
+export const resetLastEditedRoleForTests = () => {
+	lastEditedRole = undefined
+}
+
 type ModesViewProps = {
 	roleAssignments?: ExtensionStateContextType["roleAssignments"]
 	setCachedStateField?: SetCachedStateField<"roleAssignments">
@@ -106,26 +116,32 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 		currentApiConfigName,
 		apiConfiguration,
 		roleAssignments: extensionRoleAssignments,
-		mode,
 		customInstructions,
 		setCustomInstructions,
 		customModes,
 	} = useExtensionState()
 
-	// Use a local state to track the visually active mode
-	// This prevents flickering when switching modes rapidly by:
-	// 1. Updating the UI immediately when a mode is clicked
-	// 2. Not syncing with the backend mode state (which would cause flickering)
-	// 3. Still sending the mode change to the backend for persistence
-	const [editingRole, setEditingRole] = useState(mode)
+	// The role selected for editing. It never follows nor changes the chat's active mode.
+	const [editingRole, setEditingRoleState] = useState<string>(() => {
+		const remembered = lastEditedRole
+		return remembered && getAllModes(customModes).some((m) => m.slug === remembered) ? remembered : defaultModeSlug
+	})
+	const setEditingRole = useCallback((slug: string) => {
+		lastEditedRole = slug
+		setEditingRoleState(slug)
+	}, [])
 	const roleAssignments = cachedRoleAssignments ?? extensionRoleAssignments
 	const roleAssignment = roleAssignments?.roles[editingRole]
 	const activeProfile = listApiConfigMeta?.find((profile) => profile.name === currentApiConfigName)
-	// A role may point at a different profile than the globally active profile.
-	const selectedProfile =
-		(listApiConfigMeta ?? []).find((profile) => profile.name === roleAssignment?.profileName) ?? activeProfile
-	const selectedProfileName = roleAssignment?.profileName ?? currentApiConfigName
-	const profileProvider = (selectedProfile?.apiProvider ?? apiConfiguration?.apiProvider) as ProviderName | undefined
+	// A role may point at a different profile than the globally active profile. Only a role without
+	// an assignment (or with a deleted profile) falls back to the active profile, as at runtime.
+	const assignedProfile = (listApiConfigMeta ?? []).find((profile) => profile.name === roleAssignment?.profileName)
+	const selectedProfile = assignedProfile ?? activeProfile
+	const selectedProfileName = selectedProfile?.name ?? roleAssignment?.profileName ?? currentApiConfigName
+	// The active profile's full settings may only be used when the role actually resolves to it.
+	const usesActiveProfile = !selectedProfile || selectedProfile.name === currentApiConfigName
+	const profileProvider = (selectedProfile?.apiProvider ??
+		(usesActiveProfile ? apiConfiguration?.apiProvider : undefined)) as ProviderName | undefined
 	const primaryModel = selectedProfile?.modelId ?? ""
 
 	const updateRoleAssignment = useCallback(
@@ -228,13 +244,6 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 		[],
 	)
 
-	const switchMode = useCallback((slug: string) => {
-		vscode.postMessage({
-			type: "mode",
-			text: slug,
-		})
-	}, [])
-
 	// Handle mode switching with explicit state initialization
 	const handleModeSwitch = useCallback(
 		(modeConfig: ModeConfig) => {
@@ -246,13 +255,12 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 			// Exit tools edit mode when switching modes
 			setIsToolsEditMode(false)
 		},
-		[editingRole],
+		[editingRole, setEditingRole],
 	)
 
 	// Refs to track latest state/functions for message handler (which has no dependencies)
 	const handleModeSwitchRef = useRef(handleModeSwitch)
 	const customModesRef = useRef(customModes)
-	const switchModeRef = useRef(switchMode)
 
 	// Update refs when dependencies change
 	useEffect(() => {
@@ -262,10 +270,6 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 	useEffect(() => {
 		customModesRef.current = customModes
 	}, [customModes])
-
-	useEffect(() => {
-		switchModeRef.current = switchMode
-	}, [switchMode])
 
 	// Handler for popover open state change
 	const onOpenChange = useCallback((open: boolean) => {
@@ -489,9 +493,8 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 		}
 
 		updateCustomMode(newModeSlug, newMode)
-		// Immediately select the newly created mode in the UI
+		// Select the newly created role for editing; the chat's active mode is left untouched.
 		setEditingRole(newModeSlug)
-		switchMode(newModeSlug)
 		setIsCreateModeDialogOpen(false)
 		resetFormState()
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -603,13 +606,12 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 						// Try switching using the freshest mode list available
 						const all = getAllModes(customModesRef.current)
 						const importedMode = all.find((m) => m.slug === slug)
+						// Select the imported role for editing without switching the chat's mode.
 						if (importedMode) {
 							setEditingRole(importedMode.slug)
-							switchModeRef.current?.(importedMode.slug)
 						} else {
 							// Fallback: slug not yet in state (race condition) - select default mode
 							setEditingRole(defaultModeSlug)
-							switchModeRef.current?.(defaultModeSlug)
 						}
 					}
 				} else {
@@ -640,7 +642,7 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 
 		window.addEventListener("message", handler)
 		return () => window.removeEventListener("message", handler)
-	}, [checkRulesDirectory, switchMode])
+	}, [checkRulesDirectory, setEditingRole])
 
 	const handleAgentReset = (
 		modeSlug: string,
@@ -980,8 +982,7 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 							<RoleModelSelector
 								provider={profileProvider}
 								apiConfiguration={{
-									...(apiConfiguration ?? {}),
-									...(selectedProfile ?? {}),
+									...(usesActiveProfile ? (apiConfiguration ?? {}) : {}),
 									apiProvider: profileProvider,
 								}}
 								primaryModel={primaryModel}
@@ -1784,6 +1785,7 @@ const ModesView = ({ roleAssignments: cachedRoleAssignments, setCachedStateField
 							type: "deleteCustomMode",
 							slug: modeToDelete.slug,
 						})
+						if (modeToDelete.slug === editingRole) setEditingRole(defaultModeSlug)
 						setShowDeleteConfirm(false)
 						setModeToDelete(null)
 					}

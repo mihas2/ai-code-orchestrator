@@ -18,7 +18,7 @@ const getLmStudioModels = async () =>
 		const handler = (event: MessageEvent) => {
 			const message: ExtensionMessage = event.data
 
-			if (message.type === "lmStudioModels") {
+			if (message.type === "lmStudioModels" && !message.values?.profileName) {
 				clearTimeout(timeout)
 				cleanup()
 

@@ -7,9 +7,10 @@ import { vscode } from "@src/utils/vscode"
 type UseRouterModelsOptions = {
 	provider?: string // single provider filter (e.g. "openrouter")
 	enabled?: boolean // gate fetching entirely
+	profileName?: string // load the catalog with this provider profile's credentials instead of the active one
 }
 
-const getRouterModels = async (provider?: string) =>
+const getRouterModels = async (provider?: string, profileName?: string) =>
 	new Promise<RouterModels>((resolve, reject) => {
 		const cleanup = () => {
 			if (typeof window !== "undefined") {
@@ -27,9 +28,10 @@ const getRouterModels = async (provider?: string) =>
 
 			if (message.type === "routerModels") {
 				const msgProvider = message?.values?.provider as string | undefined
+				const msgProfileName = message?.values?.profileName as string | undefined
 
 				// Verify response matches request
-				if (provider !== msgProvider) {
+				if (provider !== msgProvider || profileName !== msgProfileName) {
 					// Not our response; ignore and wait for the matching one
 					return
 				}
@@ -46,8 +48,11 @@ const getRouterModels = async (provider?: string) =>
 		}
 
 		window.addEventListener("message", handler)
-		if (provider) {
-			vscode.postMessage({ type: "requestRouterModels", values: { provider } })
+		if (provider || profileName) {
+			vscode.postMessage({
+				type: "requestRouterModels",
+				values: profileName ? { provider, profileName } : { provider },
+			})
 		} else {
 			vscode.postMessage({ type: "requestRouterModels" })
 		}
@@ -55,9 +60,12 @@ const getRouterModels = async (provider?: string) =>
 
 export const useRouterModels = (opts: UseRouterModelsOptions = {}) => {
 	const provider = opts.provider || undefined
+	const profileName = opts.profileName || undefined
 	return useQuery({
-		queryKey: ["routerModels", provider || "all"],
-		queryFn: () => getRouterModels(provider),
+		queryKey: profileName
+			? ["routerModels", provider || "all", "profile", profileName]
+			: ["routerModels", provider || "all"],
+		queryFn: () => getRouterModels(provider, profileName),
 		enabled: opts.enabled !== false,
 	})
 }

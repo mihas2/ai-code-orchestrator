@@ -91,11 +91,16 @@ export const RoleModelSelector = ({
 		"lmstudio",
 	]
 	const usesRouterModels = !!provider && routerProviders.includes(provider)
-	const { data: routerModels } = useRouterModels({ provider, enabled: usesRouterModels })
+	// Catalogs are loaded with the credentials of the profile assigned to the role, never the
+	// profile that happens to be selected on the Providers page.
+	const { data: routerModels } = useRouterModels({ provider, profileName, enabled: usesRouterModels })
 
 	const onMessage = useCallback(
 		(event: MessageEvent) => {
 			const message: ExtensionMessage = event.data
+			// Ignore catalogs fetched for another profile (e.g. the Providers page or a previous role).
+			const responseProfile = message.values?.profileName as string | undefined
+			if (profileName && responseProfile !== profileName) return
 			switch (message.type) {
 				case "openAiModels":
 					if (provider === "openai") {
@@ -131,16 +136,18 @@ export const RoleModelSelector = ({
 					break
 			}
 		},
-		[provider],
+		[provider, profileName],
 	)
 	useEvent("message", onMessage)
 
 	useEffect(() => {
 		setFetchedModels({})
+		// With a profile name the extension resolves that profile's endpoint/credentials itself.
+		const profileValues = profileName ? { profileName } : undefined
 		if (provider === "openai") {
 			vscode.postMessage({
 				type: "requestOpenAiModels",
-				values: {
+				values: profileValues ?? {
 					baseUrl: apiConfiguration.openAiBaseUrl,
 					apiKey: apiConfiguration.openAiApiKey,
 					customHeaders: {},
@@ -148,14 +155,15 @@ export const RoleModelSelector = ({
 				},
 			})
 		} else if (provider === "ollama") {
-			vscode.postMessage({ type: "requestOllamaModels" })
+			vscode.postMessage({ type: "requestOllamaModels", values: profileValues })
 		} else if (provider === "lmstudio") {
-			vscode.postMessage({ type: "requestLmStudioModels" })
+			vscode.postMessage({ type: "requestLmStudioModels", values: profileValues })
 		} else if (provider === "vscode-lm") {
 			vscode.postMessage({ type: "requestVsCodeLmModels" })
 		}
 	}, [
 		provider,
+		profileName,
 		apiConfiguration.openAiBaseUrl,
 		apiConfiguration.openAiApiKey,
 		apiConfiguration.openAiHeaders,

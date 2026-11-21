@@ -114,6 +114,8 @@ export const OpenAICompatible = ({
 
 		switch (message.type) {
 			case "openAiModels": {
+				// Ignore catalogs fetched for a role-specific profile.
+				if (message.values?.profileName) break
 				const updatedModels = message.openAiModels ?? []
 				setOpenAiModels(Object.fromEntries(updatedModels.map((item) => [item, openAiModelInfoSaneDefaults])))
 				break

@@ -11,6 +11,7 @@ import {
 	type GlobalState,
 	type ClineMessage,
 	type ModelRecord,
+	type ProviderSettings,
 	type Command as SlashCommand,
 	type WebviewMessage,
 	type EditQueuedMessagePayload,
@@ -62,7 +63,7 @@ import { extractPatternsFromCommandText } from "../../shared/command-patterns"
 import { getWorkspacePath } from "../../utils/path"
 import { isPathOutsideWorkspace } from "../../utils/pathUtils"
 import { Mode, defaultModeSlug } from "../../shared/modes"
-import { getModels, flushModels } from "../../api/providers/fetchers/modelCache"
+import { getModels, flushModels, fetchModelsFromProvider } from "../../api/providers/fetchers/modelCache"
 import { GetModelsOptions } from "../../shared/api"
 import { generateSystemPrompt } from "./generateSystemPrompt"
 import { resolveDefaultSaveUri, saveLastExportPath } from "../../utils/export"
@@ -96,6 +97,41 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 	const getCurrentCwd = () => {
 		return provider.getCurrentTask()?.cwd || provider.cwd
+	}
+
+	/**
+	 * Resolve the provider settings a model-list request should use.
+	 *
+	 * The Roles settings page asks for models of the profile assigned to the role being edited
+	 * (`values.profileName`), which may differ from the profile selected on the Providers page.
+	 * `isProfileOverride` is true when that profile is not the active one: its catalog must be
+	 * fetched without touching the shared per-provider cache, which belongs to the active profile.
+	 */
+	const resolveModelSourceConfig = async (): Promise<{
+		config: ProviderSettings
+		profileName?: string
+		isProfileOverride: boolean
+	}> => {
+		const state = await provider.getState()
+		const requestedProfile =
+			typeof message?.values?.profileName === "string" && message.values.profileName
+				? (message.values.profileName as string)
+				: undefined
+		if (!requestedProfile || requestedProfile === state.currentApiConfigName) {
+			return { config: state.apiConfiguration, profileName: requestedProfile, isProfileOverride: false }
+		}
+		try {
+			const { name: _name, ...profileSettings } = await provider.providerSettingsManager.getProfile({
+				name: requestedProfile,
+			})
+			return { config: profileSettings, profileName: requestedProfile, isProfileOverride: true }
+		} catch (error) {
+			console.warn(
+				`[webviewMessageHandler] Profile '${requestedProfile}' not found for model listing; using active profile:`,
+				error,
+			)
+			return { config: state.apiConfiguration, profileName: requestedProfile, isProfileOverride: false }
+		}
 	}
 
 	const getCurrentMode = async (): Promise<string> => {
@@ -1172,7 +1208,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			await flushModels({ provider: routerNameFlush } as GetModelsOptions, true)
 			break
 		case "requestRouterModels":
-			const { apiConfiguration } = await provider.getState()
+			const {
+				config: apiConfiguration,
+				profileName: routerModelsProfileName,
+				isProfileOverride: routerModelsProfileOverride,
+			} = await resolveModelSourceConfig()
 
 			// Optional single provider filter from webview
 			const requestedProvider = message?.values?.provider
@@ -1196,7 +1236,11 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 
 			const safeGetModels = async (options: GetModelsOptions): Promise<ModelRecord> => {
 				try {
-					return await getModels(options)
+					// A non-active profile may carry other credentials/base URLs; do not read or
+					// overwrite the active profile's cached catalog for it.
+					return routerModelsProfileOverride
+						? await fetchModelsFromProvider(options)
+						: await getModels(options)
 				} catch (error) {
 					console.error(
 						`Failed to fetch models in webviewMessageHandler requestRouterModels for ${options.provider}:`,
@@ -1235,7 +1279,10 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			if (litellmApiKey && litellmBaseUrl) {
 				// If explicit credentials are provided in message.values (from Refresh Models button),
 				// flush the cache first to ensure we fetch fresh data with the new credentials
-				if (message?.values?.litellmApiKey || message?.values?.litellmBaseUrl) {
+				if (
+					!routerModelsProfileOverride &&
+					(message?.values?.litellmApiKey || message?.values?.litellmBaseUrl)
+				) {
 					await flushModels({ provider: "litellm", apiKey: litellmApiKey, baseUrl: litellmBaseUrl }, true)
 				}
 
@@ -1250,7 +1297,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			const poeBaseUrl = apiConfiguration.poeBaseUrl || message?.values?.poeBaseUrl
 
 			if (poeApiKey) {
-				if (message?.values?.poeApiKey || message?.values?.poeBaseUrl) {
+				if (!routerModelsProfileOverride && (message?.values?.poeApiKey || message?.values?.poeBaseUrl)) {
 					await flushModels({ provider: "poe", apiKey: poeApiKey, baseUrl: poeBaseUrl }, true)
 				}
 
@@ -1266,7 +1313,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 				: candidates
 
 			// If refresh flag is set and we have a specific provider, flush its cache first
-			if (shouldRefresh && providerFilter && modelFetchPromises.length > 0) {
+			if (!routerModelsProfileOverride && shouldRefresh && providerFilter && modelFetchPromises.length > 0) {
 				const targetCandidate = modelFetchPromises[0]
 				await flushModels(targetCandidate.options, true)
 			}
@@ -1296,7 +1343,7 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 						type: "singleRouterModelFetchResponse",
 						success: false,
 						error: errorMessage,
-						values: { provider: routerName },
+						values: { provider: routerName, profileName: routerModelsProfileName },
 					})
 				}
 			})
@@ -1304,25 +1351,40 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			provider.postMessageToWebview({
 				type: "routerModels",
 				routerModels,
-				values: providerFilter ? { provider: requestedProvider } : undefined,
+				values:
+					providerFilter || routerModelsProfileName
+						? { provider: requestedProvider, profileName: routerModelsProfileName }
+						: undefined,
 			})
 			break
 		case "requestOllamaModels": {
 			// Specific handler for Ollama models only.
-			const { apiConfiguration: ollamaApiConfig } = await provider.getState()
+			const {
+				config: ollamaApiConfig,
+				profileName: ollamaProfileName,
+				isProfileOverride: ollamaProfileOverride,
+			} = await resolveModelSourceConfig()
 			try {
 				const ollamaOptions = {
 					provider: "ollama" as const,
 					baseUrl: ollamaApiConfig.ollamaBaseUrl,
 					apiKey: ollamaApiConfig.ollamaApiKey,
 				}
-				// Flush cache and refresh to ensure fresh models.
-				await flushModels(ollamaOptions, true)
-
-				const ollamaModels = await getModels(ollamaOptions)
+				let ollamaModels: ModelRecord
+				if (ollamaProfileOverride) {
+					ollamaModels = await fetchModelsFromProvider(ollamaOptions)
+				} else {
+					// Flush cache and refresh to ensure fresh models.
+					await flushModels(ollamaOptions, true)
+					ollamaModels = await getModels(ollamaOptions)
+				}
 
 				if (Object.keys(ollamaModels).length > 0) {
-					provider.postMessageToWebview({ type: "ollamaModels", ollamaModels: ollamaModels })
+					provider.postMessageToWebview({
+						type: "ollamaModels",
+						ollamaModels: ollamaModels,
+						values: ollamaProfileName ? { profileName: ollamaProfileName } : undefined,
+					})
 				}
 			} catch (error) {
 				// Silently fail - user hasn't configured Ollama yet
@@ -1332,21 +1394,30 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 		}
 		case "requestLmStudioModels": {
 			// Specific handler for LM Studio models only.
-			const { apiConfiguration: lmStudioApiConfig } = await provider.getState()
+			const {
+				config: lmStudioApiConfig,
+				profileName: lmStudioProfileName,
+				isProfileOverride: lmStudioProfileOverride,
+			} = await resolveModelSourceConfig()
 			try {
 				const lmStudioOptions = {
 					provider: "lmstudio" as const,
 					baseUrl: lmStudioApiConfig.lmStudioBaseUrl,
 				}
-				// Flush cache and refresh to ensure fresh models.
-				await flushModels(lmStudioOptions, true)
-
-				const lmStudioModels = await getModels(lmStudioOptions)
+				let lmStudioModels: ModelRecord
+				if (lmStudioProfileOverride) {
+					lmStudioModels = await fetchModelsFromProvider(lmStudioOptions)
+				} else {
+					// Flush cache and refresh to ensure fresh models.
+					await flushModels(lmStudioOptions, true)
+					lmStudioModels = await getModels(lmStudioOptions)
+				}
 
 				if (Object.keys(lmStudioModels).length > 0) {
 					provider.postMessageToWebview({
 						type: "lmStudioModels",
 						lmStudioModels: lmStudioModels,
+						values: lmStudioProfileName ? { profileName: lmStudioProfileName } : undefined,
 					})
 				}
 			} catch (error) {
@@ -1355,18 +1426,30 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			}
 			break
 		}
-		case "requestOpenAiModels":
-			if (message?.values?.baseUrl && message?.values?.apiKey) {
-				const openAiModels = await getOpenAiModels(
-					message?.values?.baseUrl,
-					message?.values?.apiKey,
-					message?.values?.openAiHeaders,
-				)
+		case "requestOpenAiModels": {
+			// The Roles page sends only `profileName`; resolve that profile's endpoint and key here.
+			let openAiBaseUrl = message?.values?.baseUrl
+			let openAiApiKey = message?.values?.apiKey
+			let openAiHeaders = message?.values?.openAiHeaders
+			const openAiProfileName = message?.values?.profileName as string | undefined
+			if (openAiProfileName) {
+				const { config } = await resolveModelSourceConfig()
+				openAiBaseUrl = openAiBaseUrl || config.openAiBaseUrl
+				openAiApiKey = openAiApiKey || config.openAiApiKey
+				openAiHeaders = openAiHeaders ?? config.openAiHeaders
+			}
+			if (openAiBaseUrl && openAiApiKey) {
+				const openAiModels = await getOpenAiModels(openAiBaseUrl, openAiApiKey, openAiHeaders)
 
-				provider.postMessageToWebview({ type: "openAiModels", openAiModels })
+				provider.postMessageToWebview({
+					type: "openAiModels",
+					openAiModels,
+					values: openAiProfileName ? { profileName: openAiProfileName } : undefined,
+				})
 			}
 
 			break
+		}
 		case "requestVsCodeLmModels":
 			const vsCodeLmModels = await getVsCodeLmModels()
 			// TODO: Cache like we do for OpenRouter, etc?
