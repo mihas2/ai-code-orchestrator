@@ -20,7 +20,6 @@ describe("AutoApproveToggle", () => {
 		alwaysAllowReadOnly: true,
 		alwaysAllowWrite: false,
 		alwaysAllowMcp: false,
-		alwaysAllowModeSwitch: true,
 		alwaysAllowSubtasks: false,
 		alwaysAllowExecute: true,
 		alwaysAllowFollowupQuestions: false,
@@ -86,5 +85,12 @@ describe("AutoApproveToggle", () => {
 			"aria-pressed",
 			"true",
 		)
+	})
+})
+
+describe("AutoApproveToggle mode switching", () => {
+	it("does not offer a mode-switch toggle because models can no longer switch modes", () => {
+		render(<AutoApproveToggle onToggle={vi.fn()} />)
+		expect(screen.queryByTestId("always-allow-mode-switch-toggle")).not.toBeInTheDocument()
 	})
 })

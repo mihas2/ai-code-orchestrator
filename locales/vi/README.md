@@ -1,82 +1,54 @@
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=mihas2.ai-code-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
+
 # AI Code Orchestrator
 
-> Đội ngũ dev dùng AI của bạn, ngay trong trình chỉnh sửa
+> Đội ngũ phát triển AI của bạn, ngay trong trình soạn thảo.
 
-<details>
-  <summary>🌐 Các ngôn ngữ có sẵn</summary>
+AI Code Orchestrator là tiện ích mở rộng VS Code và CLI để lập kế hoạch, triển khai, rà soát và giải thích phần mềm bằng các tác tử AI có thể cấu hình. Nó kết hợp trò chuyện, thao tác trên mã, quy trình làm việc trong terminal, vai trò tùy chỉnh, tích hợp MCP và điều phối đa tác tử trong một không gian làm việc.
 
-- [English](../../README.md)
-- [Català](../ca/README.md)
-- [Deutsch](../de/README.md)
-- [Español](../es/README.md)
-- [Français](../fr/README.md)
-- [हिंदी](../hi/README.md)
-- [Bahasa Indonesia](../id/README.md)
-- [Italiano](../it/README.md)
-- [日本語](../ja/README.md)
-- [한국어](../ko/README.md)
-- [Nederlands](../nl/README.md)
-- [Polski](../pl/README.md)
-- [Português (BR)](../pt-BR/README.md)
-- [Русский](../ru/README.md)
-- [Türkçe](../tr/README.md)
-- [Tiếng Việt](../vi/README.md)
-- [简体中文](../zh-CN/README.md)
-- [繁體中文](../zh-TW/README.md)
-- ...
-  </details>
+## Khả năng
 
----
+- Tạo và chỉnh sửa mã từ yêu cầu bằng ngôn ngữ tự nhiên
+- Lập kế hoạch kiến trúc và chia công việc thành các nhiệm vụ phối hợp
+- Điều phối công việc dưới dạng DAG có tính đến phụ thuộc, với các bộ thực thi song song, giai đoạn rà soát, ngân sách và tích hợp có kiểm soát
+- **Tối ưu ngữ cảnh** - quản lý ngữ cảnh thông minh giúp giảm lượng token và chi phí mà vẫn giữ hiệu quả
+- Rà soát thay đổi, chẩn đoán lỗi và cải thiện mã hiện có
+- Làm việc với tệp, terminal, hình ảnh và công cụ MCP bên ngoài
+- Cấu hình nhà cung cấp, bao gồm Vercel AI Gateway và Unbound, mô hình, quyền và vai trò tùy chỉnh
+- Gán hồ sơ nhà cung cấp và mô hình cho từng vai trò; vai trò không có mô hình riêng dùng mô hình của hồ sơ, vai trò không có hồ sơ dùng hồ sơ mặc định
+- Tiếp tục nhiệm vụ từ trình soạn thảo hoặc dòng lệnh
 
-## AI Code Orchestrator có thể làm gì cho BẠN?
+## Vai trò
 
-- Tạo mã từ mô tả ngôn ngữ tự nhiên
-- Thích ứng với các Chế độ: Mã, Kiến trúc sư, Hỏi, Gỡ lỗi và Chế độ tùy chỉnh
-- Tái cấu trúc & gỡ lỗi mã hiện có
-- Viết & cập nhật tài liệu
-- Trả lời câu hỏi về cơ sở mã của bạn
-- Tự động hóa các tác vụ lặp đi lặp lại
-- Sử dụng Máy chủ MCP
+AI Code Orchestrator thích ứng với công việc đang làm:
 
-## Chế độ
+- **Code** — triển khai thay đổi và làm việc với các tệp của dự án
+- **Architect** — thiết kế hệ thống, đặc tả và kế hoạch di chuyển
+- **Ask** — trả lời câu hỏi và giải thích mã
+- **Debug** — tìm nguyên nhân gốc và xác minh bản sửa
+- **Reviewer** — xác minh thay đổi, phát hiện vấn đề và bảo đảm chất lượng
+- **Orchestrator** (mặc định) — điều phối đồ thị nhiệm vụ có phụ thuộc và các tác tử song song
+- **Translate** — dịch và quản lý tệp bản địa hóa
+- **Custom** (tùy chọn) — tạo quy trình làm việc chuyên biệt cho nhóm
 
-AI Code Orchestrator thích ứng với cách bạn làm việc, chứ không phải ngược lại:
+Mỗi vai trò có thể dùng hồ sơ nhà cung cấp và mô hình riêng, được thiết lập trong Cài đặt → Chế độ, độc lập với hồ sơ mặc định được chọn trong Cài đặt → Nhà cung cấp. Vai trò không có mô hình riêng dùng mô hình của hồ sơ, vai trò không có hồ sơ dùng hồ sơ mặc định, giúp dễ dàng cân bằng năng lực, tốc độ và chi phí trong một quy trình làm việc.
 
-- Chế độ Mã: viết mã hàng ngày, chỉnh sửa và các thao tác với tệp
-- Chế độ Kiến trúc sư: lập kế hoạch hệ thống, thông số kỹ thuật và di chuyển
-- Chế độ Hỏi: câu trả lời nhanh, giải thích và tài liệu
-- Chế độ Gỡ lỗi: theo dõi sự cố, thêm nhật ký, cô lập nguyên nhân gốc rễ
-- Chế độ Dịch: dịch và quản lý các tệp bản địa hóa
-- Chế độ Tùy chỉnh: xây dựng các chế độ chuyên biệt cho nhóm hoặc quy trình làm việc của bạn
+## Tài liệu
 
-Xem thêm: [Sử dụng Chế độ](https://github.com/mihas2/ai-code-orchestrator/basic-usage/using-modes) • [Chế độ tùy chỉnh](https://github.com/mihas2/ai-code-orchestrator/advanced-usage/custom-modes)
-
-## Tài nguyên
-
-- **[Tài liệu](https://github.com/mihas2/ai-code-orchestrator):** Hướng dẫn chính thức để cài đặt, cấu hình và sử dụng thành thạo AI Code Orchestrator.
-- **[Vấn đề trên GitHub](https://github.com/AIOrchestrator/ai-code-orchestrator/issues):** Báo cáo lỗi và theo dõi quá trình phát triển.
-
----
-
-## Tuyên bố miễn trừ trách nhiệm
-
-**Xin lưu ý** rằng AI Code Orchestrator, Inc. **không** đưa ra bất kỳ tuyên bố hay bảo đảm nào liên quan đến bất kỳ mã, mô hình hoặc công cụ nào khác được cung cấp hoặc cung cấp liên quan đến AI Code Orchestrator, bất kỳ công cụ nào của bên thứ ba được liên kết hoặc bất kỳ kết quả đầu ra nào. Bạn chịu **mọi rủi ro** liên quan đến việc sử dụng bất kỳ công cụ hoặc kết quả đầu ra nào như vậy; các công cụ đó được cung cấp trên cơ sở **"NGUYÊN TRẠNG"** và **"NHƯ HIỆN CÓ"**. Những rủi ro đó có thể bao gồm, nhưng không giới hạn ở, vi phạm sở hữu trí tuệ, các lỗ hổng hoặc tấn công mạng, thiên vị, không chính xác, lỗi, khiếm khuyết, vi-rút, thời gian ngừng hoạt động, mất mát hoặc hư hỏng tài sản và/hoặc thương tích cá nhân. Bạn hoàn toàn chịu trách nhiệm về việc sử dụng bất kỳ công cụ hoặc kết quả đầu ra nào đó (bao gồm, nhưng không giới hạn ở, tính hợp pháp, tính phù hợp và kết quả của chúng).
-
----
+Xem tài liệu dự án, bao gồm đặc tả điều phối, trong [`apps/docs`](../../apps/docs).
 
 ## Cài đặt
 
-Cài đặt mở rộng **AI Code Orchestrator** từ VS Code Marketplace, hoặc xây dựng lại VSIX cục bộ:
+Cài đặt tiện ích **AI Code Orchestrator** từ VS Code Marketplace, hoặc tạo một tệp VSIX mới tại máy:
 
 ```bash
 pnpm install
 pnpm rebuild:vsix
 ```
 
-Để xây dựng lại sau đó cài đặt tương tác, chạy `pnpm install:vsix`. Điều này xây dựng rõ ràng webview trước khi đóng gói và đóng gói mở rộng. `pnpm install` thông thường chỉ cài đặt các phụ thuộc.
+Để dựng lại rồi cài đặt theo cách tương tác, hãy chạy `pnpm install:vsix`. Lệnh này dựng lại webview một cách tường minh trước khi đóng gói tiện ích. Lệnh `pnpm install` thông thường chỉ cài đặt các phụ thuộc.
 
 Trong quá trình phát triển, CLI có sẵn từ monorepo:
 
@@ -84,8 +56,12 @@ Trong quá trình phát triển, CLI có sẵn từ monorepo:
 pnpm --filter @ai-code-orchestrator/cli dev
 ```
 
-Phạm vi gói và các định danh lệnh cũ được giữ lại để duy trì tính tương thích với các tích hợp hiện có.
+Phạm vi gói và các định danh lệnh cũ được giữ lại để tương thích với các tích hợp hiện có.
+
+## Nguồn gốc
+
+AI Code Orchestrator được xây dựng dựa trên [Roo Code](https://github.com/RooCodeInc/Roo-Code). Phần triển khai giữ lại một số API và định danh tương thích để các tích hợp hiện có tiếp tục hoạt động.
 
 ## Giấy phép
 
-[Apache 2.0 © 2025 AI Code Orchestrator, Inc.](../../LICENSE)
+[Apache 2.0](../../LICENSE)

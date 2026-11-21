@@ -250,10 +250,6 @@
 			"label": "MCP",
 			"description": "啟用 MCP 伺服器檢視中個別 MCP 工具的自動核准（需同時啟用此設定與該工具的「始終允許」核取方塊）"
 		},
-		"modeSwitch": {
-			"label": "模式",
-			"description": "無需核准即可自動切換至不同模式"
-		},
 		"subtasks": {
 			"label": "子任務",
 			"description": "無需核准即可建立與完成子任務"
@@ -846,7 +842,7 @@
 		"cacheWritesPrice": "快取寫入價格",
 		"enableStreaming": "啟用串流輸出",
 		"enableParallelToolCalls": "啟用平行工具呼叫",
-		"enableParallelToolCallsDescription": "某些代理在工具呼叫平行時會遺失引數",
+		"enableParallelToolCallsDescription": "適用於 API 支援平行工具呼叫參數的供應商。啟用後，模型可以同時呼叫多個工具。停用或未設定時，禁止平行工具呼叫。",
 		"enableR1Format": "啟用 R1 模型參數",
 		"enableR1FormatTips": "使用 QWQ 等 R1 模型時必須啟用，以避免發生 400 錯誤",
 		"useAzure": "使用 Azure",

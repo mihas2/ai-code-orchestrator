@@ -88,9 +88,10 @@ When the `new_task` tool is invoked, it follows this process:
     - Assigns unique taskId and instanceId identifiers for state management
     - Captures telemetry data on tool usage and task lifecycles
 
-4. **Mode Switching and Integration**:
+4. **Subtask Mode and Integration**:
 
-    - Switches to the specified mode with appropriate role and capabilities
+    - Starts the subtask in the specified mode with that role's capabilities, provider profile, and model; the parent keeps its own mode
+    - This is the only way the model can hand work to another mode: there is no tool that switches the mode of the running task
     - Initializes the new task with the provided message
     - Integrates with VS Code's command palette and code actions
 

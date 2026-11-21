@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "Automatische Genehmigung einzelner MCP-Tools in der MCP-Server-Ansicht aktivieren (erfordert sowohl diese Einstellung als auch das 'Immer erlauben'-Kontrollkästchen des Tools)"
 		},
-		"modeSwitch": {
-			"label": "Modus",
-			"description": "Automatisch zwischen verschiedenen Modi wechseln ohne Genehmigung"
-		},
 		"subtasks": {
 			"label": "Teilaufgaben",
 			"description": "Erstellung und Abschluss von Unteraufgaben ohne Genehmigung erlauben"
@@ -836,7 +832,7 @@
 		"cacheWritesPrice": "Cache-Schreibpreis",
 		"enableStreaming": "Streaming aktivieren",
 		"enableParallelToolCalls": "Parallele Tool-Aufrufe aktivieren",
-		"enableParallelToolCallsDescription": "Manche Proxys verlieren Argumente, wenn Tool-Aufrufe parallel erfolgen",
+		"enableParallelToolCallsDescription": "Gilt für Anbieter, deren APIs den Parameter für parallele Tool-Aufrufe unterstützen. Wenn aktiviert, kann das Modell mehrere Tools gleichzeitig aufrufen. Wenn deaktiviert oder nicht gesetzt, sind parallele Tool-Aufrufe nicht erlaubt.",
 		"enableR1Format": "R1-Modellparameter aktivieren",
 		"enableR1FormatTips": "Muss bei Verwendung von R1-Modellen wie QWQ aktiviert werden, um 400er-Fehler zu vermeiden",
 		"useAzure": "Azure verwenden",

@@ -95,9 +95,22 @@ This feature makes it easier to navigate between commonly used profiles, especia
 
 ---
 
-## Linking Profiles to Modes
-In the <Codicon name="notebook" /> Prompts tab, you can explicitly associate a specific Configuration Profile with each Mode. The system also automatically remembers which profile you last used with each mode, making your workflow more efficient.
-<img src="/img/api-configuration-profiles/api-configuration-profiles-11.png" alt="Profile-Mode association interface in Prompts tab" width="550" />
+## Linking Profiles to Roles
+
+Open Settings <Codicon name="gear" /> → **Roles** to give each role (mode) its own profile and model:
+
+1. Pick the role to edit with the selector at the top of the page.
+2. Under **API Configuration**, choose the profile this role should use.
+3. Choose the model. The list is loaded from the profile selected for this role, using that profile's provider, endpoint, and credentials. Leaving the profile's own model selected means the role follows that profile's model.
+4. Click **Save**.
+
+How the Roles page relates to the rest of the extension:
+
+- **Independent of Providers.** The profile selected in Settings → Providers is only the default. It is used by roles with no assignment and does not change the profile or the model list of roles that have one.
+- **Independent of the chat.** Choosing a role in Settings → Roles only opens it for editing. It does not change the mode of the current chat, and changing the chat's mode does not change which role is open in Settings. Creating or importing a role does not switch the chat to it either.
+- **Applied at runtime.** Tasks and subtasks read these assignments: a task in a role runs with that role's profile and model.
+
+<img src="/img/api-configuration-profiles/api-configuration-profiles-11.png" alt="Profile and model assignment for a role" width="550" />
 
 ---
 
@@ -107,7 +120,7 @@ Each task remembers which profile it started with. This "sticky" behavior means:
 
 - **Reopening from history**: When you resume a task from history, it uses the same profile it had originally—even if you've since changed the global selection.
 - **Multi-workspace consistency**: If you switch profiles in another workspace window, existing tasks in the first window keep their original profile.
-- **Orchestrator subtasks**: Child tasks created by the orchestrator inherit the parent's profile and retain it for their lifetime.
+- **Orchestrator subtasks**: Each child task uses the profile and model assigned to its role in [Settings → Roles](#linking-profiles-to-roles) (or the default profile if its role has none) and keeps it for its lifetime.
 
 This prevents unexpected model switches mid-task and keeps your conversation context consistent with the model that generated it.
 

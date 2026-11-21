@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "Aktifkan auto-approval tool MCP individual di tampilan Server MCP (memerlukan pengaturan ini dan checkbox \"Selalu izinkan\" tool tersebut)"
 		},
-		"modeSwitch": {
-			"label": "Mode",
-			"description": "Secara otomatis beralih antara mode yang berbeda tanpa memerlukan persetujuan"
-		},
 		"subtasks": {
 			"label": "Subtugas",
 			"description": "Izinkan pembuatan dan penyelesaian subtugas tanpa memerlukan persetujuan"
@@ -836,7 +832,7 @@
 		"cacheWritesPrice": "Harga cache writes",
 		"enableStreaming": "Aktifkan streaming",
 		"enableParallelToolCalls": "Aktifkan panggilan tool paralel",
-		"enableParallelToolCallsDescription": "Beberapa proxy menghilangkan argumen saat panggilan tool berjalan paralel",
+		"enableParallelToolCallsDescription": "Berlaku untuk penyedia yang API-nya mendukung parameter panggilan tool paralel. Jika diaktifkan, model dapat memanggil beberapa tool sekaligus. Jika dinonaktifkan atau tidak diatur, panggilan tool paralel dilarang.",
 		"enableR1Format": "Aktifkan parameter model R1",
 		"enableR1FormatTips": "Harus diaktifkan saat menggunakan model R1 seperti QWQ untuk mencegah error 400",
 		"useAzure": "Gunakan Azure",

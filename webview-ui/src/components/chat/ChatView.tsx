@@ -79,7 +79,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		organizationAllowList,
 		runtimeMode: mode = defaultModeSlug,
 		setMode,
-		alwaysAllowModeSwitch,
 		customModes,
 		soundEnabled,
 		soundVolume,
@@ -1755,14 +1754,10 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				markFollowUpAsAnswered()
 			}
 
-			// Check if we need to switch modes
-			if (suggestion.mode) {
-				// Only switch modes if it's a manual click (event exists) or auto-approval is allowed
-				const isManualClick = !!event
-				if (isManualClick || alwaysAllowModeSwitch) {
-					// Switch mode without waiting
-					switchToMode(suggestion.mode)
-				}
+			// Suggestions from older task history may still carry a mode. Models can no longer
+			// switch modes, so such a mode is only applied when the user clicks the suggestion.
+			if (suggestion.mode && event) {
+				switchToMode(suggestion.mode)
 			}
 
 			if (event?.shiftKey) {
@@ -1779,7 +1774,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				setInputValue(preservedInput)
 			}
 		},
-		[handleSendMessage, setInputValue, switchToMode, alwaysAllowModeSwitch, clineAsk, markFollowUpAsAnswered],
+		[handleSendMessage, setInputValue, switchToMode, clineAsk, markFollowUpAsAnswered],
 	)
 
 	const handleBatchFileResponse = useCallback(

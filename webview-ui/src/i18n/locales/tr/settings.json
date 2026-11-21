@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "MCP Sunucuları görünümünde bireysel MCP araçlarının otomatik onayını etkinleştir (hem bu ayar hem de aracın \"Her zaman izin ver\" onay kutusu gerekir)"
 		},
-		"modeSwitch": {
-			"label": "Mod",
-			"description": "Onay gerektirmeden otomatik olarak farklı modlar arasında geçiş yap"
-		},
 		"subtasks": {
 			"label": "Alt Görevler",
 			"description": "Onay gerektirmeden alt görevlerin oluşturulmasına ve tamamlanmasına izin ver"
@@ -836,7 +832,7 @@
 		"cacheWritesPrice": "Önbellek yazma fiyatı",
 		"enableStreaming": "Akışı etkinleştir",
 		"enableParallelToolCalls": "Paralel araç çağrılarını etkinleştir",
-		"enableParallelToolCallsDescription": "Bazı proxy'ler araç çağrıları paralel olduğunda argümanları kaybeder",
+		"enableParallelToolCallsDescription": "API'leri paralel araç çağrısı parametresini destekleyen sağlayıcılar için geçerlidir. Etkinleştirildiğinde model aynı anda birden fazla araç çağırabilir. Devre dışı bırakıldığında veya ayarlanmadığında paralel araç çağrıları yasaktır.",
 		"enableR1Format": "R1 model parametrelerini etkinleştir",
 		"enableR1FormatTips": "QWQ gibi R1 modelleri kullanıldığında etkinleştirilmelidir, 400 hatası alınmaması için",
 		"useAzure": "Azure kullan",

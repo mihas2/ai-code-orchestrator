@@ -32,7 +32,7 @@ Tools are organized into logical groups based on their functionality:
 | **Image Group**    | AI image generation                 | [generate_image](/advanced-usage/available-tools/generate-image)                                                                                                                                                                                                                                                                                                                                 | Creating and editing images                                     |
 | **Command Group**  | System command execution            | [execute_command](/advanced-usage/available-tools/execute-command), [run_slash_command](/advanced-usage/available-tools/run-slash-command)\*                                                                                                                                                                                                                                                     | Running scripts, building projects, executing command templates |
 | **MCP Group**      | External tool integration           | [use_mcp_tool](/advanced-usage/available-tools/use-mcp-tool), [access_mcp_resource](/advanced-usage/available-tools/access-mcp-resource)                                                                                                                                                                                                                                                         | Specialized functionality through external servers              |
-| **Workflow Group** | Mode and task management            | [switch_mode](/advanced-usage/available-tools/switch-mode), [new_task](/advanced-usage/available-tools/new-task), [ask_followup_question](/advanced-usage/available-tools/ask-followup-question), [attempt_completion](/advanced-usage/available-tools/attempt-completion), [update_todo_list](/advanced-usage/available-tools/update-todo-list), [skill](/advanced-usage/available-tools/skill) | Context switching and task organization                         |
+| **Workflow Group** | Mode and task management            | [new_task](/advanced-usage/available-tools/new-task), [ask_followup_question](/advanced-usage/available-tools/ask-followup-question), [attempt_completion](/advanced-usage/available-tools/attempt-completion), [update_todo_list](/advanced-usage/available-tools/update-todo-list), [skill](/advanced-usage/available-tools/skill) | Context switching and task organization                         |
 
 \*_Experimental feature - requires explicit enablement in settings_
 
@@ -42,8 +42,11 @@ Certain tools are accessible regardless of the current mode:
 
 - [ask_followup_question](/advanced-usage/available-tools/ask-followup-question): Gather additional information from users
 - [attempt_completion](/advanced-usage/available-tools/attempt-completion): Signal task completion
-- [switch_mode](/advanced-usage/available-tools/switch-mode): Change operational modes
-- [new_task](/advanced-usage/available-tools/new-task): Create subtasks
+- [new_task](/advanced-usage/available-tools/new-task): Create subtasks, each in the mode best suited for it
+
+:::note
+There is no `switch_mode` tool. The model cannot change the mode of the current task; work that needs another mode is delegated to a subtask with [new_task](/advanced-usage/available-tools/new-task). You change the mode of a task yourself from the mode selector under the chat.
+:::
 
 ---
 
@@ -101,7 +104,6 @@ These tools help manage the conversation and task flow:
 
 - [ask_followup_question](/advanced-usage/available-tools/ask-followup-question) - Gets additional information from you
 - [attempt_completion](/advanced-usage/available-tools/attempt-completion) - Presents final results
-- [switch_mode](/advanced-usage/available-tools/switch-mode) - Changes to a different mode for specialized tasks
 - [new_task](/advanced-usage/available-tools/new-task) - Creates a new subtask
 - [update_todo_list](/advanced-usage/available-tools/update-todo-list) - Updates task checklist progress
 - [skill](/advanced-usage/available-tools/skill) - Loads and executes predefined skill instructions
@@ -138,7 +140,7 @@ Tools are invoked under specific conditions:
 2. **Mode-Based Availability**
 
     - Different modes enable different tool sets
-    - Mode switches can trigger tool availability changes
+    - Changing the mode (by you, or by starting a subtask in another mode) changes the available tools
     - Some tools are restricted to specific modes
 
 3. **Context-Dependent Calls**
@@ -227,18 +229,17 @@ Tools are made available based on the current mode:
 - **Architect Mode**: Design-focused tools, documentation capabilities, limited execution rights
 - **Custom Modes**: Can be configured with specific tool access for specialized workflows
 
-### Mode Switching
+### Changing Modes
 
-1. **Process**
+1. **Who changes the mode**
 
-    - Current mode state preservation
-    - Tool availability updates
-    - Context switching
+    - You, with the mode selector under the chat, a slash command, or the keyboard shortcut
+    - The model never switches the mode of the running task; it delegates work to another mode with [new_task](/advanced-usage/available-tools/new-task)
 
 2. **Impact on Tools**
     - Tool set changes
     - Permission adjustments
-    - Context preservation
+    - A subtask has its own conversation history; only its result returns to the parent
 
 ---
 
@@ -279,7 +280,7 @@ Tools are made available based on the current mode:
 
 3. **Task Management**
     ```
-    [new_task](/advanced-usage/available-tools/new-task) → [switch_mode](/advanced-usage/available-tools/switch-mode) → [execute_command](/advanced-usage/available-tools/execute-command)
+    [update_todo_list](/advanced-usage/available-tools/update-todo-list) → [new_task](/advanced-usage/available-tools/new-task) → [attempt_completion](/advanced-usage/available-tools/attempt-completion)
     ```
 
 ---

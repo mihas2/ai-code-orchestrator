@@ -104,7 +104,6 @@ const sidebars: SidebarsConfig = {
 								"advanced-usage/available-tools/search-files",
 								"advanced-usage/available-tools/search-replace",
 								"advanced-usage/available-tools/skill",
-								"advanced-usage/available-tools/switch-mode",
 								"advanced-usage/available-tools/update-todo-list",
 								"advanced-usage/available-tools/use-mcp-tool",
 								"advanced-usage/available-tools/write-to-file",
@@ -146,6 +145,7 @@ const sidebars: SidebarsConfig = {
 					type: "category",
 					label: "1.3",
 					items: [
+						{ type: "doc", id: "update-notes/v1.3.5", label: "1.3.5" },
 						{ type: "doc", id: "update-notes/v1.3.2", label: "1.3.2" },
 						{ type: "doc", id: "update-notes/v1.3.1", label: "1.3.1" },
 						{ type: "doc", id: "update-notes/v1.3.0", label: "1.3.0" },

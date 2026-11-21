@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "允许自动调用MCP服务而无需批准"
 		},
-		"modeSwitch": {
-			"label": "模式",
-			"description": "自动在不同模式之间切换而无需批准"
-		},
 		"subtasks": {
 			"label": "子任务",
 			"description": "允许创建和完成子任务而无需批准"
@@ -836,7 +832,7 @@
 		"cacheWritesPrice": "缓存写入价格",
 		"enableStreaming": "启用流式传输",
 		"enableParallelToolCalls": "启用并行工具调用",
-		"enableParallelToolCallsDescription": "某些代理在工具调用并行时会丢失参数",
+		"enableParallelToolCallsDescription": "适用于 API 支持并行工具调用参数的提供商。启用后，模型可以同时调用多个工具。禁用或未设置时，禁止并行工具调用。",
 		"enableR1Format": "启用 R1 模型参数",
 		"enableR1FormatTips": "使用 QWQ 等 R1 系列模型时必须启用，避免出现 400 错误",
 		"useAzure": "使用 Azure 服务",

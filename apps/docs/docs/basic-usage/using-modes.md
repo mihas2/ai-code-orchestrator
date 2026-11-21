@@ -16,10 +16,12 @@ keywords:
 
 Modes in AI Code Orchestrator are specialized personas that tailor the assistant's behavior to your current task. Each mode offers different capabilities, expertise, and access levels to help you accomplish specific goals.
 
-:::info Sticky Models & Mode Persistence
-Each mode remembers your last-used model. When switching modes, AI Code Orchestrator automatically selects that model—no manual selection needed. Assign different models to different modes (e.g., Gemini 2.5 Preview for `🏗️ Architect` mode, Claude Sonnet 3.7 for `💻 Code` mode) and AI Code Orchestrator will switch models automatically when you change modes.
+:::info Models per Role & Mode Persistence
+Assign each role its own provider profile and model in Settings (gear icon) → **Roles** (e.g., a Gemini profile for `🏗️ Architect`, a local model for `💻 Code`). Tasks and subtasks running in that role use this profile and model. A role without an assignment uses the profile selected in Settings → **Providers**. See [Linking Profiles to Roles](/features/api-configuration-profiles#linking-profiles-to-roles).
 
-Additionally, your selected mode persists between sessions—AI Code Orchestrator remembers which mode you were using when you return.
+Choosing a role in Settings → Roles only opens it for editing: it does not change the mode of the current chat, and changing the chat's mode does not change which role is open in Settings.
+
+Your selected mode persists between sessions—AI Code Orchestrator remembers which mode you were using when you return.
 :::
 
 ---
@@ -35,7 +37,7 @@ Additionally, your selected mode persists between sessions—AI Code Orchestrato
 
 ## Switching Between Modes
 
-Four ways to switch modes:
+Three ways to switch modes:
 
 1. **Dropdown menu:** Click the selector to the left of the chat input
 
@@ -53,9 +55,7 @@ Four ways to switch modes:
     | Windows          | Ctrl + . |
     | Linux            | Ctrl + . |
 
-4. **Accept suggestions:** Click on mode switch suggestions that AI Code Orchestrator offers when appropriate
-
- <img src="/img/using-modes/using-modes-2.png" alt="Accepting a mode switch suggestion from AI Code Orchestrator" width="400" />
+The model itself cannot switch the mode of a running task. When work needs another mode, it is delegated to a subtask in that mode with [`new_task`](/advanced-usage/available-tools/new-task), and the parent task keeps its own mode.
 
 ---
 

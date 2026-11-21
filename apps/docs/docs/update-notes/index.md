@@ -28,6 +28,7 @@ We release updates regularly, sometimes multiple times a day, so make sure you'r
 
 ### Version 1.3
 
+- [1.3.5](/update-notes/v1.3.5) — Mode changes only through subtasks, independent role profiles, reliable Stop and Condense Context
 - [1.3.2](/update-notes/v1.3.2) (2026-09-11) — Added Translate role, improved Shift+Drop reliability
 - [1.3.1](/update-notes/v1.3.1) (2026-09-10) — "Run and Allow" button, updated icons, orchestration fixes
 - [1.3.0](/update-notes/v1.3.0) (2026-09-09) — Improved orchestrator behavior as team-lead

@@ -81,7 +81,7 @@ Create multiple [API configuration profiles](/features/api-configuration-profile
 1. Create specialized profiles like "Code - Low Temp" (0.1) and "Ask - High Temp" (0.8)
 2. Configure each profile with appropriate temperature settings
 3. Switch between profiles using the dropdown in settings or chat interface
-4. Set different profiles as defaults for each mode for automatic switching when changing modes
+4. Assign these profiles to roles in Settings → [Roles](/features/api-configuration-profiles#linking-profiles-to-roles), so each role runs with its own temperature
 
 This approach optimizes model behavior for specific tasks without manual adjustments.
 

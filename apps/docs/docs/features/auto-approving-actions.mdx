@@ -68,7 +68,6 @@ The dropdown shows a grid of permission tiles. Controls:
 | **Execute approved commands** | Runs whitelisted terminal commands automatically | **High** |
 | **Use the browser** | Allows headless browser interaction | Medium |
 | **Use MCP servers** | Lets AI Code Orchestrator use configured MCP services | Medium-High |
-| **Switch modes** | Changes between AI Code Orchestrator modes automatically | Low |
 | **Create & complete subtasks** | Manages subtasks without confirmation | Low |
 | **Answer follow-up questions** | Selects default answer for follow-up questions| Low |
 
@@ -108,7 +107,7 @@ The settings panel mirrors the same permissions with additional context and safe
 
 - Outside‑workspace reads/writes require the corresponding outside‑workspace flags in addition to the base permission.
 - Auto‑approve for MCP tools requires both the global "Always approve MCP tools" and each tool's "Always allow". Resource access honors only the global setting.
-- Mode switching is only auto‑approved when the mode-switch permission is enabled (covers switching to another mode and creating new modes).
+- There is no mode-switching permission: the model cannot switch the mode of a running task, so there is nothing to approve. Work in another mode is delegated as a subtask and follows the subtasks permission.
 - After auto‑writes, AI Code Orchestrator waits using the global write‑delay control under Settings → Context Management → Diagnostics.
 
 ### Read Operations
@@ -216,19 +215,6 @@ Example workflow:
 - Find the specific tool (e.g., filesystem operations)
 - Check its "Always allow" checkbox
 - Only then will that specific tool auto-approve
-:::
-
-### Mode Switching
-
-:::info Mode Switching (Risk: Low)
-
-**Setting:** "Always approve mode switching"
-
-**Description:** "Automatically switch between different modes without requiring approval"
-
-**Risk level:** Low
-
-Allows AI Code Orchestrator to change between different modes (Code, Architect, etc.) without asking for permission. This primarily affects the AI's behavior rather than system access. Auto-approval also covers switching between modes and creating new modes when this permission is enabled.
 :::
 
 ### Subtasks

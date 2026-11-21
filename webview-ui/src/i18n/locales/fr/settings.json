@@ -243,10 +243,6 @@
 			"label": "MCP",
 			"description": "Activer l'approbation automatique des outils MCP individuels dans la vue des serveurs MCP (nécessite à la fois ce paramètre et la case à cocher \"Toujours autoriser\" de l'outil)"
 		},
-		"modeSwitch": {
-			"label": "Mode",
-			"description": "Basculer automatiquement entre différents modes sans nécessiter d'approbation"
-		},
 		"subtasks": {
 			"label": "Sous-tâches",
 			"description": "Permettre la création et l'achèvement des sous-tâches sans nécessiter d'approbation"
@@ -836,7 +832,7 @@
 		"cacheWritesPrice": "Prix des écritures de cache",
 		"enableStreaming": "Activer le streaming",
 		"enableParallelToolCalls": "Activer les appels d'outils en parallèle",
-		"enableParallelToolCallsDescription": "Certains proxys perdent des arguments lorsque les appels d'outils sont parallèles",
+		"enableParallelToolCallsDescription": "S'applique aux fournisseurs dont les API prennent en charge le paramètre d'appels d'outils en parallèle. Si activé, le modèle peut appeler plusieurs outils à la fois. Si désactivé ou non défini, les appels d'outils en parallèle sont interdits.",
 		"enableR1Format": "Activer les paramètres du modèle R1",
 		"enableR1FormatTips": "Doit être activé lors de l'utilisation de modèles R1 tels que QWQ, pour éviter l'erreur 400",
 		"useAzure": "Utiliser Azure",

@@ -17,7 +17,7 @@ AI Code Orchestrator és una extensió de VS Code i una CLI per planificar, impl
 - Revisar canvis, diagnosticar errors i millorar el codi existent
 - Treballar amb fitxers, terminals, imatges i eines MCP externes
 - Configurar proveïdors com Vercel AI Gateway i Unbound, models, permisos i rols personalitzats
-- Assignar models a rols individuals, amb herència automàtica del model principal si no es configura cap substitució
+- Assignar un perfil de proveïdor i un model a rols individuals; un rol sense model propi utilitza el model del seu perfil, i un rol sense perfil utilitza el perfil per defecte
 - Continuar les tasques des de l'editor o la línia d'ordres
 
 ## Rols
@@ -33,7 +33,7 @@ AI Code Orchestrator s'adapta a la feina que tens entre mans:
 - **Translate** — traduir i gestionar fitxers de localització
 - **Custom** — crear fluxos de treball especialitzats per a un equip
 
-Cada rol pot utilitzar la seva pròpia configuració de model. Quan no s'assigna cap model específic al rol, hereta el model principal, cosa que facilita equilibrar capacitat, velocitat i cost.
+Cada rol pot utilitzar el seu propi perfil de proveïdor i model, definits a Configuració → Modes independentment del perfil per defecte seleccionat a Configuració → Proveïdors. Un rol sense model propi utilitza el model del seu perfil, i un rol sense perfil utilitza el perfil per defecte, cosa que facilita equilibrar capacitat, velocitat i cost.
 
 ## Documentació
 

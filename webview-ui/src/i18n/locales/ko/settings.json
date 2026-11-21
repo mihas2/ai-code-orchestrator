@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "MCP 서버 보기에서 개별 MCP 도구의 자동 승인 활성화(이 설정과 도구의 \"항상 허용\" 체크박스 모두 필요)"
 		},
-		"modeSwitch": {
-			"label": "모드",
-			"description": "승인 없이 자동으로 다양한 모드 간 전환"
-		},
 		"subtasks": {
 			"label": "하위 작업",
 			"description": "승인 없이 하위 작업 생성 및 완료 허용"
@@ -836,7 +832,7 @@
 		"cacheWritesPrice": "캐시 쓰기 가격",
 		"enableStreaming": "스트리밍 활성화",
 		"enableParallelToolCalls": "병렬 도구 호출 활성화",
-		"enableParallelToolCallsDescription": "일부 프록시는 도구 호출이 병렬일 때 인수를 잃습니다",
+		"enableParallelToolCallsDescription": "병렬 도구 호출 매개변수를 지원하는 API의 공급자에 적용됩니다. 활성화하면 모델이 여러 도구를 동시에 호출할 수 있습니다. 비활성화하거나 설정하지 않으면 병렬 도구 호출이 금지됩니다.",
 		"enableR1Format": "R1 모델 매개변수 활성화",
 		"enableR1FormatTips": "QWQ와 같은 R1 모델을 사용할 때 활성화해야 하며, 400 오류를 방지합니다",
 		"useAzure": "Azure 사용",

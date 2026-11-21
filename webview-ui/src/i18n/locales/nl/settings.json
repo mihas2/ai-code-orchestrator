@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "Automatische goedkeuring van individuele MCP-tools in het MCP-serversoverzicht inschakelen (vereist zowel deze instelling als het selectievakje 'Altijd toestaan' bij de tool)"
 		},
-		"modeSwitch": {
-			"label": "Modus",
-			"description": "Automatisch tussen verschillende modi schakelen zonder goedkeuring"
-		},
 		"subtasks": {
 			"label": "Subtaken",
 			"description": "Subtaken aanmaken en afronden zonder goedkeuring"
@@ -836,7 +832,7 @@
 		"cacheWritesPrice": "Cache-schrijfprijs",
 		"enableStreaming": "Streaming inschakelen",
 		"enableParallelToolCalls": "Parallelle tool-aanroepen inschakelen",
-		"enableParallelToolCallsDescription": "Sommige proxy's verliezen argumenten wanneer tool-aanroepen parallel zijn",
+		"enableParallelToolCallsDescription": "Geldt voor providers waarvan de API de parameter voor parallelle tool-aanroepen ondersteunt. Indien ingeschakeld kan het model meerdere tools tegelijk aanroepen. Indien uitgeschakeld of niet ingesteld, zijn parallelle tool-aanroepen niet toegestaan.",
 		"enableR1Format": "R1-modelparameters inschakelen",
 		"enableR1FormatTips": "Moet ingeschakeld zijn bij gebruik van R1-modellen zoals QWQ om 400-fouten te voorkomen",
 		"useAzure": "Azure gebruiken",

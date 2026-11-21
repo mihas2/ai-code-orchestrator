@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "Abilita l'approvazione automatica dei singoli strumenti MCP nella vista Server MCP (richiede sia questa impostazione che la casella \"Consenti sempre\" dello strumento)"
 		},
-		"modeSwitch": {
-			"label": "Modalità",
-			"description": "Passa automaticamente tra diverse modalità senza richiedere approvazione"
-		},
 		"subtasks": {
 			"label": "Sottoattività",
 			"description": "Consenti la creazione e il completamento di attività secondarie senza richiedere approvazione"
@@ -836,7 +832,7 @@
 		"cacheWritesPrice": "Prezzo scritture cache",
 		"enableStreaming": "Abilita streaming",
 		"enableParallelToolCalls": "Abilita chiamate agli strumenti in parallelo",
-		"enableParallelToolCallsDescription": "Alcuni proxy perdono argomenti quando le chiamate agli strumenti sono in parallelo",
+		"enableParallelToolCallsDescription": "Si applica ai provider le cui API supportano il parametro delle chiamate agli strumenti in parallelo. Se abilitato, il modello può chiamare più strumenti contemporaneamente. Se disabilitato o non impostato, le chiamate agli strumenti in parallelo sono vietate.",
 		"enableR1Format": "Abilita i parametri del modello R1",
 		"enableR1FormatTips": "Deve essere abilitato quando si utilizzano modelli R1 come QWQ, per evitare l'errore 400",
 		"useAzure": "Usa Azure",

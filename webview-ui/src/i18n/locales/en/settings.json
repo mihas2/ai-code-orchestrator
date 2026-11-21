@@ -330,10 +330,6 @@
 			"label": "MCP",
 			"description": "Enable auto-approval of individual MCP tools in the MCP Servers view (requires both this setting and the tool's individual \"Always allow\" checkbox)"
 		},
-		"modeSwitch": {
-			"label": "Mode",
-			"description": "Automatically switch between different modes without requiring approval"
-		},
 		"subtasks": {
 			"label": "Subtasks",
 			"description": "Allow creation and completion of subtasks without requiring approval"

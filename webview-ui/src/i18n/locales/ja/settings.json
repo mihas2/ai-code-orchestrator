@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "MCPサーバービューで個々のMCPツールの自動承認を有効にします（この設定とツールの「常に許可」チェックボックスの両方が必要）"
 		},
-		"modeSwitch": {
-			"label": "モード",
-			"description": "承認なしで自動的に異なるモード間を切り替え"
-		},
 		"subtasks": {
 			"label": "サブタスク",
 			"description": "承認なしでサブタスクの作成と完了を許可"
@@ -836,7 +832,7 @@
 		"cacheWritesPrice": "キャッシュ書き込み価格",
 		"enableStreaming": "ストリーミングを有効化",
 		"enableParallelToolCalls": "並列ツール呼び出しを有効化",
-		"enableParallelToolCallsDescription": "一部のプロキシは、ツール呼び出しが並列の場合に引数を失います",
+		"enableParallelToolCallsDescription": "並列ツール呼び出しパラメーターをサポートする API のプロバイダーに適用されます。有効にすると、モデルは複数のツールを同時に呼び出せます。無効または未設定の場合、並列ツール呼び出しは禁止されます。",
 		"enableR1Format": "R1モデルパラメータを有効にする",
 		"enableR1FormatTips": "QWQなどのR1モデルを使用する際には、有効にする必要があります。400エラーを防ぐために",
 		"useAzure": "Azureを使用",

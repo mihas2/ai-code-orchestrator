@@ -33,7 +33,7 @@ Describe what you want to accomplish in natural language, and AI Code Orchestrat
 | Edit     | Create or modify files and code            | `write_to_file`, `apply_diff`, `apply_patch`, `edit`, `edit_file`, `search_replace` |
 | Execute  | Run commands and perform system operations | `execute_command`                                                                   |
 | Image    | Generate AI-powered images                 | `generate_image`                                                                    |
-| Workflow | Manage task flow and context               | `ask_followup_question`, `attempt_completion`, `switch_mode`, `new_task`, `skill`   |
+| Workflow | Manage task flow and context               | `ask_followup_question`, `attempt_completion`, `new_task`, `skill`                  |
 
 ---
 
@@ -100,7 +100,6 @@ This safety mechanism ensures you maintain control over which files are modified
 | `generate_image`        | Generates AI-powered images from text prompts              | Image    |
 | `ask_followup_question` | Asks you a clarifying question                             | Workflow |
 | `attempt_completion`    | Indicates the task is complete                             | Workflow |
-| `switch_mode`           | Changes to a different operational mode                    | Workflow |
 | `new_task`              | Creates a new subtask with a specific starting mode        | Workflow |
 | `skill`                 | Loads and executes predefined skill instructions           | Workflow |
 

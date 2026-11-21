@@ -240,8 +240,9 @@ const config: Config = {
 						from: ["/features/tools/search-files"],
 					},
 					{
-						to: "/advanced-usage/available-tools/switch-mode",
-						from: ["/features/tools/switch-mode"],
+						// switch_mode was removed; mode changes now happen through new_task subtasks.
+						to: "/advanced-usage/available-tools/new-task",
+						from: ["/features/tools/switch-mode", "/advanced-usage/available-tools/switch-mode"],
 					},
 					{
 						to: "/advanced-usage/available-tools/tool-use-overview",

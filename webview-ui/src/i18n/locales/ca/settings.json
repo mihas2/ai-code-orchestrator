@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "Habilitar l'aprovació automàtica d'eines MCP individuals a la vista de Servidors MCP (requereix tant aquesta configuració com la casella \"Permetre sempre\" de l'eina)"
 		},
-		"modeSwitch": {
-			"label": "Mode",
-			"description": "Canviar automàticament entre diferents modes sense requerir aprovació"
-		},
 		"subtasks": {
 			"label": "Subtasques",
 			"description": "Permetre la creació i finalització de subtasques sense requerir aprovació"
@@ -836,7 +832,7 @@
 		"cacheWritesPrice": "Preu d'escriptures de caché",
 		"enableStreaming": "Habilitar streaming",
 		"enableParallelToolCalls": "Activa les crides d'eines en paral·lel",
-		"enableParallelToolCallsDescription": "Alguns proxys perden arguments quan les crides d'eines són en paral·lel",
+		"enableParallelToolCallsDescription": "S'aplica als proveïdors les API dels quals admeten el paràmetre de crides d'eines en paral·lel. Si està activat, el model pot cridar diverses eines alhora. Si està desactivat o no està definit, les crides d'eines en paral·lel estan prohibides.",
 		"enableR1Format": "Activar els paràmetres del model R1",
 		"enableR1FormatTips": "S'ha d'activat quan s'utilitzen models R1 com el QWQ per evitar errors 400",
 		"useAzure": "Utilitzar Azure",
