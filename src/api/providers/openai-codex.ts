@@ -304,7 +304,7 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 					}
 				}),
 			tool_choice: metadata?.tool_choice,
-			parallel_tool_calls: metadata?.parallelToolCalls ?? true,
+			parallel_tool_calls: metadata?.parallelToolCalls ?? false,
 		}
 
 		return body

@@ -319,6 +319,18 @@ describe("NativeToolCallParser", () => {
 	})
 
 	describe("actionable errors for malformed calls", () => {
+		it("builds args for the removed switch_mode tool even when incomplete", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_switch",
+				name: "switch_mode" as any,
+				arguments: JSON.stringify({ mode_slug: "code" }),
+			}) as any
+
+			// No parse error: validateToolUse must get the chance to explain the removal.
+			expect(result.parseError).toBeUndefined()
+			expect(result.nativeArgs).toEqual({ mode_slug: "code", reason: undefined })
+		})
+
 		it("reports missing required parameters with the expected schema", () => {
 			const result = NativeToolCallParser.parseToolCall({
 				id: "call_missing",

@@ -570,11 +570,11 @@ export class NativeToolCallParser {
 				break
 
 			case "switch_mode":
-				if (partialArgs.mode_slug !== undefined || partialArgs.reason !== undefined) {
-					nativeArgs = {
-						mode_slug: partialArgs.mode_slug,
-						reason: partialArgs.reason,
-					}
+				// Removed tool: always build args so validateToolUse can explain the removal
+				// (use new_task) instead of the model "fixing" arguments and retrying.
+				nativeArgs = {
+					mode_slug: partialArgs.mode_slug,
+					reason: partialArgs.reason,
 				}
 				break
 
@@ -940,12 +940,13 @@ export class NativeToolCallParser {
 					break
 
 				case "switch_mode":
-					if (args.mode_slug !== undefined && args.reason !== undefined) {
-						nativeArgs = {
-							mode_slug: args.mode_slug,
-							reason: args.reason,
-						} as NativeArgsFor<TName>
-					}
+					// Removed tool (name kept in the enum for persisted data). Always build args,
+					// even incomplete ones, so validateToolUse reports the removal and points to
+					// new_task instead of a generic invalid-arguments error.
+					nativeArgs = {
+						mode_slug: args.mode_slug,
+						reason: args.reason,
+					} as NativeArgsFor<TName>
 					break
 
 				case "update_todo_list":

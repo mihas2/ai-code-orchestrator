@@ -239,7 +239,7 @@ export class QwenCodeHandler extends BaseProvider implements SingleCompletionHan
 			max_completion_tokens: model.info.maxTokens,
 			tools: this.convertToolsForOpenAI(metadata?.tools),
 			tool_choice: metadata?.tool_choice,
-			parallel_tool_calls: metadata?.parallelToolCalls ?? true,
+			parallel_tool_calls: metadata?.parallelToolCalls ?? false,
 		}
 
 		const stream = await this.callApiWithRetry(() => client.chat.completions.create(requestOptions))

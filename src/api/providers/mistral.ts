@@ -91,7 +91,7 @@ export class MistralHandler extends BaseProvider implements SingleCompletionHand
 			messages: [{ role: "system", content: systemPrompt }, ...convertToMistralMessages(messages)],
 			maxTokens: maxTokens ?? info.maxTokens,
 			temperature,
-			parallelToolCalls: metadata?.parallelToolCalls ?? true,
+			parallelToolCalls: metadata?.parallelToolCalls ?? false,
 		}
 
 		requestOptions.tools = this.convertToolsForMistral(metadata?.tools ?? [])

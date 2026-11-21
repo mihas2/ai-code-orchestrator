@@ -162,7 +162,7 @@ export class OpenAiHandler extends BaseProvider implements SingleCompletionHandl
 				tools: this.convertToolsForOpenAI(metadata?.tools),
 				tool_choice: metadata?.tool_choice,
 				parallel_tool_calls:
-					(this.options.openAiParallelToolCalls ?? false) && (metadata?.parallelToolCalls ?? true),
+					this.options.openAiParallelToolCalls === true && metadata?.parallelToolCalls !== false,
 			}
 
 			// Add max_tokens if needed
@@ -231,7 +231,7 @@ export class OpenAiHandler extends BaseProvider implements SingleCompletionHandl
 				tools: this.convertToolsForOpenAI(metadata?.tools),
 				tool_choice: metadata?.tool_choice,
 				parallel_tool_calls:
-					(this.options.openAiParallelToolCalls ?? false) && (metadata?.parallelToolCalls ?? true),
+					this.options.openAiParallelToolCalls === true && metadata?.parallelToolCalls !== false,
 			}
 
 			// Add max_tokens if needed
@@ -357,7 +357,7 @@ export class OpenAiHandler extends BaseProvider implements SingleCompletionHandl
 				tools: this.convertToolsForOpenAI(metadata?.tools),
 				tool_choice: metadata?.tool_choice,
 				parallel_tool_calls:
-					(this.options.openAiParallelToolCalls ?? false) && (metadata?.parallelToolCalls ?? true),
+					this.options.openAiParallelToolCalls === true && metadata?.parallelToolCalls !== false,
 			}
 
 			// O3 family models do not support the deprecated max_tokens parameter
@@ -392,7 +392,7 @@ export class OpenAiHandler extends BaseProvider implements SingleCompletionHandl
 				tools: this.convertToolsForOpenAI(metadata?.tools),
 				tool_choice: metadata?.tool_choice,
 				parallel_tool_calls:
-					(this.options.openAiParallelToolCalls ?? false) && (metadata?.parallelToolCalls ?? true),
+					this.options.openAiParallelToolCalls === true && metadata?.parallelToolCalls !== false,
 			}
 
 			// O3 family models do not support the deprecated max_tokens parameter

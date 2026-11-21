@@ -182,7 +182,7 @@ export abstract class OpenAICompatibleHandler extends BaseProvider implements Si
 				? {
 						providerOptions: {
 							[this.config.providerName]: {
-								parallel_tool_calls: metadata?.parallelToolCalls ?? true,
+								parallel_tool_calls: metadata?.parallelToolCalls ?? false,
 							},
 						},
 					}

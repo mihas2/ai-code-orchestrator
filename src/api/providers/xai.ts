@@ -109,7 +109,7 @@ export class XAIHandler extends BaseProvider implements SingleCompletionHandler 
 			requestBody.tools = responseTools
 			// Cast tool_choice since metadata uses Chat Completions types but Responses API has its own type
 			requestBody.tool_choice = (metadata?.tool_choice ?? "auto") as any
-			requestBody.parallel_tool_calls = metadata?.parallelToolCalls ?? true
+			requestBody.parallel_tool_calls = metadata?.parallelToolCalls ?? false
 		}
 
 		// Pass reasoning effort for models that support it (e.g., mini models)

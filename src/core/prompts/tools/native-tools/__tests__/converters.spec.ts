@@ -147,9 +147,16 @@ describe("converters", () => {
 	})
 
 	describe("convertOpenAIToolChoiceToAnthropic", () => {
-		it("should return auto with enabled parallel tool use by default when toolChoice is undefined", () => {
+		it("should disable parallel tool use by default when parallelToolCalls is unset", () => {
 			const result = convertOpenAIToolChoiceToAnthropic(undefined)
-			expect(result).toEqual({ type: "auto", disable_parallel_tool_use: false })
+			expect(result).toEqual({ type: "auto", disable_parallel_tool_use: true })
+		})
+
+		it("should enable parallel tool use only when parallelToolCalls is true", () => {
+			expect(convertOpenAIToolChoiceToAnthropic("auto", true)).toEqual({
+				type: "auto",
+				disable_parallel_tool_use: false,
+			})
 		})
 
 		it("should return auto with disabled parallel tool use when parallelToolCalls is false", () => {
@@ -164,17 +171,17 @@ describe("converters", () => {
 
 		it("should return auto for 'auto' tool choice", () => {
 			const result = convertOpenAIToolChoiceToAnthropic("auto")
-			expect(result).toEqual({ type: "auto", disable_parallel_tool_use: false })
+			expect(result).toEqual({ type: "auto", disable_parallel_tool_use: true })
 		})
 
 		it("should return any for 'required' tool choice", () => {
 			const result = convertOpenAIToolChoiceToAnthropic("required")
-			expect(result).toEqual({ type: "any", disable_parallel_tool_use: false })
+			expect(result).toEqual({ type: "any", disable_parallel_tool_use: true })
 		})
 
 		it("should return auto for unknown string tool choice", () => {
 			const result = convertOpenAIToolChoiceToAnthropic("unknown" as any)
-			expect(result).toEqual({ type: "auto", disable_parallel_tool_use: false })
+			expect(result).toEqual({ type: "auto", disable_parallel_tool_use: true })
 		})
 
 		it("should convert function object form to tool type", () => {
@@ -185,7 +192,7 @@ describe("converters", () => {
 			expect(result).toEqual({
 				type: "tool",
 				name: "get_weather",
-				disable_parallel_tool_use: false,
+				disable_parallel_tool_use: true,
 			})
 		})
 
@@ -206,7 +213,7 @@ describe("converters", () => {
 
 		it("should return auto for object without function property", () => {
 			const result = convertOpenAIToolChoiceToAnthropic({ type: "something" } as any)
-			expect(result).toEqual({ type: "auto", disable_parallel_tool_use: false })
+			expect(result).toEqual({ type: "auto", disable_parallel_tool_use: true })
 		})
 	})
 })
