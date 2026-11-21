@@ -331,16 +331,16 @@
 		"support": "Bitte unterstütze AI Code Orchestrator, indem du uns auf <githubLink>GitHub</githubLink> einen Stern gibst.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} bringt allgemeine Verbesserungen, hilfreiche Korrekturen und ein flüssigeres Erlebnis.",
-			"continuity": "Aufgaben werden zuverlässiger abgeschlossen, und du kannst leichter dort weitermachen, wo du aufgehört hast.",
-			"alternatives": "Die tägliche Arbeit fühlt sich klarer und einheitlicher an.",
+			"intro": "AI Code Orchestrator {{version}} macht die Arbeit mit Rollen vorhersehbarer und die alltäglichen Bedienelemente zuverlässiger.",
+			"continuity": "Stoppen, Kontext verdichten und Links zu Unteraufgaben funktionieren wie erwartet, und Probleme mit Tool-Aufrufen werden klar angezeigt, statt still zu scheitern.",
+			"alternatives": "Jede Rolle behält ihr eigenes Profil und Modell, unabhängig vom Chat.",
 			"signoff": "Viel Spaß beim Coden!"
 		},
 		"release": {
 			"heading": "Was ist neu:",
-			"gpt55": "Klarere Arbeitsweisen: Jede Rolle ist leichter zu verstehen, damit du die passende Hilfe für die Aufgabe wählen kannst.",
-			"claudeOpus47": "Zuverlässigere Aufgaben: Erledigte Arbeit bleibt erledigt, und Ergebnisse kommen reibungsloser zurück.",
-			"checkpointNav": "Ein flüssigeres Erlebnis: Neu anfangen und zwischen Aufgaben wechseln fühlt sich einfacher an."
+			"gpt55": "Klarere Delegation: Arbeit für eine andere Rolle wird als Unteraufgabe übergeben, und deine aktuelle Aufgabe behält ihren Modus.",
+			"claudeOpus47": "Zuverlässige Steuerung: Stopp greift beim ersten Klick, und Kontext verdichten bleibt nicht mehr hängen.",
+			"checkpointNav": "Unabhängige Rollen: Jede Rolle nutzt ihr eigenes Profil und Modell, und parallele Tool-Aufrufe lassen sich pro Profil aktivieren."
 		},
 		"cloudAgents": {
 			"heading": "Neu in der Cloud:",

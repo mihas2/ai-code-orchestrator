@@ -1,6 +1,6 @@
 # AI Code Orchestrator
 
-## [1.3.5] - Unreleased
+## [1.3.5] - 2026-11-21
 
 ### Changed
 
@@ -15,6 +15,11 @@
 - The manual Condense Context button no longer gets stuck; failures are reported.
 - "Go to subtask" links open the correct child task, including for existing history.
 - Tool calls with empty or invalid arguments are shown as errors and returned to the model instead of appearing as empty blocks.
+- Models on OpenAI-compatible providers no longer have to fill in optional tool parameters, which caused many failed tool calls. Tool errors now say which parameters are missing.
+
+### Documentation
+
+- The documentation is now plain Markdown in the repository, readable directly on GitHub, and outdated pages were updated or removed.
 
 ## [1.3.4] - 2026-09-28
 

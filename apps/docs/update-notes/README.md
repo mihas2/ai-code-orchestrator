@@ -15,7 +15,7 @@ We release updates regularly, sometimes multiple times a day, so make sure you'r
 
 ### Version 1.3
 
-- [1.3.5](v1.3.5.md) — Mode changes only through subtasks, independent role profiles, reliable Stop and Condense Context
+- [1.3.5](v1.3.5.md) (2026-11-21) — Mode changes only through subtasks, independent role profiles, reliable Stop and Condense Context
 - [1.3.2](v1.3.2.md) (2026-09-11) — Added Translate role, improved Shift+Drop reliability
 - [1.3.1](v1.3.1.md) (2026-09-10) — "Run and Allow" button, updated icons, orchestration fixes
 - [1.3.0](v1.3.0.md) (2026-09-09) — Improved orchestrator behavior as team-lead

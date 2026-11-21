@@ -356,16 +356,16 @@
 		"support": "Please support AI Code Orchestrator by starring us on <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} brings general improvements, helpful fixes, and a smoother experience.",
-			"continuity": "Tasks finish more reliably, and it is easier to continue where you left off.",
-			"alternatives": "Everyday work feels clearer and more consistent.",
+			"intro": "AI Code Orchestrator {{version}} makes working with roles more predictable and everyday controls more reliable.",
+			"continuity": "Stop, Condense Context, and subtask links now work as you expect, and problems with tool calls are shown clearly instead of failing silently.",
+			"alternatives": "Each role keeps its own profile and model, independent of the chat.",
 			"signoff": "Happy coding!"
 		},
 		"release": {
 			"heading": "What's New:",
-			"gpt55": "Clearer ways to work: each role is easier to understand, so you can choose the right help for the task.",
-			"claudeOpus47": "More reliable tasks: finished work stays finished, and results come back more smoothly.",
-			"checkpointNav": "A smoother experience: starting fresh and moving between tasks feels simpler."
+			"gpt55": "Clearer delegation: work for another role is handed off as a subtask, and your current task keeps its mode.",
+			"claudeOpus47": "Reliable controls: Stop works on the first click, and Condense Context no longer gets stuck.",
+			"checkpointNav": "Independent roles: each role uses its own profile and model, and parallel tool calls can be turned on per profile."
 		},
 		"cloudAgents": {
 			"heading": "New in the Cloud:",

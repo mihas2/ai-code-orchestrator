@@ -357,16 +357,16 @@
 		"support": "請在 <githubLink>GitHub</githubLink> 上給 AI Code Orchestrator 星星支持我們。",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} 帶來整體改善、實用修正與更順暢的體驗。",
-			"continuity": "任務完成得更可靠，也更容易從上次停下的地方繼續。",
-			"alternatives": "日常工作感覺更清楚、更一致。",
+			"intro": "AI Code Orchestrator {{version}} 讓角色協作更可預期，日常操作更可靠。",
+			"continuity": "停止、壓縮上下文和子任務連結現在都能如預期運作，工具呼叫出現問題時會清楚顯示，而不是無聲無息地失敗。",
+			"alternatives": "每個角色都有獨立於聊天的設定檔和模型。",
 			"signoff": "祝編碼愉快！"
 		},
 		"release": {
 			"heading": "新增功能：",
-			"gpt55": "更清楚的工作方式：每個角色都更容易理解，方便為任務選擇合適的協助。",
-			"claudeOpus47": "更可靠的任務：已完成的工作會保持完成，結果也會更順暢地回來。",
-			"checkpointNav": "更順暢的體驗：重新開始以及在任務之間切換都變得更簡單。"
+			"gpt55": "更清楚的委派：交給其他角色的工作會以子任務形式移交，目前的任務保持原本的模式。",
+			"claudeOpus47": "更可靠的操作：點一次就能停止，壓縮上下文也不會再卡住。",
+			"checkpointNav": "獨立的角色：每個角色使用自己的設定檔和模型，並可依設定檔開啟平行工具呼叫。"
 		},
 		"cloudAgents": {
 			"heading": "雲端的新功能：",

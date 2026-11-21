@@ -304,16 +304,16 @@
 		"support": "Steun AI Code Orchestrator door ons een ster te geven op <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} brengt algemene verbeteringen, nuttige correcties en een soepelere ervaring.",
-			"continuity": "Taken worden betrouwbaarder afgerond, en het is makkelijker om verder te gaan waar je was gebleven.",
-			"alternatives": "Dagelijks werk voelt duidelijker en consistenter aan.",
+			"intro": "AI Code Orchestrator {{version}} maakt werken met rollen voorspelbaarder en de dagelijkse bediening betrouwbaarder.",
+			"continuity": "Stoppen, Context comprimeren en links naar subtaken werken zoals verwacht, en problemen met toolaanroepen worden duidelijk getoond in plaats van stil te mislukken.",
+			"alternatives": "Elke rol houdt zijn eigen profiel en model, los van de chat.",
 			"signoff": "Veel plezier met coderen!"
 		},
 		"release": {
 			"heading": "Wat is er nieuw:",
-			"gpt55": "Duidelijkere manieren van werken: elke rol is makkelijker te begrijpen, zodat je de juiste hulp voor de taak kiest.",
-			"claudeOpus47": "Betrouwbaardere taken: afgerond werk blijft afgerond, en resultaten komen soepeler terug.",
-			"checkpointNav": "Een soepelere ervaring: opnieuw beginnen en tussen taken wisselen voelt eenvoudiger."
+			"gpt55": "Duidelijkere delegatie: werk voor een andere rol wordt als subtaak overgedragen, en je huidige taak houdt zijn modus.",
+			"claudeOpus47": "Betrouwbare bediening: Stoppen werkt bij de eerste klik, en Context comprimeren blijft niet meer hangen.",
+			"checkpointNav": "Onafhankelijke rollen: elke rol gebruikt zijn eigen profiel en model, en parallelle toolaanroepen kun je per profiel inschakelen."
 		},
 		"cloudAgents": {
 			"heading": "Nieuw in de Cloud:",

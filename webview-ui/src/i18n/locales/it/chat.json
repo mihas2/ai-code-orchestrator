@@ -331,16 +331,16 @@
 		"support": "Sostieni AI Code Orchestrator lasciandoci una stella su <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} porta miglioramenti generali, correzioni utili e un'esperienza più fluida.",
-			"continuity": "Le attività si concludono in modo più affidabile ed è più facile riprendere da dove avevi lasciato.",
-			"alternatives": "Il lavoro di tutti i giorni risulta più chiaro e coerente.",
+			"intro": "AI Code Orchestrator {{version}} rende il lavoro con i ruoli più prevedibile e i controlli di tutti i giorni più affidabili.",
+			"continuity": "Interrompi, Condensa contesto e i link alle sottoattività funzionano come previsto, e i problemi con le chiamate agli strumenti vengono mostrati chiaramente invece di fallire in silenzio.",
+			"alternatives": "Ogni ruolo mantiene il proprio profilo e modello, indipendentemente dalla chat.",
 			"signoff": "Buon coding!"
 		},
 		"release": {
 			"heading": "Novità:",
-			"gpt55": "Modi di lavorare più chiari: ogni ruolo è più facile da capire, così puoi scegliere l'aiuto giusto per l'attività.",
-			"claudeOpus47": "Attività più affidabili: il lavoro completato resta completato e i risultati tornano in modo più fluido.",
-			"checkpointNav": "Un'esperienza più fluida: ricominciare e passare da un'attività all'altra è più semplice."
+			"gpt55": "Delega più chiara: il lavoro per un altro ruolo viene affidato a una sottoattività e l'attività corrente mantiene la sua modalità.",
+			"claudeOpus47": "Controlli affidabili: Interrompi funziona al primo clic e Condensa contesto non si blocca più.",
+			"checkpointNav": "Ruoli indipendenti: ogni ruolo usa il proprio profilo e modello, e le chiamate parallele agli strumenti si possono attivare per profilo."
 		},
 		"cloudAgents": {
 			"heading": "Novità nel Cloud:",

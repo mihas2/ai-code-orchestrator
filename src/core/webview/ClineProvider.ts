@@ -174,7 +174,7 @@ export class ClineProvider
 
 	public isViewLaunched = false
 	public settingsImportedAt?: number
-	public readonly latestAnnouncementId = "1.1.2-role-model-selection-release" // Final AI Code Orchestrator release announcement.
+	public readonly latestAnnouncementId = "1.3.5-release" // Release announcement shown once after updating.
 	public readonly providerSettingsManager: ProviderSettingsManager
 	public readonly customModesManager: CustomModesManager
 	private orchestrationService?: OrchestrationService
