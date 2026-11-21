@@ -39,6 +39,7 @@ import {
 	modelIdKeysByProvider,
 	isRetiredProvider,
 } from "@ai-code-orchestrator/types"
+import { safeJsonParse } from "@ai-code-orchestrator/core"
 import { aggregateTaskCostsRecursive, type AggregatedCosts } from "./aggregateTaskCosts"
 
 import { Package } from "../../shared/package"
@@ -3999,8 +4000,22 @@ export class ClineProvider
 			say: "subtask_result",
 			text: completionResultSummary,
 			ts,
+			childTaskId,
 		}
 		if (!hasDurableResult) {
+			// Link the newTask ask that spawned this child (the latest one since the
+			// previous subtask result) so the UI can open the exact child task.
+			for (let i = parentClineMessages.length - 1; i >= 0; i--) {
+				const candidate = parentClineMessages[i]
+				if (candidate.say === "subtask_result") break
+				if (candidate.type === "ask" && candidate.ask === "tool" && !candidate.childTaskId) {
+					const tool = safeJsonParse<{ tool?: string }>(candidate.text)
+					if (tool?.tool === "newTask") {
+						candidate.childTaskId = childTaskId
+						break
+					}
+				}
+			}
 			parentClineMessages.push(subtaskUiMessage)
 			await saveTaskMessages({ messages: parentClineMessages, taskId: parentTaskId, globalStoragePath })
 		}

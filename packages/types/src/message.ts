@@ -271,6 +271,12 @@ export const clineMessageSchema = z.object({
 	isProtected: z.boolean().optional(),
 	apiProtocol: z.union([z.literal("openai"), z.literal("anthropic")]).optional(),
 	isAnswered: z.boolean().optional(),
+	/**
+	 * Id of the child task this message belongs to. Set on `say: "subtask_result"`
+	 * and on the `ask: "tool"` message of the `newTask` tool that spawned the child,
+	 * so the UI can link each subtask message to the exact child task.
+	 */
+	childTaskId: z.string().optional(),
 })
 
 export type ClineMessage = z.infer<typeof clineMessageSchema>

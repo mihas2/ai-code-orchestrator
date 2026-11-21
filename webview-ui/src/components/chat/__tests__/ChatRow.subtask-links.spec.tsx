@@ -187,30 +187,55 @@ describe("ChatRow - subtask links", () => {
 	})
 
 	describe("subtask_result say message", () => {
-		it("should display 'Go to subtask' link when currentTaskItem has completedByChildId", () => {
-			const message = {
-				ts: Date.now(),
+		it("links each subtask_result to its own child, not the last completed one", () => {
+			const first = {
+				ts: 1000,
 				type: "say" as const,
 				say: "subtask_result" as const,
-				text: "The subtask has been completed successfully.",
+				text: "first",
+				childTaskId: "child-1",
 			}
+			const second = {
+				ts: 2000,
+				type: "say" as const,
+				say: "subtask_result" as const,
+				text: "second",
+				childTaskId: "child-2",
+			}
+			const item = { childIds: ["child-1", "child-2"], completedByChildId: "child-2" }
 
-			renderChatRow(message, {
-				completedByChildId: "completed-child-456",
-			})
+			renderChatRow(first, item, [first, second] as ClineMessage[])
+			fireEvent.click(screen.getByText("Go to subtask"))
 
-			const goToSubtaskButton = screen.getByText("Go to subtask")
-			expect(goToSubtaskButton).toBeInTheDocument()
-
-			fireEvent.click(goToSubtaskButton)
-
-			expect(mockPostMessage).toHaveBeenCalledWith({
-				type: "showTaskWithId",
-				text: "completed-child-456",
-			})
+			expect(mockPostMessage).toHaveBeenCalledWith({ type: "showTaskWithId", text: "child-1" })
 		})
 
-		it("should not display 'Go to subtask' link when no completedByChildId exists", () => {
+		it("links legacy results (no childTaskId) by child creation time, including the first one", () => {
+			// UUIDv7 ids created at ms 1000 and 2000; the first newTask ask is missing from history.
+			const child1 = "00000000-03e8-7000-8000-000000000001"
+			const child2 = "00000000-07d0-7000-8000-000000000002"
+			const firstResult = { ts: 1500, type: "say" as const, say: "subtask_result" as const, text: "first" }
+			const secondNewTask = {
+				ts: 1990,
+				type: "ask" as const,
+				ask: "tool" as const,
+				text: JSON.stringify({ tool: "newTask", mode: "code", content: "second" }),
+			}
+			const secondResult = { ts: 2500, type: "say" as const, say: "subtask_result" as const, text: "second" }
+			const messages = [firstResult, secondNewTask, secondResult] as ClineMessage[]
+			const item = { childIds: [child1, child2], completedByChildId: child2 }
+
+			const { unmount } = renderChatRow(firstResult, item, messages)
+			fireEvent.click(screen.getByText("Go to subtask"))
+			expect(mockPostMessage).toHaveBeenLastCalledWith({ type: "showTaskWithId", text: child1 })
+			unmount()
+
+			renderChatRow(secondResult, item, messages)
+			fireEvent.click(screen.getByText("Go to subtask"))
+			expect(mockPostMessage).toHaveBeenLastCalledWith({ type: "showTaskWithId", text: child2 })
+		})
+
+		it("should not display 'Go to subtask' link when the child is unknown", () => {
 			const message = {
 				ts: Date.now(),
 				type: "say" as const,
