@@ -1392,6 +1392,37 @@ describe("ChatView - Context Condensing Indicator Tests", () => {
 			{ timeout: 2000 },
 		)
 	})
+
+	it("drops a stuck condensing lock when a new instance of the same task is shown", async () => {
+		const { container } = renderChatView()
+		const messages = [
+			{ type: "say", say: "task", ts: 1000, text: "Initial task" },
+			{ type: "say", say: "text", ts: 2000, text: "hello" },
+		] as any
+		const hasCondensingRow = () =>
+			Array.from(container.querySelectorAll('[data-testid="chat-row"]')).some((row) => {
+				const text = row.textContent || ""
+				return text.includes('"say":"condense_context"') && text.includes('"partial":true')
+			})
+
+		mockPostMessage({ currentTaskId: "t1", currentTaskInstanceId: "i1", clineMessages: messages })
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 10))
+		})
+
+		// A condense started but its response never arrived (e.g. the task was stopped meanwhile).
+		await act(async () => {
+			window.dispatchEvent(
+				new MessageEvent("message", { data: { type: "condenseTaskContextStarted", text: "t1" } }),
+			)
+			await new Promise((resolve) => setTimeout(resolve, 0))
+		})
+		await waitFor(() => expect(hasCondensingRow()).toBe(true))
+
+		// Same task (same ts) rehydrated as a new instance.
+		mockPostMessage({ currentTaskId: "t1", currentTaskInstanceId: "i2", clineMessages: messages })
+		await waitFor(() => expect(hasCondensingRow()).toBe(false))
+	})
 })
 
 describe("ChatView - commandApprovalError handling", () => {

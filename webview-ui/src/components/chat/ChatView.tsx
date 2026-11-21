@@ -595,6 +595,9 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	useEffect(() => {
 		activeAttemptRef.current = undefined
 		lastStartedCommandRef.current = undefined
+		// A new instance of the same task (e.g. rehydrated after Stop) keeps task.ts, so the
+		// reset above doesn't fire; never carry a condensing lock over to a new instance.
+		setIsCondensing(false)
 	}, [currentTaskId, currentTaskInstanceId])
 
 	const taskTs = task?.ts

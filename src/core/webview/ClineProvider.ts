@@ -2210,7 +2210,7 @@ export class ClineProvider
 	}
 
 	/* Condenses a task's message history to use fewer tokens. */
-	async condenseTaskContext(taskId: string) {
+	async condenseTaskContext(taskId?: string) {
 		let task: Task | undefined
 		for (let i = this.clineStack.length - 1; i >= 0; i--) {
 			if (this.clineStack[i].taskId === taskId) {
@@ -2218,11 +2218,23 @@ export class ClineProvider
 				break
 			}
 		}
-		if (!task) {
-			throw new Error(`Task with id ${taskId} not found in stack`)
+		// The button always targets the visible task; fall back to it if the id is stale/missing.
+		task ??= this.getCurrentTask()
+
+		try {
+			if (!task) {
+				throw new Error(`Task with id ${taskId} not found in stack`)
+			}
+			await task.condenseContext()
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			this.log(`[condenseTaskContext] Manual condense failed for ${taskId}: ${message}`)
+			vscode.window.showErrorMessage(`${t("common:errors.condense_failed")}: ${message}`)
+		} finally {
+			// Always answer the webview: it locks the condense button (isCondensing) until this
+			// response arrives, so a missing response left the button dead for the whole task.
+			await this.postMessageToWebview({ type: "condenseTaskContextResponse", text: task?.taskId ?? taskId ?? "" })
 		}
-		await task.condenseContext()
-		await this.postMessageToWebview({ type: "condenseTaskContextResponse", text: taskId })
 	}
 
 	// this function deletes a task from task history, and deletes its checkpoints and delete the task folder

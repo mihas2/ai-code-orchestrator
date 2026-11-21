@@ -4309,9 +4309,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				`Current tokens: ${contextTokens}, Context window: ${contextWindow}. ` +
 				`Forcing truncation to ${FORCED_CONTEXT_REDUCTION_PERCENT}% of current context.`,
 		)
-		// Send condenseTaskContextStarted to show in-progress indicator
-		await this.providerRef.deref()?.postMessageToWebview({ type: "condenseTaskContextStarted", text: this.taskId })
-
 		// Build tools for condensing metadata (same tools used for normal API calls)
 		const provider = this.providerRef.deref()
 		let allTools: import("openai").default.Chat.ChatCompletionTool[] = []
@@ -4342,6 +4339,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					}
 				: {}),
 		}
+
+		// Send condenseTaskContextStarted to show in-progress indicator. Sent right before the
+		// try whose finally sends condenseTaskContextResponse, so the indicator can never stick.
+		await this.providerRef.deref()?.postMessageToWebview({ type: "condenseTaskContextStarted", text: this.taskId })
 
 		try {
 			// Generate environment details to include in the condensed summary
@@ -4615,15 +4616,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				lastMessageTokens,
 			})
 
-			// Send condenseTaskContextStarted BEFORE manageContext to show in-progress indicator
-			// This notification must be sent here (not earlier) because the early check uses stale token count
-			// (before user message is added to history), which could incorrectly skip showing the indicator
-			if (contextManagementWillRun && autoCondenseContext) {
-				await this.providerRef
-					.deref()
-					?.postMessageToWebview({ type: "condenseTaskContextStarted", text: this.taskId })
-			}
-
 			// Build tools for condensing metadata (same tools used for normal API calls)
 			// This ensures the condensing API call includes tool definitions for providers that need them
 			let contextMgmtTools: import("openai").default.Chat.ChatCompletionTool[] = []
@@ -4670,6 +4662,16 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				contextManagementWillRun && autoCondenseContext
 					? await this.getFilesReadByAicoSafely("attemptApiRequest")
 					: undefined
+
+			// Send condenseTaskContextStarted BEFORE manageContext to show in-progress indicator.
+			// It must be sent after the early check (which uses a stale token count) and right
+			// before the try whose finally sends condenseTaskContextResponse: if anything between
+			// them threw, the webview would keep isCondensing=true and ignore the condense button.
+			if (contextManagementWillRun && autoCondenseContext) {
+				await this.providerRef
+					.deref()
+					?.postMessageToWebview({ type: "condenseTaskContextStarted", text: this.taskId })
+			}
 
 			try {
 				const truncateResult = await manageContext({

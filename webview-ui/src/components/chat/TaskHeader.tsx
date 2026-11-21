@@ -56,7 +56,7 @@ const TaskHeader = ({
 	todos,
 }: TaskHeaderProps) => {
 	const { t } = useTranslation()
-	const { apiConfiguration, currentTaskItem } = useExtensionState()
+	const { apiConfiguration, currentTaskItem, currentTaskId } = useExtensionState()
 	const { id: modelId, info: model } = useSelectedModel(apiConfiguration)
 	const [isTaskExpanded, setIsTaskExpanded] = useState(false)
 
@@ -83,7 +83,12 @@ const TaskHeader = ({
 			title={t("chat:task.condenseContext")}
 			icon={FoldVertical}
 			disabled={buttonsDisabled}
-			onClick={() => currentTaskItem && handleCondenseContext(currentTaskItem.id)}
+			onClick={() => {
+				// currentTaskId is always part of the state push; currentTaskItem comes from task
+				// history and can be missing, which used to make this click a silent no-op.
+				const taskId = currentTaskId ?? currentTaskItem?.id
+				if (taskId) handleCondenseContext(taskId)
+			}}
 		/>
 	)
 

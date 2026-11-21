@@ -1066,7 +1066,8 @@ export const webviewMessageHandler = async (provider: ClineProvider, message: We
 			provider.showTaskWithId(message.text!)
 			break
 		case "condenseTaskContextRequest":
-			provider.condenseTaskContext(message.text!)
+			// Not awaited: condensing is a long LLM call. condenseTaskContext never rejects.
+			void provider.condenseTaskContext(message.text)
 			break
 		case "deleteTaskWithId":
 			provider.deleteTaskWithId(message.text!)
