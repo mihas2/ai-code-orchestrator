@@ -38,6 +38,9 @@ export const toolNames = [
 	"access_mcp_resource",
 	"ask_followup_question",
 	"attempt_completion",
+	// Legacy: the switch_mode tool was removed. The name stays in the enum so persisted
+	// data (disabledTools, toolUsage in task history) keeps validating; it is never
+	// offered to the model and is rejected at execution time.
 	"switch_mode",
 	"new_task",
 	"codebase_search",

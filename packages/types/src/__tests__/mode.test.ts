@@ -125,7 +125,7 @@ describe("role prompts unification", () => {
 				"builds and test execution, commits, deployments, and other state-changing operations",
 			)
 			expect(instructions).toContain("even when they seem trivial or can be done through a command or MCP")
-			expect(instructions).toContain("Do not bypass delegation by switching yourself into an executor role.")
+			expect(instructions).toContain("Do not bypass delegation by acting as an executor yourself.")
 			expect(instructions).toContain("Delegate execution to the appropriate specialist.")
 		})
 

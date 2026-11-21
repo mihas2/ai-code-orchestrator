@@ -27,7 +27,6 @@ import { executeCommandTool } from "../tools/ExecuteCommandTool"
 import { useMcpToolTool } from "../tools/UseMcpToolTool"
 import { accessMcpResourceTool } from "../tools/accessMcpResourceTool"
 import { askFollowupQuestionTool } from "../tools/AskFollowupQuestionTool"
-import { switchModeTool } from "../tools/SwitchModeTool"
 import { attemptCompletionTool, AttemptCompletionCallbacks } from "../tools/AttemptCompletionTool"
 import { newTaskTool } from "../tools/NewTaskTool"
 import { updateTodoListTool } from "../tools/UpdateTodoListTool"
@@ -980,13 +979,6 @@ async function presentAssistantMessageCore(cline: Task): Promise<void> {
 								break
 							case "ask_followup_question":
 								await askFollowupQuestionTool.handle(cline, block as ToolUse<"ask_followup_question">, {
-									askApproval,
-									handleError,
-									pushToolResult,
-								})
-								break
-							case "switch_mode":
-								await switchModeTool.handle(cline, block as ToolUse<"switch_mode">, {
 									askApproval,
 									handleError,
 									pushToolResult,

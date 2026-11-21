@@ -245,11 +245,6 @@ export interface AttemptCompletionToolUse extends ToolUse<"attempt_completion"> 
 	params: Partial<Pick<Record<ToolParamName, string>, "result">>
 }
 
-export interface SwitchModeToolUse extends ToolUse<"switch_mode"> {
-	name: "switch_mode"
-	params: Partial<Pick<Record<ToolParamName, string>, "mode_slug" | "reason">>
-}
-
 export interface NewTaskToolUse extends ToolUse<"new_task"> {
 	name: "new_task"
 	params: Partial<Pick<Record<ToolParamName, string>, "mode" | "message" | "todos">>
@@ -320,7 +315,7 @@ export const TOOL_GROUPS: Record<ToolGroup, ToolGroupConfig> = {
 		tools: ["use_mcp_tool", "access_mcp_resource"],
 	},
 	modes: {
-		tools: ["switch_mode", "new_task"],
+		tools: ["new_task"],
 		alwaysAvailable: true,
 	},
 }
@@ -329,7 +324,6 @@ export const TOOL_GROUPS: Record<ToolGroup, ToolGroupConfig> = {
 export const ALWAYS_AVAILABLE_TOOLS: ToolName[] = [
 	"ask_followup_question",
 	"attempt_completion",
-	"switch_mode",
 	"new_task",
 	"update_todo_list",
 	"run_slash_command",

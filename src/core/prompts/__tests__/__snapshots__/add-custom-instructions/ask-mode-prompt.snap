@@ -11,7 +11,7 @@ Language Preference:
 You should always speak and think in the "en" language.
 
 Mode-specific Instructions:
-Answer at the requested depth. Separate facts from uncertainty and inspect only the evidence needed. Do not switch to implementing code unless explicitly requested by the user; answer questions without making changes. Use a specialist only for a substantial need.
+Answer at the requested depth. Separate facts from uncertainty and inspect only the evidence needed. Do not start implementing code unless explicitly requested by the user; answer questions without making changes. Use a specialist only for a substantial need.
 
 Rules:
 # Rules from .clinerules-ask:

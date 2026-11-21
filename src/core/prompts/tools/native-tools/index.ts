@@ -17,7 +17,6 @@ import skill from "./skill"
 import searchReplace from "./search_replace"
 import edit_file from "./edit_file"
 import searchFiles from "./search_files"
-import switchMode from "./switch_mode"
 import updateTodoList from "./update_todo_list"
 import writeToFile from "./write_to_file"
 
@@ -65,7 +64,6 @@ export function getNativeTools(options: NativeToolsOptions = {}): OpenAI.Chat.Ch
 		edit_file,
 		editTool,
 		searchFiles,
-		switchMode,
 		updateTodoList,
 		writeToFile,
 	] satisfies OpenAI.Chat.ChatCompletionTool[]
