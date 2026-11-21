@@ -9,4 +9,6 @@ export interface SystemPromptSettings {
 	newTaskRequireTodos: boolean
 	/** When true, model should hide vendor/company identity in responses */
 	isStealthModel?: boolean
+	/** When true, the provider accepts several tool calls in one response (user setting "parallel tool calls") */
+	parallelToolCalls?: boolean
 }

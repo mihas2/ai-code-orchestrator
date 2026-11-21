@@ -60,6 +60,7 @@ export const generateSystemPrompt = async (provider: ClineProvider, message: Web
 				.getConfiguration(Package.name)
 				.get<boolean>("newTaskRequireTodos", false),
 			isStealthModel: modelInfo?.isStealthModel,
+			parallelToolCalls: apiConfiguration?.openAiParallelToolCalls === true,
 		},
 		undefined, // todoList
 		undefined, // modelId

@@ -573,11 +573,6 @@
 			"label": "Soglia per attivare la condensazione intelligente del contesto",
 			"description": "Quando la finestra di contesto raggiunge questa soglia, AI Code Orchestrator la condenserà automaticamente."
 		},
-		"condensingApiConfiguration": {
-			"label": "Configurazione API per la condensazione del contesto",
-			"description": "Seleziona quale configurazione API utilizzare per le operazioni di condensazione del contesto. Lascia deselezionato per utilizzare la configurazione attiva corrente.",
-			"useCurrentConfig": "Predefinito"
-		},
 		"customCondensingPrompt": {
 			"label": "Prompt personalizzato condensazione contesto",
 			"description": "Prompt di sistema personalizzato per la condensazione del contesto. Lascia vuoto per utilizzare il prompt predefinito.",

@@ -105,29 +105,37 @@ export class ReadFileTool extends BaseTool<"read_file"> {
 
 		const supportsImages = modelInfo.supportsImages ?? false
 
-		// Initialize file results tracking
+		// Normalize mode-specific parameters. Indentation options only apply in indentation
+		// mode; in slice mode (the default) they are ignored entirely, so placeholder values
+		// some providers send for unused fields cannot fail the read.
+		const mode = params.mode === "indentation" ? "indentation" : "slice"
+		const indentation = mode === "indentation" ? params.indentation : undefined
+		// 0 means "not set" for offset/limit (default offset 1, default limit).
+		const offset = params.offset === 0 ? undefined : params.offset
+		const limit = params.limit !== undefined && params.limit <= 0 ? undefined : params.limit
+
 		// Validate line number parameters (must be 1-indexed positive integers)
-		if (params.offset !== undefined && params.offset < 1) {
-			const errorMsg = `offset must be a 1-indexed line number (got ${params.offset}). Line numbers start at 1.`
+		if (offset !== undefined && offset < 1) {
+			const errorMsg = `offset must be a 1-indexed line number (got ${offset}). Line numbers start at 1. Omit offset to read from the beginning.`
 			pushToolResult(`Error: ${errorMsg}`)
 			return
 		}
-		if (params.indentation?.anchor_line !== undefined && params.indentation.anchor_line < 1) {
-			const errorMsg = `anchor_line must be a 1-indexed line number (got ${params.indentation.anchor_line}). Line numbers start at 1.`
+		if (indentation?.anchor_line !== undefined && indentation.anchor_line < 1) {
+			const errorMsg = `anchor_line must be a 1-indexed line number (got ${indentation.anchor_line}). Line numbers start at 1. Use mode "slice" when you have no target line.`
 			pushToolResult(`Error: ${errorMsg}`)
 			return
 		}
 
 		const fileEntry: InternalFileEntry = {
 			path: filePath,
-			mode: params.mode,
-			offset: params.offset,
-			limit: params.limit,
-			anchor_line: params.indentation?.anchor_line,
-			max_levels: params.indentation?.max_levels,
-			include_siblings: params.indentation?.include_siblings,
-			include_header: params.indentation?.include_header,
-			max_lines: params.indentation?.max_lines,
+			mode,
+			offset,
+			limit,
+			anchor_line: indentation?.anchor_line,
+			max_levels: indentation?.max_levels,
+			include_siblings: indentation?.include_siblings,
+			include_header: indentation?.include_header,
+			max_lines: indentation?.max_lines,
 		}
 
 		const fileResults: FileResult[] = [

@@ -573,11 +573,6 @@
 			"label": "インテリジェントなコンテキスト圧縮をトリガーするしきい値",
 			"description": "コンテキストウィンドウがこのしきい値に達すると、AI Code Orchestratorは自動的に圧縮します。"
 		},
-		"condensingApiConfiguration": {
-			"label": "コンテキスト圧縮用のAPI設定",
-			"description": "コンテキスト圧縮操作に使用するAPI設定を選択します。選択しない場合は現在のアクティブな設定が使用されます。",
-			"useCurrentConfig": "現在の設定を使用"
-		},
 		"customCondensingPrompt": {
 			"label": "カスタムコンテキスト圧縮プロンプト",
 			"description": "コンテキスト圧縮に使用するシステムプロンプトをカスタマイズします。空のままにするとデフォルトのプロンプトが使用されます。",

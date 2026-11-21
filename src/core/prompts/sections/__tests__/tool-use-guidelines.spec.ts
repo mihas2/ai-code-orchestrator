@@ -9,11 +9,10 @@ describe("getToolUseGuidelinesSection", () => {
 		expect(guidelines).toContain("3. If multiple actions are needed")
 	})
 
-	it("should include multiple-tools-per-message guidance", () => {
-		const guidelines = getToolUseGuidelinesSection()
-
-		expect(guidelines).toContain("you may use multiple tools in a single message")
-		expect(guidelines).not.toContain("use one tool at a time per message")
+	it("should follow the parallel tool call setting", () => {
+		expect(getToolUseGuidelinesSection()).toContain("use one tool per response")
+		expect(getToolUseGuidelinesSection(true)).toContain("you may call several independent tools in one response")
+		expect(getToolUseGuidelinesSection(true)).not.toContain("use one tool per response")
 	})
 
 	it("should use simplified footer without step-by-step language", () => {

@@ -2,7 +2,7 @@
 
 The `read_file` tool reads the contents of one file in your project and returns it with line numbers, so AI Code Orchestrator can understand code, configuration, and documentation, and reference exact lines in later edits.
 
-Each call reads exactly **one** file. When the model needs several files, it issues several `read_file` calls (in parallel when the model supports parallel tool calls).
+Each call reads exactly **one** file. When the model needs several files, it issues several `read_file` calls: one per response by default, or several in one response when **Enable parallel tool calls** is on in the provider profile's Advanced settings (see [Parallel Tool Calls](../../providers/openai-compatible.md#parallel-tool-calls)).
 
 ---
 
@@ -10,9 +10,9 @@ Each call reads exactly **one** file. When the model needs several files, it iss
 
 - `path` (required): Path to the file, relative to the workspace.
 - `mode` (optional): `"slice"` (default) or `"indentation"`.
-- `offset` (optional, slice mode): 1-based line to start reading from. Default: `1`.
-- `limit` (optional, slice mode): Maximum number of lines to return. Default: `2000`.
-- `indentation` (optional, indentation mode): Options object:
+- `offset` (optional, slice mode): 1-based line to start reading from. Default: `1` (`0` is treated as not set).
+- `limit` (optional, slice mode): Maximum number of lines to return. Default: `2000` (`0` is treated as not set).
+- `indentation` (optional, indentation mode): Options object, ignored in slice mode:
     - `anchor_line`: 1-based line to anchor the extraction. Required for useful results — without it only the file header (imports) is returned.
     - `max_levels`: How many indentation levels above the anchor to include. Default: `0` (unlimited).
     - `include_siblings`: Include sibling blocks at the same indentation level. Default: `false`.

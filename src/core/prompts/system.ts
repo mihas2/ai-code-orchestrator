@@ -97,9 +97,9 @@ ${await addCustomInstructions(baseInstructions, globalCustomInstructions || "", 
 
 ${markdownFormattingSection()}
 
-${getSharedToolUseSection()}${toolsCatalog}
+${getSharedToolUseSection(settings?.parallelToolCalls === true)}${toolsCatalog}
 
-	${getToolUseGuidelinesSection()}
+	${getToolUseGuidelinesSection(settings?.parallelToolCalls === true)}
 
 ${getCapabilitiesSection(cwd, shouldIncludeMcp ? mcpHub : undefined)}
 

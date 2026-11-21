@@ -136,7 +136,7 @@ describe("OpenAiNativeHandler MCP tool schema handling", () => {
 		expect(tool.parameters.required).toEqual(["token"]) // Should preserve original required array
 	})
 
-	it("should add additionalProperties: false and required array to non-MCP tools with strict: true", async () => {
+	it("should add additionalProperties: false to non-MCP tools and keep optional parameters optional", async () => {
 		let capturedRequestBody: any
 
 		const handler = new OpenAiNativeHandler({
@@ -177,6 +177,7 @@ describe("OpenAiNativeHandler MCP tool schema handling", () => {
 							path: { type: "string", description: "File path" },
 							encoding: { type: "string", description: "File encoding" },
 						},
+						required: ["path"],
 					},
 				},
 			},
@@ -198,9 +199,9 @@ describe("OpenAiNativeHandler MCP tool schema handling", () => {
 
 		const tool = capturedRequestBody.tools[0]
 		expect(tool.name).toBe("read_file")
-		expect(tool.strict).toBe(true) // Non-MCP tools should have strict: true
+		expect(tool.strict).toBe(false) // encoding is optional, so strict mode cannot be used
 		expect(tool.parameters.additionalProperties).toBe(false) // Should have additionalProperties: false
-		expect(tool.parameters.required).toEqual(["path", "encoding"]) // Should have all properties as required
+		expect(tool.parameters.required).toEqual(["path"]) // Optional parameters stay optional
 	})
 
 	it("should recursively add additionalProperties: false to nested objects in MCP tools", async () => {

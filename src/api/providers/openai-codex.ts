@@ -21,6 +21,7 @@ import { getModelParams } from "../transform/model-params"
 import { BaseProvider } from "./base-provider"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
 import { isMcpTool } from "../../utils/mcp-name"
+import { prepareNativeToolSchema } from "../transform/tool-schema"
 import { sanitizeOpenAiCallId } from "../../utils/tool-id"
 import { openAiCodexOAuthManager } from "../../integrations/openai-codex/oauth"
 import { t } from "../../i18n"
@@ -218,38 +219,6 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 		reasoningEffort: ReasoningEffortExtended | undefined,
 		metadata?: ApiHandlerCreateMessageMetadata,
 	): any {
-		const ensureAllRequired = (schema: any): any => {
-			if (!schema || typeof schema !== "object" || schema.type !== "object") {
-				return schema
-			}
-
-			const result = { ...schema }
-			if (result.additionalProperties !== false) {
-				result.additionalProperties = false
-			}
-
-			if (result.properties) {
-				const allKeys = Object.keys(result.properties)
-				result.required = allKeys
-
-				const newProps = { ...result.properties }
-				for (const key of allKeys) {
-					const prop = newProps[key]
-					if (prop.type === "object") {
-						newProps[key] = ensureAllRequired(prop)
-					} else if (prop.type === "array" && prop.items?.type === "object") {
-						newProps[key] = {
-							...prop,
-							items: ensureAllRequired(prop.items),
-						}
-					}
-				}
-				result.properties = newProps
-			}
-
-			return result
-		}
-
 		const ensureAdditionalPropertiesFalse = (schema: any): any => {
 			if (!schema || typeof schema !== "object" || schema.type !== "object") {
 				return schema
@@ -321,14 +290,17 @@ export class OpenAiCodexHandler extends BaseProvider implements SingleCompletion
 				.filter((tool) => tool.type === "function")
 				.map((tool) => {
 					const isMcp = isMcpTool(tool.function.name)
+					// Built-in tools are strict only when every parameter is required; optional
+					// parameters stay optional (strict: false) instead of being forced into `required`.
+					const prepared = isMcp ? undefined : prepareNativeToolSchema(tool.function.parameters)
 					return {
 						type: "function",
 						name: tool.function.name,
 						description: tool.function.description,
-						parameters: isMcp
-							? ensureAdditionalPropertiesFalse(tool.function.parameters)
-							: ensureAllRequired(tool.function.parameters),
-						strict: !isMcp,
+						parameters: prepared
+							? prepared.parameters
+							: ensureAdditionalPropertiesFalse(tool.function.parameters),
+						strict: prepared ? prepared.strict : false,
 					}
 				}),
 			tool_choice: metadata?.tool_choice,

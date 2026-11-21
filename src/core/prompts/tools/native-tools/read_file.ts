@@ -34,6 +34,8 @@ function getReadFileSupportsNote(supportsImages: boolean): string {
 export interface ReadFileToolOptions {
 	/** Whether the model supports image processing (default: false) */
 	supportsImages?: boolean
+	/** Whether several tool calls per response are allowed (default: false) */
+	parallelToolCalls?: boolean
 }
 
 // ─── Schema Builder ───────────────────────────────────────────────────────────
@@ -58,11 +60,15 @@ export interface ReadFileToolOptions {
  * @returns Native tool definition for read_file
  */
 export function createReadFileTool(options: ReadFileToolOptions = {}): OpenAI.Chat.ChatCompletionTool {
-	const { supportsImages = false } = options
+	const { supportsImages = false, parallelToolCalls = false } = options
 
 	// Build description based on capabilities
+	const multipleFilesNote = parallelToolCalls
+		? "If you need multiple independent files, you may issue several read_file calls in the same response."
+		: "If you need multiple files, read them one per response, one after another."
 	const descriptionIntro =
-		"Read a file and return its contents with line numbers for diffing or discussion. IMPORTANT: This tool reads exactly one file per call. If you need multiple files, issue multiple parallel read_file calls."
+		"Read a file and return its contents with line numbers for diffing or discussion. IMPORTANT: This tool reads exactly one file per call; there is no parameter for multiple files. " +
+		multipleFilesNote
 
 	const modeDescription =
 		` Supports two modes: 'slice' (default) reads lines sequentially with offset/limit; 'indentation' extracts complete semantic code blocks around an anchor line based on indentation hierarchy.` +
@@ -142,7 +148,8 @@ export function createReadFileTool(options: ReadFileToolOptions = {}): OpenAI.Ch
 		function: {
 			name: "read_file",
 			description,
-			strict: true,
+			// Optional parameters (mode, offset, limit, indentation) must stay omittable.
+			strict: false,
 			parameters: {
 				type: "object",
 				properties,

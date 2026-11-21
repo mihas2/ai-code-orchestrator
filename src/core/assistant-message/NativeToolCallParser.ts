@@ -11,6 +11,11 @@ import {
 	toolParamNames,
 } from "../../shared/tools"
 import { resolveToolAlias } from "../prompts/tools/filter-tools-for-mode"
+import {
+	formatInvalidToolArgumentsError,
+	formatUnparsableToolArgumentsError,
+	getToolParameterNames,
+} from "./toolCallHints"
 import type {
 	ApiStreamToolCallStartChunk,
 	ApiStreamToolCallDeltaChunk,
@@ -37,6 +42,14 @@ type NativeArgsFor<TName extends ToolName> = TName extends keyof NativeToolArgs 
  * Event types returned from raw chunk processing.
  */
 export type ToolCallStreamEvent = ApiStreamToolCallStartChunk | ApiStreamToolCallDeltaChunk | ApiStreamToolCallEndChunk
+
+/**
+ * Parameters that are not in a tool's current schema but are still accepted for
+ * backward compatibility, so they are not reported to the model as ignored.
+ */
+const LEGACY_ACCEPTED_PARAMS: Record<string, readonly string[]> = {
+	read_file: ["files", "file_path"],
+}
 
 /**
  * Parser for native tool calls (OpenAI-style function calling).
@@ -247,7 +260,7 @@ export class NativeToolCallParser {
 	 * and whose schema still requires parameters.
 	 */
 	public static missingToolArgumentsMessage(toolName: string): string {
-		return `Tool '${toolName}' was called with empty arguments (the API returned an empty string). Retry the call, one tool per turn.`
+		return `Tool '${toolName}' was called with empty arguments (the API returned an empty string). Retry the call with all required arguments.`
 	}
 
 	/**
@@ -714,22 +727,51 @@ export class NativeToolCallParser {
 			return null
 		}
 
+		const argumentsWereEmpty = toolCall.arguments.trim() === ""
+		// Empty or whitespace-only arguments are a legal "{}" payload.
+		// Custom tools with an empty schema and dynamic MCP tools accept that;
+		// core tools that still lack nativeArgs after the switch get parseError.
+		let args: any
 		try {
-			const argumentsWereEmpty = toolCall.arguments.trim() === ""
-			// Empty or whitespace-only arguments are a legal "{}" payload.
-			// Custom tools with an empty schema and dynamic MCP tools accept that;
-			// core tools that still lack nativeArgs after the switch get parseError.
-			const args = argumentsWereEmpty ? {} : JSON.parse(toolCall.arguments)
+			args = argumentsWereEmpty ? {} : JSON.parse(toolCall.arguments)
+		} catch {
+			args = undefined
+		}
+		if (!args || typeof args !== "object" || Array.isArray(args)) {
+			// Not a JSON object: report it to the model with the expected parameters
+			// instead of dropping the call.
+			if (customToolRegistry.has(resolvedName)) {
+				return null
+			}
+			return {
+				type: "tool_use" as const,
+				name: resolvedName,
+				params: {},
+				partial: false,
+				parseError: formatUnparsableToolArgumentsError(resolvedName),
+				...(toolCall.name !== resolvedName ? { originalName: toolCall.name } : {}),
+			} as ToolUse<TName>
+		}
 
+		try {
 			// Build stringified params for display/logging.
 			// Tool execution MUST use nativeArgs (typed) and does not support legacy fallbacks.
 			const params: Partial<Record<ToolParamName, string>> = {}
+			// Parameters the tool's own schema does not define (reported back to the model).
+			const declaredParams = getToolParameterNames(resolvedName)
+			const ignoredParams: string[] = []
 
 			for (const [key, value] of Object.entries(args)) {
+				if (
+					declaredParams &&
+					!declaredParams.includes(key) &&
+					!LEGACY_ACCEPTED_PARAMS[resolvedName]?.includes(key)
+				) {
+					ignoredParams.push(key)
+				}
 				// Validate parameter name
 				if (!toolParamNames.includes(key as ToolParamName) && !customToolRegistry.has(resolvedName)) {
 					console.warn(`Unknown parameter '${key}' for tool '${resolvedName}'`)
-					console.warn(`Valid param names:`, toolParamNames)
 					continue
 				}
 
@@ -1024,11 +1066,8 @@ export class NativeToolCallParser {
 				if (argumentsWereEmpty) {
 					parseError = this.missingToolArgumentsMessage(resolvedName)
 				} else {
-					throw new Error(
-						`[NativeToolCallParser] Invalid arguments for tool '${resolvedName}'. ` +
-							`Native tool calls require a valid JSON payload matching the tool schema. ` +
-							`Received: ${JSON.stringify(args)}`,
-					)
+					parseError = formatInvalidToolArgumentsError(resolvedName, args)
+					console.warn(`[NativeToolCallParser] ${parseError}`)
 				}
 			}
 
@@ -1049,6 +1088,10 @@ export class NativeToolCallParser {
 			// Track legacy format usage
 			if (usedLegacyFormat) {
 				result.usedLegacyFormat = true
+			}
+
+			if (ignoredParams.length > 0 && !parseError) {
+				result.ignoredParams = ignoredParams
 			}
 
 			return result

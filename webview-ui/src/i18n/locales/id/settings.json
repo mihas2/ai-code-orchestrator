@@ -573,11 +573,6 @@
 			"label": "Ambang batas untuk memicu kondensasi konteks cerdas",
 			"description": "Ketika context window mencapai ambang batas ini, AI Code Orchestrator akan secara otomatis mengondensasikannya."
 		},
-		"condensingApiConfiguration": {
-			"label": "Konfigurasi API untuk Kondensasi Konteks",
-			"description": "Pilih konfigurasi API mana yang akan digunakan untuk operasi kondensasi konteks. Biarkan tidak dipilih untuk menggunakan konfigurasi aktif saat ini.",
-			"useCurrentConfig": "Default"
-		},
 		"customCondensingPrompt": {
 			"label": "Prompt Kondensasi Konteks Kustom",
 			"description": "Kustomisasi system prompt yang digunakan untuk kondensasi konteks. Biarkan kosong untuk menggunakan prompt default.",

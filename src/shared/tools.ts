@@ -156,6 +156,11 @@ export interface ToolUse<TName extends ToolName = ToolName> {
 	 * instead of a generic missing-nativeArgs message.
 	 */
 	parseError?: string
+	/**
+	 * Parameters the model sent that the tool's schema does not define. They are
+	 * dropped before execution and reported back in the tool result.
+	 */
+	ignoredParams?: string[]
 }
 
 /**

@@ -573,11 +573,6 @@
 			"label": "Akıllı bağlam sıkıştırmayı tetikleyecek eşik",
 			"description": "Bağlam penceresi bu eşiğe ulaştığında, AI Code Orchestrator otomatik olarak sıkıştıracaktır."
 		},
-		"condensingApiConfiguration": {
-			"label": "Bağlam Yoğunlaştırma için API Yapılandırması",
-			"description": "Bağlam yoğunlaştırma işlemleri için hangi API yapılandırmasının kullanılacağını seçin. Mevcut aktif yapılandırmayı kullanmak için seçimsiz bırakın.",
-			"useCurrentConfig": "Varsayılan"
-		},
 		"customCondensingPrompt": {
 			"label": "Özel Bağlam Yoğunlaştırma İstemcisi",
 			"description": "Bağlam yoğunlaştırma için özel sistem istemcisi. Varsayılan istemciyi kullanmak için boş bırakın.",

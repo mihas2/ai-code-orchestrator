@@ -9,12 +9,18 @@ const getFunctionDef = (tool: OpenAI.Chat.ChatCompletionTool) => (tool as Functi
 
 describe("createReadFileTool", () => {
 	describe("single-file-per-call documentation", () => {
-		it("should indicate single-file-per-call and suggest parallel tool calls", () => {
-			const tool = createReadFileTool()
-			const description = getFunctionDef(tool).description
+		it("should indicate single-file-per-call and read sequentially by default", () => {
+			const description = getFunctionDef(createReadFileTool()).description
 
 			expect(description).toContain("exactly one file per call")
-			expect(description).toContain("multiple parallel read_file calls")
+			expect(description).toContain("one per response")
+			expect(description).not.toContain("several read_file calls in the same response")
+		})
+
+		it("should allow several read_file calls per response when parallel tool calls are enabled", () => {
+			const description = getFunctionDef(createReadFileTool({ parallelToolCalls: true })).description
+
+			expect(description).toContain("several read_file calls in the same response")
 		})
 	})
 
@@ -106,10 +112,10 @@ describe("createReadFileTool", () => {
 			expect(tool.type).toBe("function")
 		})
 
-		it("should have strict mode enabled", () => {
+		it("should not use strict mode so optional parameters can be omitted", () => {
 			const tool = createReadFileTool()
 
-			expect(getFunctionDef(tool).strict).toBe(true)
+			expect(getFunctionDef(tool).strict).toBe(false)
 		})
 
 		it("should require path parameter", () => {

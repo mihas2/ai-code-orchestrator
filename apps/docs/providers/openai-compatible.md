@@ -89,6 +89,8 @@ The **Enable parallel tool calls** checkbox is in the profile's **Advanced setti
 - **Enabled:** the model may call several tools in one response.
 - **Disabled or unset (default):** parallel tool calls are forbidden, and the model calls one tool at a time.
 
+The system prompt and tool descriptions follow this setting: with it off, the model is instructed to call one tool per response; with it on, it may batch independent calls (for example, reading several files at once).
+
 Keep it off for proxies and gateways that drop tool arguments when calls are parallel. A task uses the setting of the profile it runs with, so a role assigned to another profile follows that profile's setting.
 
 ### Limitations
@@ -106,7 +108,7 @@ For a deeper overview of how tools work in AI Code Orchestrator in general, see 
 - **"Model Not Found":** Make sure you're using a valid model ID for your chosen provider.
 - **Connection Errors:** Verify the Base URL is correct and that your provider's API is accessible.
 - **Tool-calling errors:** AI Code Orchestrator requires native tool calling. If your model does not support it, you need to switch to a model that does. Check your provider's documentation for tool-calling compatibility.
-- **"Unusable tool call" errors in chat:** The model sent a tool call with empty or invalid arguments. AI Code Orchestrator shows the error, returns it to the model, and lets the model retry. If it happens often, make sure **Enable parallel tool calls** is off for this profile, since some proxies drop arguments of parallel calls.
+- **"Unusable tool call" errors in chat:** The model sent a tool call with empty or invalid arguments. AI Code Orchestrator shows the error and returns it to the model together with the tool's required and optional parameters, so the model can retry with a correct call. If it happens often, make sure **Enable parallel tool calls** is off for this profile, since some proxies drop arguments of parallel calls.
 - **Unexpected Results:** If you're getting unexpected results, try a different model.
 
 By using an OpenAI-compatible provider, you can leverage the flexibility of AI Code Orchestrator with a wider range of AI models. Remember to always consult your provider's documentation for the most accurate and up-to-date information.

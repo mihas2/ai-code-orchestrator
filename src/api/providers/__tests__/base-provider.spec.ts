@@ -54,18 +54,19 @@ describe("BaseProvider", () => {
 			expect(result.additionalProperties).toBe(false)
 		})
 
-		it("should add required array with all properties for strict mode", () => {
+		it("should keep the authored required array instead of forcing all properties", () => {
 			const schema = {
 				type: "object",
 				properties: {
 					name: { type: "string" },
 					age: { type: "number" },
 				},
+				required: ["name"],
 			}
 
 			const result = provider.testConvertToolSchemaForOpenAI(schema)
 
-			expect(result.required).toEqual(["name", "age"])
+			expect(result.required).toEqual(["name"])
 		})
 
 		it("should recursively add additionalProperties: false to nested objects", () => {
@@ -174,7 +175,7 @@ describe("BaseProvider", () => {
 			const result = provider.testConvertToolSchemaForOpenAI(schema)
 
 			expect(result.additionalProperties).toBe(false)
-			expect(result.required).toEqual([])
+			expect(result.required).toBeUndefined()
 		})
 	})
 
@@ -229,7 +230,9 @@ describe("BaseProvider", () => {
 							type: "object",
 							properties: {
 								path: { type: "string" },
+								limit: { type: ["number", "null"] },
 							},
+							required: ["path"],
 						},
 					},
 				},
@@ -239,6 +242,43 @@ describe("BaseProvider", () => {
 
 			expect(result?.[0].function.parameters.additionalProperties).toBe(false)
 			expect(result?.[0].function.parameters.required).toEqual(["path"])
+			expect(result?.[0].function.parameters.properties.limit.type).toBe("number")
+			// Optional parameters stay optional, so the tool cannot be strict
+			expect(result?.[0].function.strict).toBe(false)
+		})
+
+		it("should keep strict: true for tools whose parameters are all required", () => {
+			const tools = [
+				{
+					type: "function",
+					function: {
+						name: "attempt_completion",
+						description: "Complete",
+						parameters: {
+							type: "object",
+							properties: { result: { type: "string" } },
+							required: ["result"],
+						},
+					},
+				},
+			]
+
+			const result = provider.testConvertToolsForOpenAI(tools)
+
+			expect(result?.[0].function.strict).toBe(true)
+			expect(result?.[0].function.parameters.required).toEqual(["result"])
+		})
+
+		it("should not mutate the original tool schema", () => {
+			const parameters = {
+				type: "object",
+				properties: { cwd: { type: ["string", "null"] } },
+			}
+			const tools = [{ type: "function", function: { name: "execute_command", parameters } }]
+
+			provider.testConvertToolsForOpenAI(tools)
+
+			expect(parameters.properties.cwd.type).toEqual(["string", "null"])
 		})
 
 		it("should not apply schema conversion to MCP tools in base-provider", () => {

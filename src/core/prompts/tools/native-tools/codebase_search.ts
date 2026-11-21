@@ -12,7 +12,7 @@ Example: Searching for user authentication code
 { "query": "User login and password hashing", "path": "src/auth" }
 
 Example: Searching entire workspace
-{ "query": "database connection pooling", "path": null }`
+{ "query": "database connection pooling" }`
 
 const QUERY_PARAMETER_DESCRIPTION = `Meaning-based search query describing the information you need`
 
@@ -23,7 +23,7 @@ export default {
 	function: {
 		name: "codebase_search",
 		description: CODEBASE_SEARCH_DESCRIPTION,
-		strict: true,
+		strict: false,
 		parameters: {
 			type: "object",
 			properties: {
@@ -32,11 +32,11 @@ export default {
 					description: QUERY_PARAMETER_DESCRIPTION,
 				},
 				path: {
-					type: ["string", "null"],
+					type: "string",
 					description: PATH_PARAMETER_DESCRIPTION,
 				},
 			},
-			required: ["query", "path"],
+			required: ["query"],
 			additionalProperties: false,
 		},
 	},

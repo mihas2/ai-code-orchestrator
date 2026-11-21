@@ -573,11 +573,6 @@
 			"label": "Schwellenwert für intelligente Kontextkomprimierung",
 			"description": "Wenn das Kontextfenster diesen Schwellenwert erreicht, wird AI Code Orchestrator es automatisch komprimieren."
 		},
-		"condensingApiConfiguration": {
-			"label": "API-Konfiguration für Kontextkomprimierung",
-			"description": "Wählen Sie, welche API-Konfiguration für Kontextkomprimierungsoperationen verwendet werden soll. Lassen Sie unausgewählt, um die aktuelle aktive Konfiguration zu verwenden.",
-			"useCurrentConfig": "Aktuelle Konfiguration verwenden"
-		},
 		"customCondensingPrompt": {
 			"label": "Benutzerdefinierter Kontextkomprimierungs-Prompt",
 			"description": "Passen Sie den System-Prompt an, der für die Kontextkomprimierung verwendet wird. Lassen Sie leer, um den Standard-Prompt zu verwenden.",

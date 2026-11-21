@@ -573,11 +573,6 @@
 			"label": "Próg wyzwalający inteligentną kondensację kontekstu",
 			"description": "Gdy okno kontekstu osiągnie ten próg, AI Code Orchestrator automatycznie je skondensuje."
 		},
-		"condensingApiConfiguration": {
-			"label": "Konfiguracja API dla kondensacji kontekstu",
-			"description": "Wybierz, którą konfigurację API używać do operacji kondensacji kontekstu. Pozostaw niewybrane, aby użyć aktualnej aktywnej konfiguracji.",
-			"useCurrentConfig": "Domyślna"
-		},
 		"customCondensingPrompt": {
 			"label": "Niestandardowy monit kondensacji kontekstu",
 			"description": "Niestandardowy monit systemowy dla kondensacji kontekstu. Pozostaw puste, aby użyć domyślnego monitu.",

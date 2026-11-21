@@ -663,11 +663,6 @@
 			"label": "Threshold to trigger intelligent context condensing",
 			"description": "When the context window reaches this threshold, AI Code Orchestrator will automatically condense it."
 		},
-		"condensingApiConfiguration": {
-			"label": "API Configuration for Context Condensing",
-			"description": "Select which API configuration to use for context condensing operations. Leave unselected to use the current active configuration.",
-			"useCurrentConfig": "Default"
-		},
 		"customCondensingPrompt": {
 			"label": "Custom Context Condensing Prompt",
 			"description": "Customize the system prompt used for context condensing. Leave empty to use the default prompt.",

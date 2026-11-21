@@ -573,11 +573,6 @@
 			"label": "Ngưỡng kích hoạt nén ngữ cảnh thông minh",
 			"description": "Khi cửa sổ ngữ cảnh đạt đến ngưỡng này, AI Code Orchestrator sẽ tự động nén nó."
 		},
-		"condensingApiConfiguration": {
-			"label": "Cấu hình API cho Tóm tắt Ngữ cảnh",
-			"description": "Chọn cấu hình API để sử dụng cho các thao tác tóm tắt ngữ cảnh. Để trống để sử dụng cấu hình đang hoạt động hiện tại.",
-			"useCurrentConfig": "Mặc định"
-		},
 		"customCondensingPrompt": {
 			"label": "Lời nhắc nén ngữ cảnh tùy chỉnh",
 			"description": "Lời nhắc hệ thống tùy chỉnh cho việc nén ngữ cảnh. Để trống để sử dụng lời nhắc mặc định.",

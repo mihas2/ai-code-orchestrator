@@ -101,6 +101,7 @@ import { AicoIgnoreController } from "../ignore/AicoIgnoreController"
 import { AicoProtectedController } from "../protect/AicoProtectedController"
 import { type AssistantMessageContent, presentAssistantMessage } from "../assistant-message"
 import { NativeToolCallParser } from "../assistant-message/NativeToolCallParser"
+import { formatUnparsableToolArgumentsError } from "../assistant-message/toolCallHints"
 import { manageContext, willManageContext } from "../context-management"
 import { ClineProvider } from "../webview/ClineProvider"
 import { MultiSearchReplaceDiffStrategy } from "../diff/strategies/multi-search-replace"
@@ -146,7 +147,7 @@ export function unparsedNativeToolCallFallback(name: string, id: string): ToolUs
 		id,
 		params: {},
 		partial: false,
-		parseError: `Invalid tool call for '${name}': arguments could not be parsed.`,
+		parseError: formatUnparsableToolArgumentsError(name),
 	}
 }
 
@@ -4269,6 +4270,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						.getConfiguration(Package.name)
 						.get<boolean>("newTaskRequireTodos", false),
 					isStealthModel: modelInfo?.isStealthModel,
+					parallelToolCalls: this.resolveParallelToolCalls(),
 				},
 				undefined, // todoList
 				this.api.getModel().id,

@@ -583,11 +583,6 @@
 			"label": "觸發智慧上下文壓縮的閾值",
 			"description": "當上下文視窗達到此閾值時，AI Code Orchestrator 將自動壓縮它。"
 		},
-		"condensingApiConfiguration": {
-			"label": "上下文壓縮的 API 設定",
-			"description": "選擇用於上下文壓縮操作的 API 設定。留空則使用目前啟用的設定。",
-			"useCurrentConfig": "預設"
-		},
 		"customCondensingPrompt": {
 			"label": "自訂上下文壓縮提示",
 			"description": "自訂用於上下文壓縮的系統提示。留空則使用預設提示。",

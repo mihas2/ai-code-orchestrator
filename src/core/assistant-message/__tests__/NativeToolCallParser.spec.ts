@@ -318,6 +318,67 @@ describe("NativeToolCallParser", () => {
 		})
 	})
 
+	describe("actionable errors for malformed calls", () => {
+		it("reports missing required parameters with the expected schema", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_missing",
+				name: "read_file" as any,
+				arguments: JSON.stringify({ paths: ["a.ts", "b.ts"] }),
+			}) as any
+
+			expect(result).not.toBeNull()
+			expect(result.nativeArgs).toBeUndefined()
+			expect(result.parseError).toContain("missing required parameter(s): path")
+			expect(result.parseError).toContain("Received: paths")
+			expect(result.parseError).toContain("Required parameters: path.")
+		})
+
+		it("reports arguments that are not a JSON object", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_bad_json",
+				name: "execute_command" as any,
+				arguments: '{"command": "ls"',
+			}) as any
+
+			expect(result).not.toBeNull()
+			expect(result.parseError).toContain("not a valid JSON object")
+			expect(result.parseError).toContain("Required parameters: command.")
+		})
+
+		it("records parameters the tool does not define as ignored", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_extra",
+				name: "write_to_file" as any,
+				arguments: JSON.stringify({ path: "a.txt", content: "x", line_count: 1 }),
+			}) as any
+
+			expect(result.nativeArgs).toEqual({ path: "a.txt", content: "x" })
+			expect(result.parseError).toBeUndefined()
+			expect(result.ignoredParams).toEqual(["line_count"])
+		})
+
+		it("does not report accepted legacy read_file parameters as ignored", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_legacy",
+				name: "read_file" as any,
+				arguments: JSON.stringify({ files: [{ path: "a.ts" }] }),
+			}) as any
+
+			expect(result.ignoredParams).toBeUndefined()
+		})
+
+		it("accepts omitted optional parameters", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_optional",
+				name: "execute_command" as any,
+				arguments: JSON.stringify({ command: "npm test" }),
+			}) as any
+
+			expect(result.parseError).toBeUndefined()
+			expect(result.nativeArgs).toEqual({ command: "npm test", cwd: undefined, timeout: undefined })
+		})
+	})
+
 	describe("empty tool arguments", () => {
 		const expectedMessage = NativeToolCallParser.missingToolArgumentsMessage("read_file")
 
@@ -446,38 +507,30 @@ describe("NativeToolCallParser", () => {
 			})
 		})
 
-		it("keeps the generic invalid-arguments error for malformed JSON", () => {
-			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
-
+		it("reports malformed JSON as a parse error distinct from empty arguments", () => {
 			const result = NativeToolCallParser.parseToolCall({
 				id: "toolu_bad_json",
 				name: "read_file",
 				arguments: "{",
-			})
+			}) as any
 
-			expect(result).toBeNull()
-			const logged = errorSpy.mock.calls.map((call) => String(call[0])).join("\n")
-			expect(logged).not.toContain("was called with empty arguments")
-			expect(logged).not.toContain("Invalid arguments for tool")
-			errorSpy.mockRestore()
+			expect(result).not.toBeNull()
+			expect(result.parseError).toContain("not a valid JSON object")
+			expect(result.parseError).not.toContain("was called with empty arguments")
 		})
 
-		it("keeps the generic schema error when JSON does not match the tool", () => {
-			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
-
+		it("reports a schema mismatch with the missing required parameters", () => {
 			const result = NativeToolCallParser.parseToolCall({
 				id: "toolu_schema",
 				name: "read_file",
 				arguments: "{}",
-			})
+			}) as any
 
-			expect(result).toBeNull()
-			expect(errorSpy).toHaveBeenCalledWith(
-				expect.stringContaining(
-					"[NativeToolCallParser] Invalid arguments for tool 'read_file'. Native tool calls require a valid JSON payload matching the tool schema. Received: {}",
-				),
+			expect(result).not.toBeNull()
+			expect(result.parseError).toContain(
+				"Invalid arguments for tool 'read_file': missing required parameter(s): path",
 			)
-			errorSpy.mockRestore()
+			expect(result.parseError).not.toContain("was called with empty arguments")
 		})
 	})
 

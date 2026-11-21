@@ -573,11 +573,6 @@
 			"label": "Llindar per activar la condensació intel·ligent de context",
 			"description": "Quan la finestra de context assoleix aquest llindar, AI Code Orchestrator la condensarà automàticament."
 		},
-		"condensingApiConfiguration": {
-			"label": "Configuració d'API per a la condensació de context",
-			"description": "Seleccioneu quina configuració d'API utilitzar per a les operacions de condensació de context. Deixeu-ho sense seleccionar per utilitzar la configuració activa actual.",
-			"useCurrentConfig": "Per defecte"
-		},
 		"customCondensingPrompt": {
 			"label": "Indicació personalitzada de condensació de context",
 			"description": "Personalitzeu la indicació del sistema utilitzada per a la condensació de context. Deixeu-ho buit per utilitzar la indicació per defecte.",

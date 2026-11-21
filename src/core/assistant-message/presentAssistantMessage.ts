@@ -39,6 +39,7 @@ import { codebaseSearchTool } from "../tools/CodebaseSearchTool"
 
 import { formatResponse } from "../prompts/responses"
 import { sanitizeToolUseId } from "../../utils/tool-id"
+import { describeToolParameters, formatIgnoredParametersNote } from "./toolCallHints"
 
 /**
  * Processes and presents assistant message content to the user interface.
@@ -597,9 +598,13 @@ async function presentAssistantMessageCore(cline: Task): Promise<void> {
 							: undefined
 						const isKnownTool = isValidToolName(String(block.name), stateExperiments)
 						if (isKnownTool && !block.nativeArgs && !customTool) {
-							const errorMessage =
-								`Invalid tool call for '${block.name}': missing nativeArgs. ` +
-								`This usually means the model streamed invalid or incomplete arguments and the call could not be finalized.`
+							const errorMessage = [
+								`Invalid tool call for '${block.name}': the arguments were invalid or incomplete and the call could not be executed.`,
+								describeToolParameters(block.name),
+								"Retry the call with complete arguments that match the tool schema.",
+							]
+								.filter(Boolean)
+								.join(" ")
 
 							cline.consecutiveMistakeCount++
 							try {
@@ -652,6 +657,11 @@ async function presentAssistantMessageCore(cline: Task): Promise<void> {
 							resultContent =
 								textBlocks.map((item) => (item as Anthropic.TextBlockParam).text).join("\n") ||
 								"(tool did not return anything)"
+						}
+
+						// Tell the model about parameters the tool does not define, so it stops sending them.
+						if (block.ignoredParams?.length) {
+							resultContent = `${resultContent}\n\n${formatIgnoredParametersNote(block.name, block.ignoredParams)}`
 						}
 
 						// Merge approval feedback into tool result (GitHub #10465)

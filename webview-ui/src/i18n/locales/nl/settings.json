@@ -573,11 +573,6 @@
 			"label": "Drempelwaarde om intelligente contextcompressie te activeren",
 			"description": "Wanneer het contextvenster deze drempelwaarde bereikt, zal AI Code Orchestrator het automatisch comprimeren."
 		},
-		"condensingApiConfiguration": {
-			"label": "API-configuratie voor contextcondensatie",
-			"description": "Selecteer welke API-configuratie gebruikt moet worden voor contextcondensatie. Laat leeg om de huidige actieve configuratie te gebruiken.",
-			"useCurrentConfig": "Standaard"
-		},
 		"customCondensingPrompt": {
 			"label": "Aangepaste contextcondensatieprompt",
 			"description": "Aangepaste systeemprompt voor contextcondensatie. Laat leeg om de standaardprompt te gebruiken.",

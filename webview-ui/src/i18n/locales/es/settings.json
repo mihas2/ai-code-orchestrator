@@ -573,11 +573,6 @@
 			"label": "Umbral para activar la condensación inteligente de contexto",
 			"description": "Cuando la ventana de contexto alcanza este umbral, AI Code Orchestrator la condensará automáticamente."
 		},
-		"condensingApiConfiguration": {
-			"label": "Configuración de API para condensación de contexto",
-			"description": "Seleccione qué configuración de API usar para operaciones de condensación de contexto. Deje sin seleccionar para usar la configuración activa actual.",
-			"useCurrentConfig": "Usar configuración actual"
-		},
 		"customCondensingPrompt": {
 			"label": "Prompt personalizado para condensación de contexto",
 			"description": "Personalice el prompt del sistema utilizado para la condensación de contexto. Deje vacío para usar el prompt predeterminado.",

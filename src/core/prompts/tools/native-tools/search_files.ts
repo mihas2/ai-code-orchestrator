@@ -26,7 +26,7 @@ export default {
 	function: {
 		name: "search_files",
 		description: SEARCH_FILES_DESCRIPTION,
-		strict: true,
+		strict: false,
 		parameters: {
 			type: "object",
 			properties: {
@@ -39,11 +39,11 @@ export default {
 					description: REGEX_PARAMETER_DESCRIPTION,
 				},
 				file_pattern: {
-					type: ["string", "null"],
+					type: "string",
 					description: FILE_PATTERN_PARAMETER_DESCRIPTION,
 				},
 			},
-			required: ["path", "regex", "file_pattern"],
+			required: ["path", "regex"],
 			additionalProperties: false,
 		},
 	},

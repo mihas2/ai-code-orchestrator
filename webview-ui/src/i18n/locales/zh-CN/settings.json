@@ -573,11 +573,6 @@
 			"label": "触发智能上下文压缩的阈值",
 			"description": "当上下文窗口达到此阈值时，AI Code Orchestrator 将自动压缩它。"
 		},
-		"condensingApiConfiguration": {
-			"label": "上下文压缩的API配置",
-			"description": "选择用于上下文压缩操作的API配置。留空则使用当前活动的配置。",
-			"useCurrentConfig": "使用当前配置"
-		},
 		"customCondensingPrompt": {
 			"label": "自定义上下文压缩提示词",
 			"description": "自定义用于上下文压缩的系统提示词。留空则使用默认提示词。",
