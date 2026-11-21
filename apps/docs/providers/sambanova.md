@@ -1,0 +1,29 @@
+# Using SambaNova With AI Code Orchestrator
+
+SambaNova specializes in providing high-speed inference for large language models, utilizing their Reconfigurable Dataflow Units (RDUs) through their SambaCloud portal. This delivers fast response times for supported models.
+
+**Website:** [https://cloud.sambanova.ai/](https://cloud.sambanova.ai/)
+
+---
+
+## Getting an API Key
+
+To use SambaNova with AI Code Orchestrator, you'll need an API key from the [SambaCloud](https://cloud.sambanova.ai?utm_source=AI Code Orchestrator&utm_medium=external&utm_campaign=cloud_signup). After signing up, navigate to the API Keys section in the left panel to create and copy your SambaCloud API key.
+
+---
+
+## Available Models
+
+AI Code Orchestrator automatically fetches all available models from the SambaNova API.
+
+For the complete, up-to-date model list and capabilities, see [SambaCloud's supported models documentation](https://docs.sambanova.ai/cloud/docs/get-started/supported-models).
+
+---
+
+## Configuration in AI Code Orchestrator
+
+1. **Open AI Code Orchestrator Settings:** Click the gear icon (⚙️) in the AI Code Orchestrator panel.
+2. **Select Provider:** Choose "SambaNova" from the "API Provider" dropdown.
+3. **Enter API Key:** Paste your SambaNova API key into the "SambaNova API Key" field.
+4. **Select Model:** Choose your desired model from the "Model" dropdown.
+5. **(Optional) Custom Base URL:** If using a private deployment, check "Use custom base URL" and enter your endpoint URL.

@@ -1,0 +1,34 @@
+# Experimental Features
+
+AI Code Orchestrator includes experimental features that are still under development. These features may be unstable, change significantly, or be removed in future versions. Use them with caution and be aware that they may not work as expected.
+
+**Warning:** Experimental features may have unexpected behavior, including potential data loss or security vulnerabilities. Enable them at your own risk.
+
+---
+
+## Enabling Experimental Features
+
+To enable or disable experimental features:
+
+1.  Open the AI Code Orchestrator settings (`⚙️` icon in the top right corner).
+2.  Go to the "Advanced Settings" section.
+3.  Find the "Experimental Features" section.
+
+---
+
+## Current Experimental Features
+
+The following experimental features are currently available:
+
+- [Custom Tools](custom-tools.md) - Define TypeScript/JavaScript tools that AI Code Orchestrator can call like built-in tools
+- [Background Editing](background-editing.md) - Work uninterrupted while AI Code Orchestrator edits files in the background
+- [Image Generation](../image-generation.md) - Generate images from text prompts and save them to your workspace
+- [Run Slash Command](../../advanced-usage/available-tools/run-slash-command.md) - Execute predefined slash commands for templated instructions and workflow automation
+
+---
+
+## Providing Feedback
+
+If you encounter any issues with experimental features, or if you have suggestions for improvements, please report them on the [AI Code Orchestrator GitHub Issues page](https://github.com/mihas2/ai-code-orchestrator/issues).
+
+Your feedback is valuable and helps us improve AI Code Orchestrator!

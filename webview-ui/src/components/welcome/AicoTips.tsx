@@ -8,13 +8,13 @@ import { ReplaceAll, Users } from "lucide-react"
 const tips = [
 	{
 		icon: <Users className="size-4 shrink-0 mt-0.5" />,
-		href: buildDocLink("basic-usage/using-modes", "tips"),
+		href: buildDocLink("basic-usage/using-modes"),
 		titleKey: "AicoTips.customizableModes.title",
 		descriptionKey: "AicoTips.customizableModes.description",
 	},
 	{
 		icon: <ReplaceAll className="size-4 shrink-0 mt-0.5" />,
-		href: buildDocLink("getting-started/connecting-api-provider", "tips"),
+		href: buildDocLink("getting-started/connecting-api-provider"),
 		titleKey: "AicoTips.modelAgnostic.title",
 		descriptionKey: "AicoTips.modelAgnostic.description",
 	},
@@ -45,12 +45,7 @@ const AicoTips = () => {
 				<Trans
 					i18nKey="chat:docs"
 					components={{
-						DocsLink: (
-							<VSCodeLink
-								className="text-muted-foreground underline"
-								href={buildDocLink("", "welcome")}
-							/>
-						),
+						DocsLink: <VSCodeLink className="text-muted-foreground underline" href={buildDocLink("")} />,
 					}}
 				/>
 			</p>

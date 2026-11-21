@@ -1,0 +1,90 @@
+# Installing AI Code Orchestrator
+
+AI Code Orchestrator is a VS Code extension that brings AI-powered coding assistance directly to your editor. Install using one of these methods:
+
+1. **VS Code Marketplace (Recommended)** - fastest method for standard VS Code and Cursor users
+2. **Open VSX Registry** - for VS Code-compatible editors like VSCodium
+
+---
+
+## VS Code Marketplace
+
+1. Open VS Code
+2. Access Extensions: Click the Extensions icon in the Activity Bar or press `Ctrl+Shift+X` (Windows/Linux) or `Cmd+Shift+X` (macOS)
+3. Search for "AI Code Orchestrator"
+4. Select "AI Code Orchestrator" by mihas2 and click **Install** ([Marketplace page](https://marketplace.visualstudio.com/items?itemName=mihas2.ai-code-orchestrator))
+5. Reload VS Code if prompted
+
+After installation, find the AI Code Orchestrator icon in the Activity Bar to open the AI Code Orchestrator panel.
+
+<img src="../img/installing/installing-3.png" alt="VS Code marketplace with AI Code Orchestrator extension ready to install" width="400" />
+*VS Code marketplace with AI Code Orchestrator extension ready to install*
+
+---
+
+## Open VSX Registry
+
+For VS Code-compatible editors without Marketplace access (like VSCodium and Windsurf):
+
+1. Open your editor
+2. Access the Extensions view
+3. Search for "AI Code Orchestrator"
+4. Select "AI Code Orchestrator" by mihas2 and click **Install** ([Open VSX page](https://open-vsx.org/extension/mihas2/ai-code-orchestrator))
+5. Reload if prompted
+
+<img src="../img/installing/installing-3.png" alt="Open VSX Registry with AI Code Orchestrator extension ready to install" width="400" />
+
+## AI Code Orchestrator Nightly
+
+For information on installing AI Code Orchestrator Nightly (our prerelease build published on each merge to main), please see the [AI Code Orchestrator Nightly](../advanced-usage/aico-code-nightly.md) guide in the Advanced Usage section.
+
+## Manual Installation from VSIX
+
+If you prefer to download and install the VSIX file directly:
+
+1. **Download the VSIX file:**
+
+    - Find official releases on the [AI Code Orchestrator GitHub Releases page](https://github.com/mihas2/ai-code-orchestrator/releases)
+    - Download the `.vsix` file from the latest release
+
+2. **Install in VS Code:**
+    - Open VS Code
+    - Access Extensions view
+    - Click the "..." menu in the Extensions view
+    - Select "Install from VSIX..."
+    - Browse to and select your downloaded `.vsix` file
+
+<img src="../img/installing/installing-2.png" alt="VS Code's Install from VSIX dialog" width="400" />
+*Installing AI Code Orchestrator using VS Code's "Install from VSIX" dialog*
+
+---
+
+## Local Setup & Development
+
+---
+
+## Troubleshooting
+
+<img src="../img/installing/installing-4.png" alt="VS Code Output panel showing AI Code Orchestrator logs for troubleshooting" width="100%" />
+*VS Code Output panel showing AI Code Orchestrator logs for troubleshooting*
+
+**Extension Not Visible**
+
+- Restart VS Code
+- Verify AI Code Orchestrator is listed and enabled in Extensions
+- Try disabling and re-enabling
+- Check Output panel for errors (View → Output, select "AI Code Orchestrator")
+
+**Installation Problems**
+
+- Ensure stable internet connection
+- Verify VS Code version 1.84.0 or later
+- If VS Code Marketplace is inaccessible, try the Open VSX Registry method
+
+---
+
+## Getting Support
+
+If you encounter issues not covered here:
+
+- Submit issues on [GitHub](https://github.com/mihas2/ai-code-orchestrator/issues)

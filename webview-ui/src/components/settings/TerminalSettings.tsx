@@ -157,7 +157,6 @@ export const TerminalSettings = ({
 									<VSCodeLink
 										href={buildDocLink(
 											"features/shell-integration#use-inline-terminal-recommended",
-											"settings_terminal_shell_integration_disabled",
 										)}
 										style={{ display: "inline" }}>
 										{" "}
@@ -190,7 +189,6 @@ export const TerminalSettings = ({
 											<VSCodeLink
 												href={buildDocLink(
 													"features/shell-integration#inherit-environment-variables",
-													"settings_terminal_inherit_env",
 												)}
 												style={{ display: "inline" }}>
 												{" "}
@@ -228,7 +226,6 @@ export const TerminalSettings = ({
 											<VSCodeLink
 												href={buildDocLink(
 													"features/shell-integration#terminal-shell-integration-timeout",
-													"settings_terminal_shell_integration_timeout",
 												)}
 												style={{ display: "inline" }}>
 												{" "}
@@ -262,10 +259,7 @@ export const TerminalSettings = ({
 									<div className="text-vscode-descriptionForeground text-sm mt-1">
 										<Trans i18nKey="settings:terminal.commandDelay.description">
 											<VSCodeLink
-												href={buildDocLink(
-													"features/shell-integration#terminal-command-delay",
-													"settings_terminal_command_delay",
-												)}
+												href={buildDocLink("features/shell-integration#terminal-command-delay")}
 												style={{ display: "inline" }}>
 												{" "}
 											</VSCodeLink>
@@ -292,7 +286,6 @@ export const TerminalSettings = ({
 											<VSCodeLink
 												href={buildDocLink(
 													"features/shell-integration#enable-powershell-counter-workaround",
-													"settings_terminal_powershell_counter",
 												)}
 												style={{ display: "inline" }}>
 												{" "}
@@ -318,10 +311,7 @@ export const TerminalSettings = ({
 									<div className="text-vscode-descriptionForeground text-sm mt-1">
 										<Trans i18nKey="settings:terminal.zshClearEolMark.description">
 											<VSCodeLink
-												href={buildDocLink(
-													"features/shell-integration#clear-zsh-eol-mark",
-													"settings_terminal_zsh_clear_eol_mark",
-												)}
+												href={buildDocLink("features/shell-integration#clear-zsh-eol-mark")}
 												style={{ display: "inline" }}>
 												{" "}
 											</VSCodeLink>
@@ -344,7 +334,6 @@ export const TerminalSettings = ({
 											<VSCodeLink
 												href={buildDocLink(
 													"features/shell-integration#enable-oh-my-zsh-integration",
-													"settings_terminal_zsh_oh_my",
 												)}
 												style={{ display: "inline" }}>
 												{" "}
@@ -368,7 +357,6 @@ export const TerminalSettings = ({
 											<VSCodeLink
 												href={buildDocLink(
 													"features/shell-integration#enable-powerlevel10k-integration",
-													"settings_terminal_zsh_p10k",
 												)}
 												style={{ display: "inline" }}>
 												{" "}
@@ -392,7 +380,6 @@ export const TerminalSettings = ({
 											<VSCodeLink
 												href={buildDocLink(
 													"features/shell-integration#enable-zdotdir-handling",
-													"settings_terminal_zdotdir",
 												)}
 												style={{ display: "inline" }}>
 												{" "}

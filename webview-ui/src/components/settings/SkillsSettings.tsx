@@ -228,7 +228,7 @@ export const SkillsSettings: React.FC = () => {
 							components={{
 								DocsLink: (
 									<a
-										href={buildDocLink("features/skills", "skills_settings")}
+										href={buildDocLink("features/skills")}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-vscode-textLink-foreground hover:underline">

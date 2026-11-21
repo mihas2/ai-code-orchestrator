@@ -1,0 +1,97 @@
+# How Tools Work
+
+AI Code Orchestrator uses tools to interact with your code and environment. These specialized helpers perform specific actions like reading files, making edits, running commands, or searching your codebase. Tools provide automation for common development tasks without requiring manual execution.
+
+---
+
+## Tool Workflow
+
+Describe what you want to accomplish in natural language, and AI Code Orchestrator will:
+
+1. Select the appropriate tool based on your request
+2. Present the tool with its parameters for your review
+3. Execute the approved tool and show you the results
+4. Continue this process until your task is complete
+
+---
+
+## Tool Categories
+
+| Category | Purpose                                    | Tool Names                                                                          |
+| :------- | :----------------------------------------- | :---------------------------------------------------------------------------------- |
+| Read     | Access file content and code structure     | `read_file`, `search_files`, `list_files`, `codebase_search`, `read_command_output` |
+| Edit     | Create or modify files and code            | `write_to_file`, `apply_diff`, `apply_patch`, `edit`, `edit_file`, `search_replace` |
+| Execute  | Run commands and perform system operations | `execute_command`                                                                   |
+| Image    | Generate AI-powered images                 | `generate_image`                                                                    |
+| Workflow | Manage task flow and context               | `ask_followup_question`, `attempt_completion`, `new_task`, `skill`                  |
+
+---
+
+## Example: Using Tools
+
+Here's how a typical tool interaction works:
+
+<img src="../img/how-tools-work/how-tools-work.png" alt="Tool approval interface showing Save and Reject buttons along with Auto-approve checkbox" width="600" />
+
+_The tool approval interface shows Save/Reject buttons and Auto-approve options._
+
+**User:** Create a file named `greeting.js` that logs a greeting message
+
+**AI Code Orchestrator:** (Proposes the `write_to_file` tool as shown in the image above)
+
+```json
+{
+	"path": "greeting.js",
+	"content": "function greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet('World');"
+}
+```
+
+**User:** (Clicks "Save" in the interface)
+
+**AI Code Orchestrator:** (Confirms file creation)
+
+---
+
+## Tool Safety and Approval
+
+Every tool use requires your explicit approval. When AI Code Orchestrator proposes a tool, you'll see:
+
+- A "Save" button to approve and execute the tool
+- A "Reject" button to decline the proposed tool
+- An optional "Auto-approve" setting for trusted operations
+
+This safety mechanism ensures you maintain control over which files are modified, what commands are executed, and how your codebase is changed. Always review tool proposals carefully before saving them.
+
+---
+
+## Core Tools Reference
+
+| Tool Name               | Description                                                | Category |
+| :---------------------- | :--------------------------------------------------------- | :------- |
+| `read_file`             | Reads the content of a file with line numbers              | Read     |
+| `search_files`          | Searches for text or regex patterns across files           | Read     |
+| `list_files`            | Lists files and directories in a specified location        | Read     |
+| `codebase_search`       | Performs semantic search across your indexed codebase      | Read     |
+| `read_command_output`   | Retrieves truncated output from previous commands          | Read     |
+| `write_to_file`         | Creates new files or overwrites existing ones              | Edit     |
+| `apply_diff`            | Makes precise changes to specific parts of a file          | Edit     |
+| `apply_patch`           | Applies multi-file unified diff patches                    | Edit     |
+| `edit`                  | Search-and-replace (first occurrence by default)           | Edit     |
+| `edit_file`             | Search-and-replace (all occurrences with count validation) | Edit     |
+| `search_replace`        | Search-and-replace (all occurrences, simple)               | Edit     |
+| `execute_command`       | Runs commands in the VS Code terminal                      | Execute  |
+| `generate_image`        | Generates AI-powered images from text prompts              | Image    |
+| `ask_followup_question` | Asks you a clarifying question                             | Workflow |
+| `attempt_completion`    | Indicates the task is complete                             | Workflow |
+| `new_task`              | Creates a new subtask with a specific starting mode        | Workflow |
+| `skill`                 | Loads and executes predefined skill instructions           | Workflow |
+| `update_todo_list`      | Creates and updates the task's todo list                   | Workflow |
+| `run_slash_command`     | Runs a slash command (experimental)                        | Workflow |
+| `use_mcp_tool`          | Calls a tool of a connected MCP server                     | MCP      |
+| `access_mcp_resource`   | Reads a resource exposed by an MCP server                  | MCP      |
+
+---
+
+## Learn More About Tools
+
+For more detailed information about each tool, including complete parameter references and advanced usage patterns, see the [Tool Use Overview](../advanced-usage/available-tools/tool-use-overview.md) documentation.

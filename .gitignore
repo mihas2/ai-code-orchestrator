@@ -28,8 +28,8 @@ AGENTS.local.md
 
 # Docs
 # Documentation build artifacts
-docs/
-docs/_site/
+/docs/
+/docs/_site/
 
 # Dotenv
 .env

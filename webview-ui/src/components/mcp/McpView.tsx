@@ -46,9 +46,7 @@ const McpView = () => {
 						marginTop: "5px",
 					}}>
 					<Trans i18nKey="mcp:description">
-						<VSCodeLink
-							href={buildDocLink("features/mcp/using-mcp-in-aico", "mcp_settings")}
-							style={{ display: "inline" }}>
+						<VSCodeLink href={buildDocLink("features/mcp/using-mcp-in-aico")} style={{ display: "inline" }}>
 							Learn More
 						</VSCodeLink>
 					</Trans>
@@ -140,10 +138,7 @@ const McpView = () => {
 								color: "var(--vscode-descriptionForeground)",
 							}}>
 							<VSCodeLink
-								href={buildDocLink(
-									"features/mcp/using-mcp-in-aico#editing-mcp-settings-files",
-									"mcp_edit_settings",
-								)}
+								href={buildDocLink("features/mcp/using-mcp-in-aico#editing-mcp-settings-files")}
 								style={{ display: "inline" }}>
 								{t("mcp:learnMoreEditingSettings")}
 							</VSCodeLink>

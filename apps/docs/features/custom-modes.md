@@ -1,0 +1,659 @@
+# Customizing Modes
+
+AI Code Orchestrator allows you to create **custom modes** to tailor AI Code Orchestrator's behavior to specific tasks or workflows. Custom modes can be either **global** (available across all projects) or **project-specific** (defined within a single project).
+
+> [!TIP] > **Models per Mode**
+>
+> Each mode—including custom ones—can have its own provider profile and model, assigned in Settings (⚙️) → **Roles** (see [Linking Profiles to Roles](api-configuration-profiles.md#linking-profiles-to-roles)). A mode without an assignment falls back to the profile you last used with it, or to the default profile.
+
+---
+
+## Why Use Custom Modes?
+
+- **Specialization:** Create modes optimized for specific tasks, like "Documentation Writer," "Test Engineer," or "Refactoring Expert."
+- **Safety:** Restrict a mode's access to sensitive files or commands. For example, a "Review Mode" could be limited to read-only operations.
+- **Experimentation:** Safely experiment with different prompts and configurations without affecting other modes.
+- **Team Collaboration:** Share custom modes with your team to standardize workflows.
+
+<img src="../img/custom-modes/custom-modes-3.png" alt="Overview of custom modes interface" width="500" />
+
+    *AI Code Orchestrator's interface for creating and managing custom modes.*
+
+---
+
+## What's Included in a Custom Mode?
+
+Custom modes are defined by several key properties. Understanding these concepts will help you tailor AI Code Orchestrator's behavior effectively.
+
+| UI Field / YAML Property                              | Conceptual Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Slug (`slug`)                                         | A **unique internal identifier** for the mode. It's used by AI Code Orchestrator to reference the mode, especially for associating [mode-specific instruction files](#mode-specific-instructions-via-filesdirectories).                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Name (`name`)                                         | The **display name** for the mode as it appears in the AI Code Orchestrator user interface. This should be human-readable and descriptive.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Description (`description`)                           | A **short, user-friendly summary** of the mode's purpose displayed in the mode selector UI.<br />- This text appears below the mode's name in the redesigned mode selector, offering users a quick understanding of the mode's function.<br />- Keep this concise and focused on what the mode does for the user.                                                                                                                                                                                                                                                                                                                                       |
+| Role Definition (`roleDefinition`)                    | Defines the **core identity and expertise** of the mode. This text is placed at the beginning of the system prompt.<br />- Its primary function is to define AI Code Orchestrator's personality and behavior when this mode is active.<br />- With the introduction of the `description` field, the `roleDefinition` should provide a detailed description of the mode's identity, while the `description` field handles the short summary for the UI.<br />- The `whenToUse` property now takes precedence for summarization in automated contexts like task orchestration.                                                                            |
+| Available Tools (`groups`)                            | Defines the **allowed toolsets and file access permissions** for the mode.<br />- In the UI, this corresponds to selecting which general categories of tools (like reading files, editing files, browsing, or executing commands) the mode can use.<br />- The UI shows which files can be edited in the 'Allowed files' section under each mode.<br />- File type restrictions for the "edit" group are typically managed via manual YAML/JSON configuration or by asking AI Code Orchestrator to set them up, as detailed in the [Property Details for `groups`](#groups).                                                                            |
+| When to Use (optional) (`whenToUse`)                  | (Optional) Provides **guidance for AI Code Orchestrator's automated decision-making**, particularly for mode selection and task orchestration.<br />- This text is used by AI Code Orchestrator, particularly the [`🪃 Orchestrator`](../basic-usage/using-modes.md#orchestrator-mode-aka-boomerang-mode) mode, for [orchestrating tasks](boomerang-tasks.md) (e.g., via the [`new_task`](../advanced-usage/available-tools/new-task.md) tool).<br />- It also helps AI Code Orchestrator choose which mode a delegated subtask should use.<br />- This field is **not displayed in the mode selector UI** - that's handled by the `description` field. |
+| Custom Instructions (optional) (`customInstructions`) | **Specific behavioral guidelines** or rules for the mode.<br />- These instructions are added near the end of the system prompt to further refine AI Code Orchestrator's behavior beyond the `roleDefinition`.<br />- This can be provided directly in the configuration or via separate instruction files.                                                                                                                                                                                                                                                                                                                                             |
+
+---
+
+## Import/Export Modes
+
+Easily share, back up, and template your custom modes. This feature lets you export any mode—and its associated rules—into a single, portable YAML file that you can import into any project.
+
+### Key Features
+
+- **Shareable Setups**: Package a mode and its rules into one file to easily share with your team.
+- **Easy Backups**: Save your custom mode configurations so you never lose them.
+- **Project Templates**: Create standardized mode templates for different types of projects.
+- **Simple Migration**: Move modes between your global settings and specific projects effortlessly.
+- **Flexible Slug Changes**: Change mode slugs in exported files without manual path editing.
+
+---
+
+### Use Case
+
+**Before**: Manually recreating custom modes and copying `.ai-code-orchestrator/rules-{slug}/` folders for each new project or team member. Changing slugs required manual path updates in the YAML file.
+
+**With this feature**: A single click exports a mode and all its rules to a YAML file. Another click imports it, setting everything up automatically. You can now change the slug in the exported file and the import process handles all path updates automatically.
+
+### How it Works
+
+The import/export functionality is managed from the **Modes** view.
+
+![Mode Export and Import Buttons](../img/custom-modes/custom-modes-5.png)
+
+#### Exporting a Mode
+
+1.  Navigate to the **Modes** view.
+2.  Select the mode you wish to export.
+3.  Click the **Export Mode** button (the download icon).
+4.  Choose a location to save the `.yaml` file.
+
+AI Code Orchestrator packages the mode's configuration and any rules found in the project's `.ai-code-orchestrator/rules-{slug}/` directory into the YAML file.
+
+#### Importing a Mode
+
+1.  Click the **Import Mode** button (the upload icon) in the **Modes** view.
+2.  Select the mode's YAML file.
+3.  Choose the import level in the dialog that appears:
+    ![Import Level Dialog](../img/custom-modes/custom-modes-6.png)
+    - **Project**: The mode is available only in the current workspace. It's added to the `.agent-modes` file, and its rules are saved to the `.ai-code-orchestrator/rules-{slug}/` directory within the project.
+    - **Global**: The mode is available in all your projects. It's added to your global settings, and its rules are stored in your system's global AI Code Orchestrator configuration directory (e.g., `~/.ai-code-orchestrator/rules-{slug}/`).
+
+**Note:** When exporting modes with rules, all file paths are normalized to use forward slashes for cross-platform compatibility. This ensures modes can be shared between team members using different operating systems.
+
+---
+
+### Exported YAML file format:
+
+```yaml
+customModes:
+    - slug: "my-custom-mode"
+      name: "My Custom Mode"
+      roleDefinition: "You are a helpful assistant."
+      groups: ["read", "edit"]
+      rulesFiles:
+          - relativePath: "rules-my-custom-mode/rules.md"
+            content: "These are the rules for my custom mode."
+```
+
+### Changing Slugs on Import
+
+When importing modes, you can change the slug in the exported YAML file before importing:
+
+1. **Export a mode** with slug `original-mode`
+2. **Edit the YAML file** and change the slug to `new-mode`
+3. **Import the file** - the import process will:
+    - Create the new mode with the updated slug
+    - Update rule file paths to match the new slug
+
+Note: The automatic slug change handling during import ensures that rule file paths are updated correctly when you change the mode slug in the exported file.
+
+---
+
+### FAQ
+
+**"What happens if I import a mode that has the same 'slug' as an existing one?"**
+
+- The existing mode will be overwritten with the configuration from the imported file.
+
+**"What's the main difference between a Global and Project import?"**
+
+- **Global** modes are available across all your VS Code projects. **Project** modes are specific to the workspace where they are imported and are stored in a `.agent-modes` file at the root of your project.
+
+**"Can I export built-in modes like Code or Architect?"**
+
+- Yes. If you have customized a built-in mode (e.g., by changing its instructions), you can export it to save your customizations.
+
+**"What if I import a mode with rules at the Global level?"**
+
+- The rules are still preserved. They are stored in a global `rules-{slug}` folder in your user home directory (e.g., `~/.ai-code-orchestrator/rules-my-custom-mode/`) instead of the project-specific `.ai-code-orchestrator` folder.
+
+**"How does the slug change feature work?"**
+
+- When you change the slug in an exported YAML file before importing, the import process updates the rule file paths to match the new slug. This ensures the mode works correctly with its new identity.
+
+---
+
+## Methods for Creating and Configuring Custom Modes
+
+You can create and configure custom modes in several ways:
+
+To configure modes, open the AI Code Orchestrator panel, click the Mode menu under the chatbox, then click the ⚙️. From there, use "Edit Global Modes" to open settings/custom_modes.yaml, or "Edit Project Modes (.agent-modes)" to open your workspace-level configuration.
+
+### 1. Ask AI Code Orchestrator! (Recommended)
+
+You can quickly create a basic custom mode by asking AI Code Orchestrator to do it for you. For example:
+
+```
+Create a new mode called "Documentation Writer". It should only be able to read files and write Markdown files.
+```
+
+AI Code Orchestrator will guide you through the process, prompting for necessary information for the properties described in the [What's Included in a Custom Mode?](#whats-included-in-a-custom-mode) table. AI Code Orchestrator will create the mode using the preferred YAML format. For fine-tuning or making specific adjustments later, you can use the Roles settings or manual configuration.
+
+### 2. Using the Roles Settings
+
+1.  **Open the Roles settings:** Click the mode menu under the chatbox, then click ⚙️ (or open Settings (⚙️) → **Roles**).
+2.  **Create New Mode:** Click the ➕ button to the right of the Modes heading.
+3.  **Fill in Fields:**
+
+<img src="../img/custom-modes/custom-modes-4.png" alt="Custom mode creation interface in the Roles settings" width="600" />
+
+    *The custom mode creation interface showing fields for name, slug, description, save location, role definition, available tools, custom instructions.*
+
+    The interface provides fields for `Name`, `Slug`, `Description`, `Save Location`, `Role Definition`, `When to Use (optional)`, `Available Tools`, and `Custom Instructions`. After filling these, click the "Create Mode" button. AI Code Orchestrator will save the new mode in YAML format.
+
+_Refer to the [What's Included in a Custom Mode?](#whats-included-in-a-custom-mode) table for conceptual explanations of each property. File type restrictions for the "edit" tool group can be added by asking AI Code Orchestrator or through manual YAML/JSON configuration._
+
+### 3. Manual Configuration (YAML & JSON)
+
+You can directly edit the configuration files to create or modify custom modes. This method offers the most control over all properties. AI Code Orchestrator now supports both YAML (preferred) and JSON formats.
+
+- **Global Modes:** Edit the `custom_modes.yaml` (preferred) or `custom_modes.json` file. From the Roles settings, click "Edit Global Modes" to open `settings/custom_modes.yaml`.
+- **Project Modes:** Edit the `.agent-modes` file (which can be YAML or JSON) in your project root. From the Roles settings, click "Edit Project Modes (.agent-modes)" to open or create the workspace file.
+
+These files define an array/list of custom modes.
+
+**YAML Example (`custom_modes.yaml` or `.agent-modes`):**
+
+```yaml
+customModes:
+    - slug: docs-writer
+      name: 📝 Documentation Writer
+      description: A specialized mode for writing and editing technical documentation.
+      roleDefinition: You are a technical writer specializing in clear documentation.
+      whenToUse: Use this mode for writing and editing documentation.
+      customInstructions: Focus on clarity and completeness in documentation.
+      groups:
+          - read
+          - - edit # First element of tuple
+            - fileRegex: \.(md|mdx)$ # Second element is the options object
+              description: Markdown files only
+    - slug: another-mode
+      name: Another Mode
+      # ... other properties
+```
+
+**JSON Alternative (`custom_modes.json` or `.agent-modes`):**
+
+```json
+{
+	"customModes": [
+		{
+			"slug": "docs-writer",
+			"name": "📝 Documentation Writer",
+			"description": "A specialized mode for writing and editing technical documentation.",
+			"roleDefinition": "You are a technical writer specializing in clear documentation.",
+			"whenToUse": "Use this mode for writing and editing documentation.",
+			"customInstructions": "Focus on clarity and completeness in documentation.",
+			"groups": ["read", ["edit", { "fileRegex": "\\.(md|mdx)$", "description": "Markdown files only" }]]
+		},
+		{
+			"slug": "another-mode",
+			"name": "Another Mode"
+		}
+	]
+}
+```
+
+### YAML/JSON Property Details
+
+##### `slug`
+
+- **Purpose:** A unique identifier for the mode.
+- **Format:** Must match the pattern `/^[a-zA-Z0-9-]+$/` (only letters, numbers, and hyphens).
+- **Usage:** Used internally and in file/directory names for mode-specific rules (e.g., `.ai-code-orchestrator/rules-{slug}/`).
+- **Recommendation:** Keep it short and descriptive.
+- **Note:** The `source` property is automatically added by the system and shouldn't be manually set.
+- _YAML Example:_ `slug: docs-writer`
+- _JSON Example:_ `"slug": "docs-writer"`
+
+##### `name`
+
+- **Purpose:** The display name shown in the AI Code Orchestrator UI.
+- **Format:** Can include spaces and proper capitalization.
+- _YAML Example:_ `name: 📝 Documentation Writer`
+- _JSON Example:_ `"name": "Documentation Writer"`
+
+##### `description`
+
+- **Purpose:** A short, user-friendly summary displayed below the mode name in the mode selector UI.
+- **Format:** Keep this concise and focused on what the mode does for the user.
+- **UI Display:** This text appears in the redesigned mode selector, offering users a quick understanding of the mode's function.
+- _YAML Example:_ `description: A specialized mode for writing and editing technical documentation.`
+- _JSON Example:_ `"description": "A specialized mode for writing and editing technical documentation."`
+
+##### `roleDefinition`
+
+- **Purpose:** Detailed description of the mode's role, expertise, and personality.
+- **Placement:** This text is placed at the beginning of the system prompt when the mode is active.
+- **Updated Role:** With the introduction of the `description` field, the `roleDefinition` should provide a detailed description of the mode's identity, while the `description` field handles the short summary for the UI. The `whenToUse` property now takes precedence for summarization in automated contexts.
+- _YAML Example (multi-line):_
+    ```yaml
+    roleDefinition: >-
+        You are a test engineer with expertise in:
+        - Writing comprehensive test suites
+        - Test-driven development
+    ```
+- _JSON Example:_ `"roleDefinition": "You are a technical writer specializing in clear documentation."`
+
+##### `groups`
+
+- **Purpose:** Array/list defining which tool groups the mode can access and any file restrictions.
+- **Available Tool Groups (Strings):** `"read"`, `"edit"`, `"command"`, `"mcp"`.
+- **Structure:** The `groups` property uses a specific structure:
+    - Simple string for unrestricted access: `"edit"`
+    - Tuple (two-element array) for restricted access: `["edit", { fileRegex: "pattern", description: "optional" }]`
+- **File Restrictions for "edit" group:**
+    - To apply file restrictions, the "edit" entry becomes a tuple (YAML list or JSON array) where the first element is `"edit"` and the second is a map/object defining the restrictions.
+    - `fileRegex`: A regular expression string to control which files the mode can edit.
+        - In YAML, typically use single backslashes for regex special characters (e.g., `\.md$`).
+        - In JSON, backslashes must be double-escaped (e.g., `\\.md$`).
+    - `description`: An optional string describing the restriction.
+    - For more complex patterns, see [Understanding Regex in Custom Modes](#understanding-regex-in-custom-modes).
+- _YAML Example:_
+    ```yaml
+    groups:
+        - read
+        - - edit # First element of tuple
+          - fileRegex: \.(js|ts)$ # Second element is the options object
+            description: JS/TS files only
+        - command
+    ```
+- _JSON Example:_
+    ```json
+    "groups": [
+      "read",
+      ["edit", { "fileRegex": "\\.(js|ts)$", "description": "JS/TS files only" }],
+      "command"
+    ]
+    ```
+
+##### `whenToUse`
+
+- **Purpose:** (Optional) Provides guidance for AI Code Orchestrator's automated decision-making, particularly for mode selection and task orchestration.
+- **Format:** A string describing ideal scenarios or task types for this mode.
+- **Usage:** This field is used by AI Code Orchestrator for automated decisions and is **not displayed in the mode selector UI** - that's handled by the `description` field. If populated, AI Code Orchestrator uses this description to choose modes for delegated subtasks; otherwise, the first sentence of `roleDefinition` is used.
+- _YAML Example:_ `whenToUse: This mode is best for refactoring Python code.`
+- _JSON Example:_ `"whenToUse": "This mode is best for refactoring Python code."`
+
+##### `customInstructions`
+
+- **Purpose:** A string containing additional behavioral guidelines for the mode.
+- **Placement:** This text is added near the end of the system prompt.
+- **Supplementing:** Can be supplemented by [Mode-Specific Instructions via Files/Directories](#mode-specific-instructions-via-filesdirectories).
+- _YAML Example (multi-line):_
+    ```yaml
+    customInstructions: |-
+        When writing tests:
+        - Use describe/it blocks
+        - Include meaningful descriptions
+    ```
+- _JSON Example:_ `"customInstructions": "Focus on explaining concepts and providing examples."`
+
+### Benefits of YAML Format
+
+YAML is now the preferred format for defining custom modes due to several advantages over JSON:
+
+- **Readability:** YAML's indentation-based structure is often easier for humans to read and understand complex configurations.
+- **Comments:** YAML allows for comments (lines starting with `#`), making it possible to annotate your mode definitions.
+    ```yaml
+    customModes:
+        - slug: security-review
+          name: 🔒 Security Reviewer
+          # This mode is restricted to read-only access
+          roleDefinition: You are a security specialist reviewing code for vulnerabilities.
+          whenToUse: Use for security reviews and vulnerability assessments.
+          # Only allow reading files, no editing permissions
+          groups:
+              - read
+    ```
+- **Multi-line Strings:** YAML provides cleaner syntax for multi-line strings (e.g., for `roleDefinition` or `customInstructions`) using `|` (literal block) or `>` (folded block).
+    ```yaml
+    customModes:
+        - slug: test-engineer
+          name: 🧪 Test Engineer
+          roleDefinition: >-
+              You are a test engineer with expertise in:
+              - Writing comprehensive test suites
+              - Test-driven development
+              - Integration testing
+              - Performance testing
+          customInstructions: |-
+              When writing tests:
+              - Use describe/it blocks
+              - Include meaningful descriptions
+              - Test edge cases
+              - Ensure proper coverage
+          # ... other properties
+    ```
+- **Less Punctuation:** YAML generally requires less punctuation (like commas and braces) compared to JSON, reducing syntax errors.
+- **Editor Support:** Most modern code editors provide excellent syntax highlighting and validation for YAML files, further enhancing readability and reducing errors.
+
+While JSON is still fully supported and won't be deprecated, new modes created via the UI or by asking AI Code Orchestrator will default to YAML. Both `.agent-modes` files and global configuration files can be either YAML or JSON format.
+
+#### Tips for Working with YAML
+
+When editing YAML manually, keep these points in mind:
+
+- **Indentation is Key:** YAML uses indentation (spaces, not tabs) to define structure. Incorrect indentation is the most common source of errors. Ensure consistent spacing for nested elements.
+- **Colons for Key-Value Pairs:** Keys must be followed by a colon and a space (e.g., `slug: my-mode`).
+- **Hyphens for List Items:** List items start with a hyphen and a space (e.g., `- read`).
+- **Validate Your YAML:** If you encounter issues, use an online YAML validator or your editor's built-in validation to check for syntax errors.
+
+### Migration to YAML Format
+
+- **Global Modes:** The automatic migration from `custom_modes.json` to `custom_modes.yaml` happens only for global modes when AI Code Orchestrator starts up, under these conditions:
+
+    1.  AI Code Orchestrator starts up.
+    2.  A `custom_modes.json` file exists.
+    3.  No `custom_modes.yaml` file exists yet.
+        The migration process reads the existing JSON file, converts it to YAML format, creates a new `custom_modes.yaml` file, and preserves the original JSON file (e.g., by renaming it) for rollback purposes. If `custom_modes.yaml` already exists, it will be used, and no automatic migration of `custom_modes.json` will occur.
+
+- **Project Modes (`.agent-modes`):**
+    - **No automatic startup migration:** Unlike global modes, project-specific `.agent-modes` files are not automatically converted from JSON to YAML when AI Code Orchestrator starts. Manual conversion is required for existing JSON `.agent-modes` files.
+    - **Format Detection:** AI Code Orchestrator can read `.agent-modes` files in either YAML or JSON format. AI Code Orchestrator automatically detects the format of `.agent-modes` files by attempting to parse them as YAML first.
+    - **Conversion on UI Edit:** If you edit a project-specific mode through the AI Code Orchestrator UI (e.g., via the Roles settings), and the existing `.agent-modes` file is in JSON format, AI Code Orchestrator will save the changes in YAML format. This effectively converts the file to YAML. The original JSON content will be overwritten with YAML.
+    - **Manual Conversion:** If you want to convert an existing `.agent-modes` JSON file to YAML without making UI edits, you'll need to do this manually. You can:
+        1.  Open your existing JSON `.agent-modes` file.
+        2.  Convert its content to YAML (you can ask AI Code Orchestrator to help with this, or use an online converter).
+        3.  Replace the content of your `.agent-modes` file with the new YAML content, or rename the old file (e.g., `.agent-modes.json.bak`) and save the new content into a file named `.agent-modes`.
+            Ensure the resulting YAML is valid.
+
+> [!TIP]
+> For manual conversions of `.agent-modes` files, you can use online JSON to YAML converters or ask AI Code Orchestrator to help reformat a specific mode configuration from JSON to YAML. Always validate your YAML before saving.
+
+---
+
+## Mode-Specific Instructions via Files/Directories
+
+> [!NOTE] > **Mode-Specific Instruction File Locations**
+>
+> You can provide instructions for custom modes using dedicated files or directories within your workspace. This allows for better organization and version control compared to only using the `customInstructions` property.
+>
+> **Preferred Method: Directory (`.ai-code-orchestrator/rules-{mode-slug}/`)**
+>
+> ```
+> .
+> ├── .ai-code-orchestrator/
+> │   └── rules-docs-writer/  # Example for mode slug "docs-writer"
+> │       ├── 01-style-guide.md
+> │       └── 02-formatting.txt
+> └── ... (other project files)
+> ```
+>
+> **Fallback Method: Single File (`.aicorules-{mode-slug}`)**
+>
+> ```
+> .
+> ├── .aicorules-docs-writer  # Example for mode slug "docs-writer"
+> └── ... (other project files)
+> ```
+>
+> **Legacy Fallback: `.clinerules-{mode-slug}`**
+> For backward compatibility, the system also checks for `.clinerules-{mode-slug}` files as an additional fallback, though this is not recommended for new projects.
+>
+> The directory method takes precedence if it exists and contains files.
+>
+> **Rules Directory Scope:**
+>
+> - **Global modes:** Rules are stored in `~/.ai-code-orchestrator/rules-{slug}/` (note the trailing slash)
+> - **Project modes:** Rules are stored in `{workspace}/.ai-code-orchestrator/rules-{slug}/` (note the trailing slash)
+
+In addition to the `customInstructions` property, you can provide mode-specific instructions via files in your workspace. This is particularly useful for:
+
+- Organizing lengthy or complex instructions into multiple, manageable files.
+- Managing instructions easily with version control.
+- Allowing non-technical team members to modify instructions without editing YAML/JSON.
+
+There are two ways AI Code Orchestrator loads these instructions, with a clear preference for the newer directory-based method:
+
+**1. Preferred Method: Directory-Based Instructions (`.ai-code-orchestrator/rules-{mode-slug}/`)**
+
+- **Structure:** Create a directory named `.ai-code-orchestrator/rules-{mode-slug}/` in your workspace root. Replace `{mode-slug}` with your mode's slug (e.g., `.ai-code-orchestrator/rules-docs-writer/`).
+- **Content:** Place one or more files (e.g., `.md`, `.txt`) containing your instructions inside this directory. You can organize instructions further using subdirectories. Files within the `.ai-code-orchestrator/rules-{mode-slug}/` directory are read recursively and appended in alphabetical order based on filename (case-insensitive).
+- **Loading:** All instruction files found within this directory structure will be loaded and applied to the specified mode. System files (`.DS_Store`, `.swp`, etc.) and cache files are automatically excluded.
+- **Advanced Features:** The system supports symbolic links with cycle detection for advanced file organization.
+
+**2. Fallback (Backward Compatibility): File-Based Instructions (`.aicorules-{mode-slug}`)**
+
+- **Structure:** If the `.ai-code-orchestrator/rules-{mode-slug}/` directory **does not exist or is empty**, AI Code Orchestrator will look for a single file named `.aicorules-{mode-slug}` in your workspace root (e.g., `.aicorules-docs-writer`).
+- **Loading:** If found, the content of this single file will be loaded as instructions for the mode.
+
+**Precedence:**
+
+- The **directory-based method (`.ai-code-orchestrator/rules-{mode-slug}/`) takes precedence**. If this directory exists and contains files, any corresponding root-level `.aicorules-{mode-slug}` file will be **ignored** for that mode.
+- This ensures that projects migrated to the new directory structure behave predictably, while older projects using the single-file method remain compatible.
+
+**Combining with `customInstructions`:**
+
+- Instructions loaded from either the directory or the fallback file are combined with the `customInstructions` property defined in the mode's configuration.
+- Typically, the content from the files/directories is appended after the content from the `customInstructions` property.
+
+---
+
+## Configuration Precedence
+
+Mode configurations are applied in this order:
+
+1. Project-level mode configurations (from `.agent-modes` - YAML or JSON)
+2. Global mode configurations (from `custom_modes.yaml`, then `custom_modes.json` if YAML not found)
+3. Default mode configurations
+
+**Important:** When modes with the same slug exist in both `.agent-modes` and global settings, the `.agent-modes` version completely overrides the global one. This applies to ALL properties, not just some. For instance, if you have a global 'code' mode and a project-specific 'code' mode in `.agent-modes`, the project version will be used when working in that project, and all properties from the global version are ignored.
+
+You can override any default mode by including a mode with the same slug in your global or project-specific configuration.
+
+- **Note on Instruction Files:** Within the loading of mode-specific instructions from the filesystem, the directory `.ai-code-orchestrator/rules-{mode-slug}/` takes precedence over the single file `.aicorules-{mode-slug}` found in the workspace root.
+
+---
+
+## Overriding Default Modes
+
+You can override AI Code Orchestrator's built-in modes (`🪃 Orchestrator`, `🏗️ Architect`, `💻 Code`, `❓ Ask`, `🪲 Debug`, `🔍 Reviewer`, `🌐 Translate`) with customized versions. This is done by creating a custom mode with the same slug as a default mode (e.g., `code`, `debug`).
+
+### Overriding Modes Globally
+
+To customize a default mode across all your projects:
+
+1. **Open the Roles settings:** Click the mode menu under the chatbox, then click ⚙️ (or open Settings (⚙️) → **Roles**).
+2. **Edit Global Modes:** Click "Edit Global Modes" to open `settings/custom_modes.yaml` (or `custom_modes.json`).
+3. **Add Your Override:**
+
+**YAML Example:**
+
+```yaml
+customModes:
+    - slug: code # Matches the default 'code' mode slug
+      name: 💻 Code (Global Override) # Custom display name
+      roleDefinition: You are a software engineer with global-specific constraints.
+      whenToUse: This globally overridden code mode is for JS/TS tasks.
+      customInstructions: Focus on project-specific JS/TS development.
+      groups:
+          - read
+          - - edit
+            - fileRegex: \.(js|ts)$
+              description: JS/TS files only
+```
+
+**JSON Alternative:**
+
+```json
+{
+	"customModes": [
+		{
+			"slug": "code",
+			"name": "💻 Code (Global Override)",
+			"roleDefinition": "You are a software engineer with global-specific constraints",
+			"whenToUse": "This globally overridden code mode is for JS/TS tasks.",
+			"customInstructions": "Focus on project-specific JS/TS development",
+			"groups": ["read", ["edit", { "fileRegex": "\\.(js|ts)$", "description": "JS/TS files only" }]]
+		}
+	]
+}
+```
+
+This example replaces the default `💻 Code` mode with a version restricted to JavaScript and TypeScript files.
+
+### Project-Specific Mode Override
+
+To override a default mode for just one project:
+
+1. **Open the Roles settings:** Click the mode menu under the chatbox, then click ⚙️ (or open Settings (⚙️) → **Roles**).
+2. **Edit Project Modes (.agent-modes):** Click "Edit Project Modes (.agent-modes)" to open or create the workspace file.
+3. **Add Your Override:**
+
+**YAML Example:**
+
+```yaml
+customModes:
+    - slug: code # Matches the default 'code' mode slug
+      name: 💻 Code (Project-Specific) # Custom display name
+      roleDefinition: You are a software engineer with project-specific constraints for this project.
+      whenToUse: This project-specific code mode is for Python tasks within this project.
+      customInstructions: Adhere to PEP8 and use type hints.
+      groups:
+          - read
+          - - edit
+            - fileRegex: \.py$
+              description: Python files only
+          - command
+```
+
+**JSON Alternative:**
+
+```json
+{
+	"customModes": [
+		{
+			"slug": "code",
+			"name": "💻 Code (Project-Specific)",
+			"roleDefinition": "You are a software engineer with project-specific constraints for this project.",
+			"whenToUse": "This project-specific code mode is for Python tasks within this project.",
+			"customInstructions": "Adhere to PEP8 and use type hints.",
+			"groups": ["read", ["edit", { "fileRegex": "\\.py$", "description": "Python files only" }], "command"]
+		}
+	]
+}
+```
+
+Project-specific overrides take precedence over global overrides.
+
+### Common Use Cases for Overriding Default Modes
+
+- **Restricting file access:** Limit a mode to specific file types.
+- **Specializing behavior:** Customize expertise for your tech stack.
+- **Adding custom instructions:** Integrate project standards.
+- **Changing available tools:** Remove tools to prevent unwanted operations.
+
+> [!TIP]
+> When overriding default modes, test carefully. Consider backing up configurations before major changes.
+
+---
+
+## Understanding Regex in Custom Modes
+
+Regular expressions (`fileRegex`) offer fine-grained control over file editing permissions.
+
+> [!TIP] > **Let AI Code Orchestrator Build Your Regex Patterns**
+>
+> Instead of writing complex regex manually, ask AI Code Orchestrator:
+>
+> ```
+> Create a regex pattern that matches JavaScript files but excludes test files
+> ```
+>
+> AI Code Orchestrator will generate the pattern. Remember to adapt it for YAML (usually single backslashes) or JSON (double backslashes).
+
+When you specify `fileRegex`, you're creating a pattern that file paths must match.
+
+**Important Rules for `fileRegex`:**
+
+- **Escaping in JSON:** In JSON strings, backslashes (`\`) must be double-escaped (e.g., `\\.md$`).
+- **Escaping in YAML:** In unquoted or single-quoted YAML strings, a single backslash is usually sufficient for regex special characters (e.g., `\.md$`). However, YAML regex patterns in quoted strings may need double escaping similar to JSON.
+- **Path Matching:** Patterns match against the full relative file path from your workspace root (e.g., `src/components/button.js`).
+- **Case Sensitivity:** Regex patterns are case-sensitive by default.
+- **Validation:** Invalid regex patterns are rejected with an "Invalid regular expression pattern" error message.
+
+**Common Pattern Examples:**
+In the table below, the 'Pattern (Conceptual / YAML-like)' column shows patterns as they would appear in YAML. For JSON, remember to double-escape backslashes.
+
+| Pattern (Conceptual / YAML-like) | JSON `fileRegex` Value              | Matches                                   | Doesn't Match                             |
+| -------------------------------- | ----------------------------------- | ----------------------------------------- | ----------------------------------------- | -------------------------- | ------------------------------- |
+| `\.md$`                          | `"\\.md$"`                          | `readme.md`, `docs/guide.md`              | `script.js`, `readme.md.bak`              |
+| `^src/.*`                        | `"^src/.*"`                         | `src/app.js`, `src/components/button.tsx` | `lib/utils.js`, `test/src/mock.js`        |
+| `\.(css                          | scss)$`                             | "\\.(css                                  | scss)$"                                   | `styles.css`, `theme.scss` | `styles.less`, `styles.css.map` |
+| `docs/.*\.md$`                   | `"docs/.*\\.md$"`                   | `docs/guide.md`, `docs/api/reference.md`  | `guide.md`, `src/docs/notes.md`           |
+| `^(?!.*(test\|spec))\.(js\|ts)$` | `"^(?!.*(test\|spec))\\.(js\|ts)$"` | `app.js`, `utils.ts`                      | `app.test.js`, `utils.spec.js`, `app.jsx` |
+
+**Key Regex Building Blocks:**
+
+- `\.`: Matches a literal dot. (YAML: `\.`, JSON: `\\.`)
+- `$`: Matches the end of the string.
+- `^`: Matches the beginning of the string.
+- `.*`: Matches any character (except newline) zero or more times.
+- `(a|b)`: Matches either "a" or "b". (e.g., `\.(js|ts)$`)
+- `(?!...)`: Negative lookahead.
+
+**Testing Your Patterns:**
+
+1.  Test on sample file paths. Online regex testers are helpful.
+2.  Remember the escaping rules for JSON vs. YAML.
+3.  Start simple and build complexity.
+
+> [!NOTE] > **Error Handling**
+>
+> When a mode attempts to edit a file that doesn't match its `fileRegex` pattern, you'll see a `FileRestrictionError` that includes:
+>
+> - The mode name
+> - The allowed file pattern
+> - The description (if provided)
+> - The attempted file path
+> - The tool that was blocked
+>
+> This information helps you understand why your operation was blocked and what file types are allowed for the current mode.
+
+---
+
+## Additional Features
+
+### Built-in Mode Customization
+
+When exporting built-in modes (like Code, Architect, Ask, Debug), any customizations you've made are included in the export. This allows you to share your personalized versions of built-in modes with others.
+
+### Mode Deletion and Rules
+
+When deleting a mode through the UI, AI Code Orchestrator will prompt you about deleting the associated rules folder, showing the exact path before deletion. This helps prevent accidental loss of custom instructions.
+
+### Global Rules Directory
+
+In addition to mode-specific rules directories, there's also a generic `.ai-code-orchestrator/rules/` directory (without mode suffix) that can be used for shared rules across all modes.
+
+### Troubleshooting
+
+**Common Issues:**
+
+- **Mode not appearing:** After creating or importing a mode, you may need to reload the VS Code window for it to appear in the mode selector.
+- **Invalid regex patterns:** If your `fileRegex` pattern is invalid, you'll receive an error message. Test your patterns using online regex testers before applying them.
+- **Precedence confusion:** Remember that project modes completely override global modes with the same slug - no properties are merged.

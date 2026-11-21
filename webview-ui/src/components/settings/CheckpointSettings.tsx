@@ -46,9 +46,7 @@ export const CheckpointSettings = ({
 					</VSCodeCheckbox>
 					<div className="text-vscode-descriptionForeground text-sm mt-1">
 						<Trans i18nKey="settings:checkpoints.enable.description">
-							<VSCodeLink
-								href={buildDocLink("features/checkpoints", "settings_checkpoints")}
-								style={{ display: "inline" }}>
+							<VSCodeLink href={buildDocLink("features/checkpoints")} style={{ display: "inline" }}>
 								{" "}
 							</VSCodeLink>
 						</Trans>
