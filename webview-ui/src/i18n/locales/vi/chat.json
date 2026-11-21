@@ -331,16 +331,16 @@
 		"support": "Hãy ủng hộ AI Code Orchestrator bằng cách gắn sao cho chúng tôi trên <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} mang đến những cải thiện chung, bản sửa hữu ích và trải nghiệm mượt mà hơn.",
-			"continuity": "Tác vụ hoàn thành đáng tin cậy hơn, và dễ dàng tiếp tục từ chỗ bạn đã dừng.",
-			"alternatives": "Công việc hằng ngày trở nên rõ ràng và nhất quán hơn.",
+			"intro": "AI Code Orchestrator {{version}} giúp làm việc với các vai trò dễ đoán hơn và các thao tác hằng ngày đáng tin cậy hơn.",
+			"continuity": "Dừng, Nén ngữ cảnh và liên kết tới tác vụ con giờ hoạt động đúng như mong đợi, và các lỗi gọi công cụ được hiển thị rõ ràng thay vì âm thầm thất bại.",
+			"alternatives": "Mỗi vai trò giữ hồ sơ và mô hình riêng, độc lập với cuộc trò chuyện.",
 			"signoff": "Chúc bạn lập trình vui vẻ!"
 		},
 		"release": {
 			"heading": "Tính năng mới:",
-			"gpt55": "Cách làm việc rõ ràng hơn: mỗi vai trò dễ hiểu hơn, để bạn chọn đúng sự trợ giúp cho tác vụ.",
-			"claudeOpus47": "Tác vụ đáng tin cậy hơn: việc đã xong vẫn giữ nguyên trạng thái hoàn thành, và kết quả quay lại mượt mà hơn.",
-			"checkpointNav": "Trải nghiệm mượt mà hơn: bắt đầu lại và chuyển giữa các tác vụ trở nên đơn giản hơn."
+			"gpt55": "Ủy quyền rõ ràng hơn: công việc cho vai trò khác được giao dưới dạng tác vụ con, và tác vụ hiện tại giữ nguyên chế độ.",
+			"claudeOpus47": "Điều khiển đáng tin cậy: Dừng hoạt động ngay lần nhấp đầu tiên, và Nén ngữ cảnh không còn bị kẹt.",
+			"checkpointNav": "Vai trò độc lập: mỗi vai trò dùng hồ sơ và mô hình riêng, và có thể bật gọi công cụ song song theo từng hồ sơ."
 		},
 		"cloudAgents": {
 			"heading": "Mới trên Cloud:",

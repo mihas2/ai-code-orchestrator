@@ -13,7 +13,7 @@ export default {
 	function: {
 		name: "skill",
 		description: SKILL_DESCRIPTION,
-		strict: true,
+		strict: false,
 		parameters: {
 			type: "object",
 			properties: {
@@ -22,11 +22,11 @@ export default {
 					description: SKILL_PARAMETER_DESCRIPTION,
 				},
 				args: {
-					type: ["string", "null"],
+					type: "string",
 					description: ARGS_PARAMETER_DESCRIPTION,
 				},
 			},
-			required: ["skill", "args"],
+			required: ["skill"],
 			additionalProperties: false,
 		},
 	},

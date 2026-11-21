@@ -2,9 +2,28 @@ import type { ToolName, ModeConfig, ExperimentId, GroupOptions, GroupEntry } fro
 import { toolNames as validToolNames } from "@ai-code-orchestrator/types"
 import { customToolRegistry } from "@ai-code-orchestrator/core"
 
-import { type Mode, FileRestrictionError, getModeBySlug, getGroupName } from "../../shared/modes"
+import { type Mode, FileRestrictionError, getModeBySlug, getGroupName, getToolsForMode } from "../../shared/modes"
 import { EXPERIMENT_IDS } from "../../shared/experiments"
 import { TOOL_GROUPS, ALWAYS_AVAILABLE_TOOLS, TOOL_ALIASES } from "../../shared/tools"
+
+/**
+ * Tool names to suggest to the model after an unknown tool call: the tools the mode can
+ * use, without removed or experiment-gated tools that are not enabled.
+ */
+function getAvailableToolNamesForHint(
+	mode: string,
+	customModes: ModeConfig[] | undefined,
+	experiments: Record<string, boolean> | undefined,
+): string[] {
+	const modeConfig = getModeBySlug(mode, customModes ?? [])
+	const tools = modeConfig ? getToolsForMode(modeConfig.groups) : [...ALWAYS_AVAILABLE_TOOLS]
+	return tools.filter((tool) => {
+		if (tool === REMOVED_SWITCH_MODE_TOOL) return false
+		if (tool === "run_slash_command" && !experiments?.runSlashCommand) return false
+		if (tool === "generate_image" && !experiments?.imageGeneration) return false
+		return true
+	})
+}
 
 /**
  * Checks if a tool name is a valid, known tool.
@@ -29,6 +48,8 @@ export function isValidToolName(toolName: string, experiments?: Record<string, b
 	return false
 }
 
+const REMOVED_SWITCH_MODE_TOOL = "switch_mode"
+
 export interface ToolValidationOptions {
 	strictMcp?: boolean
 	mcpAllowlist?: Record<string, readonly string[]>
@@ -44,11 +65,20 @@ export function validateToolUse(
 	includedTools?: string[],
 	options?: ToolValidationOptions,
 ): void {
+	// switch_mode was removed: changing mode mid-task broke the orchestration flow
+	// (the model lost track of the active mode). Old histories or models may still
+	// emit it, so point them at the supported delegation path instead.
+	if ((toolName as string) === REMOVED_SWITCH_MODE_TOOL) {
+		throw new Error(
+			`The "switch_mode" tool has been removed and cannot be used. To hand work to another mode, use the new_task tool to create a subtask in that mode; otherwise continue in the current mode.`,
+		)
+	}
+
 	// First, check if the tool name is actually a valid/known tool
 	// This catches completely invalid tool names like "edit_file" that don't exist
 	if (!isValidToolName(toolName, experiments)) {
 		throw new Error(
-			`Unknown tool "${toolName}". This tool does not exist. Please use one of the available tools: ${validToolNames.join(", ")}.`,
+			`Unknown tool "${toolName}". This tool does not exist. Tools available in ${mode} mode: ${getAvailableToolNamesForHint(mode, customModes, experiments).join(", ")}. Tools of connected MCP servers are named mcp--<server>--<tool>.`,
 		)
 	}
 

@@ -220,7 +220,7 @@ describe("XAIHandler", () => {
 					}),
 				],
 				tool_choice: "auto",
-				parallel_tool_calls: true,
+				parallel_tool_calls: false,
 			}),
 		)
 	})

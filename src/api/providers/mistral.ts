@@ -85,11 +85,13 @@ export class MistralHandler extends BaseProvider implements SingleCompletionHand
 			temperature: number
 			tools?: MistralTool[]
 			toolChoice?: "auto" | "none" | "any" | "required" | { type: "function"; function: { name: string } }
+			parallelToolCalls?: boolean
 		} = {
 			model,
 			messages: [{ role: "system", content: systemPrompt }, ...convertToMistralMessages(messages)],
 			maxTokens: maxTokens ?? info.maxTokens,
 			temperature,
+			parallelToolCalls: metadata?.parallelToolCalls ?? false,
 		}
 
 		requestOptions.tools = this.convertToolsForMistral(metadata?.tools ?? [])

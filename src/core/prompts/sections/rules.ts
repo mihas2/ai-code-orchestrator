@@ -61,6 +61,16 @@ When asked about your creator, vendor, or company, respond with:
 - "I don't have information about specific vendors"`
 }
 
+/**
+ * Rule about waiting for tool results; must agree with the parallel tool call setting.
+ */
+function getToolResultRule(parallelToolCalls: boolean): string {
+	if (parallelToolCalls) {
+		return "Wait for the results of tool calls before any step that depends on them, including MCP operations, and confirm success instead of assuming it. Independent calls may be issued together in one response."
+	}
+	return "It is critical you wait for the result after each tool use, including MCP operations, in order to confirm the success of the tool use before proceeding. For example, if asked to make a todo app, you would create a file, wait for the result confirming it was created successfully, then create another file if needed."
+}
+
 export function getRulesSection(cwd: string, settings?: SystemPromptSettings): string {
 	// Get shell-appropriate command chaining operator
 	const chainOp = getCommandChainOperator()
@@ -74,7 +84,7 @@ RULES
 - All file paths must be relative to this directory. However, commands may change directories in terminals, so respect working directory specified by the response to execute_command.
 - You cannot \`cd\` into a different directory to complete a task. You are stuck operating from '${cwd.toPosix()}', so be sure to pass in the correct 'path' parameter when using tools that require a path.
 - Do not use the ~ character or $HOME to refer to the home directory.
-- Before using the execute_command tool, you must first think about the SYSTEM INFORMATION context provided to understand the user's environment and tailor your commands to ensure they are compatible with their system. You must also consider if the command you need to run should be executed in a specific directory outside of the current working directory '${cwd.toPosix()}', and if so prepend with \`cd\`'ing into that directory ${chainOp} then executing the command (as one command since you are stuck operating from '${cwd.toPosix()}'). For example, if you needed to run \`npm install\` in a project outside of '${cwd.toPosix()}', you would need to prepend with a \`cd\` i.e. pseudocode for this would be \`cd (path to project) ${chainOp} (command, in this case npm install)\`.${chainNote ? ` ${chainNote}` : ""}
+- Before using the execute_command tool, you must first think about the SYSTEM INFORMATION context provided to understand the user's environment and tailor your commands to ensure they are compatible with their system. You must also consider if the command you need to run should be executed in a specific directory other than the current working directory '${cwd.toPosix()}'; if so, pass that directory in the execute_command \`cwd\` parameter (or prepend \`cd (path to project) ${chainOp} (command)\` as one command).${chainNote ? ` ${chainNote}` : ""}
 - Some modes have restrictions on which files they can edit. If you attempt to edit a restricted file, the operation will be rejected with a FileRestrictionError that will specify which file patterns are allowed for the current mode.
 - Be sure to consider the type of project (e.g. Python, JavaScript, web application) when determining the appropriate structure and files to include. Also consider what files may be most relevant to accomplishing the task, for example looking at a project's manifest file would help you understand the project's dependencies, which you could incorporate into any code you write.
   * For example, in architect mode trying to edit app.js would be rejected because architect mode can only edit files matching "\\.md$"
@@ -89,6 +99,5 @@ RULES
 - When presented with images, utilize your vision capabilities to thoroughly examine them and extract meaningful information. Incorporate these insights into your thought process as you accomplish the user's task.
 - At the end of each user message, you will automatically receive environment_details. This information is not written by the user themselves, but is auto-generated to provide potentially relevant context about the project structure and environment. While this information can be valuable for understanding the project context, do not treat it as a direct part of the user's request or response. Use it to inform your actions and decisions, but don't assume the user is explicitly asking about or referring to this information unless they clearly do so in their message. When using environment_details, explain your actions clearly to ensure the user understands, as they may not be aware of these details.
 - Before executing commands, check the "Actively Running Terminals" section in environment_details. If present, consider how these active processes might impact your task. For example, if a local development server is already running, you wouldn't need to start it again. If no active terminals are listed, proceed with command execution as normal.
-- MCP operations should be used one at a time, similar to other tool usage. Wait for confirmation of success before proceeding with additional operations.
-- It is critical you wait for the user's response after each tool use, in order to confirm the success of the tool use. For example, if asked to make a todo app, you would create a file, wait for the user's response it was created successfully, then create another file if needed, wait for the user's response it was created successfully, etc.${settings?.isStealthModel ? getVendorConfidentialitySection() : ""}`
+- ${getToolResultRule(settings?.parallelToolCalls === true)}${settings?.isStealthModel ? getVendorConfidentialitySection() : ""}`
 }

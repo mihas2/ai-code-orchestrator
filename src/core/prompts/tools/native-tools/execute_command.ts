@@ -7,17 +7,17 @@ Parameters:
 - cwd: (optional) The working directory to execute the command in
 - timeout: (optional) Timeout in seconds. When exceeded, the command keeps running in the background and you receive the output so far. Set this for commands that may run indefinitely, such as dev servers or file watchers, so you can proceed without waiting for them to exit.
 
-Example: Executing npm run dev
-{ "command": "npm run dev", "cwd": null, "timeout": null }
+Example: Running the test suite
+{ "command": "npm test" }
 
 Example: Executing ls in a specific directory if directed
-{ "command": "ls -la", "cwd": "/home/user/projects", "timeout": null }
+{ "command": "ls -la", "cwd": "/home/user/projects" }
 
 Example: Using relative paths
-{ "command": "touch ./testdata/example.file", "cwd": null, "timeout": null }
+{ "command": "touch ./testdata/example.file" }
 
-Example: Running a build with a timeout
-{ "command": "npm run build", "cwd": null, "timeout": 30 }`
+Example: Starting a dev server that keeps running (returns after 15 seconds, server stays in the background)
+{ "command": "npm run dev", "timeout": 15 }`
 
 const COMMAND_PARAMETER_DESCRIPTION = `Shell command to execute`
 
@@ -30,7 +30,7 @@ export default {
 	function: {
 		name: "execute_command",
 		description: EXECUTE_COMMAND_DESCRIPTION,
-		strict: true,
+		strict: false,
 		parameters: {
 			type: "object",
 			properties: {
@@ -39,15 +39,15 @@ export default {
 					description: COMMAND_PARAMETER_DESCRIPTION,
 				},
 				cwd: {
-					type: ["string", "null"],
+					type: "string",
 					description: CWD_PARAMETER_DESCRIPTION,
 				},
 				timeout: {
-					type: ["number", "null"],
+					type: "number",
 					description: TIMEOUT_PARAMETER_DESCRIPTION,
 				},
 			},
-			required: ["command", "cwd", "timeout"],
+			required: ["command"],
 			additionalProperties: false,
 		},
 	},

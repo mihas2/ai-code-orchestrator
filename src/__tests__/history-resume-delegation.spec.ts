@@ -221,6 +221,66 @@ describe("History resume delegation - parent metadata transitions", () => {
 		expect(apiCall.messages).toHaveLength(2) // 1 original + 1 injected
 	})
 
+	it("reopenParentFromDelegation links subtask_result and its newTask ask to the exact child", async () => {
+		const provider = {
+			contextProxy: { globalStorageUri: { fsPath: "/storage" } },
+			log: vi.fn(),
+			getTaskWithId: vi.fn().mockResolvedValue({
+				historyItem: {
+					id: "p1",
+					status: "delegated",
+					awaitingChildId: "c2",
+					childIds: ["c1", "c2"],
+					ts: 100,
+					task: "Parent",
+					tokensIn: 0,
+					tokensOut: 0,
+					totalCost: 0,
+				},
+			}),
+			emit: vi.fn(),
+			getCurrentTask: vi.fn(() => ({ taskId: "c2" })),
+			removeClineFromStack: vi.fn().mockResolvedValue(undefined),
+			createTaskWithHistoryItem: vi.fn().mockResolvedValue({
+				taskId: "p1",
+				resumeAfterDelegation: vi.fn().mockResolvedValue(undefined),
+				overwriteClineMessages: vi.fn().mockResolvedValue(undefined),
+				overwriteApiConversationHistory: vi.fn().mockResolvedValue(undefined),
+				emit: vi.fn(),
+			}),
+			updateTaskHistory: vi.fn().mockResolvedValue([]),
+			clineStack: [{ taskId: "p1", instanceId: "paused-p1" }],
+			taskEventListeners: new Map(),
+			performPreparationTasks: vi.fn().mockResolvedValue(undefined),
+			addClineToStack: vi.fn().mockResolvedValue(undefined),
+		} as unknown as ClineProvider
+
+		const newTaskText = JSON.stringify({ tool: "newTask", mode: "code", content: "work" })
+		vi.mocked(readTaskMessages).mockResolvedValue([
+			{ type: "ask", ask: "tool", text: newTaskText, ts: 10 },
+			{ type: "say", say: "subtask_result", text: "first", ts: 20, childTaskId: "c1" },
+			{ type: "ask", ask: "tool", text: JSON.stringify({ tool: "readFile" }), ts: 30 },
+			{ type: "ask", ask: "tool", text: newTaskText, ts: 40 },
+			{ type: "say", say: "user_feedback", text: "Delegating to child task...", ts: 41 },
+		] as any)
+		vi.mocked(readApiMessages).mockResolvedValue([])
+
+		await (ClineProvider.prototype as any).reopenParentFromDelegation.call(provider, {
+			parentTaskId: "p1",
+			childTaskId: "c2",
+			completionResultSummary: "second",
+		})
+
+		const saved = vi.mocked(saveTaskMessages).mock.calls[0][0].messages as any[]
+		expect(saved.find((m) => m.ts === 40).childTaskId).toBe("c2")
+		// Messages belonging to the previous delegation are left untouched.
+		expect(saved.find((m) => m.ts === 10).childTaskId).toBeUndefined()
+		expect(saved.find((m) => m.ts === 30).childTaskId).toBeUndefined()
+		expect(saved.at(-1)).toEqual(
+			expect.objectContaining({ say: "subtask_result", text: "second", childTaskId: "c2" }),
+		)
+	})
+
 	it("reopenParentFromDelegation injects tool_result when new_task tool_use exists in API history", async () => {
 		const provider = {
 			contextProxy: { globalStorageUri: { fsPath: "/storage" } },

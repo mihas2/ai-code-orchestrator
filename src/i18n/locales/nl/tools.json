@@ -24,5 +24,9 @@
 		"invalidImageData": "Ongeldige afbeeldingsgegevens in het antwoord",
 		"invalidImageFormat": "Ongeldig afbeeldingsformaat ontvangen",
 		"unknownError": "Er is een onbekende fout opgetreden"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "Tool {{toolName}}: de API heeft een aanroep zonder argumenten geretourneerd (de provider heeft lege argumenten verzonden). Het model heeft de fout ontvangen en probeert het opnieuw.",
+		"invalidArguments": "Tool {{toolName}}: ongeldige argumenten van de API; het model probeert het opnieuw."
 	}
 }

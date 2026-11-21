@@ -457,6 +457,53 @@ describe("OpenRouterHandler", () => {
 			expect(endChunks).toHaveLength(1)
 			expect(endChunks[0].id).toBe("call_openrouter_test")
 		})
+
+		it.each([
+			[false, false],
+			[true, true],
+		] as const)("forwards parallelToolCalls %s as parallel_tool_calls %s", async (parallelToolCalls, expected) => {
+			const handler = new OpenRouterHandler(mockOptions)
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					yield { id: "test-id", choices: [{ delta: { content: "ok" } }] }
+				},
+			}
+			const mockCreate = vitest.fn().mockResolvedValue(mockStream)
+			;(OpenAI as any).prototype.chat = { completions: { create: mockCreate } } as any
+
+			const iterator = handler.createMessage("system", [{ role: "user", content: "hi" }], {
+				taskId: "test-task",
+				tools: [
+					{
+						type: "function",
+						function: { name: "get_weather", description: "Get weather", parameters: { type: "object" } },
+					},
+				],
+				parallelToolCalls,
+			})
+			await iterator.next()
+
+			expect(mockCreate.mock.calls[0][0].parallel_tool_calls).toBe(expected)
+		})
+
+		it("omits parallel_tool_calls when no tools are sent", async () => {
+			const handler = new OpenRouterHandler(mockOptions)
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					yield { id: "test-id", choices: [{ delta: { content: "ok" } }] }
+				},
+			}
+			const mockCreate = vitest.fn().mockResolvedValue(mockStream)
+			;(OpenAI as any).prototype.chat = { completions: { create: mockCreate } } as any
+
+			const iterator = handler.createMessage("system", [{ role: "user", content: "hi" }], {
+				taskId: "test-task",
+				parallelToolCalls: false,
+			})
+			await iterator.next()
+
+			expect(mockCreate.mock.calls[0][0]).not.toHaveProperty("parallel_tool_calls")
+		})
 	})
 
 	describe("completePrompt", () => {

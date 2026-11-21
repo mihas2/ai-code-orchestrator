@@ -24,5 +24,9 @@
 		"invalidImageData": "Dades d'imatge no vàlides en la resposta",
 		"invalidImageFormat": "Format d'imatge no vàlid rebut",
 		"unknownError": "S'ha produït un error desconegut"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "Eina {{toolName}}: l'API ha retornat una crida sense arguments (el proveïdor ha enviat arguments buits). El model ha rebut l'error i tornarà a intentar-ho.",
+		"invalidArguments": "Eina {{toolName}}: arguments no vàlids de l'API; el model tornarà a intentar-ho."
 	}
 }

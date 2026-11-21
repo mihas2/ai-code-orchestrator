@@ -306,6 +306,39 @@ describe("MiniMaxHandler", () => {
 			)
 		})
 
+		it("forwards parallelToolCalls false as disable_parallel_tool_use", async () => {
+			mockCreate.mockResolvedValueOnce({
+				[Symbol.asyncIterator]: () => ({
+					async next() {
+						return { done: true }
+					},
+				}),
+			})
+
+			const stream = handler.createMessage("system prompt", [], {
+				taskId: "test-task",
+				tools: [
+					{
+						type: "function" as const,
+						function: {
+							name: "read_file",
+							description: "Read a file",
+							parameters: { type: "object", properties: {} },
+						},
+					},
+				],
+				tool_choice: "auto",
+				parallelToolCalls: false,
+			})
+			await stream.next()
+
+			expect(mockCreate).toHaveBeenCalledWith(
+				expect.objectContaining({
+					tool_choice: { type: "auto", disable_parallel_tool_use: true },
+				}),
+			)
+		})
+
 		it("should use temperature 1 by default", async () => {
 			mockCreate.mockResolvedValueOnce({
 				[Symbol.asyncIterator]: () => ({

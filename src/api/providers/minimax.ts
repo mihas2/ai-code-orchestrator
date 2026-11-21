@@ -1,7 +1,6 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import { Stream as AnthropicStream } from "@anthropic-ai/sdk/streaming"
 import { CacheControlEphemeral } from "@anthropic-ai/sdk/resources"
-import OpenAI from "openai"
 
 import { type MinimaxModelId, minimaxDefaultModelId, minimaxModels } from "@ai-code-orchestrator/types"
 
@@ -14,41 +13,10 @@ import { mergeEnvironmentDetailsForMiniMax } from "../transform/minimax-format"
 import { BaseProvider } from "./base-provider"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
 import { calculateApiCostAnthropic } from "../../shared/cost"
-import { convertOpenAIToolsToAnthropic } from "../../core/prompts/tools/native-tools/converters"
-
-/**
- * Converts OpenAI tool_choice to Anthropic ToolChoice format
- */
-function convertOpenAIToolChoice(
-	toolChoice: OpenAI.Chat.ChatCompletionCreateParams["tool_choice"],
-): Anthropic.Messages.MessageCreateParams["tool_choice"] | undefined {
-	if (!toolChoice) {
-		return undefined
-	}
-
-	if (typeof toolChoice === "string") {
-		switch (toolChoice) {
-			case "none":
-				return undefined // Anthropic doesn't have "none", just omit tools
-			case "auto":
-				return { type: "auto" }
-			case "required":
-				return { type: "any" }
-			default:
-				return { type: "auto" }
-		}
-	}
-
-	// Handle object form { type: "function", function: { name: string } }
-	if (typeof toolChoice === "object" && "function" in toolChoice) {
-		return {
-			type: "tool",
-			name: toolChoice.function.name,
-		}
-	}
-
-	return { type: "auto" }
-}
+import {
+	convertOpenAIToolChoiceToAnthropic,
+	convertOpenAIToolsToAnthropic,
+} from "../../core/prompts/tools/native-tools/converters"
 
 export class MiniMaxHandler extends BaseProvider implements SingleCompletionHandler {
 	private options: ApiHandlerOptions
@@ -110,7 +78,7 @@ export class MiniMaxHandler extends BaseProvider implements SingleCompletionHand
 			messages: supportsPromptCache ? this.addCacheControl(processedMessages, cacheControl) : processedMessages,
 			stream: true,
 			tools: convertOpenAIToolsToAnthropic(metadata?.tools ?? []),
-			tool_choice: convertOpenAIToolChoice(metadata?.tool_choice),
+			tool_choice: convertOpenAIToolChoiceToAnthropic(metadata?.tool_choice, metadata?.parallelToolCalls),
 		}
 
 		stream = await this.client.messages.create(requestParams)

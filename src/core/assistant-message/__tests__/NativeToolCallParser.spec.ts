@@ -1,3 +1,7 @@
+import { vi } from "vitest"
+
+import { customToolRegistry } from "@ai-code-orchestrator/core"
+
 import { NativeToolCallParser } from "../NativeToolCallParser"
 
 describe("NativeToolCallParser", () => {
@@ -314,6 +318,234 @@ describe("NativeToolCallParser", () => {
 		})
 	})
 
+	describe("actionable errors for malformed calls", () => {
+		it("builds args for the removed switch_mode tool even when incomplete", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_switch",
+				name: "switch_mode" as any,
+				arguments: JSON.stringify({ mode_slug: "code" }),
+			}) as any
+
+			// No parse error: validateToolUse must get the chance to explain the removal.
+			expect(result.parseError).toBeUndefined()
+			expect(result.nativeArgs).toEqual({ mode_slug: "code", reason: undefined })
+		})
+
+		it("reports missing required parameters with the expected schema", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_missing",
+				name: "read_file" as any,
+				arguments: JSON.stringify({ paths: ["a.ts", "b.ts"] }),
+			}) as any
+
+			expect(result).not.toBeNull()
+			expect(result.nativeArgs).toBeUndefined()
+			expect(result.parseError).toContain("missing required parameter(s): path")
+			expect(result.parseError).toContain("Received: paths")
+			expect(result.parseError).toContain("Required parameters: path.")
+		})
+
+		it("reports arguments that are not a JSON object", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_bad_json",
+				name: "execute_command" as any,
+				arguments: '{"command": "ls"',
+			}) as any
+
+			expect(result).not.toBeNull()
+			expect(result.parseError).toContain("not a valid JSON object")
+			expect(result.parseError).toContain("Required parameters: command.")
+		})
+
+		it("records parameters the tool does not define as ignored", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_extra",
+				name: "write_to_file" as any,
+				arguments: JSON.stringify({ path: "a.txt", content: "x", line_count: 1 }),
+			}) as any
+
+			expect(result.nativeArgs).toEqual({ path: "a.txt", content: "x" })
+			expect(result.parseError).toBeUndefined()
+			expect(result.ignoredParams).toEqual(["line_count"])
+		})
+
+		it("does not report accepted legacy read_file parameters as ignored", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_legacy",
+				name: "read_file" as any,
+				arguments: JSON.stringify({ files: [{ path: "a.ts" }] }),
+			}) as any
+
+			expect(result.ignoredParams).toBeUndefined()
+		})
+
+		it("accepts omitted optional parameters", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "call_optional",
+				name: "execute_command" as any,
+				arguments: JSON.stringify({ command: "npm test" }),
+			}) as any
+
+			expect(result.parseError).toBeUndefined()
+			expect(result.nativeArgs).toEqual({ command: "npm test", cwd: undefined, timeout: undefined })
+		})
+	})
+
+	describe("empty tool arguments", () => {
+		const expectedMessage = NativeToolCallParser.missingToolArgumentsMessage("read_file")
+
+		it.each(["", "   ", "\n\t"])(
+			"returns a non-executable block when core tool arguments were not received for %j",
+			(argumentsValue) => {
+				const result = NativeToolCallParser.parseToolCall({
+					id: "toolu_empty",
+					name: "read_file",
+					arguments: argumentsValue,
+				})
+
+				expect(result).toMatchObject({
+					type: "tool_use",
+					name: "read_file",
+					params: {},
+					partial: false,
+					parseError: expectedMessage,
+				})
+				if (result?.type === "tool_use") {
+					expect(result.nativeArgs).toBeUndefined()
+				}
+			},
+		)
+
+		it("returns a parseError block for execute_command with empty arguments", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "toolu_empty_cmd",
+				name: "execute_command",
+				arguments: "",
+			})
+
+			expect(result).toMatchObject({
+				type: "tool_use",
+				name: "execute_command",
+				params: {},
+				partial: false,
+				parseError: NativeToolCallParser.missingToolArgumentsMessage("execute_command"),
+			})
+			if (result?.type === "tool_use") {
+				expect(result.nativeArgs).toBeUndefined()
+			}
+		})
+
+		it("treats empty arguments as {} for a custom tool with an empty schema", () => {
+			customToolRegistry.register({
+				name: "empty_schema_tool",
+				description: "No required parameters",
+				execute: async () => "ok",
+			})
+
+			try {
+				const result = NativeToolCallParser.parseToolCall({
+					id: "toolu_custom_empty",
+					name: "empty_schema_tool" as "read_file",
+					arguments: "",
+				})
+
+				expect(result).toMatchObject({
+					type: "tool_use",
+					name: "empty_schema_tool",
+					params: {},
+					partial: false,
+					nativeArgs: {},
+				})
+				if (result?.type === "tool_use") {
+					expect(result.parseError).toBeUndefined()
+				}
+			} finally {
+				customToolRegistry.unregister("empty_schema_tool")
+			}
+		})
+
+		it("parses dynamic MCP tools with empty arguments as {}", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "toolu_mcp_empty",
+				name: "mcp--srv--tool" as "read_file",
+				arguments: "",
+			})
+
+			expect(result).toMatchObject({
+				type: "mcp_tool_use",
+				name: "mcp--srv--tool",
+				serverName: "srv",
+				toolName: "tool",
+				arguments: {},
+				partial: false,
+			})
+		})
+
+		it("keeps parseError on both blocks when streaming state is cleared between parses", () => {
+			const first = NativeToolCallParser.parseToolCall({
+				id: "toolu_parallel_a",
+				name: "read_file",
+				arguments: "",
+			})
+			NativeToolCallParser.clearAllStreamingToolCalls()
+			const second = NativeToolCallParser.parseToolCall({
+				id: "toolu_parallel_b",
+				name: "execute_command",
+				arguments: "   ",
+			})
+
+			expect(first?.type === "tool_use" && first.parseError).toBe(
+				NativeToolCallParser.missingToolArgumentsMessage("read_file"),
+			)
+			expect(second?.type === "tool_use" && second.parseError).toBe(
+				NativeToolCallParser.missingToolArgumentsMessage("execute_command"),
+			)
+		})
+
+		it("preserves the alias as originalName when empty arguments cannot build nativeArgs", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "toolu_alias_empty",
+				name: "write_file" as "read_file",
+				arguments: "",
+			})
+
+			expect(result).toMatchObject({
+				type: "tool_use",
+				name: "write_to_file",
+				originalName: "write_file",
+				params: {},
+				partial: false,
+				parseError: NativeToolCallParser.missingToolArgumentsMessage("write_to_file"),
+			})
+		})
+
+		it("reports malformed JSON as a parse error distinct from empty arguments", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "toolu_bad_json",
+				name: "read_file",
+				arguments: "{",
+			}) as any
+
+			expect(result).not.toBeNull()
+			expect(result.parseError).toContain("not a valid JSON object")
+			expect(result.parseError).not.toContain("was called with empty arguments")
+		})
+
+		it("reports a schema mismatch with the missing required parameters", () => {
+			const result = NativeToolCallParser.parseToolCall({
+				id: "toolu_schema",
+				name: "read_file",
+				arguments: "{}",
+			}) as any
+
+			expect(result).not.toBeNull()
+			expect(result.parseError).toContain(
+				"Invalid arguments for tool 'read_file': missing required parameter(s): path",
+			)
+			expect(result.parseError).not.toContain("was called with empty arguments")
+		})
+	})
+
 	describe("processStreamingChunk", () => {
 		describe("read_file tool", () => {
 			it("should emit a partial ToolUse with nativeArgs.path during streaming", () => {
@@ -359,6 +591,29 @@ describe("NativeToolCallParser", () => {
 				expect(second?.params.message).toBe("Write a long task brief incrementally")
 				expect(second?.params.message?.startsWith(first?.params.message ?? "")).toBe(true)
 			})
+		})
+	})
+
+	describe("processRawChunk", () => {
+		it("warns and drops an arguments chunk whose index was never opened", () => {
+			const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+			try {
+				const events = NativeToolCallParser.processRawChunk({
+					index: 3,
+					arguments: '{"path":"lost.ts"}',
+				})
+
+				expect(events).toEqual([])
+				expect(warn).toHaveBeenCalledWith(
+					expect.stringContaining("[NativeToolCallParser] dropping tool call chunk with no tracked index"),
+				)
+				expect(warn).toHaveBeenCalledWith(expect.stringContaining("index=3"))
+				expect(warn).toHaveBeenCalledWith(
+					expect.stringContaining(`argumentsLength=${'{"path":"lost.ts"}'.length}`),
+				)
+			} finally {
+				warn.mockRestore()
+			}
 		})
 	})
 

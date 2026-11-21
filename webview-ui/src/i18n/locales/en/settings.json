@@ -330,10 +330,6 @@
 			"label": "MCP",
 			"description": "Enable auto-approval of individual MCP tools in the MCP Servers view (requires both this setting and the tool's individual \"Always allow\" checkbox)"
 		},
-		"modeSwitch": {
-			"label": "Mode",
-			"description": "Automatically switch between different modes without requiring approval"
-		},
 		"subtasks": {
 			"label": "Subtasks",
 			"description": "Allow creation and completion of subtasks without requiring approval"
@@ -667,11 +663,6 @@
 			"label": "Threshold to trigger intelligent context condensing",
 			"description": "When the context window reaches this threshold, AI Code Orchestrator will automatically condense it."
 		},
-		"condensingApiConfiguration": {
-			"label": "API Configuration for Context Condensing",
-			"description": "Select which API configuration to use for context condensing operations. Leave unselected to use the current active configuration.",
-			"useCurrentConfig": "Default"
-		},
 		"customCondensingPrompt": {
 			"label": "Custom Context Condensing Prompt",
 			"description": "Customize the system prompt used for context condensing. Leave empty to use the default prompt.",
@@ -925,6 +916,8 @@
 		"cacheReadsPrice": "Cache reads price",
 		"cacheWritesPrice": "Cache writes price",
 		"enableStreaming": "Enable streaming",
+		"enableParallelToolCalls": "Enable parallel tool calls",
+		"enableParallelToolCallsDescription": "Applies to providers whose APIs support the parallel tool calls parameter. When enabled, the model may call several tools at once. When disabled or unset, parallel tool calls are forbidden.",
 		"enableR1Format": "Enable R1 model parameters",
 		"enableR1FormatTips": "Must be enabled when using R1 models such as QWQ to prevent 400 errors",
 		"useAzure": "Use Azure",

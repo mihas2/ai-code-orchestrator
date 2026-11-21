@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "MCPサーバービューで個々のMCPツールの自動承認を有効にします（この設定とツールの「常に許可」チェックボックスの両方が必要）"
 		},
-		"modeSwitch": {
-			"label": "モード",
-			"description": "承認なしで自動的に異なるモード間を切り替え"
-		},
 		"subtasks": {
 			"label": "サブタスク",
 			"description": "承認なしでサブタスクの作成と完了を許可"
@@ -577,11 +573,6 @@
 			"label": "インテリジェントなコンテキスト圧縮をトリガーするしきい値",
 			"description": "コンテキストウィンドウがこのしきい値に達すると、AI Code Orchestratorは自動的に圧縮します。"
 		},
-		"condensingApiConfiguration": {
-			"label": "コンテキスト圧縮用のAPI設定",
-			"description": "コンテキスト圧縮操作に使用するAPI設定を選択します。選択しない場合は現在のアクティブな設定が使用されます。",
-			"useCurrentConfig": "現在の設定を使用"
-		},
 		"customCondensingPrompt": {
 			"label": "カスタムコンテキスト圧縮プロンプト",
 			"description": "コンテキスト圧縮に使用するシステムプロンプトをカスタマイズします。空のままにするとデフォルトのプロンプトが使用されます。",
@@ -835,6 +826,8 @@
 		"cacheReadsPrice": "キャッシュ読み取り価格",
 		"cacheWritesPrice": "キャッシュ書き込み価格",
 		"enableStreaming": "ストリーミングを有効化",
+		"enableParallelToolCalls": "並列ツール呼び出しを有効化",
+		"enableParallelToolCallsDescription": "並列ツール呼び出しパラメーターをサポートする API のプロバイダーに適用されます。有効にすると、モデルは複数のツールを同時に呼び出せます。無効または未設定の場合、並列ツール呼び出しは禁止されます。",
 		"enableR1Format": "R1モデルパラメータを有効にする",
 		"enableR1FormatTips": "QWQなどのR1モデルを使用する際には、有効にする必要があります。400エラーを防ぐために",
 		"useAzure": "Azureを使用",

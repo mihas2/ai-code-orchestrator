@@ -24,6 +24,8 @@ interface BuildToolsOptions {
 	apiConfiguration: ProviderSettings | undefined
 	disabledTools?: string[]
 	modelInfo?: ModelInfo
+	/** Whether the provider accepts several tool calls per response (adjusts tool descriptions). */
+	parallelToolCalls?: boolean
 	/**
 	 * If true, returns all tools without mode filtering, but also includes
 	 * the list of allowed tool names for use with allowedFunctionNames.
@@ -90,6 +92,7 @@ export async function buildNativeToolsArrayWithRestrictions(options: BuildToolsO
 		disabledTools,
 		modelInfo,
 		includeAllToolsWithRestrictions,
+		parallelToolCalls,
 	} = options
 
 	const mcpHub = provider.getMcpHub()
@@ -111,6 +114,7 @@ export async function buildNativeToolsArrayWithRestrictions(options: BuildToolsO
 	// Build native tools with dynamic read_file tool based on settings.
 	const nativeTools = getNativeTools({
 		supportsImages,
+		parallelToolCalls,
 	})
 
 	// Filter native tools based on mode restrictions.

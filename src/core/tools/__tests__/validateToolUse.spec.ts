@@ -161,10 +161,9 @@ describe("mode-validator", () => {
 			})
 
 			it("prioritizes requirements over ALWAYS_AVAILABLE_TOOLS", () => {
-				// Tools in ALWAYS_AVAILABLE_TOOLS (switch_mode, new_task, etc.) should still
+				// Tools in ALWAYS_AVAILABLE_TOOLS (new_task, attempt_completion, etc.) should still
 				// be blockable via toolRequirements / disabledTools
-				const requirements = { switch_mode: false, new_task: false, attempt_completion: false }
-				expect(isToolAllowedForMode("switch_mode", codeMode, [], requirements)).toBe(false)
+				const requirements = { new_task: false, attempt_completion: false }
 				expect(isToolAllowedForMode("new_task", codeMode, [], requirements)).toBe(false)
 				expect(isToolAllowedForMode("attempt_completion", codeMode, [], requirements)).toBe(false)
 			})
@@ -172,6 +171,11 @@ describe("mode-validator", () => {
 	})
 
 	describe("validateToolUse", () => {
+		it("rejects the removed switch_mode tool and points at new_task", () => {
+			expect(isToolAllowedForMode("switch_mode", codeMode, [])).toBe(false)
+			expect(() => validateToolUse("switch_mode", codeMode, [])).toThrow(/switch_mode.*removed.*new_task/s)
+		})
+
 		it("rejects incomplete edit payloads when an edit group is file-restricted", () => {
 			const restrictedModes: ModeConfig[] = [
 				{

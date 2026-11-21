@@ -24,5 +24,9 @@
 		"invalidImageData": "Invalid image data in response",
 		"invalidImageFormat": "Invalid image format received",
 		"unknownError": "Unknown error occurred"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "Tool {{toolName}}: the API returned a call without arguments (provider sent empty arguments). The model received the error and will retry.",
+		"invalidArguments": "Tool {{toolName}}: invalid arguments from the API; the model will retry."
 	}
 }

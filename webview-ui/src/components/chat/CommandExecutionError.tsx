@@ -28,10 +28,7 @@ export const CommandExecutionError = () => {
 						}}
 					/>
 				</div>
-				<a
-					href={buildDocLink("troubleshooting/shell-integration/", "error_tooltip")}
-					className="underline"
-					style={{ color: "inherit" }}>
+				<a href={buildDocLink("features/shell-integration")} className="underline" style={{ color: "inherit" }}>
 					{t("chat:shellIntegration.troubleshooting")}
 				</a>
 			</div>

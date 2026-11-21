@@ -101,6 +101,7 @@ import { AicoIgnoreController } from "../ignore/AicoIgnoreController"
 import { AicoProtectedController } from "../protect/AicoProtectedController"
 import { type AssistantMessageContent, presentAssistantMessage } from "../assistant-message"
 import { NativeToolCallParser } from "../assistant-message/NativeToolCallParser"
+import { formatUnparsableToolArgumentsError } from "../assistant-message/toolCallHints"
 import { manageContext, willManageContext } from "../context-management"
 import { ClineProvider } from "../webview/ClineProvider"
 import { MultiSearchReplaceDiffStrategy } from "../diff/strategies/multi-search-replace"
@@ -134,6 +135,21 @@ const MAX_EXPONENTIAL_BACKOFF_SECONDS = 600 // 10 minutes
 const DEFAULT_USAGE_COLLECTION_TIMEOUT_MS = 5000 // 5 seconds
 const FORCED_CONTEXT_REDUCTION_PERCENT = 75 // Keep 75% of context (remove 25%) on context window errors
 const MAX_CONTEXT_WINDOW_RETRIES = 3 // Maximum retries for context window errors
+
+/**
+ * Non-streaming native tool calls that fail to parse still need a tool_use
+ * block, otherwise the model never receives a tool_result for that id.
+ */
+export function unparsedNativeToolCallFallback(name: string, id: string): ToolUse {
+	return {
+		type: "tool_use",
+		name: name as ToolName,
+		id,
+		params: {},
+		partial: false,
+		parseError: formatUnparsableToolArgumentsError(name),
+	}
+}
 
 export interface TaskOptions extends CreateTaskOptions {
 	provider: ClineProvider
@@ -473,6 +489,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	// Native tool call streaming state (track which index each tool is at)
 	private streamingToolCallIndices: Map<string, number> = new Map()
+	// ts of the partial ask created for a specific native tool call.
+	// Streaming replaces the ToolUse object, so the link cannot live on the block.
+	private partialAskTsByToolCallId: Map<string, number> = new Map()
+	private pendingPartialToolCallId?: string
+	private nextPartialAskTs = 0
 
 	// Cached model info for current streaming session (set at start of each API request)
 	// This prevents excessive getModel() calls during tool execution
@@ -1259,6 +1280,46 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		await this.saveClineMessages()
 	}
 
+	/**
+	 * Associate the next partial `ask` with this native tool call.
+	 * Cleared as soon as `ask` records (or skips) the association, so a later
+	 * unrelated ask is not tagged with a stale id.
+	 */
+	public beginPartialToolAsk(toolCallId: string): void {
+		if (toolCallId) {
+			this.pendingPartialToolCallId = toolCallId
+		}
+	}
+
+	/** Drop a pending association when the partial handler did not call `ask`. */
+	public endPartialToolAsk(): void {
+		this.pendingPartialToolCallId = undefined
+	}
+
+	/**
+	 * Drop the partial ask created for this tool call when the call cannot be
+	 * executed (empty or invalid arguments). Deletes only the message whose ts
+	 * was recorded for `toolCallId`, and only while it is still partial.
+	 * A completed ask waiting for the user, or another tool's partial ask, is left alone.
+	 */
+	public async removePartialAskForToolCall(toolCallId: string): Promise<boolean> {
+		const ts = this.partialAskTsByToolCallId.get(toolCallId)
+		this.partialAskTsByToolCallId.delete(toolCallId)
+		if (ts === undefined) {
+			return false
+		}
+
+		const message = this.findMessageByTimestamp(ts)
+		// partial === false means the ask was finalized and is waiting for a response.
+		if (!message || message.partial !== true || message.type !== "ask") {
+			return false
+		}
+
+		await this.overwriteClineMessages(this.clineMessages.filter((item) => item.ts !== ts))
+		await this.providerRef.deref()?.postStateToWebviewWithoutTaskHistory()
+		return true
+	}
+
 	private async updateClineMessage(message: ClineMessage) {
 		const provider = this.providerRef.deref()
 		await provider?.postMessageToWebview({ type: "messageUpdated", clineMessage: message })
@@ -1309,6 +1370,41 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 	}
 
+	private allocatePartialAskTs(): number {
+		const now = Date.now()
+		this.nextPartialAskTs = Math.max(now, this.nextPartialAskTs + 1)
+		return this.nextPartialAskTs
+	}
+
+	/** Drop tool-call bindings once their ask is no longer a live partial. */
+	private forgetPartialAskTs(ts: number): void {
+		if (!this.partialAskTsByToolCallId) {
+			return
+		}
+		for (const [toolCallId, askTs] of this.partialAskTsByToolCallId) {
+			if (askTs === ts) {
+				this.partialAskTsByToolCallId.delete(toolCallId)
+			}
+		}
+	}
+
+	private clearPartialAskBindings(): void {
+		this.partialAskTsByToolCallId?.clear()
+		this.pendingPartialToolCallId = undefined
+	}
+
+	private findPartialAskForToolCall(toolCallId: string, type: ClineAsk): ClineMessage | undefined {
+		const ts = this.partialAskTsByToolCallId.get(toolCallId)
+		if (ts === undefined) {
+			return undefined
+		}
+		const message = this.findMessageByTimestamp(ts)
+		if (!message?.partial || message.type !== "ask" || message.ask !== type) {
+			return undefined
+		}
+		return message
+	}
+
 	private findMessageByTimestamp(ts: number): ClineMessage | undefined {
 		for (let i = this.clineMessages.length - 1; i >= 0; i--) {
 			if (this.clineMessages[i].ts === ts) {
@@ -1347,36 +1443,62 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		let askTs: number
 
 		if (partial !== undefined) {
-			const lastMessage = this.clineMessages.at(-1)
+			const pendingToolCallId = partial ? this.pendingPartialToolCallId : undefined
+			if (partial) {
+				this.pendingPartialToolCallId = undefined
+			}
 
+			const linkedPartial =
+				pendingToolCallId !== undefined ? this.findPartialAskForToolCall(pendingToolCallId, type) : undefined
+			const lastMessage = this.clineMessages.at(-1)
 			const isUpdatingPreviousPartial =
-				lastMessage && lastMessage.partial && lastMessage.type === "ask" && lastMessage.ask === type
+				linkedPartial !== undefined ||
+				Boolean(
+					!pendingToolCallId &&
+						lastMessage &&
+						lastMessage.partial &&
+						lastMessage.type === "ask" &&
+						lastMessage.ask === type,
+				)
 
 			if (partial) {
 				if (isUpdatingPreviousPartial) {
+					const messageToUpdate = linkedPartial ?? lastMessage!
 					// Existing partial message, so update it.
-					lastMessage.text = text
-					lastMessage.partial = partial
-					lastMessage.progressStatus = progressStatus
-					lastMessage.isProtected = isProtected
+					messageToUpdate.text = text
+					messageToUpdate.partial = partial
+					messageToUpdate.progressStatus = progressStatus
+					messageToUpdate.isProtected = isProtected
 					// TODO: Be more efficient about saving and posting only new
 					// data or one whole message at a time so ignore partial for
 					// saves, and only post parts of partial message instead of
 					// whole array in new listener.
-					this.updateClineMessage(lastMessage)
+					this.updateClineMessage(messageToUpdate)
 					// console.log("Task#ask: current ask promise was ignored (#1)")
 					throw new AskIgnoredError("updating existing partial")
 				} else {
 					// This is a new partial message, so add it with partial
 					// state.
-					askTs = Date.now()
+					askTs = this.allocatePartialAskTs()
 					this.lastMessageTs = askTs
+					if (pendingToolCallId) {
+						this.partialAskTsByToolCallId.set(pendingToolCallId, askTs)
+					}
 					await this.addToClineMessages({ ts: askTs, type: "ask", ask: type, text, partial, isProtected })
 					// console.log("Task#ask: current ask promise was ignored (#2)")
 					throw new AskIgnoredError("new partial")
 				}
 			} else {
-				if (isUpdatingPreviousPartial) {
+				// Completion is not scoped to a tool call id. Only the trailing
+				// partial ask of this type can be finalized into a user prompt.
+				const completingPartial =
+					lastMessage && lastMessage.partial && lastMessage.type === "ask" && lastMessage.ask === type
+						? lastMessage
+						: undefined
+				if (completingPartial) {
+					// Partial streaming for this ask is over. Drop the tool-call
+					// binding before any await so a later update cannot revive it.
+					this.forgetPartialAskTs(completingPartial.ts)
 					// This is the complete version of a previously partial
 					// message, so replace the partial with the complete version.
 					this.askResponse = undefined
@@ -1394,18 +1516,18 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					// lists, it's likely because the key prop is not stable.
 					// So in this case we must make sure that the message ts is
 					// never altered after first setting it.
-					askTs = lastMessage.ts
+					askTs = completingPartial.ts
 					this.lastMessageTs = askTs
 					// Register backend snapshot for command ask BEFORE any await/publish.
 					if (type === "command") {
 						this.pendingCommandApproval = Object.freeze({ ts: askTs, command: text ?? "" })
 					}
-					lastMessage.text = text
-					lastMessage.partial = false
-					lastMessage.progressStatus = progressStatus
-					lastMessage.isProtected = isProtected
+					completingPartial.text = text
+					completingPartial.partial = false
+					completingPartial.progressStatus = progressStatus
+					completingPartial.isProtected = isProtected
 					await this.saveClineMessages()
-					this.updateClineMessage(lastMessage)
+					this.updateClineMessage(completingPartial)
 				} else {
 					// This is a new and complete message, so add it like normal.
 					this.askResponse = undefined
@@ -1553,6 +1675,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			// Could happen if we send multiple asks in a row i.e. with
 			// command_output. It's important that when we know an ask could
 			// fail, it is handled gracefully.
+			this.forgetPartialAskTs(askTs)
 			throw new AskIgnoredError("superseded")
 		}
 
@@ -1649,6 +1772,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	public supersedePendingAsk(): void {
+		if (this.lastMessageTs !== undefined) {
+			this.forgetPartialAskTs(this.lastMessageTs)
+		}
+		this.pendingPartialToolCallId = undefined
 		this.pendingCommandApproval = undefined
 		this.claimedCommandApproval = undefined
 		this.lastMessageTs = Date.now()
@@ -1803,6 +1930,18 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.api = buildApiHandler(this.apiConfiguration)
 	}
 
+	/**
+	 * The profile flag `openAiParallelToolCalls` controls parallel tool-call
+	 * metadata for every provider. Only an explicit true enables them;
+	 * false and undefined both disable them.
+	 *
+	 * Uses the configuration that built `this.api`. Global provider state can
+	 * differ for role-specific tasks and must not override that handler.
+	 */
+	private resolveParallelToolCalls(): boolean {
+		return this.apiConfiguration?.openAiParallelToolCalls === true
+	}
+
 	public async submitUserMessage(
 		text: string,
 		images?: string[],
@@ -1918,7 +2057,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				? {
 						tools: allTools,
 						tool_choice: "auto",
-						parallelToolCalls: true,
+						parallelToolCalls: this.resolveParallelToolCalls(),
 					}
 				: {}),
 		}
@@ -2512,6 +2651,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		this.abort = true
+		this.clearPartialAskBindings()
 
 		// Reset consecutive error counters on abort (manual intervention)
 		this.consecutiveNoToolUseCount = 0
@@ -2551,12 +2691,26 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// Invalidate any pending-command snapshot so scoped responders cannot fire after disposal.
 		this.pendingCommandApproval = undefined
 		this.claimedCommandApproval = undefined
+		this.clearPartialAskBindings()
+
+		// A pending auto-approval countdown would otherwise answer the ask after
+		// the task was stopped and resurrect the loop.
+		this.cancelAutoApprovalTimeout()
 
 		// Cancel any in-progress HTTP request
 		try {
 			this.cancelCurrentRequest()
 		} catch (error) {
 			console.error("Error cancelling current request:", error)
+		}
+
+		// Kill the command the task is currently waiting on (if any). Commands
+		// that were moved to the background are no longer tracked here.
+		try {
+			this.terminalProcess?.abort()
+			this.terminalProcess = undefined
+		} catch (error) {
+			console.error("Error aborting terminal process:", error)
 		}
 
 		// Remove provider profile change listener
@@ -3016,6 +3170,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
 					}
 
+					this.clearPartialAskBindings()
+
 					// Update `api_req_started` to have cancelled and cost, so that
 					// we can display the cost of the partial stream and the cancellation reason
 					updateApiReqMsg(cancelReason, streamingFailedMessage)
@@ -3044,6 +3200,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				this.presentAssistantMessageHasPendingUpdates = false
 				// No legacy text-stream tool parser.
 				this.streamingToolCallIndices.clear()
+				this.clearPartialAskBindings()
 				// Clear any leftover streaming tool call state from previous interrupted streams
 				NativeToolCallParser.clearAllStreamingToolCalls()
 				NativeToolCallParser.clearRawChunkState()
@@ -3269,7 +3426,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 							case "tool_call": {
 								// Legacy: Handle complete tool calls (for backward compatibility)
 								// Convert native tool call to ToolUse format
-								const toolUse = NativeToolCallParser.parseToolCall({
+								let toolUse = NativeToolCallParser.parseToolCall({
 									id: chunk.id,
 									name: chunk.name as ToolName,
 									arguments: chunk.arguments,
@@ -3277,7 +3434,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 								if (!toolUse) {
 									console.error(`Failed to parse tool call for task ${this.taskId}:`, chunk)
-									break
+									toolUse = unparsedNativeToolCallFallback(chunk.name, chunk.id)
 								}
 
 								// Store the tool call ID on the ToolUse object for later reference
@@ -4113,6 +4270,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						.getConfiguration(Package.name)
 						.get<boolean>("newTaskRequireTodos", false),
 					isStealthModel: modelInfo?.isStealthModel,
+					parallelToolCalls: this.resolveParallelToolCalls(),
 				},
 				undefined, // todoList
 				this.api.getModel().id,
@@ -4153,9 +4311,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				`Current tokens: ${contextTokens}, Context window: ${contextWindow}. ` +
 				`Forcing truncation to ${FORCED_CONTEXT_REDUCTION_PERCENT}% of current context.`,
 		)
-		// Send condenseTaskContextStarted to show in-progress indicator
-		await this.providerRef.deref()?.postMessageToWebview({ type: "condenseTaskContextStarted", text: this.taskId })
-
 		// Build tools for condensing metadata (same tools used for normal API calls)
 		const provider = this.providerRef.deref()
 		let allTools: import("openai").default.Chat.ChatCompletionTool[] = []
@@ -4182,10 +4337,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				? {
 						tools: allTools,
 						tool_choice: "auto",
-						parallelToolCalls: true,
+						parallelToolCalls: this.resolveParallelToolCalls(),
 					}
 				: {}),
 		}
+
+		// Send condenseTaskContextStarted to show in-progress indicator. Sent right before the
+		// try whose finally sends condenseTaskContextResponse, so the indicator can never stick.
+		await this.providerRef.deref()?.postMessageToWebview({ type: "condenseTaskContextStarted", text: this.taskId })
 
 		try {
 			// Generate environment details to include in the condensed summary
@@ -4459,15 +4618,6 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				lastMessageTokens,
 			})
 
-			// Send condenseTaskContextStarted BEFORE manageContext to show in-progress indicator
-			// This notification must be sent here (not earlier) because the early check uses stale token count
-			// (before user message is added to history), which could incorrectly skip showing the indicator
-			if (contextManagementWillRun && autoCondenseContext) {
-				await this.providerRef
-					.deref()
-					?.postMessageToWebview({ type: "condenseTaskContextStarted", text: this.taskId })
-			}
-
 			// Build tools for condensing metadata (same tools used for normal API calls)
 			// This ensures the condensing API call includes tool definitions for providers that need them
 			let contextMgmtTools: import("openai").default.Chat.ChatCompletionTool[] = []
@@ -4497,7 +4647,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 					? {
 							tools: contextMgmtTools,
 							tool_choice: "auto",
-							parallelToolCalls: true,
+							parallelToolCalls: this.resolveParallelToolCalls(),
 						}
 					: {}),
 			}
@@ -4514,6 +4664,16 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				contextManagementWillRun && autoCondenseContext
 					? await this.getFilesReadByAicoSafely("attemptApiRequest")
 					: undefined
+
+			// Send condenseTaskContextStarted BEFORE manageContext to show in-progress indicator.
+			// It must be sent after the early check (which uses a stale token count) and right
+			// before the try whose finally sends condenseTaskContextResponse: if anything between
+			// them threw, the webview would keep isCondensing=true and ignore the condense button.
+			if (contextManagementWillRun && autoCondenseContext) {
+				await this.providerRef
+					.deref()
+					?.postMessageToWebview({ type: "condenseTaskContextStarted", text: this.taskId })
+			}
 
 			try {
 				const truncateResult = await manageContext({
@@ -4667,7 +4827,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						// A normal task turn must advance through a tool call. Providers that
 						// do not support `required` can still ignore this hint and use the retry guard.
 						tool_choice: "required",
-						parallelToolCalls: true,
+						parallelToolCalls: this.resolveParallelToolCalls(),
 						// When mode restricts tools, provide allowedFunctionNames so providers
 						// like Gemini can see all tools in history but only call allowed ones
 						...(allowedFunctionNames ? { allowedFunctionNames } : {}),

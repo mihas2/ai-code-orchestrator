@@ -27,5 +27,9 @@
 		"invalidImageData": "Data gambar tidak valid dalam respons",
 		"invalidImageFormat": "Format gambar tidak valid diterima",
 		"unknownError": "Terjadi kesalahan yang tidak diketahui"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "Alat {{toolName}}: API mengembalikan panggilan tanpa argumen (penyedia mengirim argumen kosong). Model menerima error dan akan mencoba lagi.",
+		"invalidArguments": "Alat {{toolName}}: argumen tidak valid dari API; model akan mencoba lagi."
 	}
 }

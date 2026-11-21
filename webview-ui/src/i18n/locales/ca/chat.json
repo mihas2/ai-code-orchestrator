@@ -331,16 +331,16 @@
 		"support": "Si us plau, dona suport a AI Code Orchestrator fent una estrella al nostre <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} aporta millores generals, correccions útils i una experiència més fluida.",
-			"continuity": "Les tasques acaben de manera més fiable i és més fàcil continuar on ho havies deixat.",
-			"alternatives": "El treball del dia a dia se sent més clar i coherent.",
+			"intro": "AI Code Orchestrator {{version}} fa que treballar amb rols sigui més previsible i que els controls del dia a dia siguin més fiables.",
+			"continuity": "Aturar, condensar el context i els enllaços a subtasques funcionen com esperes, i els problemes amb les crides a eines es mostren clarament en lloc de fallar en silenci.",
+			"alternatives": "Cada rol manté el seu propi perfil i model, independentment del xat.",
 			"signoff": "Bona programació!"
 		},
 		"release": {
 			"heading": "Què hi ha de nou:",
-			"gpt55": "Maneres de treballar més clares: cada rol és més fàcil d'entendre, perquè puguis triar l'ajuda adequada per a cada tasca.",
-			"claudeOpus47": "Tasques més fiables: la feina acabada es manté acabada i els resultats tornen amb més fluïdesa.",
-			"checkpointNav": "Una experiència més fluida: començar de nou i moure't entre tasques és més senzill."
+			"gpt55": "Delegació més clara: la feina per a un altre rol es passa com a subtasca, i la tasca actual conserva el seu mode.",
+			"claudeOpus47": "Controls fiables: Aturar funciona al primer clic i Condensar context ja no es queda encallat.",
+			"checkpointNav": "Rols independents: cada rol utilitza el seu propi perfil i model, i les crides a eines en paral·lel es poden activar per perfil."
 		},
 		"cloudAgents": {
 			"heading": "Novetats al núvol:",

@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "Aktifkan auto-approval tool MCP individual di tampilan Server MCP (memerlukan pengaturan ini dan checkbox \"Selalu izinkan\" tool tersebut)"
 		},
-		"modeSwitch": {
-			"label": "Mode",
-			"description": "Secara otomatis beralih antara mode yang berbeda tanpa memerlukan persetujuan"
-		},
 		"subtasks": {
 			"label": "Subtugas",
 			"description": "Izinkan pembuatan dan penyelesaian subtugas tanpa memerlukan persetujuan"
@@ -577,11 +573,6 @@
 			"label": "Ambang batas untuk memicu kondensasi konteks cerdas",
 			"description": "Ketika context window mencapai ambang batas ini, AI Code Orchestrator akan secara otomatis mengondensasikannya."
 		},
-		"condensingApiConfiguration": {
-			"label": "Konfigurasi API untuk Kondensasi Konteks",
-			"description": "Pilih konfigurasi API mana yang akan digunakan untuk operasi kondensasi konteks. Biarkan tidak dipilih untuk menggunakan konfigurasi aktif saat ini.",
-			"useCurrentConfig": "Default"
-		},
 		"customCondensingPrompt": {
 			"label": "Prompt Kondensasi Konteks Kustom",
 			"description": "Kustomisasi system prompt yang digunakan untuk kondensasi konteks. Biarkan kosong untuk menggunakan prompt default.",
@@ -835,6 +826,8 @@
 		"cacheReadsPrice": "Harga cache reads",
 		"cacheWritesPrice": "Harga cache writes",
 		"enableStreaming": "Aktifkan streaming",
+		"enableParallelToolCalls": "Aktifkan panggilan tool paralel",
+		"enableParallelToolCallsDescription": "Berlaku untuk penyedia yang API-nya mendukung parameter panggilan tool paralel. Jika diaktifkan, model dapat memanggil beberapa tool sekaligus. Jika dinonaktifkan atau tidak diatur, panggilan tool paralel dilarang.",
 		"enableR1Format": "Aktifkan parameter model R1",
 		"enableR1FormatTips": "Harus diaktifkan saat menggunakan model R1 seperti QWQ untuk mencegah error 400",
 		"useAzure": "Gunakan Azure",

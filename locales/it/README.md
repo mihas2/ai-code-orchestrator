@@ -1,82 +1,54 @@
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=mihas2.ai-code-orchestrator"><img src="https://img.shields.io/badge/VS_Code_Marketplace-007ACC?style=flat&logo=visualstudiocode&logoColor=white" alt="VS Code Marketplace"></a>
 </p>
+
 # AI Code Orchestrator
 
-> Il tuo team di sviluppo con IA, direttamente nel tuo editor
+> Il tuo team di sviluppo basato sull'IA, direttamente nel tuo editor.
 
-<details>
-  <summary>🌐 Lingue disponibili</summary>
+AI Code Orchestrator è un'estensione di VS Code e una CLI per pianificare, implementare, revisionare e spiegare software con agenti IA configurabili. Riunisce chat, azioni sul codice, flussi di lavoro nel terminale, ruoli personalizzati, integrazioni MCP e orchestrazione multi-agente in un unico spazio di lavoro.
 
-- [English](../../README.md)
-- [Català](../ca/README.md)
-- [Deutsch](../de/README.md)
-- [Español](../es/README.md)
-- [Français](../fr/README.md)
-- [हिंदी](../hi/README.md)
-- [Bahasa Indonesia](../id/README.md)
-- [Italiano](../it/README.md)
-- [日本語](../ja/README.md)
-- [한국어](../ko/README.md)
-- [Nederlands](../nl/README.md)
-- [Polski](../pl/README.md)
-- [Português (BR)](../pt-BR/README.md)
-- [Русский](../ru/README.md)
-- [Türkçe](../tr/README.md)
-- [Tiếng Việt](../vi/README.md)
-- [简体中文](../zh-CN/README.md)
-- [繁體中文](../zh-TW/README.md)
-- ...
-  </details>
+## Funzionalità
 
----
+- Generare e modificare codice a partire da requisiti in linguaggio naturale
+- Progettare l'architettura e suddividere il lavoro in attività coordinate
+- Orchestrare il lavoro come un DAG che tiene conto delle dipendenze, con esecutori paralleli, fasi di revisione, budget e integrazione controllata
+- **Ottimizzazione del contesto**: una gestione intelligente del contesto riduce l'uso di token e i costi mantenendo l'efficacia
+- Revisionare le modifiche, diagnosticare i problemi e migliorare il codice esistente
+- Lavorare con file, terminali, immagini e strumenti MCP esterni
+- Configurare i fornitori, inclusi Vercel AI Gateway e Unbound, i modelli, i permessi e i ruoli personalizzati
+- Assegnare un profilo di fornitore e un modello ai singoli ruoli; un ruolo senza un modello proprio usa il modello del suo profilo, e un ruolo senza profilo usa il profilo predefinito
+- Riprendere le attività dall'editor o dalla riga di comando
 
-## Cosa può fare AI Code Orchestrator per TE?
+## Ruoli
 
-- Generare codice da descrizioni in linguaggio naturale
-- Adattarsi con le Modalità: Codice, Architetto, Chiedi, Debug e Modalità Personalizzate
-- Refactoring e debug di codice esistente
-- Scrivere e aggiornare la documentazione
-- Rispondere a domande sulla tua codebase
-- Automatizzare attività ripetitive
-- Utilizzare server MCP
+AI Code Orchestrator si adatta al lavoro da svolgere:
 
-## Modalità
+- **Code** — implementare le modifiche e lavorare sui file del progetto
+- **Architect** — progettare sistemi, specifiche e migrazioni
+- **Ask** — rispondere alle domande e spiegare il codice
+- **Debug** — isolare le cause principali e verificare le correzioni
+- **Reviewer** — validare le modifiche, individuare i problemi e garantire la qualità
+- **Orchestrator** (predefinito) — coordinare grafi di attività con dipendenze e agenti paralleli
+- **Translate** — tradurre e gestire i file di localizzazione
+- **Custom** (facoltativo) — creare flussi di lavoro specializzati per un team
 
-AI Code Orchestrator si adatta al tuo modo di lavorare, non il contrario:
+Ogni ruolo può usare un proprio profilo di fornitore e un proprio modello, impostati in Impostazioni → Modalità indipendentemente dal profilo predefinito selezionato in Impostazioni → Fornitori. Un ruolo senza un modello proprio usa il modello del suo profilo, e un ruolo senza profilo usa il profilo predefinito: così è facile bilanciare capacità, velocità e costi in un flusso di lavoro.
 
-- Modalità Codice: codifica quotidiana, modifiche e operazioni sui file
-- Modalità Architetto: pianifica sistemi, specifiche e migrazioni
-- Modalità Chiedi: risposte rapide, spiegazioni e documenti
-- Modalità Debug: traccia problemi, aggiungi log, isola le cause principali
-- Modalità Traduzione: traduci e gestisci i file di localizzazione
-- Modalità Personalizzate: crea modalità specializzate per il tuo team o flusso di lavoro
+## Documentazione
 
-Scopri di più: [Usare le Modalità](https://github.com/mihas2/ai-code-orchestrator/basic-usage/using-modes) • [Modalità personalizzate](https://github.com/mihas2/ai-code-orchestrator/advanced-usage/custom-modes)
-
-## Risorse
-
-- **[Documentazione](https://github.com/mihas2/ai-code-orchestrator):** La guida ufficiale per installare, configurare e padroneggiare AI Code Orchestrator.
-- **[Problemi GitHub](https://github.com/AIOrchestrator/ai-code-orchestrator/issues):** Segnala bug e tieni traccia dello sviluppo.
-
----
-
-## Dichiarazione di non responsabilità
-
-**Si prega di notare** che AI Code Orchestrator, Inc. **non** rilascia alcuna dichiarazione o garanzia in merito a qualsiasi codice, modello o altro strumento fornito o reso disponibile in connessione con AI Code Orchestrator, qualsiasi strumento di terze parti associato o qualsiasi output risultante. L'utente si assume **tutti i rischi** associati all'uso di tali strumenti o output; tali strumenti sono forniti **"COSÌ COME SONO"** e **"COME DISPONIBILI"**. Tali rischi possono includere, a titolo esemplificativo, violazione della proprietà intellettuale, vulnerabilità o attacchi informatici, parzialità, imprecisioni, errori, difetti, virus, tempi di inattività, perdita o danneggiamento di proprietà e/o lesioni personali. L'utente è l'unico responsabile dell'uso di tali strumenti o output (inclusi, a titolo esemplificativo, la loro legalità, adeguatezza e risultati).
-
----
+Consulta la documentazione del progetto, inclusa la specifica dell'orchestrazione, in [`apps/docs`](../../apps/docs).
 
 ## Installazione
 
-Installa l'estensione **AI Code Orchestrator** dal VS Code Marketplace, o ricostruisci un VSIX localmente:
+Installa l'estensione **AI Code Orchestrator** dal VS Code Marketplace oppure genera localmente un nuovo VSIX:
 
 ```bash
 pnpm install
 pnpm rebuild:vsix
 ```
 
-Per ricostruire e poi installarla in modo interattivo, esegui `pnpm install:vsix`. Questo ricostruisce esplicitamente la webview prima di raggruppare e imballare l'estensione. Un normale `pnpm install` installa solo le dipendenze.
+Per ricostruirla e poi installarla in modo interattivo, esegui `pnpm install:vsix`. Il comando ricostruisce esplicitamente la webview prima di creare il bundle e il pacchetto dell'estensione. Un normale `pnpm install` installa solo le dipendenze.
 
 Durante lo sviluppo, la CLI è disponibile dal monorepo:
 
@@ -84,8 +56,12 @@ Durante lo sviluppo, la CLI è disponibile dal monorepo:
 pnpm --filter @ai-code-orchestrator/cli dev
 ```
 
-Lo scope del pacchetto e gli identificatori di comando obsoleti sono mantenuti per mantenere la compatibilità con le integrazioni esistenti.
+L'ambito del pacchetto e gli identificatori dei comandi precedenti sono mantenuti per compatibilità con le integrazioni esistenti.
+
+## Attribuzione
+
+AI Code Orchestrator è basato su [Roo Code](https://github.com/RooCodeInc/Roo-Code). L'implementazione mantiene alcune API e identificatori compatibili, così le integrazioni esistenti continuano a funzionare.
 
 ## Licenza
 
-[Apache 2.0 © 2025 AI Code Orchestrator, Inc.](../../LICENSE)
+[Apache 2.0](../../LICENSE)

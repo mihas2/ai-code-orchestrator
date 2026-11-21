@@ -42,18 +42,20 @@ describe("RoleModelSelector", () => {
 			openAiModelId: "primary-model",
 		})
 
+		// The extension resolves the endpoint and key of the role's own profile.
 		expect(postMessage).toHaveBeenCalledWith({
 			type: "requestOpenAiModels",
-			values: {
-				baseUrl: "https://compatible.example/v1",
-				apiKey: "secret",
-				customHeaders: {},
-				openAiHeaders: {},
-			},
+			values: { profileName: "Primary" },
 		})
 
 		window.dispatchEvent(
-			new MessageEvent("message", { data: { type: "openAiModels", openAiModels: ["ag/gemini-2.5-flash"] } }),
+			new MessageEvent("message", {
+				data: {
+					type: "openAiModels",
+					openAiModels: ["ag/gemini-2.5-flash"],
+					values: { profileName: "Primary" },
+				},
+			}),
 		)
 		fireEvent.click(screen.getByTestId("model-picker-button"))
 		expect(await screen.findByText("ag/gemini-2.5-flash")).toBeInTheDocument()
@@ -75,5 +77,34 @@ describe("RoleModelSelector", () => {
 		expect(screen.getByText("router-alternative")).toBeInTheDocument()
 		fireEvent.click(screen.getByText("primary-model"))
 		expect(onModelChange).toHaveBeenCalledWith("Primary", undefined)
+	})
+
+	it("ignores catalogs that were fetched for a different profile", async () => {
+		renderSelector("openai", { apiProvider: "openai", openAiModelId: "primary-model" })
+
+		window.dispatchEvent(
+			new MessageEvent("message", {
+				data: { type: "openAiModels", openAiModels: ["foreign-model"], values: { profileName: "Other" } },
+			}),
+		)
+		window.dispatchEvent(
+			new MessageEvent("message", { data: { type: "openAiModels", openAiModels: ["active-profile-model"] } }),
+		)
+		fireEvent.click(screen.getByTestId("model-picker-button"))
+		expect(screen.queryByText("foreign-model")).not.toBeInTheDocument()
+		expect(screen.queryByText("active-profile-model")).not.toBeInTheDocument()
+	})
+
+	it("requests local provider catalogs for the role's profile", () => {
+		render(
+			<RoleModelSelector
+				provider="ollama"
+				apiConfiguration={{ apiProvider: "ollama" }}
+				primaryModel="llama3"
+				profileName="local"
+				onModelChange={vi.fn()}
+			/>,
+		)
+		expect(postMessage).toHaveBeenCalledWith({ type: "requestOllamaModels", values: { profileName: "local" } })
 	})
 })

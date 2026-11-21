@@ -17,7 +17,7 @@ AI Code Orchestrator ist eine VS-Code-Erweiterung und CLI zum Planen, Implementi
 - Änderungen prüfen, Fehler diagnostizieren und bestehenden Code verbessern
 - Mit Dateien, Terminals, Bildern und externen MCP-Werkzeugen arbeiten
 - Anbieter wie Vercel AI Gateway und Unbound sowie Modelle, Berechtigungen und benutzerdefinierte Rollen konfigurieren
-- Modelle einzelnen Rollen zuweisen; ohne Überschreibung wird automatisch das primäre Modell geerbt
+- Einzelnen Rollen ein Anbieterprofil und ein Modell zuweisen; eine Rolle ohne eigenes Modell nutzt das Modell ihres Profils, eine Rolle ohne Profil das Standardprofil
 - Aufgaben im Editor oder über die Befehlszeile fortsetzen
 
 ## Rollen
@@ -33,7 +33,7 @@ AI Code Orchestrator passt sich der jeweiligen Aufgabe an:
 - **Translate** – Lokalisierungsdateien übersetzen und verwalten
 - **Custom** – spezialisierte Arbeitsabläufe für ein Team erstellen
 
-Jede Rolle kann eine eigene Modellkonfiguration verwenden. Ist kein rollenspezifisches Modell zugewiesen, wird das primäre Modell geerbt. So lassen sich Leistungsfähigkeit, Geschwindigkeit und Kosten eines Workflows einfach ausbalancieren.
+Jede Rolle kann ein eigenes Anbieterprofil und Modell verwenden. Beides wird unter Einstellungen → Modi festgelegt, unabhängig vom Standardprofil, das unter Einstellungen → Anbieter ausgewählt ist. Eine Rolle ohne eigenes Modell nutzt das Modell ihres Profils, eine Rolle ohne Profil das Standardprofil. So lassen sich Leistungsfähigkeit, Geschwindigkeit und Kosten eines Workflows einfach ausbalancieren.
 
 ## Dokumentation
 

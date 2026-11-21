@@ -2,17 +2,14 @@ import type OpenAI from "openai"
 import { DEFAULT_MODES } from "@ai-code-orchestrator/types"
 
 import newTask from "../new_task"
-import switchMode from "../switch_mode"
+import { getNativeTools } from "../index"
 
 type FunctionTool = OpenAI.Chat.ChatCompletionTool & { type: "function" }
 
 const getFunctionDef = (tool: OpenAI.Chat.ChatCompletionTool) => (tool as FunctionTool).function
 
 describe("mode selection native tool descriptions", () => {
-	it.each([
-		["new_task", newTask, "mode"],
-		["switch_mode", switchMode, "mode_slug"],
-	] as const)(
+	it.each([["new_task", newTask, "mode"]] as const)(
 		"%s lists every built-in slug, points at MODES, and keeps mode as an open string",
 		(_name, tool, parameter) => {
 			const definition = getFunctionDef(tool)
@@ -33,4 +30,10 @@ describe("mode selection native tool descriptions", () => {
 			expect(description).not.toMatch(/\(e\.g\.,/)
 		},
 	)
+
+	it("does not offer the removed switch_mode tool to the model", () => {
+		const names = getNativeTools().map((tool) => getFunctionDef(tool).name)
+		expect(names).not.toContain("switch_mode")
+		expect(names).toContain("new_task")
+	})
 })

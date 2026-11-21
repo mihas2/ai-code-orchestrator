@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "Włącz automatyczne zatwierdzanie poszczególnych narzędzi MCP w widoku Serwerów MCP (wymaga zarówno tego ustawienia, jak i pola wyboru \"Zawsze zezwalaj\" narzędzia)"
 		},
-		"modeSwitch": {
-			"label": "Tryb",
-			"description": "Automatycznie przełączaj między różnymi trybami bez konieczności zatwierdzania"
-		},
 		"subtasks": {
 			"label": "Podzadania",
 			"description": "Zezwalaj na tworzenie i ukończenie podzadań bez konieczności zatwierdzania"
@@ -577,11 +573,6 @@
 			"label": "Próg wyzwalający inteligentną kondensację kontekstu",
 			"description": "Gdy okno kontekstu osiągnie ten próg, AI Code Orchestrator automatycznie je skondensuje."
 		},
-		"condensingApiConfiguration": {
-			"label": "Konfiguracja API dla kondensacji kontekstu",
-			"description": "Wybierz, którą konfigurację API używać do operacji kondensacji kontekstu. Pozostaw niewybrane, aby użyć aktualnej aktywnej konfiguracji.",
-			"useCurrentConfig": "Domyślna"
-		},
 		"customCondensingPrompt": {
 			"label": "Niestandardowy monit kondensacji kontekstu",
 			"description": "Niestandardowy monit systemowy dla kondensacji kontekstu. Pozostaw puste, aby użyć domyślnego monitu.",
@@ -835,6 +826,8 @@
 		"cacheReadsPrice": "Cena odczytów bufora",
 		"cacheWritesPrice": "Cena zapisów bufora",
 		"enableStreaming": "Włącz strumieniowanie",
+		"enableParallelToolCalls": "Włącz równoległe wywołania narzędzi",
+		"enableParallelToolCallsDescription": "Dotyczy dostawców, których API obsługuje parametr równoległych wywołań narzędzi. Po włączeniu model może wywoływać kilka narzędzi jednocześnie. Gdy opcja jest wyłączona lub nieustawiona, równoległe wywołania narzędzi są zabronione.",
 		"enableR1Format": "Włącz parametry modelu R1",
 		"enableR1FormatTips": "Należy włączyć podczas korzystania z modeli R1, takich jak QWQ, aby uniknąć błędu 400",
 		"useAzure": "Użyj Azure",

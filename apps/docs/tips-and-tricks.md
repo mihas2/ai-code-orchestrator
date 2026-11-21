@@ -1,0 +1,18 @@
+# Tips & Tricks
+
+A collection of quick tips to help you get the most out of AI Code Orchestrator.
+
+- Drag AI Code Orchestrator to the [Secondary Sidebar](https://code.visualstudio.com/api/ux-guidelines/sidebars#secondary-sidebar) so you can see the Explorer, Search, Source Control, etc.
+  <img src="img/right-column-aico.gif" alt="Put AI Code Orchestrator on the Right Column" width="900" />
+- Once you have AI Code Orchestrator in a separate sidebar from the file explorer, you can drag files from the explorer into the chat window (and even multiple at once). Just make sure to hold down the shift key after you start dragging the files.
+- If you're not using [MCP](features/mcp/overview.md), turn it off in Settings (⚙️) → **MCP Servers** to significantly cut down the size of the system prompt.
+- To keep your [custom modes](features/custom-modes.md) on track, limit the types of files that they're allowed to edit.
+- If you hit the dreaded `input length and max tokens exceed context limit` error, you can recover by deleting a message, rolling back to a previous checkpoint, or switching over to a model with a long context window like Gemini for a message.
+- In general, be thoughtful about your `Max Tokens` setting for thinking models. Every token you allocate to that takes away from space available to store conversation history. Consider only using high `Max Tokens` / `Max Thinking Tokens` settings with modes like Architect and Debug, and keeping Code mode at 16k max tokens or less.
+- If there's a real world job posting for something you want a custom mode to do, paste its text and ask Code mode to `Create a custom mode based on this job posting`
+- If you want to really accelerate, run several tasks in parallel in separate [worktrees](features/worktrees.md) (using git to resolve any conflicts, same as with human devs).
+- When using Debug mode, ask AI Code Orchestrator to "start a new task in Debug mode with all of the necessary context needed to figure out X" so that the debugging process uses its own context window and doesn't pollute the main task
+- Have a tip to share? Open a pull request that edits [`apps/docs/tips-and-tricks.md`](https://github.com/mihas2/ai-code-orchestrator/blob/main/apps/docs/tips-and-tricks.md).
+- Set up a keyboard shortcut for the [`ai-code-orchestrator.acceptInput` command](features/keyboard-shortcuts.md) to accept suggestions or submit text input without using the mouse. Perfect for keyboard-focused workflows and reducing hand strain.
+- Assign specialized models to different modes in Settings (⚙️) → **Roles** (e.g., a reasoning model for Architect, a faster non-reasoning model for Code). Tasks and subtasks then run with their mode's model automatically.
+- Customize the [context reduction prompt](features/intelligent-context-condensing.md#customizing-the-context-condensing-prompt) if you find that for your domain/use case it forgets particular things. You can instruct it to preserve specific types of information that are critical to your workflow.

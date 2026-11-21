@@ -240,15 +240,49 @@ describe("ReadFileTool", () => {
 			expect(callbacks.pushToolResult).toHaveBeenCalledWith(expect.stringContaining("Error:"))
 		})
 
-		it("should return error when offset is 0 or negative", async () => {
+		it("should treat offset 0 as not set and read from the beginning", async () => {
 			const mockTask = createMockTask()
 			const callbacks = createMockCallbacks()
 
-			await readFileTool.execute({ path: "test.txt", offset: 0 }, mockTask as any, callbacks)
+			mockedFsReadFile.mockResolvedValue(Buffer.from("line 1\nline 2"))
+			mockedReadWithSlice.mockReturnValue({
+				content: "1 | line 1\n2 | line 2",
+				returnedLines: 2,
+				totalLines: 2,
+				wasTruncated: false,
+				includedRanges: [[1, 2]],
+			})
 
-			expect(callbacks.pushToolResult).toHaveBeenCalledWith(
+			await readFileTool.execute({ path: "test.txt", offset: 0, limit: 0 }, mockTask as any, callbacks)
+
+			expect(callbacks.pushToolResult).not.toHaveBeenCalledWith(
 				expect.stringContaining("offset must be a 1-indexed line number"),
 			)
+			expect(mockedReadWithSlice).toHaveBeenCalledWith(expect.any(String), 0, 2000)
+		})
+
+		it("should ignore indentation options in slice mode", async () => {
+			const mockTask = createMockTask()
+			const callbacks = createMockCallbacks()
+
+			mockedFsReadFile.mockResolvedValue(Buffer.from("line 1"))
+			mockedReadWithSlice.mockReturnValue({
+				content: "1 | line 1",
+				returnedLines: 1,
+				totalLines: 1,
+				wasTruncated: false,
+				includedRanges: [[1, 1]],
+			})
+
+			await readFileTool.execute(
+				{ path: "test.txt", mode: "slice", indentation: { anchor_line: 0, max_lines: 0 } },
+				mockTask as any,
+				callbacks,
+			)
+
+			expect(callbacks.pushToolResult).not.toHaveBeenCalledWith(expect.stringContaining("anchor_line must be"))
+			expect(mockedReadWithSlice).toHaveBeenCalled()
+			expect(mockedReadWithIndentation).not.toHaveBeenCalled()
 		})
 
 		it("should return error when offset is negative", async () => {

@@ -2,6 +2,7 @@ import React, { memo, useCallback, useEffect, useMemo, useState } from "react"
 import { convertHeadersToObject } from "./utils/headers"
 import { useDebounce } from "react-use"
 import { VSCodeLink, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
+import { Checkbox } from "vscrui"
 import { ExternalLinkIcon } from "@radix-ui/react-icons"
 
 import {
@@ -107,6 +108,8 @@ import { ConsecutiveMistakeLimitControl } from "./ConsecutiveMistakeLimitControl
 import { BedrockCustomArn } from "./providers/BedrockCustomArn"
 import { buildDocLink } from "@src/utils/docLinks"
 import { BookOpenText } from "lucide-react"
+
+const PROVIDERS_WITHOUT_DOCS = new Set<string>(["unbound", "poe"])
 
 export interface ApiOptionsProps {
 	uriScheme: string | undefined
@@ -389,15 +392,21 @@ const ApiOptions = ({
 			return undefined
 		}
 
-		// Get the URL slug - use custom mapping if available, otherwise use the provider key.
+		// Providers without a page in apps/docs/providers get no docs link.
+		if (PROVIDERS_WITHOUT_DOCS.has(selectedProvider)) {
+			return undefined
+		}
+
+		// Get the docs page name - use custom mapping if available, otherwise use the provider key.
 		const slugs: Record<string, string> = {
 			"openai-native": "openai",
+			"openai-codex": "openai-chatgpt-plus-pro",
 			openai: "openai-compatible",
 		}
 
 		const slug = slugs[selectedProvider] || selectedProvider
 		return {
-			url: buildDocLink(`providers/${slug}`, "provider_docs"),
+			url: buildDocLink(`providers/${slug}`),
 			name,
 		}
 	}, [selectedProvider])
@@ -763,6 +772,16 @@ const ApiOptions = ({
 								<span className="font-medium">{t("settings:advancedSettings.title")}</span>
 							</CollapsibleTrigger>
 							<CollapsibleContent className="space-y-3">
+								<div>
+									<Checkbox
+										checked={apiConfiguration?.openAiParallelToolCalls ?? false}
+										onChange={handleInputChange("openAiParallelToolCalls", noTransform)}>
+										{t("settings:modelInfo.enableParallelToolCalls")}
+									</Checkbox>
+									<div className="text-sm text-vscode-descriptionForeground ml-6">
+										{t("settings:modelInfo.enableParallelToolCallsDescription")}
+									</div>
+								</div>
 								<TodoListSettingsControl
 									todoListEnabled={apiConfiguration.todoListEnabled}
 									onChange={(field, value) => setApiConfigurationField(field, value)}

@@ -14,7 +14,6 @@ import { DEFAULT_HEADERS } from "./constants"
 import { BaseProvider } from "./base-provider"
 import type { SingleCompletionHandler, ApiHandlerCreateMessageMetadata } from "../index"
 import { handleOpenAIError } from "./utils/openai-error-handler"
-import { isMcpTool } from "../../utils/mcp-name"
 
 const XAI_DEFAULT_TEMPERATURE = 0
 
@@ -58,8 +57,8 @@ export class XAIHandler extends BaseProvider implements SingleCompletionHandler 
 	 * Chat Completions: { type: "function", function: { name, description, parameters } }
 	 * Responses API: { type: "function", name, description, parameters }
 	 *
-	 * Uses base provider's convertToolSchemaForOpenAI() for schema hardening
-	 * (additionalProperties: false, ensureAllRequired) and handles MCP tools.
+	 * Uses base provider's convertToolsForOpenAI() for schema normalization and the
+	 * per-tool strict decision (strict only when every parameter is required; MCP tools non-strict).
 	 */
 	private mapResponseTools(tools?: any[]): any[] | undefined {
 		const converted = this.convertToolsForOpenAI(tools)
@@ -68,18 +67,13 @@ export class XAIHandler extends BaseProvider implements SingleCompletionHandler 
 		}
 		return converted
 			.filter((tool) => tool?.type === "function")
-			.map((tool) => {
-				const isMcp = isMcpTool(tool.function.name)
-				return {
-					type: "function",
-					name: tool.function.name,
-					description: tool.function.description,
-					parameters: isMcp
-						? tool.function.parameters
-						: this.convertToolSchemaForOpenAI(tool.function.parameters),
-					strict: !isMcp,
-				}
-			})
+			.map((tool) => ({
+				type: "function",
+				name: tool.function.name,
+				description: tool.function.description,
+				parameters: tool.function.parameters,
+				strict: tool.function.strict,
+			}))
 	}
 
 	override async *createMessage(
@@ -115,7 +109,7 @@ export class XAIHandler extends BaseProvider implements SingleCompletionHandler 
 			requestBody.tools = responseTools
 			// Cast tool_choice since metadata uses Chat Completions types but Responses API has its own type
 			requestBody.tool_choice = (metadata?.tool_choice ?? "auto") as any
-			requestBody.parallel_tool_calls = metadata?.parallelToolCalls ?? true
+			requestBody.parallel_tool_calls = metadata?.parallelToolCalls ?? false
 		}
 
 		// Pass reasoning effort for models that support it (e.g., mini models)

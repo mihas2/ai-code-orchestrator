@@ -427,6 +427,25 @@ describe("MistralHandler", () => {
 			})
 		})
 
+		it.each([
+			[false, false],
+			[true, true],
+		] as const)(
+			"forwards parallelToolCalls %s as SDK parallelToolCalls %s",
+			async (parallelToolCalls, expected) => {
+				const metadata: ApiHandlerCreateMessageMetadata = {
+					taskId: "test-task",
+					tools: mockTools,
+					parallelToolCalls,
+				}
+
+				const iterator = handler.createMessage(systemPrompt, messages, metadata)
+				await iterator.next()
+
+				expect(mockCreate.mock.calls[0][0].parallelToolCalls).toBe(expected)
+			},
+		)
+
 		it("should always set toolChoice to 'any' when tools are provided", async () => {
 			// Even if tool_choice is provided in metadata, we override it to "any"
 			const metadata: ApiHandlerCreateMessageMetadata = {

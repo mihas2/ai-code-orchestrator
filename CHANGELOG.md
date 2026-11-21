@@ -1,5 +1,26 @@
 # AI Code Orchestrator
 
+## [1.3.5] - 2026-11-21
+
+### Changed
+
+- Removed the `switch_mode` tool: models no longer switch the mode of a running task and delegate work to other modes through subtasks instead. Follow-up suggestions no longer carry a mode, and the Mode auto-approve permission was removed.
+- "Enable parallel tool calls" is now a per-profile setting in Advanced settings for every provider that supports it, off by default.
+
+### Fixed
+
+- The role selected in Settings → Roles no longer follows or changes the chat's mode, and creating or importing a role no longer switches the chat.
+- Each role's model list is loaded from the profile assigned to that role instead of the profile selected in Settings → Providers.
+- Stop cancels the task on the first click, including during tool and command execution, and stops the command the task was waiting on.
+- The manual Condense Context button no longer gets stuck; failures are reported.
+- "Go to subtask" links open the correct child task, including for existing history.
+- Tool calls with empty or invalid arguments are shown as errors and returned to the model instead of appearing as empty blocks.
+- Models on OpenAI-compatible providers no longer have to fill in optional tool parameters, which caused many failed tool calls. Tool errors now say which parameters are missing.
+
+### Documentation
+
+- The documentation is now plain Markdown in the repository, readable directly on GitHub, and outdated pages were updated or removed.
+
 ## [1.3.4] - 2026-09-28
 
 ### Added

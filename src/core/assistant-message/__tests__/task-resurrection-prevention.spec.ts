@@ -24,20 +24,22 @@ vi.mock("../../tools/validateToolUse", () => ({
 	isValidToolName: vi.fn(() => true),
 }))
 
-const attemptCompletionHandleMock = vi.fn().mockImplementation(async (task: any, block: any) => {
-	// Simulate the behavior of AttemptCompletionTool.handle()
-	// which calls handlePartial() for partial blocks or execute() for complete blocks
-	// Both should set completion status
-	if (task.taskCompletionStatus === TaskCompletionStatus.RUNNING) {
+// Mirrors AttemptCompletionTool.handle():
+// - partial blocks go to handlePartial(), which only streams a preview and must NOT
+//   change the completion status (that would stop the task loop too early);
+// - complete blocks go to execute(), which asks "completion_result" and moves the task
+//   from RUNNING to COMPLETING when the user accepts it.
+async function simulateAttemptCompletion(task: any, block: any) {
+	if (block.partial) {
+		return
+	}
+	const { response } = await task.ask("completion_result", "", false)
+	if (response === "yesButtonClicked" && task.taskCompletionStatus === TaskCompletionStatus.RUNNING) {
 		task.setCompletionStatus(TaskCompletionStatus.COMPLETING)
 	}
+}
 
-	// Simulate the UI interactions for non-partial blocks
-	if (!block.partial) {
-		// This simulates the ask() call in execute()
-		// which returns yesButtonClicked (mocked in mockCline)
-	}
-})
+const attemptCompletionHandleMock = vi.fn().mockImplementation(simulateAttemptCompletion)
 
 vi.mock("../../tools/AttemptCompletionTool", () => ({
 	attemptCompletionTool: {
@@ -107,11 +109,8 @@ describe("Task Resurrection Prevention", () => {
 			return true
 		})
 
-		// Mock attemptCompletionTool to simulate successful completion
-		attemptCompletionHandleMock.mockImplementation(async (task: any, block: any, callbacks: any) => {
-			// Simulate approval
-			await callbacks.askApproval("tool", JSON.stringify({ tool: "attempt_completion" }))
-		})
+		// Default: the user accepts the completion result (see simulateAttemptCompletion)
+		attemptCompletionHandleMock.mockImplementation(simulateAttemptCompletion)
 	})
 
 	// ============================================================================
@@ -160,19 +159,17 @@ describe("Task Resurrection Prevention", () => {
 	// 2. PARTIAL FINALIZATION (2 теста)
 	// ============================================================================
 	describe("Partial Block Finalization on attempt_completion", () => {
-		it("should finalize partial attempt_completion block and prevent infinite loop", async () => {
-			// Тест: partial=true блок с attempt_completion
-			// Ожидание: block.partial устанавливается в false, флаги устанавливаются
-
-			const toolCallId = "completion-partial"
+		it("should treat a partial attempt_completion block as a preview until it is finalized", async () => {
+			// A partial block is a streaming preview: presentAssistantMessage must not
+			// force-finalize it, set the completion status or release the task loop.
+			// Task.ts marks the block complete (partial=false) when the tool call ends.
 			const block = {
 				type: "tool_use" as const,
-				id: toolCallId,
+				id: "completion-partial",
 				name: "attempt_completion" as const,
 				params: { result: "test" },
 				nativeArgs: { result: "test" },
-				partial: true, // Still streaming
-				content: "test\n",
+				partial: true,
 			}
 			mockCline.assistantMessageContent = [block]
 			mockCline.currentStreamingContentIndex = 0
@@ -181,43 +178,44 @@ describe("Task Resurrection Prevention", () => {
 
 			await presentAssistantMessage(mockCline)
 
-			// Partial блок НЕ обрабатывается (index не инкрементируется)
-			// но флаги ДОЛЖНЫ быть установлены для предотвращения воскрешения
+			expect(attemptCompletionHandleMock).toHaveBeenCalledTimes(1)
+			expect(mockCline.currentStreamingContentIndex).toBe(0)
+			expect(mockCline.userMessageContentReady).toBe(false)
+			expect(mockCline.taskCompletionStatus).toBe(TaskCompletionStatus.RUNNING)
+
+			// The tool call ends: the block is finalized and presented again
+			block.partial = false
+			await presentAssistantMessage(mockCline)
+
+			expect(attemptCompletionHandleMock).toHaveBeenCalledTimes(2)
+			expect(mockCline.currentStreamingContentIndex).toBe(1)
 			expect(mockCline.userMessageContentReady).toBe(true)
 			expect(mockCline.taskCompletionStatus).toBe(TaskCompletionStatus.COMPLETING)
 		})
 
-		it("should not process attempt_completion multiple times for same block", async () => {
-			// Тест: повторный вызов presentAssistantMessage не должен обрабатывать attempt_completion снова
-
-			const toolCallId = "completion-test"
+		it("should not process attempt_completion again once the finalized block completed", async () => {
 			const block = {
 				type: "tool_use" as const,
-				id: toolCallId,
+				id: "completion-test",
 				name: "attempt_completion" as const,
 				params: { result: "done" },
 				nativeArgs: { result: "done" },
-				partial: true,
-				content: "done",
+				partial: false,
 			}
 			mockCline.assistantMessageContent = [block]
 			mockCline.currentStreamingContentIndex = 0
 			mockCline.didCompleteReadingStream = true
+			mockCline.taskCompletionStatus = TaskCompletionStatus.RUNNING
 
-			// First call
 			await presentAssistantMessage(mockCline)
 
-			// attempt_completion вызывается даже для partial блоков
 			expect(attemptCompletionHandleMock).toHaveBeenCalledTimes(1)
-
-			// Флаги должны быть установлены для предотвращения воскрешения
 			expect(mockCline.userMessageContentReady).toBe(true)
+			expect(mockCline.taskCompletionStatus).toBe(TaskCompletionStatus.COMPLETING)
 
-			// Повторный вызов НЕ должен вызвать attemptCompletion снова
-			// потому что флаг userMessageContentReady уже установлен
+			// A late call (e.g. from the stream loop) must not run the completion again
 			await presentAssistantMessage(mockCline)
 
-			// Должен остаться 1 вызов (не увеличиться)
 			expect(attemptCompletionHandleMock).toHaveBeenCalledTimes(1)
 		})
 	})

@@ -22,13 +22,18 @@ vi.mock("../../tools/validateToolUse", () => ({
 	isValidToolName: vi.fn(() => true),
 }))
 
-const attemptCompletionHandleMock = vi.fn().mockImplementation(async (task: any, block: any) => {
-	// Simulate the behavior of AttemptCompletionTool setting completion status
-	// This happens in both execute() for complete blocks and handlePartial() for partial blocks
-	if (task.taskCompletionStatus === TaskCompletionStatus.RUNNING) {
+// Mirrors the completion contract of AttemptCompletionTool.execute(): it asks the user
+// with "completion_result" and, when the result is accepted, moves the task from RUNNING
+// to COMPLETING. presentAssistantMessage never changes the completion status itself; it
+// only stops draining further blocks once the tool has done so.
+async function simulateAttemptCompletion(task: any) {
+	const { response } = await task.ask("completion_result", "", false)
+	if (response === "yesButtonClicked" && task.taskCompletionStatus === TaskCompletionStatus.RUNNING) {
 		task.setCompletionStatus(TaskCompletionStatus.COMPLETING)
 	}
-})
+}
+
+const attemptCompletionHandleMock = vi.fn().mockImplementation(simulateAttemptCompletion)
 
 vi.mock("../../tools/AttemptCompletionTool", () => ({
 	attemptCompletionTool: {
@@ -97,13 +102,8 @@ describe("presentAssistantMessage - completion guard regression tests", () => {
 			return true
 		})
 
-		// Mock attemptCompletionTool to simulate successful completion
-		attemptCompletionHandleMock.mockImplementation(async (task: any, block: any, callbacks: any) => {
-			// Simulate approval
-			await callbacks.askApproval("tool", JSON.stringify({ tool: "attempt_completion" }))
-			// AttemptCompletionTool does NOT set userMessageContentReady or change status
-			// That's done in presentAssistantMessage after tool.handle() returns
-		})
+		// Default: the user accepts the completion result (see simulateAttemptCompletion)
+		attemptCompletionHandleMock.mockImplementation(simulateAttemptCompletion)
 	})
 
 	it("should NOT recursively call presentAssistantMessage after attempt_completion", async () => {

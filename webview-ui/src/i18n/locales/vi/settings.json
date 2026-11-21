@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "Bật tự động phê duyệt các công cụ MCP riêng lẻ trong chế độ xem Máy chủ MCP (yêu cầu cả cài đặt này và hộp kiểm \"Luôn cho phép\" của công cụ)"
 		},
-		"modeSwitch": {
-			"label": "Chế độ",
-			"description": "Tự động chuyển đổi giữa các chế độ khác nhau mà không cần phê duyệt"
-		},
 		"subtasks": {
 			"label": "Công việc phụ",
 			"description": "Cho phép tạo và hoàn thành các công việc phụ mà không cần phê duyệt"
@@ -577,11 +573,6 @@
 			"label": "Ngưỡng kích hoạt nén ngữ cảnh thông minh",
 			"description": "Khi cửa sổ ngữ cảnh đạt đến ngưỡng này, AI Code Orchestrator sẽ tự động nén nó."
 		},
-		"condensingApiConfiguration": {
-			"label": "Cấu hình API cho Tóm tắt Ngữ cảnh",
-			"description": "Chọn cấu hình API để sử dụng cho các thao tác tóm tắt ngữ cảnh. Để trống để sử dụng cấu hình đang hoạt động hiện tại.",
-			"useCurrentConfig": "Mặc định"
-		},
 		"customCondensingPrompt": {
 			"label": "Lời nhắc nén ngữ cảnh tùy chỉnh",
 			"description": "Lời nhắc hệ thống tùy chỉnh cho việc nén ngữ cảnh. Để trống để sử dụng lời nhắc mặc định.",
@@ -835,6 +826,8 @@
 		"cacheReadsPrice": "Giá đọc bộ nhớ đệm",
 		"cacheWritesPrice": "Giá ghi bộ nhớ đệm",
 		"enableStreaming": "Bật streaming",
+		"enableParallelToolCalls": "Bật gọi công cụ song song",
+		"enableParallelToolCallsDescription": "Áp dụng cho các nhà cung cấp có API hỗ trợ tham số gọi công cụ song song. Khi bật, mô hình có thể gọi nhiều công cụ cùng lúc. Khi tắt hoặc chưa đặt, việc gọi công cụ song song bị cấm.",
 		"enableR1Format": "Kích hoạt tham số mô hình R1",
 		"enableR1FormatTips": "Cần kích hoạt khi sử dụng các mô hình R1 như QWQ, để tránh lỗi 400",
 		"useAzure": "Sử dụng Azure",

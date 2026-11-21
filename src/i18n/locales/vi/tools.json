@@ -24,5 +24,9 @@
 		"invalidImageData": "Dữ liệu hình ảnh không hợp lệ trong phản hồi",
 		"invalidImageFormat": "Nhận được định dạng hình ảnh không hợp lệ",
 		"unknownError": "Đã xảy ra lỗi không xác định"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "Công cụ {{toolName}}: API trả về một lệnh gọi không có đối số (nhà cung cấp đã gửi đối số rỗng). Mô hình đã nhận lỗi và sẽ thử lại.",
+		"invalidArguments": "Công cụ {{toolName}}: đối số không hợp lệ từ API; mô hình sẽ thử lại."
 	}
 }

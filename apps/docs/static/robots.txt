@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://github.com/mihas2/ai-code-orchestrator/sitemap.xml

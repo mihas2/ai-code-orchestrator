@@ -35,7 +35,6 @@ export const AutoApproveDropdown = ({ disabled = false, triggerClassName = "" }:
 		setAlwaysAllowWrite,
 		setAlwaysAllowExecute,
 		setAlwaysAllowMcp,
-		setAlwaysAllowModeSwitch,
 		setAlwaysAllowSubtasks,
 		setAlwaysAllowFollowupQuestions,
 	} = useExtensionState()
@@ -59,9 +58,6 @@ export const AutoApproveDropdown = ({ disabled = false, triggerClassName = "" }:
 				case "alwaysAllowMcp":
 					setAlwaysAllowMcp(value)
 					break
-				case "alwaysAllowModeSwitch":
-					setAlwaysAllowModeSwitch(value)
-					break
 				case "alwaysAllowSubtasks":
 					setAlwaysAllowSubtasks(value)
 					break
@@ -82,7 +78,6 @@ export const AutoApproveDropdown = ({ disabled = false, triggerClassName = "" }:
 			setAlwaysAllowWrite,
 			setAlwaysAllowExecute,
 			setAlwaysAllowMcp,
-			setAlwaysAllowModeSwitch,
 			setAlwaysAllowSubtasks,
 			setAlwaysAllowFollowupQuestions,
 			setAutoApprovalEnabled,

@@ -79,7 +79,6 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		organizationAllowList,
 		runtimeMode: mode = defaultModeSlug,
 		setMode,
-		alwaysAllowModeSwitch,
 		customModes,
 		soundEnabled,
 		soundVolume,
@@ -595,6 +594,9 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	useEffect(() => {
 		activeAttemptRef.current = undefined
 		lastStartedCommandRef.current = undefined
+		// A new instance of the same task (e.g. rehydrated after Stop) keeps task.ts, so the
+		// reset above doesn't fire; never carry a condensing lock over to a new instance.
+		setIsCondensing(false)
 	}, [currentTaskId, currentTaskInstanceId])
 
 	const taskTs = task?.ts
@@ -703,6 +705,22 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			setCancelPending(false)
 		}
 	}, [isStreaming, cancelPending])
+
+	// The lock only exists to debounce double clicks. If the extension did not
+	// stop the task (e.g. the cancel raced with a task switch), the lock must not
+	// leave the Stop button dead until streaming happens to toggle.
+	useEffect(() => {
+		if (!cancelPending) {
+			return
+		}
+		const timer = setTimeout(() => setCancelPending(false), 2000)
+		return () => clearTimeout(timer)
+	}, [cancelPending])
+
+	// A new task instance (rehydrate after stop, delegation) never inherits the lock.
+	useEffect(() => {
+		setCancelPending(false)
+	}, [taskIdentity])
 
 	const markFollowUpAsAnswered = useCallback(() => {
 		const lastFollowUpMessage = messagesRef.current.findLast((msg: ClineMessage) => msg.ask === "followup")
@@ -1736,14 +1754,10 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				markFollowUpAsAnswered()
 			}
 
-			// Check if we need to switch modes
-			if (suggestion.mode) {
-				// Only switch modes if it's a manual click (event exists) or auto-approval is allowed
-				const isManualClick = !!event
-				if (isManualClick || alwaysAllowModeSwitch) {
-					// Switch mode without waiting
-					switchToMode(suggestion.mode)
-				}
+			// Suggestions from older task history may still carry a mode. Models can no longer
+			// switch modes, so such a mode is only applied when the user clicks the suggestion.
+			if (suggestion.mode && event) {
+				switchToMode(suggestion.mode)
 			}
 
 			if (event?.shiftKey) {
@@ -1760,7 +1774,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				setInputValue(preservedInput)
 			}
 		},
-		[handleSendMessage, setInputValue, switchToMode, alwaysAllowModeSwitch, clineAsk, markFollowUpAsAnswered],
+		[handleSendMessage, setInputValue, switchToMode, clineAsk, markFollowUpAsAnswered],
 	)
 
 	const handleBatchFileResponse = useCallback(

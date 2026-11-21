@@ -17,7 +17,7 @@ AI Code Orchestrator is een VS Code-extensie en CLI voor het plannen, implemente
 - Wijzigingen reviewen, fouten diagnosticeren en bestaande code verbeteren
 - Werken met bestanden, terminals, afbeeldingen en externe MCP-tools
 - Providers zoals Vercel AI Gateway en Unbound, modellen, machtigingen en aangepaste rollen configureren
-- Modellen toewijzen aan afzonderlijke rollen, met automatische overerving van het primaire model wanneer geen override is ingesteld
+- Een providerprofiel en model toewijzen aan afzonderlijke rollen; een rol zonder eigen model gebruikt het model van zijn profiel, een rol zonder profiel het standaardprofiel
 - Taken voortzetten vanuit de editor of de opdrachtregel
 
 ## Rollen
@@ -33,7 +33,7 @@ AI Code Orchestrator past zich aan het werk aan:
 - **Translate** — lokalisatiebestanden vertalen en beheren
 - **Custom** — gespecialiseerde workflows voor een team maken
 
-Elke rol kan een eigen modelconfiguratie gebruiken. Als er geen modelspecifieke rol is toegewezen, wordt het primaire model overgenomen. Zo kun je mogelijkheden, snelheid en kosten binnen een workflow eenvoudig balanceren.
+Elke rol kan een eigen providerprofiel en model gebruiken. Die stel je in via Instellingen → Modi, los van het standaardprofiel dat in Instellingen → Providers is gekozen. Een rol zonder eigen model gebruikt het model van zijn profiel en een rol zonder profiel het standaardprofiel. Zo kun je mogelijkheden, snelheid en kosten binnen een workflow eenvoudig balanceren.
 
 ## Documentatie
 

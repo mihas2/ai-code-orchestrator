@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ExtensionStateContext } from "@src/context/ExtensionStateContext"
 import { vscode } from "@src/utils/vscode"
-import ModesView from "../ModesView"
+import ModesView, { resetLastEditedRoleForTests } from "../ModesView"
 
 vi.mock("@src/utils/vscode", () => ({ vscode: { postMessage: vi.fn() } }))
 
@@ -20,7 +20,10 @@ const state = {
 }
 
 describe("ModesView role model cached state", () => {
-	beforeEach(() => vi.clearAllMocks())
+	beforeEach(() => {
+		vi.clearAllMocks()
+		resetLastEditedRoleForTests()
+	})
 
 	it("updates SettingsView's cached role assignments without posting or rendering a second Save", async () => {
 		const setCachedStateField = vi.fn()
@@ -29,6 +32,9 @@ describe("ModesView role model cached state", () => {
 				<ModesView setCachedStateField={setCachedStateField as any} />
 			</ExtensionStateContext.Provider>,
 		)
+		// Roles are chosen for editing on the settings page itself, independent of the chat mode.
+		fireEvent.click(screen.getByTestId("mode-select-trigger"))
+		fireEvent.click(screen.getByTestId("mode-option-code"))
 		fireEvent.click(await screen.findByTestId("model-picker-button"))
 		fireEvent.click(await screen.findByText("primary"))
 

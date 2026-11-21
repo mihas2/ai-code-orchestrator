@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest"
 
 import { ClineProvider } from "../ClineProvider"
 import { RunSlashCommandTool } from "../../tools/RunSlashCommandTool"
-import { SwitchModeTool } from "../../tools/SwitchModeTool"
 import { getCommand } from "../../../services/command/commands"
 
 vi.mock("../../../services/command/commands", () => ({
@@ -150,35 +149,6 @@ describe("ClineProvider provider profile isolation", () => {
 		expect(state.apiConfiguration).toEqual({ apiProvider: "anthropic", apiModelId: "profile-model" })
 	})
 	describe("runtime paths", () => {
-		it("SwitchModeTool updates runtime mode without changing the Settings mode", async () => {
-			const provider = makeActivationProvider()
-			const task = {
-				taskId: "task-id",
-				_taskMode: "code",
-				taskHistory: [],
-				emit: vi.fn(),
-				consecutiveMistakeCount: 0,
-				didToolFailInCurrentTurn: false,
-				recordToolError: vi.fn(),
-				providerRef: { deref: vi.fn(() => provider) },
-			}
-			provider.getState = vi.fn().mockResolvedValue({ mode: "code", customModes: [] })
-			provider.switchRuntimeMode = vi.fn(async (runtimeTask: any, mode: string) => {
-				runtimeTask._taskMode = mode
-			})
-
-			await new SwitchModeTool().execute({ mode_slug: "architect", reason: "focus" }, task as any, {
-				askApproval: vi.fn().mockResolvedValue(true),
-				handleError: vi.fn(),
-				pushToolResult: vi.fn(),
-			})
-
-			expect(task._taskMode).toBe("architect")
-			expect((await provider.getState()).mode).toBe("code")
-			expect(provider.contextProxy.setValue).not.toHaveBeenCalledWith("mode", expect.anything())
-			expect(provider.providerSettingsManager.setModeConfig).not.toHaveBeenCalled()
-		})
-
 		it("RunSlashCommandTool mode switches update runtime without persisting Settings", async () => {
 			const provider = makeActivationProvider()
 			provider.getState = vi.fn().mockResolvedValue({

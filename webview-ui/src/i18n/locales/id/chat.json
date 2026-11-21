@@ -356,16 +356,16 @@
 		"support": "Dukung AI Code Orchestrator dengan memberi kami bintang di <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} menghadirkan peningkatan umum, perbaikan yang membantu, dan pengalaman yang lebih lancar.",
-			"continuity": "Tugas selesai dengan lebih andal, dan lebih mudah melanjutkan dari tempat terakhir.",
-			"alternatives": "Pekerjaan sehari-hari terasa lebih jelas dan konsisten.",
+			"intro": "AI Code Orchestrator {{version}} membuat kerja dengan peran lebih dapat diprediksi dan kontrol sehari-hari lebih andal.",
+			"continuity": "Berhenti, Ringkas Konteks, dan tautan subtugas kini berfungsi sesuai harapan, dan masalah pada pemanggilan alat ditampilkan dengan jelas alih-alih gagal diam-diam.",
+			"alternatives": "Setiap peran memiliki profil dan modelnya sendiri, tidak bergantung pada chat.",
 			"signoff": "Selamat berkoding!"
 		},
 		"release": {
 			"heading": "Yang Baru:",
-			"gpt55": "Cara kerja yang lebih jelas: setiap peran lebih mudah dipahami, sehingga kamu bisa memilih bantuan yang tepat untuk tugas.",
-			"claudeOpus47": "Tugas yang lebih andal: pekerjaan yang selesai tetap selesai, dan hasil kembali dengan lebih lancar.",
-			"checkpointNav": "Pengalaman yang lebih lancar: memulai dari awal dan berpindah antar tugas terasa lebih sederhana."
+			"gpt55": "Delegasi lebih jelas: pekerjaan untuk peran lain diserahkan sebagai subtugas, dan tugas saat ini tetap pada modenya.",
+			"claudeOpus47": "Kontrol yang andal: Berhenti bekerja pada klik pertama, dan Ringkas Konteks tidak lagi macet.",
+			"checkpointNav": "Peran independen: setiap peran memakai profil dan modelnya sendiri, dan pemanggilan alat paralel dapat diaktifkan per profil."
 		},
 		"cloudAgents": {
 			"heading": "Baru di Cloud:",

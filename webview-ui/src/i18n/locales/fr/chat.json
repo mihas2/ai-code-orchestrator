@@ -331,16 +331,16 @@
 		"support": "Soutiens AI Code Orchestrator en nous donnant une étoile sur <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} apporte des améliorations générales, des corrections utiles et une expérience plus fluide.",
-			"continuity": "Les tâches se terminent de façon plus fiable, et il est plus facile de reprendre là où tu t'étais arrêté.",
-			"alternatives": "Le travail au quotidien paraît plus clair et plus cohérent.",
+			"intro": "AI Code Orchestrator {{version}} rend le travail avec les rôles plus prévisible et les commandes du quotidien plus fiables.",
+			"continuity": "Arrêter, condenser le contexte et les liens vers les sous-tâches fonctionnent comme prévu, et les problèmes d'appels d'outils sont clairement signalés au lieu d'échouer en silence.",
+			"alternatives": "Chaque rôle conserve son propre profil et son propre modèle, indépendamment du chat.",
 			"signoff": "Bon développement !"
 		},
 		"release": {
 			"heading": "Quoi de neuf :",
-			"gpt55": "Des façons de travailler plus claires : chaque rôle est plus facile à comprendre, pour choisir l'aide adaptée à la tâche.",
-			"claudeOpus47": "Des tâches plus fiables : le travail terminé le reste, et les résultats reviennent plus naturellement.",
-			"checkpointNav": "Une expérience plus fluide : repartir de zéro et passer d'une tâche à l'autre est plus simple."
+			"gpt55": "Délégation plus claire : le travail destiné à un autre rôle est confié à une sous-tâche, et ta tâche actuelle garde son mode.",
+			"claudeOpus47": "Commandes fiables : Arrêter fonctionne dès le premier clic, et Condenser le contexte ne reste plus bloqué.",
+			"checkpointNav": "Rôles indépendants : chaque rôle utilise son propre profil et son propre modèle, et les appels d'outils en parallèle peuvent être activés par profil."
 		},
 		"cloudAgents": {
 			"heading": "Nouveautés dans le Cloud :",

@@ -24,5 +24,9 @@
 		"invalidImageData": "Dados de imagem inválidos na resposta",
 		"invalidImageFormat": "Formato de imagem inválido recebido",
 		"unknownError": "Ocorreu um erro desconhecido"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "Ferramenta {{toolName}}: a API retornou uma chamada sem argumentos (o provedor enviou argumentos vazios). O modelo recebeu o erro e tentará novamente.",
+		"invalidArguments": "Ferramenta {{toolName}}: argumentos inválidos da API; o modelo tentará novamente."
 	}
 }

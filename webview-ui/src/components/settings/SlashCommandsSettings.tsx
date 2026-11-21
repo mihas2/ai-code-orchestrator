@@ -152,7 +152,7 @@ export const SlashCommandsSettings: React.FC = () => {
 							components={{
 								DocsLink: (
 									<a
-										href={buildDocLink("features/slash-commands", "slash_commands_settings")}
+										href={buildDocLink("features/slash-commands")}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-vscode-textLink-foreground hover:underline">

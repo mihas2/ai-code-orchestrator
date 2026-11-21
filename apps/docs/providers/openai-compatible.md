@@ -1,0 +1,114 @@
+# Using OpenAI Compatible Providers With AI Code Orchestrator
+
+AI Code Orchestrator supports a wide range of AI model providers that offer APIs compatible with the OpenAI API standard. This means you can use models from providers _other than_ OpenAI, while still using a familiar API interface. This includes providers like:
+
+- **Local models** running through tools like Ollama and LM Studio (covered in separate sections).
+- **Cloud providers** like Perplexity, Together AI, Anyscale, and others.
+- **Any other provider** offering an OpenAI-compatible API endpoint.
+
+This document focuses on setting up providers _other than_ the official OpenAI API (which has its own [dedicated configuration page](openai.md)).
+
+---
+
+## General Configuration
+
+The key to using an OpenAI-compatible provider is to configure two main settings:
+
+1.  **Base URL:** This is the API endpoint for the provider. It will _not_ be `https://api.openai.com/v1` (that's for the official OpenAI API).
+2.  **API Key:** This is the secret key you obtain from the provider.
+3.  **Model ID:** This is the model name of the specific model.
+
+You'll find these settings in the AI Code Orchestrator settings panel (click the ⚙️ icon):
+
+- **API Provider:** Select "OpenAI Compatible".
+- **Base URL:** Enter the base URL provided by your chosen provider. **This is crucial.**
+- **API Key:** Enter your API key.
+- **Model:** Choose a model.
+- **Model Configuration:** This lets you customize advanced configuration for the model
+    - Max Output Tokens
+    - Context Window
+    - Image Support
+    - Computer Use
+    - Input Price
+    - Output Price
+
+---
+
+## Native Tool Calling
+
+AI Code Orchestrator uses **native tool calling** exclusively. This is the only supported tool protocol -- there is no XML-based fallback.
+
+At a high level:
+
+- **Tool definitions** are sent to the model using OpenAI's native tools schema.
+- **Tool calls** stream back as dedicated tool events, including the tool name, arguments, and metadata.
+- **Tool arguments** are streamed incrementally, which reduces latency between the model deciding to use a tool and AI Code Orchestrator executing it.
+
+### Requirements
+
+For native tool calling to work, the model you select **must** support OpenAI-compatible tool calling. If a model does not support native tool calling, it cannot be used with AI Code Orchestrator.
+
+### Example: simple native tool flow
+
+Here's a simplified example of how a file-reading tool might be exposed when using an OpenAI-native endpoint:
+
+```json
+{
+	"tools": [
+		{
+			"type": "function",
+			"function": {
+				"name": "read_file",
+				"description": "Read a file from the workspace with line numbers.",
+				"parameters": {
+					"type": "object",
+					"properties": {
+						"path": { "type": "string", "description": "Relative file path" },
+						"start_line": { "type": "integer", "nullable": true },
+						"end_line": { "type": "integer", "nullable": true }
+					},
+					"required": ["path"]
+				}
+			}
+		}
+	]
+}
+```
+
+When the model decides to use `read_file`, AI Code Orchestrator surfaces **streamed tool events** in the task timeline:
+
+- A native _tool call_ event with the tool name and arguments as they're being generated
+- The corresponding _tool result_ event showing the file contents and any truncation or line-range information
+
+This gives you lower-latency feedback on which tools are being used and with what arguments.
+
+### Parallel Tool Calls
+
+The **Enable parallel tool calls** checkbox is in the profile's **Advanced settings** (Settings → Providers). It is a per-profile setting and applies to every provider whose API supports the parallel tool calls parameter, not only OpenAI Compatible:
+
+- **Enabled:** the model may call several tools in one response.
+- **Disabled or unset (default):** parallel tool calls are forbidden, and the model calls one tool at a time.
+
+The system prompt and tool descriptions follow this setting: with it off, the model is instructed to call one tool per response; with it on, it may batch independent calls (for example, reading several files at once).
+
+Keep it off for proxies and gateways that drop tool arguments when calls are parallel. A task uses the setting of the profile it runs with, so a role assigned to another profile follows that profile's setting.
+
+### Limitations
+
+- **Model support:** Not all models support native tool calling. If a model does not support tools, it cannot be used with AI Code Orchestrator. Check your provider's documentation to confirm tool-calling support for the model you want to use.
+- **Provider quirks:** Some OpenAI-compatible providers only partially implement the native tools API. If you encounter tool-calling errors, verify that your provider fully supports OpenAI-compatible function calling.
+
+For a deeper overview of how tools work in AI Code Orchestrator in general, see the [Tool Use Overview](../advanced-usage/available-tools/tool-use-overview.md).
+
+---
+
+## Troubleshooting
+
+- **"Invalid API Key":** Double-check that you've entered the API key correctly.
+- **"Model Not Found":** Make sure you're using a valid model ID for your chosen provider.
+- **Connection Errors:** Verify the Base URL is correct and that your provider's API is accessible.
+- **Tool-calling errors:** AI Code Orchestrator requires native tool calling. If your model does not support it, you need to switch to a model that does. Check your provider's documentation for tool-calling compatibility.
+- **"Unusable tool call" errors in chat:** The model sent a tool call with empty or invalid arguments. AI Code Orchestrator shows the error and returns it to the model together with the tool's required and optional parameters, so the model can retry with a correct call. If it happens often, make sure **Enable parallel tool calls** is off for this profile, since some proxies drop arguments of parallel calls.
+- **Unexpected Results:** If you're getting unexpected results, try a different model.
+
+By using an OpenAI-compatible provider, you can leverage the flexibility of AI Code Orchestrator with a wider range of AI models. Remember to always consult your provider's documentation for the most accurate and up-to-date information.

@@ -17,7 +17,7 @@ export default {
 	function: {
 		name: "new_task",
 		description: NEW_TASK_DESCRIPTION,
-		strict: true,
+		strict: false,
 		parameters: {
 			type: "object",
 			properties: {
@@ -30,11 +30,11 @@ export default {
 					description: MESSAGE_PARAMETER_DESCRIPTION,
 				},
 				todos: {
-					type: ["string", "null"],
+					type: "string",
 					description: TODOS_PARAMETER_DESCRIPTION,
 				},
 			},
-			required: ["mode", "message", "todos"],
+			required: ["mode", "message"],
 			additionalProperties: false,
 		},
 	},

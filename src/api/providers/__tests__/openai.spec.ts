@@ -206,6 +206,44 @@ describe("OpenAiHandler", () => {
 			})
 		})
 
+		it("sends parallel_tool_calls false by default", async () => {
+			const stream = handler.createMessage(systemPrompt, messages)
+			for await (const _chunk of stream) {
+				// Drain the request so the create() payload can be asserted.
+			}
+
+			expect(mockCreate.mock.calls[0][0].parallel_tool_calls).toBe(false)
+		})
+
+		it("sends parallel_tool_calls true when the profile enables it", async () => {
+			const enabledHandler = new OpenAiHandler({
+				...mockOptions,
+				openAiParallelToolCalls: true,
+			})
+			const stream = enabledHandler.createMessage(systemPrompt, messages)
+			for await (const _chunk of stream) {
+				// Drain the request so the create() payload can be asserted.
+			}
+
+			expect(mockCreate.mock.calls[0][0].parallel_tool_calls).toBe(true)
+		})
+
+		it("sends parallel_tool_calls false when metadata forbids it", async () => {
+			const enabledHandler = new OpenAiHandler({
+				...mockOptions,
+				openAiParallelToolCalls: true,
+			})
+			const stream = enabledHandler.createMessage(systemPrompt, messages, {
+				taskId: "test-task",
+				parallelToolCalls: false,
+			})
+			for await (const _chunk of stream) {
+				// Drain the request so the create() payload can be asserted.
+			}
+
+			expect(mockCreate.mock.calls[0][0].parallel_tool_calls).toBe(false)
+		})
+
 		it("should handle streaming responses", async () => {
 			const stream = handler.createMessage(systemPrompt, messages)
 			const chunks: any[] = []
@@ -635,7 +673,7 @@ describe("OpenAiHandler", () => {
 					temperature: 0,
 					tools: undefined,
 					tool_choice: undefined,
-					parallel_tool_calls: true,
+					parallel_tool_calls: false,
 				},
 				{ path: "/models/chat/completions" },
 			)
@@ -684,7 +722,7 @@ describe("OpenAiHandler", () => {
 					],
 					tools: undefined,
 					tool_choice: undefined,
-					parallel_tool_calls: true,
+					parallel_tool_calls: false,
 				},
 				{ path: "/models/chat/completions" },
 			)

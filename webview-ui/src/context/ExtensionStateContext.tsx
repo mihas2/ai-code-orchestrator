@@ -414,6 +414,9 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					break
 				}
 				case "routerModels": {
+					// Catalogs fetched for a specific role profile (Roles settings) must not replace
+					// the active profile's catalog.
+					if (message.values?.profileName) break
 					setExtensionRouterModels(message.routerModels)
 					break
 				}

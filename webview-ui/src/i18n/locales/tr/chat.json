@@ -331,16 +331,16 @@
 		"support": "<githubLink>GitHub</githubLink>'da yıldız vererek AI Code Orchestrator'u destekle.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} genel iyileştirmeler, yararlı düzeltmeler ve daha akıcı bir deneyim sunar.",
-			"continuity": "Görevler daha güvenilir şekilde tamamlanır ve kaldığınız yerden devam etmek daha kolaydır.",
-			"alternatives": "Günlük çalışma daha net ve tutarlı hissettirir.",
+			"intro": "AI Code Orchestrator {{version}}, rollerle çalışmayı daha öngörülebilir ve günlük kontrolleri daha güvenilir hâle getiriyor.",
+			"continuity": "Durdurma, bağlamı sıkıştırma ve alt görev bağlantıları beklendiği gibi çalışıyor; araç çağrılarındaki sorunlar sessizce başarısız olmak yerine açıkça gösteriliyor.",
+			"alternatives": "Her rol, sohbetten bağımsız olarak kendi profilini ve modelini korur.",
 			"signoff": "İyi kodlamalar!"
 		},
 		"release": {
 			"heading": "Yenilikler:",
-			"gpt55": "Daha net çalışma biçimleri: her rolü anlamak daha kolay, böylece görev için doğru yardımı seçebilirsin.",
-			"claudeOpus47": "Daha güvenilir görevler: biten iş bitmiş kalır ve sonuçlar daha akıcı şekilde geri gelir.",
-			"checkpointNav": "Daha akıcı bir deneyim: yeniden başlamak ve görevler arasında geçiş yapmak daha basit."
+			"gpt55": "Daha net görev devri: başka bir rolün işi alt görev olarak devredilir ve mevcut görevin modu korunur.",
+			"claudeOpus47": "Güvenilir kontroller: Durdur ilk tıklamada çalışır ve bağlamı sıkıştırma artık takılı kalmaz.",
+			"checkpointNav": "Bağımsız roller: her rol kendi profilini ve modelini kullanır; paralel araç çağrıları profil bazında açılabilir."
 		},
 		"cloudAgents": {
 			"heading": "Cloud'daki yenilikler:",

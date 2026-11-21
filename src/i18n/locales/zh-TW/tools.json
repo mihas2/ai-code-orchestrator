@@ -24,5 +24,9 @@
 		"invalidImageData": "回應中的圖像資料無效",
 		"invalidImageFormat": "收到的圖像格式無效",
 		"unknownError": "發生未知錯誤"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "工具 {{toolName}}：API 傳回了不帶引數的呼叫（提供者傳送了空引數）。模型已收到錯誤，將重試。",
+		"invalidArguments": "工具 {{toolName}}：API 傳回的引數無效；模型將重試。"
 	}
 }

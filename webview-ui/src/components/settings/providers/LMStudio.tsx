@@ -40,6 +40,8 @@ export const LMStudio = ({ apiConfiguration, setApiConfigurationField }: LMStudi
 
 		switch (message.type) {
 			case "lmStudioModels":
+				// Ignore catalogs fetched for a role-specific profile.
+				if (message.values?.profileName) break
 				{
 					const newModels = message.lmStudioModels ?? {}
 					setLmStudioModels(newModels)

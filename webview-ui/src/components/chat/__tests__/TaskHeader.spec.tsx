@@ -39,6 +39,7 @@ vi.mock("@vscode/webview-ui-toolkit/react", () => ({
 const mockExtensionState: {
 	apiConfiguration: ProviderSettings
 	currentTaskItem: { id: string; apiConfigName?: string } | null
+	currentTaskId?: string
 	runtimeApiConfigName?: string
 	listApiConfigMeta?: Array<{ name: string; modelId?: string; id: string }>
 	roleAssignments?: { roles?: Record<string, { modelId?: string }> }
@@ -98,6 +99,7 @@ vi.mock("@aico/api", () => ({
 describe("TaskHeader", () => {
 	beforeEach(() => {
 		mockExtensionState.currentTaskItem = { id: "test-task-id" }
+		mockExtensionState.currentTaskId = undefined
 	})
 	const defaultProps: TaskHeaderProps = {
 		task: { type: "say", ts: Date.now(), text: "Test task", images: [] },
@@ -192,6 +194,22 @@ describe("TaskHeader", () => {
 		expect(condenseButton).toBeDefined()
 		fireEvent.click(condenseButton!)
 		expect(handleCondenseContext).toHaveBeenCalledWith("test-task-id")
+	})
+
+	it("condenses the live current task even when its history item is not loaded", () => {
+		// currentTaskItem (task history) can be missing; that used to make the click a no-op.
+		mockExtensionState.currentTaskItem = null
+		mockExtensionState.currentTaskId = "live-task-id"
+		const handleCondenseContext = vi.fn()
+		renderTaskHeader({ handleCondenseContext })
+
+		fireEvent.click(screen.getByText("Test task"))
+		const condenseButton = screen
+			.getAllByRole("button")
+			.find((button) => button.querySelector("svg.lucide-fold-vertical"))
+		fireEvent.click(condenseButton!)
+
+		expect(handleCondenseContext).toHaveBeenCalledWith("live-task-id")
 	})
 
 	it("should disable the condense context button when buttonsDisabled is true", () => {

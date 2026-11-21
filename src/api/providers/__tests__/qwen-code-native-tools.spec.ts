@@ -99,7 +99,7 @@ describe("QwenCodeHandler Native Tools", () => {
 							}),
 						}),
 					]),
-					parallel_tool_calls: true,
+					parallel_tool_calls: false,
 				}),
 			)
 		})
@@ -145,7 +145,7 @@ describe("QwenCodeHandler Native Tools", () => {
 			const callArgs = mockCreate.mock.calls[mockCreate.mock.calls.length - 1][0]
 			expect(callArgs).toHaveProperty("tools")
 			expect(callArgs).toHaveProperty("tool_choice")
-			expect(callArgs).toHaveProperty("parallel_tool_calls", true)
+			expect(callArgs).toHaveProperty("parallel_tool_calls", false)
 		})
 
 		it("should yield tool_call_partial chunks during streaming", async () => {

@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "Habilitar l'aprovació automàtica d'eines MCP individuals a la vista de Servidors MCP (requereix tant aquesta configuració com la casella \"Permetre sempre\" de l'eina)"
 		},
-		"modeSwitch": {
-			"label": "Mode",
-			"description": "Canviar automàticament entre diferents modes sense requerir aprovació"
-		},
 		"subtasks": {
 			"label": "Subtasques",
 			"description": "Permetre la creació i finalització de subtasques sense requerir aprovació"
@@ -577,11 +573,6 @@
 			"label": "Llindar per activar la condensació intel·ligent de context",
 			"description": "Quan la finestra de context assoleix aquest llindar, AI Code Orchestrator la condensarà automàticament."
 		},
-		"condensingApiConfiguration": {
-			"label": "Configuració d'API per a la condensació de context",
-			"description": "Seleccioneu quina configuració d'API utilitzar per a les operacions de condensació de context. Deixeu-ho sense seleccionar per utilitzar la configuració activa actual.",
-			"useCurrentConfig": "Per defecte"
-		},
 		"customCondensingPrompt": {
 			"label": "Indicació personalitzada de condensació de context",
 			"description": "Personalitzeu la indicació del sistema utilitzada per a la condensació de context. Deixeu-ho buit per utilitzar la indicació per defecte.",
@@ -835,6 +826,8 @@
 		"cacheReadsPrice": "Preu de lectures de caché",
 		"cacheWritesPrice": "Preu d'escriptures de caché",
 		"enableStreaming": "Habilitar streaming",
+		"enableParallelToolCalls": "Activa les crides d'eines en paral·lel",
+		"enableParallelToolCallsDescription": "S'aplica als proveïdors les API dels quals admeten el paràmetre de crides d'eines en paral·lel. Si està activat, el model pot cridar diverses eines alhora. Si està desactivat o no està definit, les crides d'eines en paral·lel estan prohibides.",
 		"enableR1Format": "Activar els paràmetres del model R1",
 		"enableR1FormatTips": "S'ha d'activat quan s'utilitzen models R1 com el QWQ per evitar errors 400",
 		"useAzure": "Utilitzar Azure",

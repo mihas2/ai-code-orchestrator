@@ -242,10 +242,6 @@
 			"label": "MCP",
 			"description": "Automatische Genehmigung einzelner MCP-Tools in der MCP-Server-Ansicht aktivieren (erfordert sowohl diese Einstellung als auch das 'Immer erlauben'-Kontrollkästchen des Tools)"
 		},
-		"modeSwitch": {
-			"label": "Modus",
-			"description": "Automatisch zwischen verschiedenen Modi wechseln ohne Genehmigung"
-		},
 		"subtasks": {
 			"label": "Teilaufgaben",
 			"description": "Erstellung und Abschluss von Unteraufgaben ohne Genehmigung erlauben"
@@ -577,11 +573,6 @@
 			"label": "Schwellenwert für intelligente Kontextkomprimierung",
 			"description": "Wenn das Kontextfenster diesen Schwellenwert erreicht, wird AI Code Orchestrator es automatisch komprimieren."
 		},
-		"condensingApiConfiguration": {
-			"label": "API-Konfiguration für Kontextkomprimierung",
-			"description": "Wählen Sie, welche API-Konfiguration für Kontextkomprimierungsoperationen verwendet werden soll. Lassen Sie unausgewählt, um die aktuelle aktive Konfiguration zu verwenden.",
-			"useCurrentConfig": "Aktuelle Konfiguration verwenden"
-		},
 		"customCondensingPrompt": {
 			"label": "Benutzerdefinierter Kontextkomprimierungs-Prompt",
 			"description": "Passen Sie den System-Prompt an, der für die Kontextkomprimierung verwendet wird. Lassen Sie leer, um den Standard-Prompt zu verwenden.",
@@ -835,6 +826,8 @@
 		"cacheReadsPrice": "Cache-Lesepreis",
 		"cacheWritesPrice": "Cache-Schreibpreis",
 		"enableStreaming": "Streaming aktivieren",
+		"enableParallelToolCalls": "Parallele Tool-Aufrufe aktivieren",
+		"enableParallelToolCallsDescription": "Gilt für Anbieter, deren APIs den Parameter für parallele Tool-Aufrufe unterstützen. Wenn aktiviert, kann das Modell mehrere Tools gleichzeitig aufrufen. Wenn deaktiviert oder nicht gesetzt, sind parallele Tool-Aufrufe nicht erlaubt.",
 		"enableR1Format": "R1-Modellparameter aktivieren",
 		"enableR1FormatTips": "Muss bei Verwendung von R1-Modellen wie QWQ aktiviert werden, um 400er-Fehler zu vermeiden",
 		"useAzure": "Azure verwenden",

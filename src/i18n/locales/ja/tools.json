@@ -24,5 +24,9 @@
 		"invalidImageData": "レスポンスに無効な画像データがあります",
 		"invalidImageFormat": "無効な画像フォーマットを受信しました",
 		"unknownError": "不明なエラーが発生しました"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "ツール {{toolName}}: API が引数なしの呼び出しを返しました（プロバイダーが空の引数を送信しました）。モデルはエラーを受け取り、再試行します。",
+		"invalidArguments": "ツール {{toolName}}: API からの引数が無効です。モデルは再試行します。"
 	}
 }

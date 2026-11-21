@@ -11,7 +11,7 @@ export default {
 	function: {
 		name: "run_slash_command",
 		description: RUN_SLASH_COMMAND_DESCRIPTION,
-		strict: true,
+		strict: false,
 		parameters: {
 			type: "object",
 			properties: {
@@ -20,11 +20,11 @@ export default {
 					description: COMMAND_PARAMETER_DESCRIPTION,
 				},
 				args: {
-					type: ["string", "null"],
+					type: "string",
 					description: ARGS_PARAMETER_DESCRIPTION,
 				},
 			},
-			required: ["command", "args"],
+			required: ["command"],
 			additionalProperties: false,
 		},
 	},

@@ -331,16 +331,16 @@
 		"support": "Apoie o AI Code Orchestrator nos dando uma estrela no <githubLink>GitHub</githubLink>.",
 		"finalRelease": {
 			"title": "AI Code Orchestrator {{version}}",
-			"intro": "AI Code Orchestrator {{version}} traz melhorias gerais, correções úteis e uma experiência mais fluida.",
-			"continuity": "As tarefas terminam de forma mais confiável, e é mais fácil continuar de onde você parou.",
-			"alternatives": "O trabalho do dia a dia parece mais claro e consistente.",
+			"intro": "AI Code Orchestrator {{version}} torna o trabalho com papéis mais previsível e os controles do dia a dia mais confiáveis.",
+			"continuity": "Parar, Condensar contexto e os links para subtarefas funcionam como esperado, e problemas com chamadas de ferramentas são mostrados claramente em vez de falharem em silêncio.",
+			"alternatives": "Cada papel mantém seu próprio perfil e modelo, independentemente do chat.",
 			"signoff": "Bom desenvolvimento!"
 		},
 		"release": {
 			"heading": "Novidades:",
-			"gpt55": "Formas mais claras de trabalhar: cada papel é mais fácil de entender, para você escolher a ajuda certa para a tarefa.",
-			"claudeOpus47": "Tarefas mais confiáveis: o trabalho concluído permanece concluído, e os resultados voltam com mais fluidez.",
-			"checkpointNav": "Uma experiência mais fluida: começar de novo e alternar entre tarefas ficou mais simples."
+			"gpt55": "Delegação mais clara: o trabalho para outro papel é entregue como subtarefa, e sua tarefa atual mantém o modo.",
+			"claudeOpus47": "Controles confiáveis: Parar funciona no primeiro clique, e Condensar contexto não fica mais travado.",
+			"checkpointNav": "Papéis independentes: cada papel usa seu próprio perfil e modelo, e chamadas de ferramentas em paralelo podem ser ativadas por perfil."
 		},
 		"cloudAgents": {
 			"heading": "Novidades na Nuvem:",

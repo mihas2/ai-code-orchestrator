@@ -55,7 +55,7 @@ async function readModels(router: RouterName): Promise<ModelRecord | undefined> 
  * @param options - Provider options for fetching models
  * @returns Fresh models from the provider API
  */
-async function fetchModelsFromProvider(options: GetModelsOptions): Promise<ModelRecord> {
+export async function fetchModelsFromProvider(options: GetModelsOptions): Promise<ModelRecord> {
 	const { provider } = options
 
 	let models: ModelRecord

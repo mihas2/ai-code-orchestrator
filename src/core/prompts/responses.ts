@@ -218,7 +218,7 @@ const formatImagesIntoBlocks = (images?: string[]): Anthropic.ImageBlockParam[] 
 
 const toolUseInstructionsReminderNative = `# Reminder: Instructions for Tool Use
 
-Tools are invoked using the platform's native tool calling mechanism. A valid assistant turn must contain a native tool call, not a prose description of a call and not hidden XML. Choose the tool that performs the next concrete action. Use attempt_completion only after the user's task is fully complete, and use ask_followup_question only when essential information is missing. Put reasoning or progress context in the selected tool's parameters when supported.
+Tools are invoked using the platform's native tool calling mechanism. A valid assistant turn must contain a native tool call, not a prose description of a call and not hidden XML. Choose the tool that performs the next concrete action. Use attempt_completion only after the user's task is fully complete, and use ask_followup_question only when essential information is missing.
 
 Always ensure you provide all required parameters for the tool you wish to use.`
 

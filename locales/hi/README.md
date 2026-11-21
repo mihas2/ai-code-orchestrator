@@ -17,7 +17,7 @@ AI Code Orchestrator कॉन्फ़िगर किए जा सकने �
 - बदलावों की समीक्षा, विफलताओं का निदान और मौजूदा कोड में सुधार
 - फ़ाइलों, टर्मिनल, इमेज और बाहरी MCP टूल्स के साथ काम करना
 - Vercel AI Gateway और Unbound सहित providers, models, permissions और custom roles कॉन्फ़िगर करना
-- अलग-अलग roles को models देना; override न होने पर primary model से automatic inheritance
+- अलग-अलग roles को provider profile और model देना; जिस role का अपना model नहीं है वह अपने profile का model इस्तेमाल करता है, और जिस role का profile नहीं है वह default profile इस्तेमाल करता है
 - एडिटर या कमांड लाइन से tasks जारी रखना
 
 ## भूमिकाएँ
@@ -33,7 +33,7 @@ AI Code Orchestrator आपके काम के अनुसार ढलत�
 - **Translate** — स्थानीयकरण फ़ाइलों का अनुवाद और प्रबंधन करना
 - **Custom** — टीम के लिए विशेष workflows बनाना
 
-हर role अपनी model configuration इस्तेमाल कर सकता है। Role-specific model न होने पर primary model inherit होता है, जिससे workflow में capability, speed और cost का संतुलन आसान होता है।
+हर role अपना provider profile और model इस्तेमाल कर सकता है। इन्हें सेटिंग्स → मोड में सेट किया जाता है, जो सेटिंग्स → प्रदाता में चुने गए default profile से स्वतंत्र है। जिस role का अपना model नहीं है वह अपने profile का model इस्तेमाल करता है, और जिस role का profile नहीं है वह default profile इस्तेमाल करता है, जिससे workflow में capability, speed और cost का संतुलन आसान होता है।
 
 ## दस्तावेज़ीकरण
 

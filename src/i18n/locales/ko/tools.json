@@ -24,5 +24,9 @@
 		"invalidImageData": "응답에 잘못된 이미지 데이터가 있습니다",
 		"invalidImageFormat": "잘못된 이미지 형식을 받았습니다",
 		"unknownError": "알 수 없는 오류가 발생했습니다"
+	},
+	"unusableToolCall": {
+		"emptyArguments": "도구 {{toolName}}: API가 인수 없이 호출을 반환했습니다(제공자가 빈 인수를 보냈습니다). 모델이 오류를 받았으며 다시 시도합니다.",
+		"invalidArguments": "도구 {{toolName}}: API에서 잘못된 인수를 받았습니다. 모델이 다시 시도합니다."
 	}
 }
